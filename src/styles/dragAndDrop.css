@@ -1,0 +1,83 @@
+/* Custom Drag & Drop styles for better mobile experience */
+
+/* Style for the draggable item when being dragged */
+.is-dragging {
+  opacity: 0.8 !important;
+  background-color: #444 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  border: 2px solid #666 !important;
+}
+
+/* Style for the drag handle to make it more obvious */
+[data-rbd-drag-handle-draggable-id] {
+  cursor: grab !important;
+  touch-action: none !important;
+}
+
+[data-rbd-drag-handle-draggable-id]:active {
+  cursor: grabbing !important;
+}
+
+/* Drop area highlight */
+[data-rbd-droppable-id] {
+  min-height: 50px;
+  transition: background-color 0.2s ease;
+}
+
+/* Placeholder styling */
+[data-rbd-placeholder-context-id] {
+  opacity: 0.5;
+  background-color: #333;
+  border: 1px dashed #666;
+  margin: 8px 0;
+  border-radius: 8px;
+}
+
+/* Make sure dragged items are always on top */
+[data-rbd-draggable-id] {
+  z-index: 9999;
+}
+
+/* Add a subtle pulsing animation to the drop area when dragging is happening */
+[data-rbd-droppable-id].is-drag-active {
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    background-color: rgba(59, 130, 246, 0.05);
+  }
+  50% {
+    background-color: rgba(59, 130, 246, 0.1);
+  }
+  100% {
+    background-color: rgba(59, 130, 246, 0.05);
+  }
+}
+
+/* Optimize for touch - increase size of interactive elements */
+.program-exercise-item button {
+  min-height: 40px;
+  min-width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Haptic feedback visual cue */
+@media (hover: none) {
+  [data-rbd-drag-handle-draggable-id]:active::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    animation: feedback 0.3s ease;
+  }
+}
+
+@keyframes feedback {
+  0% { opacity: 0; }
+  50% { opacity: 1; }
+  100% { opacity: 0; }
+}
