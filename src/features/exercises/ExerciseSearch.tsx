@@ -105,20 +105,32 @@ export const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
     
     return matchesSearch && matchesCategory;
   });
-
   return (
-    <div className="fixed inset-0 bg-[#1a1a1a]">
+    <div className="fixed inset-0 bg-gymkeeper-dark">
       {/* Header */}
-      <div className="flex items-center p-4 border-b border-gray-800">
+      <div className="flex items-center p-4 border-b border-gymkeeper-purple-darker">
         {showSearch ? (
-          <input
-            autoFocus
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search exercises..."
-            className="w-full bg-[#222] text-white px-4 py-2 rounded-lg"
-          />
+          <div className="flex w-full items-center">
+            <input
+              autoFocus
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search exercises..."
+              className="flex-grow bg-gymkeeper-light text-white px-4 py-2 rounded-lg"
+            />
+            <button
+              onClick={() => {
+                setShowSearch(false);
+                setSearchTerm('');
+              }}
+              className="ml-2 p-2 text-gray-400 hover:text-white"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         ) : (
           <>
             <div className="flex items-center flex-grow">
@@ -134,8 +146,7 @@ export const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
                 {category ? category.name : 'Exercises'}
               </h1>
             </div>
-            <button
-              onClick={() => setShowSearch(true)}
+            <button              onClick={() => setShowSearch(true)}
               className="p-2 text-gray-400 hover:text-white"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -152,7 +163,7 @@ export const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
           <button
             key={exercise.name}
             onClick={() => onSelectExercise(exercise)}
-            className="w-full text-left p-4 border-b border-gray-800 text-white hover:bg-[#222]"
+            className="w-full text-left p-4 border-b border-gymkeeper-purple-darker text-white hover:bg-gymkeeper-light"
           >
             <div className="font-medium">{exercise.name}</div>
             <div className="text-sm text-gray-400">
@@ -161,13 +172,15 @@ export const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
           </button>
         ))}
 
-        {filteredExercises.length === 0 && (          <div className="p-4 text-center text-gray-400">
+        {filteredExercises.length === 0 && (
+          <div className="p-4 text-center text-gray-400">
             No exercises found
           </div>
         )}
-          {/* Add indication about imported exercises */}
+        {/* Add indication about imported exercises */}
         {filteredExercises.length > 0 && (
-          <div className="p-4 text-center text-green-500">            Showing {filteredExercises.length} exercises 
+          <div className="p-4 text-center text-primary-500">
+            Showing {filteredExercises.length} exercises 
             (including imported exercises)
           </div>
         )}

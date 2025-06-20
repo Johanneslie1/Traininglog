@@ -3,6 +3,7 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { Program, ProgramExercise } from '@/types/exercise';
 import { getPrograms, saveProgram, deleteProgram, getDeviceId } from '@/utils/localStorageUtils';
 import ExerciseSearch from './ExerciseSearch';
+import { ExerciseSetLogger, DifficultyCategory } from './ExerciseSetLogger';
 
 interface ProgramManagerProps {
   onClose: () => void;
@@ -11,12 +12,11 @@ interface ProgramManagerProps {
 
 const ProgramManager: React.FC<ProgramManagerProps> = ({ onClose, onProgramSelected }) => {
   const [programs, setPrograms] = useState<Program[]>([]);
-  const [activeView, setActiveView] = useState<'list' | 'create' | 'edit' | 'search'>('list');
-  const [currentProgram, setCurrentProgram] = useState<Program | null>(null);
-  const [programName, setProgramName] = useState('');
+  const [activeView, setActiveView] = useState<'list' | 'create' | 'edit' | 'search' | 'setLogger'>('list');
+  const [currentProgram, setCurrentProgram] = useState<Program | null>(null);  const [programName, setProgramName] = useState('');
   const [programDescription, setProgramDescription] = useState('');
-  const [editingExerciseIndex, setEditingExerciseIndex] = useState<number | null>(null);
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
+  const [currentExercise, setCurrentExercise] = useState<any>(null);
 
   useEffect(() => {
     loadPrograms();
@@ -77,26 +77,19 @@ const ProgramManager: React.FC<ProgramManagerProps> = ({ onClose, onProgramSelec
     loadPrograms();
     setActiveView('list');
   };
-
   const handleAddExercise = (exercise: any) => {
     if (!currentProgram) return;
     
-    const newExercise: ProgramExercise = {
+    // Save the selected exercise for the set logger
+    // Make sure we have a valid name field
+    const validExercise = {
+      ...exercise,
+      name: exercise.name || 'Unknown Exercise',
       id: exercise.id,
-      exerciseId: exercise.id,
-      exerciseName: exercise.name,
-      sets: 3, // Default to 3 sets
-      order: currentProgram.exercises.length
     };
-
-    const updatedExercises = [...currentProgram.exercises, newExercise];
     
-    setCurrentProgram({
-      ...currentProgram,
-      exercises: updatedExercises
-    });
-    
-    setActiveView('edit');
+    setCurrentExercise(validExercise);
+    setActiveView('setLogger');
   };
 
   const handleRemoveExercise = (index: number) => {
@@ -149,6 +142,33 @@ const ProgramManager: React.FC<ProgramManagerProps> = ({ onClose, onProgramSelec
     });
   };
 
+  const handleSaveSets = (sets: Array<{reps: number, weight: number, difficulty?: DifficultyCategory}>) => {
+    if (!currentExercise || !currentProgram) return;
+    
+    // Create new exercise with the sets data
+    const newExercise: ProgramExercise = {
+      id: currentExercise.id,
+      exerciseId: currentExercise.id,
+      exerciseName: currentExercise.name,
+      sets: sets.length, // Set the number of sets based on what the user configured
+      order: currentProgram.exercises.length
+    };
+    
+    const updatedExercises = [...currentProgram.exercises, newExercise];
+    
+    setCurrentProgram({
+      ...currentProgram,
+      exercises: updatedExercises
+    });
+    
+    // Go back to edit view
+    setActiveView('edit');
+  };
+  
+  const handleCancelSetLogger = () => {
+    setActiveView('edit');
+  };
+
   const toggleMenu = (programId: string) => {
     setMenuOpen(menuOpen === programId ? null : programId);
   };
@@ -161,8 +181,7 @@ const ProgramManager: React.FC<ProgramManagerProps> = ({ onClose, onProgramSelec
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl text-white">My Programs</h2>
             <button 
-              onClick={handleCreateProgram}
-              className="bg-blue-600 text-white p-2 rounded-full shadow-lg hover:bg-blue-700 transition-colors"
+              onClick={handleCreateProgram}              className="bg-purple-gradient text-white p-2 rounded-full shadow-lg hover:opacity-90 transition-colors"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -170,14 +189,14 @@ const ProgramManager: React.FC<ProgramManagerProps> = ({ onClose, onProgramSelec
             </button>
           </div>
           
-          {programs.length === 0 ? (            <div className="text-center py-8 bg-[#222] rounded-xl">
+          {programs.length === 0 ? (            <div className="text-center py-8 bg-gymkeeper-light rounded-xl">
               <svg className="w-16 h-16 mx-auto text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
               <div className="text-gray-400 mb-4">No programs yet</div>
               <button 
                 onClick={handleCreateProgram}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-lg flex items-center mx-auto"
+                className="px-6 py-3 bg-purple-gradient text-white rounded-lg hover:opacity-90 transition-colors shadow-lg flex items-center mx-auto"
               >
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -185,14 +204,13 @@ const ProgramManager: React.FC<ProgramManagerProps> = ({ onClose, onProgramSelec
                 Create your first program
               </button>
             </div>
-          ) : (
-            <div className="space-y-3">
+          ) : (            <div className="space-y-3">
               {programs.map((program) => (                <div 
                   key={program.id} 
-                  className="bg-[#222] rounded-xl p-3 relative hover:bg-[#2a2a2a] transition-colors"
+                  className="bg-gymkeeper-light rounded-xl p-3 relative hover:bg-opacity-80 transition-colors"
                 >
                   <div className="flex justify-between items-center">                    <div 
-                      className="flex-1 cursor-pointer p-2 rounded-lg hover:bg-[#333] transition-colors"
+                      className="flex-1 cursor-pointer p-2 rounded-lg hover:bg-gymkeeper-dark hover:bg-opacity-60 transition-colors"
                       onClick={() => onProgramSelected(program)}
                     >
                       <h3 className="text-white font-medium">{program.name}</h3>
@@ -218,12 +236,11 @@ const ProgramManager: React.FC<ProgramManagerProps> = ({ onClose, onProgramSelec
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                       </svg>
                     </button>
-                  </div>
-                    {menuOpen === program.id && (
-                    <div className="absolute right-2 top-12 bg-[#333] rounded-lg shadow-lg z-10 w-36 overflow-hidden">
+                  </div>                    {menuOpen === program.id && (
+                    <div className="absolute right-2 top-12 bg-gymkeeper-dark rounded-lg shadow-lg z-10 w-36 overflow-hidden border border-gymkeeper-purple-darker">
                       <div className="py-1">
                         <button 
-                          className="block px-4 py-3 text-white hover:bg-[#444] w-full text-left flex items-center"
+                          className="block px-4 py-3 text-white hover:bg-gymkeeper-light w-full text-left flex items-center"
                           onClick={() => handleEditProgram(program)}
                         >
                           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -232,7 +249,7 @@ const ProgramManager: React.FC<ProgramManagerProps> = ({ onClose, onProgramSelec
                           Edit
                         </button>
                         <button 
-                          className="block px-4 py-3 text-red-500 hover:bg-[#444] w-full text-left flex items-center"
+                          className="block px-4 py-3 text-red-500 hover:bg-gymkeeper-light w-full text-left flex items-center"
                           onClick={() => handleDeleteProgram(program.id)}
                         >
                           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -258,7 +275,6 @@ const ProgramManager: React.FC<ProgramManagerProps> = ({ onClose, onProgramSelec
       </div>
     );
   }
-
   // Renders the exercise search view
   if (activeView === 'search') {
     return (
@@ -268,11 +284,21 @@ const ProgramManager: React.FC<ProgramManagerProps> = ({ onClose, onProgramSelec
       />
     );
   }
-
+  
+  // Renders the exercise set logger view
+  if (activeView === 'setLogger' && currentExercise) {
+    return (
+      <ExerciseSetLogger
+        exercise={currentExercise}
+        onSave={handleSaveSets}
+        onCancel={handleCancelSetLogger}
+      />
+    );
+  }
   // Renders the program edit or create view
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end">
-      <div className="bg-[#1a1a1a] w-full p-4 rounded-t-3xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-gymkeeper-dark w-full p-4 rounded-t-3xl max-h-[90vh] overflow-y-auto">
         <h2 className="text-2xl text-white mb-4">
           {activeView === 'create' ? 'Create Program' : 'Edit Program'}
         </h2>
@@ -283,17 +309,16 @@ const ProgramManager: React.FC<ProgramManagerProps> = ({ onClose, onProgramSelec
             type="text"
             value={programName}
             onChange={(e) => setProgramName(e.target.value)}
-            className="w-full bg-[#333] text-white p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full bg-gymkeeper-light text-white p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
             placeholder="E.g., Upper/Lower Split, Full Body"
           />
         </div>
-        
-        <div className="mb-6">
+          <div className="mb-6">
           <label className="block text-gray-400 mb-1">Description (optional)</label>
           <textarea
             value={programDescription}
             onChange={(e) => setProgramDescription(e.target.value)}
-            className="w-full bg-[#333] text-white p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[60px]"
+            className="w-full bg-gymkeeper-light text-white p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 min-h-[60px]"
             placeholder="Describe your program..."
           />
         </div>
@@ -303,7 +328,7 @@ const ProgramManager: React.FC<ProgramManagerProps> = ({ onClose, onProgramSelec
             <h3 className="text-lg text-white">Exercises</h3>
             <button 
               onClick={() => setActiveView('search')}
-              className="bg-blue-600 text-white p-2 rounded-full shadow-lg hover:bg-blue-700 transition-colors"
+              className="bg-purple-gradient text-white p-2 rounded-full shadow-lg hover:opacity-90 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -335,16 +360,15 @@ const ProgramManager: React.FC<ProgramManagerProps> = ({ onClose, onProgramSelec
                             <div className="flex-1">
                               <div className="text-white">{exercise.exerciseName}</div>
                               <div className="flex items-center mt-1">
-                                <span className="text-gray-400 text-sm mr-2">Sets:</span>
-                                <button 
-                                  className="w-6 h-6 bg-[#333] rounded-full text-white flex items-center justify-center"
+                                <span className="text-gray-400 text-sm mr-2">Sets:</span>                                <button 
+                                  className="w-6 h-6 bg-gymkeeper-light rounded-full text-white flex items-center justify-center"
                                   onClick={() => handleUpdateSets(index, exercise.sets - 1)}
                                 >
                                   -
                                 </button>
                                 <span className="mx-2 text-gray-300 min-w-[20px] text-center">{exercise.sets}</span>
                                 <button 
-                                  className="w-6 h-6 bg-[#333] rounded-full text-white flex items-center justify-center"
+                                  className="w-6 h-6 bg-gymkeeper-light rounded-full text-white flex items-center justify-center"
                                   onClick={() => handleUpdateSets(index, exercise.sets + 1)}
                                 >
                                   +
@@ -381,18 +405,17 @@ const ProgramManager: React.FC<ProgramManagerProps> = ({ onClose, onProgramSelec
             </div>
           )}
         </div>
-        
-        <div className="flex space-x-3">
+          <div className="flex space-x-3">
           <button 
             onClick={handleSaveProgram}
-            className="flex-1 p-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
+            className="flex-1 p-3 bg-purple-gradient text-white rounded-xl hover:opacity-90 transition-colors"
           >
             SAVE PROGRAM
           </button>
           
           <button 
             onClick={() => setActiveView('list')}
-            className="flex-1 p-3 bg-[#2a2a2a] text-white rounded-xl hover:bg-[#3a3a3a] transition-colors"
+            className="flex-1 p-3 bg-gymkeeper-light text-white rounded-xl hover:bg-opacity-80 transition-colors"
           >
             CANCEL
           </button>

@@ -7,6 +7,7 @@ import { RootState } from '@/store/store';
 interface CalendarProps {
   onClose: () => void;
   onSelectExercises: (exercises: any[]) => void;
+  onDateSelect?: (date: Date) => void;
 }
 
 interface User {
@@ -14,7 +15,7 @@ interface User {
   email: string | null;
 }
 
-export const Calendar: React.FC<CalendarProps> = ({ onClose, onSelectExercises }) => {
+export const Calendar: React.FC<CalendarProps> = ({ onClose, onSelectExercises, onDateSelect }) => {
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const { user } = useSelector((state: RootState) => state.auth) as { user: User | null };
@@ -41,10 +42,14 @@ export const Calendar: React.FC<CalendarProps> = ({ onClose, onSelectExercises }
   const goToNextYear = () => {
     setCurrentDate(new Date(currentDate.getFullYear() + 1, currentDate.getMonth()));
   };
-
   const handleDateSelect = async (date: Date) => {
     if (!user) return;
     setSelectedDate(date);
+    
+    // Notify parent component about the date change
+    if (onDateSelect) {
+      onDateSelect(date);
+    }
 
     try {
       const exercisesRef = collection(db, 'exerciseLogs');

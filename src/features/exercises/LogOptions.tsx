@@ -11,6 +11,7 @@ import { Program } from '@/types/exercise';
 interface LogOptionsProps {
   onClose: () => void;
   onExerciseAdded?: () => void;
+  selectedDate?: Date;
 }
 
 interface Category {
@@ -45,27 +46,29 @@ type ExerciseSet = {
 };
 
 const muscleGroups: Category[] = [
-  { id: 'chest', name: 'Chest', icon: '💪', bgColor: 'bg-[#222]', iconBgColor: 'bg-green-600', textColor: 'text-white' },
-  { id: 'back', name: 'Back', icon: '🔙', bgColor: 'bg-[#222]', iconBgColor: 'bg-blue-600', textColor: 'text-white' },
-  { id: 'legs', name: 'Legs', icon: '🦵', bgColor: 'bg-[#222]', iconBgColor: 'bg-yellow-600', textColor: 'text-white' },
-  { id: 'shoulders', name: 'Shoulders', icon: '🎯', bgColor: 'bg-[#222]', iconBgColor: 'bg-cyan-600', textColor: 'text-white' },
-  { id: 'arms', name: 'Arms', icon: '💪', bgColor: 'bg-[#222]', iconBgColor: 'bg-red-600', textColor: 'text-white' },
-  { id: 'core', name: 'Core', icon: '⭕', bgColor: 'bg-[#222]', iconBgColor: 'bg-purple-600', textColor: 'text-white' },
-  { id: 'fullBody', name: 'Full-Body', icon: '👤', bgColor: 'bg-[#222]', iconBgColor: 'bg-orange-600', textColor: 'text-white' },
+  { id: 'chest', name: 'Chest', icon: '💪', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-green-600', textColor: 'text-white' },
+  { id: 'back', name: 'Back', icon: '🔙', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-blue-600', textColor: 'text-white' },
+  { id: 'legs', name: 'Legs', icon: '🦵', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-yellow-600', textColor: 'text-white' },
+  { id: 'shoulders', name: 'Shoulders', icon: '🎯', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-cyan-600', textColor: 'text-white' },
+  { id: 'arms', name: 'Arms', icon: '💪', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-red-600', textColor: 'text-white' },
+  { id: 'core', name: 'Core', icon: '⭕', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-primary-600', textColor: 'text-white' },
+  { id: 'fullBody', name: 'Full-Body', icon: '👤', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-orange-600', textColor: 'text-white' },
 ];
 
 const trainingTypes: Category[] = [
-  { id: 'cardio', name: 'Cardio', icon: '🏃', bgColor: 'bg-[#222]', iconBgColor: 'bg-red-600', textColor: 'text-white' },
-  { id: 'agility', name: 'Agility', icon: '⚡', bgColor: 'bg-[#222]', iconBgColor: 'bg-yellow-600', textColor: 'text-white' },
-  { id: 'speed', name: 'Speed', icon: '🏃‍♂️', bgColor: 'bg-[#222]', iconBgColor: 'bg-blue-600', textColor: 'text-white' },
-  { id: 'stretching', name: 'Stretching', icon: '🧘‍♂️', bgColor: 'bg-[#222]', iconBgColor: 'bg-green-600', textColor: 'text-white' },
+  { id: 'cardio', name: 'Cardio', icon: '🏃', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-red-600', textColor: 'text-white' },
+  { id: 'agility', name: 'Agility', icon: '⚡', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-yellow-600', textColor: 'text-white' },
+  { id: 'speed', name: 'Speed', icon: '🏃‍♂️', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-blue-600', textColor: 'text-white' },
+  { id: 'stretching', name: 'Stretching', icon: '🧘‍♂️', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-green-600', textColor: 'text-white' },
 ];
 
-export const LogOptions: React.FC<LogOptionsProps> = ({ onClose, onExerciseAdded }) => {
+export const LogOptions: React.FC<LogOptionsProps> = ({ onClose, onExerciseAdded, selectedDate }) => {
   const [view, setView] = useState<'main' | 'search' | 'calendar' | 'setLogger' | 'program'>('main');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [recentExercises, setRecentExercises] = useState<Exercise[]>([]);
-  const [currentExercise, setCurrentExercise] = useState<any>(null);const fetchRecentExercises = async () => {
+  const [currentExercise, setCurrentExercise] = useState<any>(null);
+  
+  const fetchRecentExercises = async () => {
     try {
       // Get logs from local storage
       const allLogs = getExerciseLogs();
@@ -119,14 +122,16 @@ export const LogOptions: React.FC<LogOptionsProps> = ({ onClose, onExerciseAdded
   const handleSelectExercisesFromDay = (exercises: Exercise[]) => {
     setRecentExercises(exercises);
     setView('main');
-  };  const addExerciseToToday = async (exercise: Exercise) => {
+  };  
+  
+  const addExerciseToToday = async (exercise: Exercise) => {
     try {
       const deviceId = getDeviceId();
       
       // Create the exercise log with the device ID
       const newExercise = {
         ...exercise,
-        timestamp: new Date(),
+        timestamp: selectedDate || new Date(),
         deviceId
       };
       
@@ -149,24 +154,24 @@ export const LogOptions: React.FC<LogOptionsProps> = ({ onClose, onExerciseAdded
       onClose(); // Close modal after adding
     } catch (error) {
       console.error('Failed to add exercise:', error);
-      alert('Failed to add exercise to today.');
-    }
-  };  const handleSaveSets = async (sets: ExerciseSet[]) => {
+      alert('Failed to add exercise to today.');    }
+  };  
+  
+  const handleSaveSets = async (sets: ExerciseSet[]) => {
     if (!currentExercise) return;
     
-    try {
-      const deviceId = getDeviceId();
+    try {      const deviceId = getDeviceId();
       
       const exerciseLog = {
         exerciseName: currentExercise.name,
         sets: sets,
-        timestamp: new Date(),
+        timestamp: selectedDate || new Date(),
         deviceId
       };
-      
-      // Save to local storage
+        // Save to local storage
       saveExerciseLog(exerciseLog);
-        // Also save to Firebase (optional, for backup)
+      
+      // Also save to Firebase (optional, for backup)
       try {
         console.log('Adding exercise log:', exerciseLog);
         await addDoc(collection(db, 'exerciseLogs'), exerciseLog);
@@ -197,13 +202,12 @@ export const LogOptions: React.FC<LogOptionsProps> = ({ onClose, onExerciseAdded
         const sets = Array(programExercise.sets).fill(null).map(() => ({
           reps: 0,
           weight: 0,
-          difficulty: 'NORMAL' as DifficultyCategory
-        }));
+          difficulty: 'NORMAL' as DifficultyCategory        }));
         
         const exerciseLog = {
           exerciseName: programExercise.exerciseName,
           sets,
-          timestamp: new Date(),
+          timestamp: selectedDate || new Date(),
           deviceId
         };
         

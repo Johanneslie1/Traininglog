@@ -247,3 +247,22 @@ export const importPrograms = (jsonData: string): boolean => {
     return false;
   }
 };
+
+// Delete an exercise log
+export const deleteExerciseLog = (logId: string): boolean => {
+  const logs = getExerciseLogs();
+  const filteredLogs = logs.filter(log => log.id !== logId);
+  
+  // If no logs were removed, return false
+  if (filteredLogs.length === logs.length) {
+    return false;
+  }
+  
+  // Save the filtered logs
+  localStorage.setItem('exercise_logs', JSON.stringify(filteredLogs.map(log => ({
+    ...log,
+    timestamp: log.timestamp.toISOString()
+  }))));
+
+  return true;
+};

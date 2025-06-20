@@ -96,17 +96,16 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
     setSets(newSets);
   };
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-90 flex items-end p-0 z-50">
-      <div className="bg-[#1a1a1a] rounded-t-3xl p-6 w-full max-h-[85vh] overflow-y-auto">
-        <h2 className="text-2xl font-bold mb-6 text-white text-center">
+    <div className="fixed inset-0 bg-black bg-opacity-90 flex items-end p-0 z-50">      <div className="bg-[#1a1a1a] rounded-t-3xl p-4 w-full max-h-[85vh] overflow-y-auto">
+        <h2 className="text-xl font-bold mb-4 text-white text-center">
           <div>Set №{sets.length}</div>
-          <div className="text-lg font-normal text-gray-400">{exercise.name}</div>
+          <div className="text-base font-normal text-gray-400">{exercise.name}</div>
         </h2>
-          <div className="space-y-6 max-h-[60vh] overflow-y-auto px-2">
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto px-1">
           {sets.map((set, index) => (
-            <div key={index} className="space-y-3">
+            <div key={index} className="space-y-2 bg-[#232323] rounded-lg p-2">
               <div className="flex items-center justify-between">
-                <span className="text-lg font-medium text-white">Set №{index + 1}</span>
+                <span className="text-base font-medium text-white">Set №{index + 1}</span>
                 <button
                   onClick={() => removeSet(index)}
                   className="text-red-500 hover:text-red-700 p-1"
@@ -114,101 +113,99 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
                   ✕
                 </button>
               </div>
-              
-              <div className="flex space-x-4">
+                <div className="flex space-x-3">
                 <div className="flex-1">
-                  <label className="text-gray-400 text-sm block mb-1">KG</label>
+                  <label className="text-gray-400 text-xs block mb-1">KG</label>
                   <div className="relative">
                     <input
                       type="number"
                       value={set.weight || ''}
                       onChange={(e) => updateSet(index, 'weight', Number(e.target.value))}
                       placeholder="0"
-                      className="w-full p-2 border rounded bg-[#252525] text-white border-gray-700 text-lg"
+                      className="w-full p-2 border rounded bg-[#252525] text-white border-gray-700 text-base"
                     />
                   </div>
                 </div>
                 
                 <div className="flex-1">
-                  <label className="text-gray-400 text-sm block mb-1">REP</label>
+                  <label className="text-gray-400 text-xs block mb-1">REP</label>
                   <input
                     type="number"
                     value={set.reps || ''}
                     onChange={(e) => updateSet(index, 'reps', Number(e.target.value))}
                     placeholder="0"
-                    className="w-full p-2 border rounded bg-[#252525] text-white border-gray-700 text-lg"
+                    className="w-full p-2 border rounded bg-[#252525] text-white border-gray-700 text-base"
                   />
                 </div>
-              </div>
-                <div className="grid grid-cols-3 gap-1 mt-2">
+              </div><div className="flex flex-wrap gap-1 mt-2">
                 <button
                   onClick={() => setDifficulty(index, 'WARMUP')}
-                  className={`py-2 px-1 rounded ${set.difficulty === 'WARMUP' ? 'bg-blue-600 text-white' : 'bg-[#333] text-gray-300'}`}
+                  className={`py-1 px-2 rounded text-xs font-medium ${set.difficulty === 'WARMUP' ? 'bg-blue-600 text-white' : 'bg-[#333] text-gray-300'}`}
                 >
                   WARMUP
                 </button>
                 <button
                   onClick={() => setDifficulty(index, 'EASY')}
-                  className={`py-2 px-1 rounded ${set.difficulty === 'EASY' ? 'bg-green-600 text-white' : 'bg-[#333] text-gray-300'}`}
+                  className={`py-1 px-2 rounded text-xs font-medium ${set.difficulty === 'EASY' ? 'bg-green-600 text-white' : 'bg-[#333] text-gray-300'}`}
                 >
                   EASY
                 </button>
                 <button
                   onClick={() => setDifficulty(index, 'NORMAL')}
-                  className={`py-2 px-1 rounded ${set.difficulty === 'NORMAL' ? 'bg-yellow-600 text-white' : 'bg-[#333] text-gray-300'}`}
+                  className={`py-1 px-2 rounded text-xs font-medium ${set.difficulty === 'NORMAL' ? 'bg-yellow-600 text-white' : 'bg-[#333] text-gray-300'}`}
                 >
                   NORMAL
                 </button>
                 <button
                   onClick={() => setDifficulty(index, 'HARD')}
-                  className={`py-2 px-1 rounded ${set.difficulty === 'HARD' ? 'bg-red-600 text-white' : 'bg-[#333] text-gray-300'}`}
+                  className={`py-1 px-2 rounded text-xs font-medium ${set.difficulty === 'HARD' ? 'bg-red-600 text-white' : 'bg-[#333] text-gray-300'}`}
                 >
                   HARD
                 </button>
                 <button
                   onClick={() => setDifficulty(index, 'FAILURE')}
-                  className={`py-2 px-1 rounded ${set.difficulty === 'FAILURE' ? 'bg-amber-600 text-white' : 'bg-[#333] text-gray-300'}`}
+                  className={`py-1 px-2 rounded text-xs font-medium ${set.difficulty === 'FAILURE' ? 'bg-amber-600 text-white' : 'bg-[#333] text-gray-300'}`}
                 >
                   FAILURE
                 </button>
                 <button
                   onClick={() => setDifficulty(index, 'DROP')}
-                  className={`py-2 px-1 rounded ${set.difficulty === 'DROP' ? 'bg-purple-600 text-white' : 'bg-[#333] text-gray-300'}`}
+                  className={`py-1 px-2 rounded text-xs font-medium ${set.difficulty === 'DROP' ? 'bg-purple-600 text-white' : 'bg-[#333] text-gray-300'}`}
                 >
                   DROP
                 </button>
               </div>
             </div>
           ))}
-        </div>        <div className="mt-6">
-          <div className="flex justify-between gap-2 mb-4">
+        </div>        <div className="mt-4">
+          <div className="flex justify-between gap-2 mb-3">
             <button
               onClick={addSet}
-              className="bg-[#333] text-white px-4 py-2 rounded hover:bg-[#444] transition-colors flex-1"
+              className="bg-[#333] text-white px-3 py-1.5 rounded text-sm hover:bg-[#444] transition-colors flex-1"
             >
               Add Empty Set
             </button>
             
             <button
               onClick={copyPreviousSet}
-              className="bg-[#444] text-white px-4 py-2 rounded hover:bg-[#555] transition-colors flex-1"
+              className="bg-[#444] text-white px-3 py-1.5 rounded text-sm hover:bg-[#555] transition-colors flex-1"
               disabled={sets.length === 0}
             >
               Copy Previous Set
             </button>
           </div>
           
-          <div className="flex justify-between gap-2 mt-6 pt-6 border-t border-gray-700">
+          <div className="flex justify-between gap-2 mt-4 pt-4 border-t border-gray-700">
             <button
               onClick={onCancel}
-              className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors uppercase flex-1"
+              className="bg-gray-600 text-white px-5 py-2 rounded-lg hover:bg-gray-700 transition-colors uppercase flex-1 text-sm font-medium"
             >
               CANCEL
             </button>
             
             <button
               onClick={() => onSave(sets)}
-              className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors uppercase flex-1"
+              className="bg-green-600 text-white px-5 py-2 rounded-lg hover:bg-green-700 transition-colors uppercase flex-1 text-sm font-medium"
             >
               ADD
             </button>
