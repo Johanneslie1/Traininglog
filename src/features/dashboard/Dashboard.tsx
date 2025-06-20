@@ -117,7 +117,10 @@ const Dashboard = () => {
     <div className="p-4 bg-black min-h-screen text-white">
       {/* Date and controls header */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">{formatDate(selectedDate)}</h1>
+        <div>
+          <h1 className="text-2xl font-bold">{formatDate(selectedDate)}</h1>
+          <small className="text-gray-400">v0.0.2 - Test Update</small>
+        </div>
         <div className="flex gap-4">
           <button className="p-2" onClick={() => handleDateChange(new Date(selectedDate.getTime() - 86400000))}>
             <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
