@@ -4,8 +4,8 @@ import Calendar from './Calendar';
 import ProgramManager from './ProgramManager';
 import { ExerciseSetLogger } from './ExerciseSetLogger';
 import { db } from '@/services/firebase/config';
-import { collection, query, orderBy, limit, getDocs, addDoc } from 'firebase/firestore';
-import { getDeviceId, saveExerciseLog, getExerciseLogs } from '@/utils/localStorageUtils';
+import { collection, addDoc } from 'firebase/firestore';
+import { getDeviceId, saveExerciseLog } from '@/utils/localStorageUtils';
 import { Program } from '@/types/exercise';
 
 interface LogOptionsProps {
@@ -66,52 +66,11 @@ export const LogOptions: React.FC<LogOptionsProps> = ({ onClose, onExerciseAdded
   const [view, setView] = useState<'main' | 'search' | 'calendar' | 'setLogger' | 'program'>('main');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [recentExercises, setRecentExercises] = useState<Exercise[]>([]);
-  const [currentExercise, setCurrentExercise] = useState<any>(null);
-  
-  const fetchRecentExercises = async () => {
-    try {
-      // Get logs from local storage
-      const allLogs = getExerciseLogs();
-      
-      // Sort by timestamp (newest first) and take the most recent 5
-      const recentLogs = [...allLogs]
-        .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
-        .slice(0, 5)
-        .map(log => ({
-          id: log.id || 'temp-id',
-          exerciseName: log.exerciseName,
-          sets: log.sets,
-          timestamp: log.timestamp
-        }));
-      
-      setRecentExercises(recentLogs);
-      
-      // Optionally, also try to fetch from Firebase as a backup
-      try {
-        const exercisesRef = collection(db, 'exerciseLogs');
-        const q = query(
-          exercisesRef,
-          orderBy('timestamp', 'desc'),
-          limit(5)
-        );
-        
-        const snapshot = await getDocs(q);
-        const firebaseExercises = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          timestamp: doc.data().timestamp.toDate()
-        })) as Exercise[];
-        
-        // Combine local and Firebase exercises if necessary
-        if (recentLogs.length === 0 && firebaseExercises.length > 0) {
-          setRecentExercises(firebaseExercises);
-        }
-      } catch (firebaseError) {
-        console.error('Error fetching from Firebase, using local data only:', firebaseError);
-      }
-    } catch (error) {
-      console.error('Error fetching recent exercises:', error);
-    }
+  const [currentExercise, setCurrentExercise] = useState<any>(null);  // Simple placeholder for recent exercises button
+  const fetchRecentExercises = () => {
+    // This would normally load recent exercises
+    // This function is simplified since we've removed the exercise loading logic
+    setView('search');
   };
 
   const handleCategorySelect = (category: Category) => {
@@ -251,13 +210,19 @@ export const LogOptions: React.FC<LogOptionsProps> = ({ onClose, onExerciseAdded
         category={selectedCategory}
       />
     );
-  }
-
-  if (view === 'calendar') {
+  }  if (view === 'calendar') {
     return (
       <Calendar 
         onClose={() => setView('main')}
         onSelectExercises={handleSelectExercisesFromDay}
+        onDateSelect={(_) => {
+          // This ensures that when a date is selected in the calendar,
+          // any exercise added will be logged for that day
+          if (onExerciseAdded) {
+            onExerciseAdded();
+          }
+          onClose();
+        }}
       />
     );
   }

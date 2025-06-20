@@ -41,9 +41,7 @@ export const Calendar: React.FC<CalendarProps> = ({ onClose, onSelectExercises, 
 
   const goToNextYear = () => {
     setCurrentDate(new Date(currentDate.getFullYear() + 1, currentDate.getMonth()));
-  };
-  const handleDateSelect = async (date: Date) => {
-    if (!user) return;
+  };  const handleDateSelect = async (date: Date) => {
     setSelectedDate(date);
     
     // Notify parent component about the date change
@@ -52,29 +50,39 @@ export const Calendar: React.FC<CalendarProps> = ({ onClose, onSelectExercises, 
     }
 
     try {
-      const exercisesRef = collection(db, 'exerciseLogs');
-      const startOfDay = new Date(date);
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(date);
-      endOfDay.setHours(23, 59, 59, 999);
+      // Try to get exercises from this date
+      if (user) {
+        const exercisesRef = collection(db, 'exerciseLogs');
+        const startOfDay = new Date(date);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(date);
+        endOfDay.setHours(23, 59, 59, 999);
 
-      const q = query(
-        exercisesRef,
-        where('userId', '==', user.id),
-        where('timestamp', '>=', startOfDay),
-        where('timestamp', '<=', endOfDay)
-      );
+        const q = query(
+          exercisesRef,
+          where('userId', '==', user.id),
+          where('timestamp', '>=', startOfDay),
+          where('timestamp', '<=', endOfDay)
+        );
 
-      const snapshot = await getDocs(q);
-      const exercises = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+        const snapshot = await getDocs(q);
+        const exercises = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
 
-      onSelectExercises(exercises);
-      onClose();
+        onSelectExercises(exercises);
+      } else {
+        // If no user, still pass empty exercises
+        onSelectExercises([]);
+      }
+      
+      // Note: We don't close automatically here to allow further date selection
+      // unless specifically called from ExerciseLog where onDateSelect is used
     } catch (error) {
       console.error('Error fetching exercises:', error);
+      // Still pass empty exercises in case of error
+      onSelectExercises([]);
     }
   };
 

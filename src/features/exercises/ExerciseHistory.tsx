@@ -28,7 +28,7 @@ export const ExerciseHistory: React.FC = () => {
         const logsRef = collection(db, 'exerciseLogs');
         const q = query(
           logsRef,
-          where('userId', '==', user.uid),
+          where('userId', '==', user.id),
           orderBy('timestamp', 'desc')
         );
 

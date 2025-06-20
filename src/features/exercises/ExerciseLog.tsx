@@ -167,23 +167,9 @@ export const ExerciseLog: React.FC = () => {
       year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
     });
   };
-  return (
-    <div className="relative min-h-screen bg-gymkeeper-dark">      {/* Header */}
-      <div className="flex justify-between items-center px-4 py-3 border-b border-gymkeeper-purple-darker bg-purple-gradient">        <button 
-          className="text-white p-2 invisible"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
-        <div className="flex-1 flex justify-center">
-          <h1 className="text-xl font-bold text-white">GYM KEEPER</h1>
-        </div>
-        <div className="w-6"></div>
-      </div>
-      
+  return (    <div className="relative min-h-screen bg-gymkeeper-dark">      
       {/* Date header */}
-      <div className="flex justify-between items-center px-4 py-2 bg-purple-gradient bg-opacity-80">
+      <div className="flex justify-between items-center px-4 py-3 bg-purple-gradient">
         <div className="w-6"></div>
         <div className="flex-1 flex justify-center">
           <button 
@@ -234,14 +220,13 @@ export const ExerciseLog: React.FC = () => {
               className="border-b border-gymkeeper-purple-darker p-2"
             >
               <div className="flex items-center justify-between mb-1">
-                <h3 className="text-white text-base font-medium">{exercise.exerciseName}</h3>
-                <div className="flex space-x-1">
+                <h3 className="text-white text-base font-medium">{exercise.exerciseName}</h3>                <div className="flex space-x-1">
                   <button 
                     className="text-white p-1 hover:text-primary-400 transition-colors"
                     onClick={() => handleOpenSetLogger(exercise)}
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
                   </button>
                   <button 

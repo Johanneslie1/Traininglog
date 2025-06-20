@@ -53,7 +53,12 @@ export const exportExerciseData = (exercises?: Exercise[]) => {
   const data = exercises || getExerciseLogs();
   
   // Export as CSV
-  const csvContent = exerciseDataToCsv(data);
+  const csvContent = exerciseDataToCsv(
+    data.map(exercise => ({
+      ...exercise,
+      id: exercise.id ?? '', // Ensure id is always a string
+    }))
+  );
   if (!csvContent) {
     alert('No exercises to export!');
     return;
