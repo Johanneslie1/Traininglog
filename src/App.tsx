@@ -10,6 +10,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/services/firebase/config';
 import { setUser, setLoading } from '@/features/auth/authSlice';
 import { polyfill } from 'mobile-drag-drop';
+import { UpdateNotification } from '@/components/common/UpdateNotification';
 import 'mobile-drag-drop/default.css';
 import '@/styles/dragAndDrop.css';
 
@@ -117,6 +118,7 @@ Host: ${window.location.host}`}
       <Router>
         <Layout>
           <AppRoutes />
+          <UpdateNotification />
         </Layout>
       </Router>
     </Provider>

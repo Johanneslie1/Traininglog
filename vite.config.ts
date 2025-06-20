@@ -39,59 +39,32 @@ export default defineConfig(({ mode }) => {
           theme_color: '#ffffff',
           icons: [
             {
-              src: '/Traininglog/icons/icon-192x192.png',
+              src: '/icons/icon-192x192.png',
               sizes: '192x192',
               type: 'image/png',
               purpose: 'any'
             },
             {
-              src: '/Traininglog/icons/icon-512x512.png',
+              src: '/icons/icon-512x512.png',
               sizes: '512x512',
-              type: 'image/png',            purpose: 'any'
-            },
-            {
-              src: '/Traininglog/icons/icon-base.svg',
-              sizes: '72x72 96x96 128x128 144x144 152x152 192x192 384x384 512x512',
-              type: 'image/svg+xml',
-              purpose: 'any maskable'
+              type: 'image/png',
+              purpose: 'any'
             }
-          ],
-          start_url: '/Traininglog/',
-          display: 'standalone',
-          background_color: '#ffffff'
-        },      workbox: {
-          navigateFallback: 'index.html',
+          ]
+        },
+        workbox: {
+          clientsClaim: true,
+          skipWaiting: true,
+          cleanupOutdatedCaches: true,
           runtimeCaching: [
             {
-              urlPattern: new RegExp('^https://fonts.(?:googleapis|gstatic).com/(.*)'),
-              handler: 'CacheFirst',
+              urlPattern: /^https:\/\/traininglog-zied\.vercel\.app\/.*/i,
+              handler: 'NetworkFirst',
               options: {
-                cacheName: 'google-fonts',
-                expiration: {
-                  maxEntries: 30,
-                  maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
-                }
-              }
-            },
-            {
-              urlPattern: /\.(?:png|jpg|jpeg|svg|gif)$/,
-              handler: 'CacheFirst',
-              options: {
-                cacheName: 'images',
-                expiration: {
-                  maxEntries: 60,
-                  maxAgeSeconds: 30 * 24 * 60 * 60 // 30 days
-                }
-              }
-            },
-            {
-              urlPattern: /^https:\/\/firebasestorage\.googleapis\.com\/.*/i,
-              handler: 'StaleWhileRevalidate',
-              options: {
-                cacheName: 'firebase-storage',
-                expiration: {
-                  maxEntries: 100,
-                  maxAgeSeconds: 7 * 24 * 60 * 60 // 1 week
+                cacheName: 'api-cache',
+                networkTimeoutSeconds: 10,
+                cacheableResponse: {
+                  statuses: [0, 200]
                 }
               }
             }
