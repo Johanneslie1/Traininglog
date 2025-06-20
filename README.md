@@ -2,6 +2,10 @@
 
 A professional strength training logging application built with React, TypeScript, and Firebase.
 
+## Live Demo
+
+Visit the live application: [TrainingLog on GitHub Pages](https://johanneslie1.github.io/Traininglog/)
+
 ## Features
 
 - Exercise tracking and logging

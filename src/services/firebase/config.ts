@@ -3,6 +3,11 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
+// Enable more detailed logs in development
+if (import.meta.env.DEV) {
+  console.log('Firebase in development mode');
+}
+
 const firebaseConfig = {
   apiKey: "AIzaSyDgA76WHz1JzwEc1YeazhKTUxqxHzhcP2c",
   authDomain: "session-logger-3619e.firebaseapp.com",
@@ -13,6 +18,9 @@ const firebaseConfig = {
   measurementId: "G-B6K0DDSVTH"
 };
 
+// Detailed initialization logs
+console.log('Initializing Firebase with config:', { ...firebaseConfig, apiKey: '[REDACTED]' });
+
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
@@ -20,5 +28,9 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+
+// Log auth settings
+console.log('Auth domain configured as:', auth.config.authDomain);
+console.log('Current origin:', window.location.origin);
 
 export default app;

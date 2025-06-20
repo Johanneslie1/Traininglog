@@ -27,15 +27,20 @@ const Login = () => {
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
-
   const onSubmit = async (data: LoginFormData) => {
     try {
       setIsLoading(true);
       setError('');
+      console.log('Attempting login...');
       const user = await loginUser(data);
+      console.log('Login successful, user:', user);
       dispatch(setUser(user));
-      navigate('/dashboard');
+      console.log('User dispatched to Redux store');
+      // Navigate to root which has the protected route with ExerciseLog
+      navigate('/');
+      console.log('Navigation attempted');
     } catch (err: any) {
+      console.error('Login error:', err);
       setError(err.message);
     } finally {
       setIsLoading(false);

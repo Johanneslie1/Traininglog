@@ -8,6 +8,9 @@ import {
 import { doc, setDoc, getDoc, Timestamp } from 'firebase/firestore';
 import { auth, db } from './config';
 
+// Log the current origin - useful for debugging GitHub Pages
+console.log('Auth service initialized with origin:', window.location.origin);
+
 export interface User {
   id: string;
   email: string;
@@ -71,17 +74,22 @@ export const loginUser = async (data: LoginData): Promise<User> => {
   const { email, password } = data;
 
   try {
+    console.log('Attempting to sign in with email:', email);
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const { uid } = userCredential.user;
+    console.log('Sign in successful, fetching user data for uid:', uid);
 
     // Get additional user data from Firestore
     const userDoc = await getDoc(doc(db, 'users', uid));
     if (!userDoc.exists()) {
+      console.error('User document not found in Firestore after login');
       throw new Error('User data not found');
     }
+    console.log('User data retrieved from Firestore');
 
     return convertTimestamps(userDoc.data() as User);
   } catch (error: any) {
+    console.error('Login error:', error);
     throw new Error(error.message);
   }
 };
