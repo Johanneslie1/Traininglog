@@ -1,5 +1,4 @@
 import { initializeApp, cert } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
 
 const serviceAccount = {
   "type": "service_account",
@@ -9,28 +8,37 @@ const serviceAccount = {
 
 // Initialize Firebase Admin
 initializeApp({
-  credential: cert(serviceAccount)
+  credential: cert(serviceAccount as any)
 });
 
-const db = getFirestore();
-
+// Note: Creating Firestore indexes typically requires using the Firebase console
+// or the Firebase CLI, not the Admin SDK directly.
+// This is a simplified example to demonstrate the concept.
 async function createRequiredIndexes() {
   try {
-    // Create index for trainingSessions collection
-    await db.collection('trainingSessions').listIndexes();
-    const index = {
-      collectionGroup: 'trainingSessions',
-      queryScope: 'COLLECTION',
-      fields: [
-        { fieldPath: 'userId', order: 'ASCENDING' },
-        { fieldPath: 'date', order: 'DESCENDING' }
+    console.log('Creating index for trainingSessions collection...');
+    console.log('To create indexes, use the Firebase Console or Firebase CLI:');
+    console.log('firebase firestore:indexes --project=session-logger-3619e');
+    
+    // Example of what the index configuration would look like:
+    const indexConfig = {
+      "indexes": [
+        {
+          "collectionGroup": "trainingSessions",
+          "queryScope": "COLLECTION",
+          "fields": [
+            { "fieldPath": "userId", "order": "ASCENDING" },
+            { "fieldPath": "date", "order": "DESCENDING" }
+          ]
+        }
       ]
     };
-
-    await db.collection('trainingSessions').createIndex(index);
-    console.log('Index created successfully');
+    
+    console.log('Example index configuration:', JSON.stringify(indexConfig, null, 2));
+    console.log('Index setup complete (informational only)');
+    
   } catch (error) {
-    console.error('Error creating index:', error);
+    console.error('Error in index setup process:', error);
   }
 }
 

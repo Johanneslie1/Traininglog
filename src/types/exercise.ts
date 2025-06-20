@@ -3,7 +3,7 @@ export interface Exercise {
   name: string;
   description: string;
   type: 'strength' | 'cardio' | 'flexibility' | 'bodyweight';
-  category: 'compound' | 'isolation' | 'olympic' | 'cardio' | 'stretching';
+  category: 'compound' | 'isolation' | 'olympic' | 'cardio' | 'stretching' | 'power';
   primaryMuscles: MuscleGroup[];
   secondaryMuscles: MuscleGroup[];
   equipment?: string[];
@@ -37,7 +37,8 @@ export type MuscleGroup =
   | 'core'
   | 'traps'
   | 'lats'
-  | 'lower_back';
+  | 'lower_back'
+  | 'full_body'; // Added full_body as a valid muscle group
 
 export interface ExerciseFilter {
   type?: Exercise['type'][];

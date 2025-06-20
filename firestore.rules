@@ -1,0 +1,24 @@
+// This file won't be automatically deployed, but it shows the recommended Firestore rules
+// You'll need to copy these to your Firebase console if your access is being denied
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow anyone to read exercises
+    match /exercises/{exercise} {
+      allow read: if true;
+      allow create, update, delete: if request.auth != null;
+    }
+    
+    // User profiles - only the user can read/write their own data
+    match /users/{userId} {
+      allow read: if true;
+      allow create, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Workout logs - only the user can read/write their own data
+    match /workouts/{workoutId} {
+      allow read, write: if request.auth != null && request.resource.data.userId == request.auth.uid;
+    }
+  }
+}

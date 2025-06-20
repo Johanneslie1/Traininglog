@@ -9,20 +9,6 @@ const strengthMetrics = {
   trackRPE: true,
 };
 
-const bodyweightMetrics = {
-  trackReps: true,
-  trackRPE: true,
-  trackWeight: false,
-};
-
-const cardioMetrics = {
-  trackTime: true,
-  trackDistance: true,
-  trackRPE: true,
-  trackWeight: false,
-  trackReps: false,
-};
-
 // Compound Lifts
 export const compoundLifts: ExerciseTemplate[] = [
   {

@@ -12,55 +12,72 @@ const defaultMetrics = {
 export const chestExercises: ExerciseTemplate[] = [
   {
     name: 'Bench Press',
+    description: 'A compound chest exercise performed on a flat bench.',
     type: 'strength',
+    category: 'compound',
     primaryMuscles: ['chest'],
     secondaryMuscles: ['shoulders', 'triceps'],
     equipment: ['barbell', 'bench'],
+    instructions: ['Lie on bench', 'Grip barbell slightly wider than shoulder width', 'Lower bar to mid-chest', 'Press back up to starting position'],
     metrics: defaultMetrics,
     defaultUnit: 'kg'
   },
   {
     name: 'Incline Bench Press',
+    description: 'A compound chest exercise performed on an inclined bench.',
     type: 'strength',
+    category: 'compound',
     primaryMuscles: ['chest'],
     secondaryMuscles: ['shoulders', 'triceps'],
     equipment: ['barbell', 'bench'],
+    instructions: ['Set bench to incline (30-45 degrees)', 'Grip barbell slightly wider than shoulder width', 'Lower bar to upper chest', 'Press back up to starting position'],
     metrics: defaultMetrics,
     defaultUnit: 'kg'
   },
   {
     name: 'Dumbbell Press',
+    description: 'A compound chest exercise using dumbbells on a flat bench.',
     type: 'strength',
+    category: 'compound',
     primaryMuscles: ['chest'],
     secondaryMuscles: ['shoulders', 'triceps'],
     equipment: ['dumbbells', 'bench'],
+    instructions: ['Lie on bench with dumbbells in hand', 'Press dumbbells above chest', 'Lower dumbbells to chest level', 'Press back up to starting position'],
     metrics: defaultMetrics,
     defaultUnit: 'kg'
   },
-  {
-    name: 'Push-Ups',
+  {    name: 'Push-Ups',
+    description: 'A bodyweight exercise that works the chest, shoulders, and triceps.',
     type: 'bodyweight',
+    category: 'compound',
     primaryMuscles: ['chest'],
     secondaryMuscles: ['shoulders', 'triceps'],
     equipment: ['bodyweight'],
+    instructions: ['Get into a plank position', 'Lower body until chest nearly touches the floor', 'Push body back up to starting position'],
     metrics: { trackReps: true, trackRPE: true },
     defaultUnit: 'reps'
   },
   {
     name: 'Cable Fly',
+    description: 'A chest exercise using cables to provide resistance.',
     type: 'strength',
+    category: 'isolation',
     primaryMuscles: ['chest'],
     secondaryMuscles: ['shoulders'],
     equipment: ['cable'],
+    instructions: ['Stand in the center of a cable machine', 'Grab handles with arms outstretched', 'Pull handles together in front of you', 'Slowly return to starting position'],
     metrics: defaultMetrics,
     defaultUnit: 'kg'
   },
   {
     name: 'Dumbbell Fly',
+    description: 'A chest exercise using dumbbells to target the pectoral muscles.',
     type: 'strength',
+    category: 'isolation',
     primaryMuscles: ['chest'],
     secondaryMuscles: ['shoulders'],
     equipment: ['dumbbells', 'bench'],
+    instructions: ['Lie on bench with dumbbells in hand', 'Extend arms above chest with a slight bend in elbows', 'Lower arms out to the sides', 'Bring arms back together above chest'],
     metrics: defaultMetrics,
     defaultUnit: 'kg'
   }
@@ -68,57 +85,69 @@ export const chestExercises: ExerciseTemplate[] = [
 
 // Back Exercises
 export const backExercises: ExerciseTemplate[] = [
-  {
-    name: 'Pull-Ups',
+  {    name: 'Pull-Ups',
+    description: 'A bodyweight exercise that targets the back and biceps.',
     type: 'bodyweight',
+    category: 'compound',
     primaryMuscles: ['back', 'lats'],
     secondaryMuscles: ['biceps'],
     equipment: ['pull-up-bar'],
+    instructions: ['Grab the pull-up bar with an overhand grip', 'Hang with arms fully extended', 'Pull body up until chin is above the bar', 'Lower body back to starting position'],
     metrics: { trackReps: true, trackRPE: true },
     defaultUnit: 'reps'
   },
-  {
-    name: 'Barbell Row',
+  {    name: 'Barbell Row',
+    description: 'A compound exercise that targets the back muscles using a barbell.',
     type: 'strength',
+    category: 'compound',
     primaryMuscles: ['back'],
     secondaryMuscles: ['biceps'],
     equipment: ['barbell'],
+    instructions: ['Stand with feet shoulder-width apart', 'Bend at the hips and knees, keeping the back straight', 'Grip the barbell with an overhand grip', 'Pull the barbell towards your lower rib cage', 'Lower the barbell back to the starting position'],
     metrics: defaultMetrics,
     defaultUnit: 'kg'
   },
-  {
-    name: 'Lat Pulldown',
+  {    name: 'Lat Pulldown',
+    description: 'A machine-based exercise that targets the latissimus dorsi muscles.',
     type: 'strength',
+    category: 'compound',
     primaryMuscles: ['back', 'lats'],
     secondaryMuscles: ['biceps'],
     equipment: ['cable'],
+    instructions: ['Sit at the lat pulldown machine and adjust the knee pad', 'Grab the bar with a wide grip', 'Pull the bar down to your chest', 'Slowly return the bar to the starting position'],
     metrics: defaultMetrics,
     defaultUnit: 'kg'
   },
-  {
-    name: 'Seated Row',
+  {    name: 'Seated Row',
+    description: 'A machine or cable-based exercise that targets the back muscles.',
     type: 'strength',
+    category: 'compound',
     primaryMuscles: ['back'],
     secondaryMuscles: ['biceps'],
     equipment: ['cable'],
+    instructions: ['Sit at the seated row machine with feet on the platform', 'Grab the handles with an overhand grip', 'Pull the handles towards your torso', 'Slowly extend your arms back to the starting position'],
     metrics: defaultMetrics,
     defaultUnit: 'kg'
   },
-  {
-    name: 'Single-Arm Dumbbell Row',
+  {    name: 'Single-Arm Dumbbell Row',
+    description: 'A dumbbell exercise that targets the back muscles one side at a time.',
     type: 'strength',
+    category: 'compound',
     primaryMuscles: ['back', 'lats'],
     secondaryMuscles: ['biceps'],
     equipment: ['dumbbell', 'bench'],
+    instructions: ['Place one knee and hand on a bench for support', 'Hold a dumbbell in the opposite hand', 'Pull the dumbbell towards your hip', 'Lower the dumbbell back to the starting position'],
     metrics: defaultMetrics,
     defaultUnit: 'kg'
   },
-  {
-    name: 'Inverted Row',
+  {    name: 'Inverted Row',
+    description: 'A bodyweight exercise that targets the back and biceps.',
     type: 'bodyweight',
+    category: 'compound',
     primaryMuscles: ['back'],
     secondaryMuscles: ['biceps', 'core'],
     equipment: ['bar'],
+    instructions: ['Lie under a bar and grip it with an overhand grip', 'Hang with arms fully extended', 'Pull your chest towards the bar', 'Lower your body back to the starting position'],
     metrics: { trackReps: true, trackRPE: true },
     defaultUnit: 'reps'
   }
@@ -126,66 +155,80 @@ export const backExercises: ExerciseTemplate[] = [
 
 // Legs Exercises
 export const legExercises: ExerciseTemplate[] = [
-  {
-    name: 'Squats',
+  {    name: 'Squats',
+    description: 'A compound exercise that targets the quadriceps, hamstrings, and glutes.',
     type: 'strength',
+    category: 'compound',
     primaryMuscles: ['quadriceps', 'glutes'],
     secondaryMuscles: ['hamstrings', 'core'],
     equipment: ['barbell'],
+    instructions: ['Stand with feet shoulder-width apart', 'Lower your body as if sitting back into a chair', 'Keep your chest up and knees over your toes', 'Push through your heels to return to standing'],
     metrics: defaultMetrics,
     defaultUnit: 'kg'
   },
-  {
-    name: 'Deadlift',
+  {    name: 'Deadlift',
+    description: 'A compound exercise that targets the hamstrings, glutes, and lower back.',
     type: 'strength',
+    category: 'compound',
     primaryMuscles: ['hamstrings', 'glutes'],
     secondaryMuscles: ['back', 'core'],
     equipment: ['barbell'],
+    instructions: ['Stand with feet hip-width apart, barbell over mid-foot', 'Bend at the hips and knees to grip the barbell', 'Lift the barbell by extending hips and knees', 'Lower the barbell back to the ground'],
     metrics: defaultMetrics,
     defaultUnit: 'kg'
   },
-  {
-    name: 'Leg Press',
+  {    name: 'Leg Press',
+    description: 'A machine-based exercise that targets the quadriceps, hamstrings, and glutes.',
     type: 'strength',
+    category: 'compound',
     primaryMuscles: ['quadriceps', 'glutes'],
     secondaryMuscles: ['hamstrings'],
     equipment: ['machine'],
+    instructions: ['Sit on the leg press machine and adjust the seat', 'Place your feet on the platform shoulder-width apart', 'Push the platform away by extending your legs', 'Slowly return to the starting position'],
     metrics: defaultMetrics,
     defaultUnit: 'kg'
   },
-  {
-    name: 'Romanian Deadlift',
+  {    name: 'Romanian Deadlift',
+    description: 'A variation of the deadlift that targets the hamstrings and glutes.',
     type: 'strength',
+    category: 'compound',
     primaryMuscles: ['hamstrings'],
     secondaryMuscles: ['glutes', 'back'],
     equipment: ['barbell'],
+    instructions: ['Stand with feet hip-width apart, barbell over mid-foot', 'Bend at the hips, keeping the back straight', 'Lower the barbell along the front of your legs', 'Return to standing by extending hips'],
     metrics: defaultMetrics,
     defaultUnit: 'kg'
   },
-  {
-    name: 'Bulgarian Split Squat',
+  {    name: 'Bulgarian Split Squat',
+    description: 'A single-leg exercise that targets the quadriceps, hamstrings, and glutes.',
     type: 'strength',
+    category: 'compound',
     primaryMuscles: ['quadriceps', 'glutes'],
     secondaryMuscles: ['hamstrings', 'core'],
     equipment: ['dumbbells', 'bench'],
+    instructions: ['Stand a few feet in front of a bench', 'Place one foot on the bench behind you', 'Lower your body until your front thigh is parallel to the ground', 'Push through your front heel to return to standing'],
     metrics: defaultMetrics,
     defaultUnit: 'kg'
   },
-  {
-    name: 'Walking Lunges',
+  {    name: 'Walking Lunges',
+    description: 'A dynamic exercise that targets the quadriceps, hamstrings, and glutes.',
     type: 'strength',
+    category: 'compound',
     primaryMuscles: ['quadriceps', 'glutes'],
     secondaryMuscles: ['hamstrings', 'core'],
     equipment: ['dumbbells'],
+    instructions: ['Stand upright, feet together', 'Step forward with one leg, lowering your hips', 'Push through the front heel to return to standing', 'Repeat on the other side'],
     metrics: defaultMetrics,
     defaultUnit: 'kg'
   },
-  {
-    name: 'Calf Raises',
+  {    name: 'Calf Raises',
+    description: 'An exercise that targets the calf muscles.',
     type: 'strength',
+    category: 'isolation',
     primaryMuscles: ['calves'],
     secondaryMuscles: [],
     equipment: ['bodyweight', 'dumbbells'],
+    instructions: ['Stand with feet hip-width apart', 'Raise your heels off the ground', 'Lower your heels back to the ground'],
     metrics: defaultMetrics,
     defaultUnit: 'kg'
   }
@@ -193,48 +236,58 @@ export const legExercises: ExerciseTemplate[] = [
 
 // Shoulders Exercises
 export const shoulderExercises: ExerciseTemplate[] = [
-  {
-    name: 'Overhead Press',
+  {    name: 'Overhead Press',
+    description: 'A compound exercise that targets the shoulders and triceps.',
     type: 'strength',
+    category: 'compound',
     primaryMuscles: ['shoulders'],
     secondaryMuscles: ['triceps'],
     equipment: ['barbell'],
+    instructions: ['Stand with feet shoulder-width apart', 'Grip the barbell with hands slightly wider than shoulder-width', 'Press the barbell overhead', 'Lower the barbell back to shoulder level'],
     metrics: defaultMetrics,
     defaultUnit: 'kg'
   },
-  {
-    name: 'Lateral Raises',
+  {    name: 'Lateral Raises',
+    description: 'An isolation exercise that targets the lateral deltoids.',
     type: 'strength',
+    category: 'isolation',
     primaryMuscles: ['shoulders'],
     secondaryMuscles: [],
     equipment: ['dumbbells'],
+    instructions: ['Stand with feet hip-width apart, dumbbells at your sides', 'Raise the dumbbells out to the sides', 'Lower the dumbbells back to the starting position'],
     metrics: defaultMetrics,
     defaultUnit: 'kg'
   },
-  {
-    name: 'Face Pulls',
+  {    name: 'Face Pulls',
+    description: 'An exercise that targets the rear deltoids and upper back.',
     type: 'strength',
+    category: 'isolation',
     primaryMuscles: ['shoulders'],
     secondaryMuscles: ['traps'],
     equipment: ['cable'],
+    instructions: ['Stand facing a cable machine with the pulley at upper chest level', 'Grab the rope attachment with both hands', 'Pull the rope towards your face, elbows high', 'Extend your arms back to the starting position'],
     metrics: defaultMetrics,
     defaultUnit: 'kg'
   },
-  {
-    name: 'Arnold Press',
+  {    name: 'Arnold Press',
+    description: 'A variation of the shoulder press that targets all three heads of the deltoids.',
     type: 'strength',
+    category: 'compound',
     primaryMuscles: ['shoulders'],
     secondaryMuscles: ['triceps'],
     equipment: ['dumbbells'],
+    instructions: ['Sit or stand with dumbbells at shoulder height, palms facing you', 'Press the dumbbells overhead while rotating your palms forward', 'Lower the dumbbells back to the starting position'],
     metrics: defaultMetrics,
     defaultUnit: 'kg'
   },
-  {
-    name: 'Front Raise',
+  {    name: 'Front Raise',
+    description: 'An isolation exercise that targets the front deltoids.',
     type: 'strength',
+    category: 'isolation',
     primaryMuscles: ['shoulders'],
     secondaryMuscles: [],
     equipment: ['plate', 'dumbbells'],
+    instructions: ['Stand with feet hip-width apart, dumbbells at your sides', 'Raise the dumbbells in front of you to shoulder height', 'Lower the dumbbells back to the starting position'],
     metrics: defaultMetrics,
     defaultUnit: 'kg'
   }
@@ -242,48 +295,58 @@ export const shoulderExercises: ExerciseTemplate[] = [
 
 // Arms Exercises
 export const armExercises: ExerciseTemplate[] = [
-  {
-    name: 'Bicep Curls',
+  {    name: 'Bicep Curls',
+    description: 'An isolation exercise that targets the biceps.',
     type: 'strength',
+    category: 'isolation',
     primaryMuscles: ['biceps'],
     secondaryMuscles: [],
     equipment: ['dumbbells'],
+    instructions: ['Stand with feet hip-width apart, dumbbells at your sides', 'Curl the dumbbells towards your shoulders', 'Lower the dumbbells back to the starting position'],
     metrics: defaultMetrics,
     defaultUnit: 'kg'
   },
-  {
-    name: 'Tricep Extensions',
+  {    name: 'Tricep Extensions',
+    description: 'An isolation exercise that targets the triceps.',
     type: 'strength',
+    category: 'isolation',
     primaryMuscles: ['triceps'],
     secondaryMuscles: [],
     equipment: ['cable'],
+    instructions: ['Stand facing away from a cable machine, grip the rope attachment', 'Extend your arms in front of you', 'Pull the rope towards your face, elbows high', 'Extend your arms back to the starting position'],
     metrics: defaultMetrics,
     defaultUnit: 'kg'
   },
-  {
-    name: 'Hammer Curls',
+  {    name: 'Hammer Curls',
+    description: 'A variation of bicep curls that also targets the forearms.',
     type: 'strength',
+    category: 'isolation',
     primaryMuscles: ['biceps'],
     secondaryMuscles: ['forearms'],
     equipment: ['dumbbells'],
+    instructions: ['Stand with feet hip-width apart, dumbbells at your sides, palms facing each other', 'Curl the dumbbells towards your shoulders', 'Lower the dumbbells back to the starting position'],
     metrics: defaultMetrics,
     defaultUnit: 'kg'
   },
-  {
-    name: 'Diamond Push-Ups',
+  {    name: 'Diamond Push-Ups',
+    description: 'A variation of push-ups that targets the triceps.',
     type: 'bodyweight',
+    category: 'isolation',
     primaryMuscles: ['triceps'],
     secondaryMuscles: ['chest', 'shoulders'],
     equipment: ['bodyweight'],
+    instructions: ['Get into a push-up position with hands close together, forming a diamond shape', 'Lower your body until your chest nearly touches the ground', 'Push your body back up to the starting position'],
     metrics: { trackReps: true, trackRPE: true },
     defaultUnit: 'reps'
   },
-  {
-    name: 'Chin-Ups',
+  {    name: 'Chin-Ups',
+    description: 'A bodyweight exercise that targets the biceps and back.',
     type: 'bodyweight',
+    category: 'compound',
     primaryMuscles: ['biceps'],
     secondaryMuscles: ['back'],
     equipment: ['pull-up-bar'],
+    instructions: ['Grab the pull-up bar with an underhand grip', 'Hang with arms fully extended', 'Pull your chin above the bar', 'Lower your body back to the starting position'],
     metrics: { trackReps: true, trackRPE: true },
     defaultUnit: 'reps'
   }
@@ -291,57 +354,69 @@ export const armExercises: ExerciseTemplate[] = [
 
 // Core Exercises
 export const coreExercises: ExerciseTemplate[] = [
-  {
-    name: 'Plank',
+  {    name: 'Plank',
+    description: 'A core stability exercise that targets the entire core.',
     type: 'bodyweight',
+    category: 'isolation',
     primaryMuscles: ['core'],
     secondaryMuscles: [],
     equipment: ['bodyweight'],
+    instructions: ['Get into a forearm plank position', 'Keep your body in a straight line from head to heels', 'Hold the position, engaging your core'],
     metrics: { trackTime: true, trackRPE: true },
     defaultUnit: 'time'
   },
-  {
-    name: 'Crunches',
+  {    name: 'Crunches',
+    description: 'A core exercise that targets the rectus abdominis.',
     type: 'bodyweight',
+    category: 'isolation',
     primaryMuscles: ['core'],
     secondaryMuscles: [],
     equipment: ['bodyweight'],
+    instructions: ['Lie on your back with knees bent, feet flat on the ground', 'Place your hands behind your head', 'Lift your shoulders off the ground, engaging your core', 'Lower back down to the starting position'],
     metrics: { trackReps: true, trackRPE: true },
     defaultUnit: 'reps'
   },
-  {
-    name: 'Russian Twists',
+  {    name: 'Russian Twists',
+    description: 'A core exercise that targets the obliques.',
     type: 'strength',
+    category: 'isolation',
     primaryMuscles: ['core'],
     secondaryMuscles: [],
     equipment: ['dumbbell', 'plate'],
+    instructions: ['Sit on the ground with knees bent, lean back slightly', 'Hold a weight with both hands', 'Rotate your torso to the right, then to the left'],
     metrics: defaultMetrics,
     defaultUnit: 'kg'
   },
-  {
-    name: 'Dead Bug',
+  {    name: 'Dead Bug',
+    description: 'A core exercise that targets the deep abdominal muscles.',
     type: 'bodyweight',
+    category: 'isolation',
     primaryMuscles: ['core'],
     secondaryMuscles: [],
     equipment: ['bodyweight'],
+    instructions: ['Lie on your back with arms extended towards the ceiling', 'Lift your legs so your knees are above your hips', 'Lower your right arm and left leg towards the ground', 'Return to the starting position and repeat on the other side'],
     metrics: { trackReps: true, trackRPE: true },
     defaultUnit: 'reps'
   },
-  {
-    name: 'Bird Dog',
+  {    name: 'Bird Dog',
+    description: 'A core exercise that also targets the lower back.',
     type: 'bodyweight',
+    category: 'isolation',
     primaryMuscles: ['core'],
     secondaryMuscles: ['lower_back'],
     equipment: ['bodyweight'],
+    instructions: ['Start on all fours, hands under shoulders, knees under hips', 'Extend your right arm and left leg, keeping your hips level', 'Return to the starting position and switch sides'],
     metrics: { trackReps: true, trackRPE: true },
     defaultUnit: 'reps'
   },
-  {
-    name: 'Pallof Press',
+  {    name: 'Pallof Press',
+    description: 'A core stability exercise that targets the entire core.',
     type: 'strength',
+    category: 'isolation',
     primaryMuscles: ['core'],
     secondaryMuscles: [],
     equipment: ['cable'],
+    instructions: ['Stand sideways to a cable machine, feet shoulder-width apart', 'Grab the handle with both hands, arms extended', 'Press the handle straight out in front of you', 'Return to the starting position'],
     metrics: defaultMetrics,
     defaultUnit: 'kg'
   }

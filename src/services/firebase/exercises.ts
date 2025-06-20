@@ -9,10 +9,11 @@ import {
   orderBy,
   limit,
   startAfter,
-  updateDoc,
-  deleteDoc,
+  Query,
+  DocumentData,
   QueryDocumentSnapshot,
-  DocumentData
+  updateDoc,
+  deleteDoc
 } from 'firebase/firestore';
 import { db } from './config';
 import { Exercise, ExerciseFilter } from '@/types/exercise';
@@ -49,7 +50,8 @@ export const searchExercises = async (
   lastDoc?: QueryDocumentSnapshot<DocumentData>
 ): Promise<{ exercises: Exercise[]; lastDoc: QueryDocumentSnapshot<DocumentData> | null }> => {
   try {
-    let q = collection(db, 'exercises');
+    const exercisesRef = collection(db, 'exercises');
+    let q: Query<DocumentData> = exercisesRef;
     const conditions: any[] = [];
 
     if (filters.type?.length) {
@@ -66,12 +68,21 @@ export const searchExercises = async (
     }
 
     // Build query with conditions and pagination
-    q = query(
-      q,
-      ...conditions,
-      orderBy('name'),
-      limit(EXERCISES_PER_PAGE)
-    );
+    // Only apply conditions if there are any to prevent query errors
+    if (conditions.length > 0) {
+      q = query(
+        q,
+        ...conditions,
+        orderBy('name'),
+        limit(EXERCISES_PER_PAGE)
+      );
+    } else {
+      q = query(
+        q,
+        orderBy('name'),
+        limit(EXERCISES_PER_PAGE)
+      );
+    }
 
     if (lastDoc) {
       q = query(q, startAfter(lastDoc));
