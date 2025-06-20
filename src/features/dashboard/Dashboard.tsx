@@ -2,7 +2,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { User } from '@/services/firebase/auth';
 import { useEffect, useState } from 'react';
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/services/firebase/config';
 import ExerciseCard from '@/components/ExerciseCard';
 import { getExerciseLogsByDate, ExerciseLog } from '@/utils/localStorageUtils';
@@ -81,9 +81,18 @@ const Dashboard = () => {
     console.log('Adding set to exercise:', exerciseId);
   };
 
-  const handleMenuClick = (exerciseId: string) => {
-    // TODO: Implement menu actions
-    console.log('Opening menu for exercise:', exerciseId);
+  const handleDeleteExercise = async (exerciseId: string) => {
+    try {
+      if (!exerciseId) return;
+
+      // Delete from Firebase
+      await deleteDoc(doc(db, 'exerciseLogs', exerciseId));
+
+      // Update local state
+      setTodaysExercises((prev) => prev.filter((ex) => ex.id !== exerciseId));
+    } catch (error) {
+      console.error('Error deleting exercise:', error);
+    }
   };
 
   if (isLoading) {
@@ -129,7 +138,7 @@ const Dashboard = () => {
               name={exercise.exerciseName}
               sets={exercise.sets}
               onAdd={() => handleAddSet(exercise.id || '')}
-              onMenu={() => handleMenuClick(exercise.id || '')}
+              onDelete={() => handleDeleteExercise(exercise.id || '')}
             />
           ))
         )}
