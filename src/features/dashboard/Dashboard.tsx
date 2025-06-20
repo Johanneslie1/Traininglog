@@ -82,16 +82,26 @@ const Dashboard = () => {
   };
 
   const handleDeleteExercise = async (exerciseId: string) => {
+    if (!exerciseId || !user) {
+      console.error('Missing exerciseId or user');
+      throw new Error('Failed to delete exercise');
+    }
+
     try {
-      if (!exerciseId) return;
-
+      // Get the exercise reference
+      const exerciseRef = doc(db, 'exerciseLogs', exerciseId);
+      
       // Delete from Firebase
-      await deleteDoc(doc(db, 'exerciseLogs', exerciseId));
+      await deleteDoc(exerciseRef);
 
-      // Update local state
+      // Update local state only after successful deletion
       setTodaysExercises((prev) => prev.filter((ex) => ex.id !== exerciseId));
+
+      // Show success message (if you have a toast/notification system)
+      console.log('Exercise deleted successfully');
     } catch (error) {
       console.error('Error deleting exercise:', error);
+      throw new Error('Failed to delete exercise');
     }
   };
 

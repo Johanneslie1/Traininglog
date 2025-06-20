@@ -16,6 +16,13 @@ service cloud.firestore {
       allow create, update, delete: if request.auth != null && request.auth.uid == userId;
     }
     
+    // Exercise logs - only the user can read/write their own data
+    match /exerciseLogs/{logId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+    
     // Workout logs - only the user can read/write their own data
     match /workouts/{workoutId} {
       allow read, write: if request.auth != null && request.resource.data.userId == request.auth.uid;
