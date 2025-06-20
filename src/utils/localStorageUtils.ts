@@ -47,10 +47,24 @@ export const saveExerciseLog = (log: ExerciseLog): ExerciseLog => {
     ...newLog,
     timestamp: newLog.timestamp.toISOString()
   };
-    // Convert all logs to storable format before storing
-  const storableLogs = [...logs, storableLog];
-  localStorage.setItem('exercise_logs', JSON.stringify(storableLogs));
+
+  // If the log has an ID, update the existing log instead of adding a new one
+  const existingLogIndex = logs.findIndex(l => l.id === log.id);
+  let storableLogs;
   
+  if (existingLogIndex !== -1) {
+    // Update existing log
+    storableLogs = [
+      ...logs.slice(0, existingLogIndex),
+      storableLog,
+      ...logs.slice(existingLogIndex + 1)
+    ];
+  } else {
+    // Add new log
+    storableLogs = [...logs, storableLog];
+  }
+
+  localStorage.setItem('exercise_logs', JSON.stringify(storableLogs));
   return newLog;
 };
 

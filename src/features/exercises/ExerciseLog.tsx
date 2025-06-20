@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import LogOptions from './LogOptions';
 import Calendar from './Calendar';
 import { ExerciseSetLogger } from './ExerciseSetLogger';
+import WorkoutSummary from './WorkoutSummary';
 import { db } from '@/services/firebase/config';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { exportExerciseData, importExerciseData } from '@/utils/exportUtils';
+import { importExerciseData } from '@/utils/exportUtils';
 import { getExerciseLogsByDate, saveExerciseLog, deleteExerciseLog } from '@/utils/localStorageUtils';
+import ExerciseCard from '@/components/ExerciseCard';
 
 // Import difficulty type
 import { DifficultyCategory } from './ExerciseSetLogger';
@@ -27,10 +29,10 @@ export const ExerciseLog: React.FC = () => {
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [exercises, setExercises] = useState<Exercise[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [showSetLogger, setShowSetLogger] = useState(false);
+  const [loading, setLoading] = useState(false);  const [showSetLogger, setShowSetLogger] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showWorkoutSummary, setShowWorkoutSummary] = useState(false);
   
   const fetchExercises = async (date: Date) => {
     setLoading(true);
@@ -160,151 +162,86 @@ export const ExerciseLog: React.FC = () => {
     }
   };
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
+    return date.toLocaleDateString('no-NO', { 
       day: 'numeric',
-      year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
-    });
+      month: 'long'
+    }).toLowerCase();
   };
-  return (    <div className="relative min-h-screen bg-gymkeeper-dark">      
-      {/* Date header */}
-      <div className="flex justify-between items-center px-4 py-3 bg-purple-gradient">
-        <div className="w-6"></div>
-        <div className="flex-1 flex justify-center">
-          <button 
-            onClick={() => setSelectedDate(new Date())}
-            className="text-white font-medium"
-          >
-            {formatDate(selectedDate)}
-          </button>
-        </div>        
+
+  return (
+    <div className="relative min-h-screen bg-black">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 bg-black">
+        <button className="text-white p-2">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+        
+        <h1 className="text-white text-xl">{formatDate(selectedDate)}</h1>
+        
         <div className="flex items-center gap-4">
-          <button
-            onClick={() => exportExerciseData(exercises)}
-            className="text-white p-2 hover:text-primary-300 transition-colors"
-            aria-label="Export"
-          >
+          <button className="text-white p-2">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </button>
-          <button 
-            onClick={() => setShowImportModal(true)}
-            className="text-white p-2 hover:text-primary-400 transition-colors"
-            aria-label="Import"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-            </svg>
-          </button>
-          <button 
-            onClick={() => setShowCalendar(!showCalendar)}
-            className={`text-white p-2 transition-colors ${showCalendar ? 'text-primary-500' : 'hover:text-primary-500'}`}
-            aria-label="Calendar"
-          >
+          <button onClick={() => setShowCalendar(!showCalendar)} className="text-white p-2">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </button>
-        </div>
-      </div>      {/* Exercise List or Empty State */}
-      {loading ? (
-        <div className="flex justify-center items-center h-[60vh]">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-500"></div>
-        </div>
-      ) : exercises.length > 0 ? (        <div className="p-0 space-y-0.5">
-          {exercises.map((exercise) => (
-            <div 
-              key={exercise.id}
-              className="border-b border-gymkeeper-purple-darker p-2"
-            >
-              <div className="flex items-center justify-between mb-1">
-                <h3 className="text-white text-base font-medium">{exercise.exerciseName}</h3>                <div className="flex space-x-1">
-                  <button 
-                    className="text-white p-1 hover:text-primary-400 transition-colors"
-                    onClick={() => handleOpenSetLogger(exercise)}
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                  </button>
-                  <button 
-                    className="text-white p-1 hover:text-red-500 transition-colors"
-                    onClick={() => handleDeleteExercise(exercise.id)}
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
-                </div>
-              </div>                <div className="grid grid-cols-4 gap-1">
-                {exercise.sets.map((set, index) => {
-                  // Determine background color based on difficulty
-                  let bgColor = 'bg-[#222]';
-                  let textColor = 'text-white';
-                  
-                  if (set.difficulty) {
-                    switch (set.difficulty) {
-                      case 'WARMUP': bgColor = 'bg-blue-900'; break;
-                      case 'EASY': bgColor = 'bg-green-900'; break;
-                      case 'NORMAL': bgColor = 'bg-yellow-900'; break;
-                      case 'HARD': bgColor = 'bg-red-900'; break;
-                      case 'FAILURE': bgColor = 'bg-amber-800'; break;
-                      case 'DROP': bgColor = 'bg-purple-900'; break;
-                    }
-                  } else if (set.rpe) {
-                    // Legacy RPE-based coloring
-                    if (set.rpe <= 3) bgColor = 'bg-blue-900';
-                    else if (set.rpe <= 5) bgColor = 'bg-green-900';
-                    else if (set.rpe <= 7) bgColor = 'bg-yellow-900';
-                    else bgColor = 'bg-red-900';
-                  }
-                  
-                  return (
-                    <div key={index} className={`flex flex-col items-center ${bgColor} rounded p-1`}>
-                      <div className={`font-medium text-base ${textColor}`}>{set.weight}<span className="text-[10px] text-gray-300 ml-0.5">kg</span></div>
-                      <div className={`text-sm ${textColor}`}>{set.reps}<span className="text-[10px] text-gray-300 ml-0.5">r</span></div>
-                      {set.difficulty && (
-                        <div className="text-[10px] text-gray-300 mt-0.5 lowercase first-letter:uppercase">{set.difficulty.charAt(0)}</div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center h-[80vh] text-gray-600">
-          <div className="mb-4">
-            <svg width="120" height="40" viewBox="0 0 120 40" fill="currentColor">
-              <text x="0" y="30" fontSize="40">zzz</text>
+          <button className="text-white p-2">
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
             </svg>
-          </div>
-          <div className="text-2xl">Empty Day</div>
-          <p className="text-gray-500 mt-2">Start logging your exercises!</p>
+          </button>
         </div>
-      )}      {/* Add Exercise Button */}
-      <button
-        onClick={() => setShowLogOptions(true)}
-        className="fixed bottom-16 right-4 w-16 h-16 bg-purple-gradient rounded-full flex items-center justify-center shadow-lg hover:opacity-90 transition-colors"
-        aria-label="Add Exercise"
-      >
-        <svg
-          className="w-8 h-8 text-white"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 4v16m8-8H4"
-          />
-        </svg>
-      </button>      {/* Log Options Modal */}      {showLogOptions && (
+      </div>
+
+      {/* Exercise List */}
+      <div className="px-4 pb-20">
+        {loading ? (
+          <div className="flex justify-center items-center h-[60vh]">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {exercises.map((exercise) => (
+              <ExerciseCard
+                key={exercise.id}
+                name={exercise.exerciseName}
+                sets={exercise.sets}
+                onAdd={() => handleOpenSetLogger(exercise)}
+                onCopy={() => console.log('Copy exercise')}
+                onMenu={() => handleDeleteExercise(exercise.id)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 h-16 bg-[#1a1a1a] border-t border-[#2d2d2d] flex items-center justify-around">
+        <button className="text-white p-2">
+          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z" />
+          </svg>
+        </button>
+        <button className="text-white p-2">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </button>
+        <button className="text-white p-2">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 8v8m-4-5v5M8 8v8m-4-5v5" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Modals */}
+      {/* Log Options Modal */}      {showLogOptions && (
         <LogOptions 
           onClose={() => setShowLogOptions(false)} 
           onExerciseAdded={() => fetchExercises(selectedDate)}
@@ -353,8 +290,7 @@ export const ExerciseLog: React.FC = () => {
           </div>
         </div>
       )}      {/* Set Logger Modal */}
-      {showSetLogger && selectedExercise && (
-        <ExerciseSetLogger
+      {showSetLogger && selectedExercise && (        <ExerciseSetLogger
           exercise={{
             id: selectedExercise.id,
             name: selectedExercise.exerciseName,
@@ -362,6 +298,14 @@ export const ExerciseLog: React.FC = () => {
           }}
           onSave={handleSaveSets}
           onCancel={handleCloseSetLogger}
+          isEditing={true}
+        />      )}
+
+      {/* Workout Summary Modal */}
+      {showWorkoutSummary && exercises.length > 0 && (
+        <WorkoutSummary
+          exercises={exercises}
+          onClose={() => setShowWorkoutSummary(false)}
         />
       )}
     </div>
