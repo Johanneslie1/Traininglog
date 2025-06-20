@@ -65,6 +65,10 @@ const Dashboard = () => {
     }
   }, [user, selectedDate]);
 
+  const handleDateChange = (newDate: Date) => {
+    setSelectedDate(newDate);
+  };
+
   const formatDate = (date: Date): string => {
     return date.toLocaleDateString('no-NO', {
       day: 'numeric',
@@ -96,7 +100,7 @@ const Dashboard = () => {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">{formatDate(selectedDate)}</h1>
         <div className="flex gap-4">
-          <button className="p-2">
+          <button className="p-2" onClick={() => handleDateChange(new Date(selectedDate.getTime() - 86400000))}>
             <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
               <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 002 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z" />
             </svg>
