@@ -2,9 +2,20 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { User } from '@/services/firebase/auth';
 import { useEffect, useState } from 'react';
-import { getExerciseLogs, deleteExerciseLog } from '@/services/firebase/exerciseLogs';
+import { deleteExerciseLog } from '@/services/firebase/exerciseLogs';
 import ExerciseCard from '@/components/ExerciseCard';
-import { getExerciseLogsByDate, ExerciseLog } from '@/utils/localStorageUtils';
+import { getExerciseLogsByDate } from '@/utils/localStorageUtils';
+import { ExerciseLog } from '@/types/exercise';
+import { db } from '@/services/firebase/config';
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  DocumentData,
+  QueryDocumentSnapshot
+} from 'firebase/firestore';
 
 const Dashboard = () => {
   const user = useSelector((state: RootState) => state.auth.user) as User;
@@ -13,41 +24,58 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const convertLocalExerciseToExerciseLog = (exercise: any): ExerciseLog => ({
+    id: exercise.id || 'temp-id',
+    exerciseName: exercise.exerciseName,
+    sets: exercise.sets,
+    timestamp: exercise.timestamp,
+    deviceId: exercise.deviceId || ''
+  });
+
   useEffect(() => {
     const fetchExercises = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        // Get exercises from local storage first
+        // First try local storage
         const localExercises = getExerciseLogsByDate(selectedDate);
-        if (localExercises.length > 0) {
-          setTodaysExercises(localExercises);
+        if (localExercises && localExercises.length > 0) {
+          setTodaysExercises(localExercises.map(convertLocalExerciseToExerciseLog));
           setIsLoading(false);
           return;
-        }
-
-        // Fallback to Firebase if no local exercises
-        if (!user?.id) {
-          throw new Error('User not authenticated');
-        }
-
+        }        // If no local exercises, try Firebase
         const startOfDay = new Date(selectedDate);
         startOfDay.setHours(0, 0, 0, 0);
         const endOfDay = new Date(selectedDate);
         endOfDay.setHours(23, 59, 59, 999);
 
-        const exercises = await getExerciseLogs(user.id, startOfDay, endOfDay);
-        setTodaysExercises(exercises);
+        const exercisesRef = collection(db, 'exerciseLogs');
+        const q = query(
+          exercisesRef,
+          where('userId', '==', user.id),
+          where('timestamp', '>=', startOfDay),
+          where('timestamp', '<=', endOfDay),
+          orderBy('timestamp', 'desc')
+        );
+        
+        const snapshot = await getDocs(q);
+        const exercises = snapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => ({
+          id: doc.id,
+          ...doc.data(),
+          timestamp: doc.data().timestamp.toDate()
+        }));
+
+        setTodaysExercises(exercises.map(convertLocalExerciseToExerciseLog));
       } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred');
         console.error('Error fetching exercises:', err);
-        setError('Failed to load exercises');
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchExercises();
-  }, [user, selectedDate]);
+  }, [selectedDate, user.id]);
 
   const handleDateChange = (newDate: Date) => {
     setSelectedDate(newDate);
@@ -130,7 +158,7 @@ const Dashboard = () => {
         ) : (
           todaysExercises.map((exercise) => (
             <ExerciseCard
-              key={exercise.id || `${exercise.exerciseName}-${exercise.timestamp.getTime()}`}
+              key={exercise.id || `${exercise.exerciseName}-${new Date(exercise.timestamp).getTime()}`}
               name={exercise.exerciseName}
               sets={exercise.sets}
               onAdd={() => handleAddSet(exercise.id || '')}

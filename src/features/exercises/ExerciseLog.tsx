@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import LogOptions from './LogOptions';
 import Calendar from './Calendar';
 import { ExerciseSetLogger } from './ExerciseSetLogger';

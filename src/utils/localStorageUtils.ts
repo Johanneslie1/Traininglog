@@ -27,11 +27,10 @@ export const saveExerciseLog = (log: ExerciseLog): ExerciseLog => {
     deviceId: log.deviceId || getDeviceId(),
     timestamp: log.timestamp || new Date()
   };
-  
-  // Convert Date to string for storage
+    // Convert Date to string for storage
   const storableLog = {
     ...newLog,
-    timestamp: newLog.timestamp.toISOString()
+    timestamp: newLog.timestamp instanceof Date ? newLog.timestamp.toISOString() : new Date(newLog.timestamp).toISOString()
   };
 
   // If the log has an ID, update the existing log instead of adding a new one
@@ -113,7 +112,7 @@ export const importExerciseLogs = (jsonData: string): boolean => {
     // Store the imported logs
     const storableLogs = processedLogs.map((log: ExerciseLog) => ({
       ...log,
-      timestamp: log.timestamp.toISOString()
+      timestamp: log.timestamp instanceof Date ? log.timestamp.toISOString() : new Date(log.timestamp).toISOString()
     }));
     
     localStorage.setItem('exercise_logs', JSON.stringify(storableLogs));
@@ -261,7 +260,7 @@ export const deleteExerciseLog = (logId: string): boolean => {
   // Save the filtered logs
   localStorage.setItem('exercise_logs', JSON.stringify(filteredLogs.map(log => ({
     ...log,
-    timestamp: log.timestamp.toISOString()
+    timestamp: log.timestamp instanceof Date ? log.timestamp.toISOString() : new Date(log.timestamp).toISOString()
   }))));
 
   return true;

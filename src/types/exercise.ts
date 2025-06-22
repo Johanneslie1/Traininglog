@@ -67,13 +67,6 @@ export interface Program {
   deviceId: string;
 }
 
-export interface ExerciseSet {
-  reps: number;
-  weight?: number;
-  difficulty?: DifficultyCategory;
-  rpe?: number;
-}
-
 export type DifficultyCategory = 'WARMUP' | 'EASY' | 'NORMAL' | 'HARD' | 'FAILURE' | 'DROP';
 
 /** Represents a set of an exercise with reps and optional weight */

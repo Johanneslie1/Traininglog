@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import { Program, ProgramExercise } from '@/types/exercise';
+import { Program, ProgramExercise, DifficultyCategory, ExerciseSet } from '@/types/exercise';
 import { getPrograms, saveProgram, deleteProgram, getDeviceId } from '@/utils/localStorageUtils';
 import ExerciseSearch from './ExerciseSearch';
-import { ExerciseSetLogger, DifficultyCategory } from './ExerciseSetLogger';
+import { ExerciseSetLogger } from './ExerciseSetLogger';
 
 interface ProgramManagerProps {
   onClose: () => void;
@@ -13,19 +13,19 @@ interface ProgramManagerProps {
 const ProgramManager: React.FC<ProgramManagerProps> = ({ onClose, onProgramSelected }) => {
   const [programs, setPrograms] = useState<Program[]>([]);
   const [activeView, setActiveView] = useState<'list' | 'create' | 'edit' | 'search' | 'setLogger'>('list');
-  const [currentProgram, setCurrentProgram] = useState<Program | null>(null);  const [programName, setProgramName] = useState('');
+  const [currentProgram, setCurrentProgram] = useState<Program | null>(null);
+  const [programName, setProgramName] = useState('');
   const [programDescription, setProgramDescription] = useState('');
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
-  const [currentExercise, setCurrentExercise] = useState<any>(null);
+  const [currentExercise, setCurrentExercise] = useState<ProgramExercise | null>(null);
 
   useEffect(() => {
+    const loadPrograms = async () => {
+      const storedPrograms = await getPrograms();
+      setPrograms(storedPrograms);
+    };
     loadPrograms();
   }, []);
-
-  const loadPrograms = () => {
-    const loadedPrograms = getPrograms();
-    setPrograms(loadedPrograms);
-  };
 
   const handleCreateProgram = () => {
     setActiveView('create');
@@ -142,26 +142,33 @@ const ProgramManager: React.FC<ProgramManagerProps> = ({ onClose, onProgramSelec
     });
   };
 
-  const handleSaveSets = (sets: Array<{reps: number, weight: number, difficulty?: DifficultyCategory}>) => {
-    if (!currentExercise || !currentProgram) return;
+  // Handle saving sets for an exercise
+  const handleSaveSets = (sets: ExerciseSet[], exerciseId: string) => {
+    if (!currentProgram || !currentExercise) return;
     
-    // Create new exercise with the sets data
-    const newExercise: ProgramExercise = {
-      id: currentExercise.id,
-      exerciseId: currentExercise.id,
-      exerciseName: currentExercise.name,
-      sets: sets.length, // Set the number of sets based on what the user configured
-      order: currentProgram.exercises.length
+    // Update the exercise with new sets
+    const updatedExercise = {
+      ...currentExercise,
+      sets: sets.length
     };
-    
-    const updatedExercises = [...currentProgram.exercises, newExercise];
-    
-    setCurrentProgram({
+
+    // Update the program with the modified exercise
+    const exerciseIndex = currentProgram.exercises.findIndex(e => e.id === exerciseId);
+    if (exerciseIndex === -1) return;
+
+    const updatedExercises = [...currentProgram.exercises];
+    updatedExercises[exerciseIndex] = updatedExercise;
+
+    const updatedProgram = {
       ...currentProgram,
-      exercises: updatedExercises
-    });
-    
-    // Go back to edit view
+      exercises: updatedExercises,
+      lastModified: new Date()
+    };
+
+    // Save to storage and update state
+    saveProgram(updatedProgram);
+    setCurrentProgram(updatedProgram);
+    setPrograms(prev => prev.map(p => p.id === updatedProgram.id ? updatedProgram : p));
     setActiveView('edit');
   };
   

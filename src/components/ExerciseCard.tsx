@@ -7,6 +7,7 @@ interface ExerciseCardProps {
   icon?: string;
   onEdit?: () => void;
   onDelete?: () => void;
+  onAdd?: () => void;
   onMenu?: () => void;
   isToday?: boolean;
 }
