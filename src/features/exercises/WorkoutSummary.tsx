@@ -1,18 +1,8 @@
 import React from 'react';
-import { DifficultyCategory } from './ExerciseSetLogger';
+import { ExerciseLog } from '@/types/exercise';
 
 interface WorkoutSummaryProps {
-  exercises: Array<{
-    id: string;
-    exerciseName: string;
-    sets: Array<{
-      reps: number;
-      weight: number;
-      difficulty?: DifficultyCategory;
-      rpe?: number;
-    }>;
-    timestamp: Date;
-  }>;
+  exercises: ExerciseLog[];
   onClose: () => void;
 }
 
@@ -57,11 +47,10 @@ export const WorkoutSummary: React.FC<WorkoutSummaryProps> = ({
   const getTotalSets = () => {
     return exercises.reduce((total, exercise) => total + exercise.sets.length, 0);
   };
-
   const getTotalVolume = () => {
     return exercises.reduce((total, exercise) => {
       return total + exercise.sets.reduce((exerciseTotal, set) => {
-        return exerciseTotal + (set.weight * set.reps);
+        return exerciseTotal + ((set.weight || 0) * (set.reps || 0));
       }, 0);
     }, 0);
   };
@@ -73,7 +62,7 @@ export const WorkoutSummary: React.FC<WorkoutSummaryProps> = ({
         <div className="bg-green-600 p-4 text-center">
           <div className="text-white text-lg font-bold mb-1">Workout Complete!</div>
           <div className="text-green-100 text-sm">
-            {formatDate(exercises[0]?.timestamp || new Date())}
+            {formatDate(new Date(exercises[0]?.timestamp || Date.now()))}
           </div>
         </div>
 
@@ -131,7 +120,7 @@ export const WorkoutSummary: React.FC<WorkoutSummaryProps> = ({
                         key={setIndex}
                         className={`${bgColor} text-white text-xs px-2 py-1 rounded`}
                       >
-                        {set.weight}kg × {set.reps}
+                        {set.weight ? `${set.weight}kg × ` : ''}{set.reps} {!set.weight ? 'reps' : ''}
                       </div>
                     );
                   })}
@@ -139,7 +128,7 @@ export const WorkoutSummary: React.FC<WorkoutSummaryProps> = ({
 
                 {/* Exercise Volume */}
                 <div className="text-gray-400 text-sm mt-1">
-                  {exercise.sets.reduce((total, set) => total + (set.weight * set.reps), 0).toLocaleString()} kg total
+                  {exercise.sets.reduce((total, set) => total + ((set.weight || 0) * (set.reps || 0)), 0).toLocaleString()} kg total
                 </div>
               </div>
 

@@ -1,19 +1,7 @@
 import { getExerciseLogs, importExerciseLogs } from './localStorageUtils';
+import { ExerciseLog, ExerciseSet } from '@/types/exercise';
 
-interface ExerciseSet {
-  reps: number;
-  weight: number;
-  rpe?: number;
-}
-
-interface Exercise {
-  id: string;
-  exerciseName: string;
-  sets: ExerciseSet[];
-  timestamp: Date;
-}
-
-export const exerciseDataToCsv = (exercises: Exercise[]): string => {
+export const exerciseDataToCsv = (exercises: ExerciseLog[]): string => {
   if (exercises.length === 0) return '';
 
   // CSV Header
@@ -48,7 +36,7 @@ export const downloadCsv = (content: string, fileName: string) => {
   document.body.removeChild(link);
 };
 
-export const exportExerciseData = (exercises?: Exercise[]) => {
+export const exportExerciseData = (exercises?: ExerciseLog[]) => {
   // If exercises are provided, use them; otherwise get all logs from localStorage
   const data = exercises || getExerciseLogs();
   

@@ -1,22 +1,8 @@
 import { v4 as uuidv4 } from 'uuid';
-import { Program } from '@/types/exercise';
+import { Program, ExerciseLog as ExerciseLogType, ExerciseSet } from '@/types/exercise';
 
-// Type definition for difficulty categories
-export type DifficultyCategory = 'WARMUP' | 'EASY' | 'NORMAL' | 'HARD' | 'FAILURE' | 'DROP';
-
-// Type definition for exercise logs
-export interface ExerciseLog {
-  id?: string;
-  exerciseName: string;
-  sets: Array<{
-    reps: number;
-    weight: number;
-    difficulty?: DifficultyCategory;
-    rpe?: number; // Keep for backward compatibility
-  }>;
-  timestamp: Date;
-  deviceId: string;
-}
+// Use ExerciseLogType to define our storage type
+export type ExerciseLog = Omit<ExerciseLogType, 'id'> & { id?: string };
 
 // Get or create a persistent device ID
 export const getDeviceId = (): string => {

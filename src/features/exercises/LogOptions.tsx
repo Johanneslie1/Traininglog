@@ -6,7 +6,7 @@ import { ExerciseSetLogger } from './ExerciseSetLogger';
 import { db } from '@/services/firebase/config';
 import { collection, addDoc } from 'firebase/firestore';
 import { getDeviceId, saveExerciseLog } from '@/utils/localStorageUtils';
-import { Program } from '@/types/exercise';
+import { Program, ExerciseLog, ExerciseSet, DifficultyCategory } from '@/types/exercise';
 
 interface LogOptionsProps {
   onClose: () => void;
@@ -22,28 +22,6 @@ interface Category {
   iconBgColor: string;
   textColor: string;
 }
-
-import { DifficultyCategory } from './ExerciseSetLogger';
-
-interface Exercise {
-  id: string;
-  exerciseName: string;
-  timestamp: Date;
-  sets: Array<{
-    reps: number;
-    weight: number;
-    difficulty?: DifficultyCategory;
-    rpe?: number;
-  }>;
-}
-
-// Used in handleSaveSets function
-type ExerciseSet = {
-  reps: number;
-  weight: number;
-  difficulty?: DifficultyCategory;
-  rpe?: number;
-};
 
 const muscleGroups: Category[] = [
   { id: 'chest', name: 'Chest', icon: '💪', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-green-600', textColor: 'text-white' },
@@ -65,7 +43,7 @@ const trainingTypes: Category[] = [
 export const LogOptions: React.FC<LogOptionsProps> = ({ onClose, onExerciseAdded, selectedDate }) => {
   const [view, setView] = useState<'main' | 'search' | 'calendar' | 'setLogger' | 'program'>('main');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
-  const [recentExercises, setRecentExercises] = useState<Exercise[]>([]);
+  const [recentExercises, setRecentExercises] = useState<ExerciseLog[]>([]);
   const [currentExercise, setCurrentExercise] = useState<any>(null);  // Simple placeholder for recent exercises button
   const fetchRecentExercises = () => {
     // This would normally load recent exercises
@@ -78,12 +56,12 @@ export const LogOptions: React.FC<LogOptionsProps> = ({ onClose, onExerciseAdded
     setView('search');
   };
 
-  const handleSelectExercisesFromDay = (exercises: Exercise[]) => {
+  const handleSelectExercisesFromDay = (exercises: ExerciseLog[]) => {
     setRecentExercises(exercises);
     setView('main');
   };  
   
-  const addExerciseToToday = async (exercise: Exercise) => {
+  const addExerciseToToday = async (exercise: ExerciseLog) => {
     try {
       const deviceId = getDeviceId();
       
@@ -353,7 +331,7 @@ export const LogOptions: React.FC<LogOptionsProps> = ({ onClose, onExerciseAdded
                 >
                   <div className="text-white">{exercise.exerciseName}</div>
                   <div className="text-sm text-gray-400">
-                    {exercise.timestamp.toLocaleDateString()}
+                    {new Date(exercise.timestamp).toLocaleDateString()}
                   </div>
                 </button>
               ))}

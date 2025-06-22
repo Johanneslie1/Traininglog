@@ -66,3 +66,38 @@ export interface Program {
   lastModified: Date;
   deviceId: string;
 }
+
+export interface ExerciseSet {
+  reps: number;
+  weight?: number;
+  difficulty?: DifficultyCategory;
+  rpe?: number;
+}
+
+export type DifficultyCategory = 'WARMUP' | 'EASY' | 'NORMAL' | 'HARD' | 'FAILURE' | 'DROP';
+
+/** Represents a set of an exercise with reps and optional weight */
+export interface ExerciseSet {
+  /** Number of repetitions performed */
+  reps: number;
+  /** Weight used in kg (optional for bodyweight exercises) */
+  weight?: number;
+  /** Difficulty level of the set */
+  difficulty?: DifficultyCategory;
+  /** RPE (Rate of Perceived Exertion) value */
+  rpe?: number;
+}
+
+/** A logged exercise entry with sets performed */
+export interface ExerciseLog {
+  /** Unique identifier for the logged exercise */
+  id: string;
+  /** Name of the exercise performed */
+  exerciseName: string;
+  /** Array of sets performed */
+  sets: ExerciseSet[];
+  /** When the exercise was performed */
+  timestamp: Date | number;
+  /** Device ID for syncing */
+  deviceId?: string;
+}

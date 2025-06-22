@@ -1,15 +1,9 @@
 import React from 'react';
-import { DifficultyCategory } from '@/utils/localStorageUtils';
-
-interface Set {
-  weight: number;
-  reps: number;
-  difficulty?: DifficultyCategory;
-}
+import { ExerciseSet, DifficultyCategory } from '@/types/exercise';
 
 interface ExerciseCardProps {
   name: string;
-  sets: Set[];
+  sets: ExerciseSet[];
   icon?: string;
   onEdit?: () => void;
   onDelete?: () => void;
@@ -38,7 +32,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
   onMenu,
   isToday = false
 }) => {
-  const totalVolume = sets.reduce((acc, set) => acc + (set.weight * set.reps), 0);
+  const totalVolume = sets.reduce((acc, set) => acc + ((set.weight || 0) * set.reps), 0);
   
   return (
     <div className="card group relative overflow-hidden">
@@ -81,7 +75,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
             </div>
             <div>
               <h3 className="text-lg font-semibold text-text-primary">{name}</h3>
-              <p className="text-sm text-text-secondary">{sets.length} sets · {totalVolume}kg total</p>
+              <p className="text-sm text-text-secondary">{sets.length} sets{totalVolume > 0 ? ` · ${totalVolume}kg total` : ''}</p>
             </div>
           </div>
           {onMenu && (

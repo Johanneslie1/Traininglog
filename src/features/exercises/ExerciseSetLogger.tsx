@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
-import { Exercise } from '@/types/exercise';
+import { Exercise, ExerciseSet, DifficultyCategory } from '@/types/exercise';
 
-// Difficulty categories that correspond to RPE values
-export type DifficultyCategory = 'WARMUP' | 'EASY' | 'NORMAL' | 'HARD' | 'FAILURE' | 'DROP';
 export const DIFFICULTY_CATEGORIES: { [key: string]: { label: DifficultyCategory, rpe: number } } = {
   WARMUP: { label: 'WARMUP', rpe: 2 },
   EASY: { label: 'EASY', rpe: 4 },
@@ -12,24 +10,12 @@ export const DIFFICULTY_CATEGORIES: { [key: string]: { label: DifficultyCategory
   DROP: { label: 'DROP', rpe: 10 },
 };
 
-export interface Set {
-  reps: number;
-  weight?: number;  // Make weight optional
-  difficulty?: DifficultyCategory;
-}
-
 interface ExerciseSetLoggerProps {
   exercise: Partial<Exercise> & { 
     id: string; 
     name: string;
-    sets?: Array<{
-      reps: number;
-      weight: number;
-      difficulty?: DifficultyCategory;
-      rpe?: number;
-    }>;
-  };
-  onSave: (sets: Set[], exerciseId: string) => void;
+    sets?: ExerciseSet[];
+  };  onSave: (sets: ExerciseSet[], exerciseId: string) => void;
   onCancel: () => void;
   isEditing?: boolean;
 }
@@ -39,16 +25,15 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
   onSave,
   onCancel,
   isEditing = false
-}) => {
-  const [sets, setSets] = useState<Set[]>(() => {
+}) => {  const [sets, setSets] = useState<ExerciseSet[]>(() => {
     if (isEditing && exercise.sets && exercise.sets.length > 0) {
       return exercise.sets.map(set => ({
-        reps: set.reps,
+        reps: set.reps || 0,
         weight: set.weight,
         difficulty: set.difficulty || convertRpeToDifficulty(set.rpe)
       }));
     }
-    return [{ reps: 1, difficulty: 'NORMAL' }];
+    return [{ reps: 1, difficulty: 'NORMAL' as DifficultyCategory }];
   });
 
   const [selectedSetIndex, setSelectedSetIndex] = useState<number>(sets.length - 1);
@@ -77,27 +62,26 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
     const lastSet = sets[sets.length - 1];
     if (lastSet && lastSet.reps === 0 && lastSet.weight === 0) {
       return;
-    }
-    const newSet: Set = { reps: 1, difficulty: 'NORMAL' as DifficultyCategory };
+    }    const newSet: ExerciseSet = { reps: 1, difficulty: 'NORMAL' as DifficultyCategory };
     setSets([...sets, newSet]);
     setSelectedSetIndex(sets.length);
   };
     const copyPreviousSet = () => {
     if (sets.length > 0) {
-      const lastSet = sets[sets.length - 1];
-      // Only copy if the last set has valid values (at least 1 rep)
-      if (lastSet.reps > 0) {
-        const newSet = { ...lastSet };
+      const lastSet = sets[sets.length - 1];    // Only copy if the last set has valid values (at least 1 rep)
+      if ((lastSet.reps || 0) > 0) {
+        const newSet: ExerciseSet = { 
+          reps: lastSet.reps || 0,
+          weight: lastSet.weight,
+          difficulty: lastSet.difficulty
+        };
         setSets([...sets, newSet]);
         setSelectedSetIndex(sets.length);
       }
-    } else {
-      // If there are no sets yet, just add an empty one
-      addSet();
     }
   };
 
-  const updateSet = (field: keyof Set, value: number | DifficultyCategory) => {
+  const updateSet = (field: keyof ExerciseSet, value: number | DifficultyCategory) => {
     setSets(sets.map((set, index) => 
       index === selectedSetIndex
         ? { ...set, [field]: value }

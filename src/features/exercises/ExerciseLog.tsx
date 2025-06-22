@@ -5,22 +5,20 @@ import { ExerciseSetLogger } from './ExerciseSetLogger';
 import WorkoutSummary from './WorkoutSummary';
 import { db } from '@/services/firebase/config';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { importExerciseData, exportExerciseData } from '@/utils/exportUtils';
+import { exportExerciseData } from '@/utils/exportUtils';
 import { getExerciseLogsByDate, saveExerciseLog, deleteExerciseLog } from '@/utils/localStorageUtils';
 import ExerciseCard from '@/components/ExerciseCard';
 import SideMenu from '@/components/SideMenu';
-
-import { DifficultyCategory } from './ExerciseSetLogger';
-import { ExerciseLog as Exercise } from '@/utils/localStorageUtils';
+import { ExerciseLog as ExerciseLogType, ExerciseSet } from '@/types/exercise';
 
 export const ExerciseLog: React.FC = () => {
   const [showLogOptions, setShowLogOptions] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [exercises, setExercises] = useState<ExerciseLogType[]>([]);
   const [loading, setLoading] = useState(false);
   const [showSetLogger, setShowSetLogger] = useState(false);
-  const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
+  const [selectedExercise, setSelectedExercise] = useState<ExerciseLogType | null>(null);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showWorkoutSummary, setShowWorkoutSummary] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -33,7 +31,8 @@ export const ExerciseLog: React.FC = () => {
       const localExercises = getExerciseLogsByDate(date);
       
       // If we have local exercises, use them
-      if (localExercises.length > 0) {        setExercises(localExercises.map(exercise => ({
+      if (localExercises.length > 0) {
+        setExercises(localExercises.map(exercise => ({
           id: exercise.id || 'local-id',
           exerciseName: exercise.exerciseName,
           sets: exercise.sets,
@@ -50,21 +49,25 @@ export const ExerciseLog: React.FC = () => {
       const endOfDay = new Date(date);
       endOfDay.setHours(23, 59, 59, 999);
 
-      const exercisesRef = collection(db, 'exerciseLogs');
       const q = query(
-        exercisesRef,
+        collection(db, 'exerciseLogs'),
         where('timestamp', '>=', startOfDay),
         where('timestamp', '<=', endOfDay)
       );
 
       const snapshot = await getDocs(q);
-      const exerciseData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        timestamp: doc.data().timestamp.toDate()
-      })) as Exercise[];
+      const fetchedExercises = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          exerciseName: data.exerciseName,
+          sets: data.sets,
+          timestamp: data.timestamp.toDate(),
+          deviceId: data.deviceId
+        };
+      });
 
-      setExercises(exerciseData);
+      setExercises(fetchedExercises);
     } catch (error) {
       console.error('Error fetching exercises:', error);
     } finally {
@@ -72,76 +75,37 @@ export const ExerciseLog: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    fetchExercises(selectedDate);
-  }, [selectedDate]);  
-  
-  // Handle file upload for import
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!event.target.files || event.target.files.length === 0) return;
-    
-    const file = event.target.files[0];
-    try {
-      const success = await importExerciseData(file);
-      if (success) {
-        alert('Exercise data imported successfully!');
-        fetchExercises(selectedDate); // Refresh the exercises
-      } else {
-        alert('Failed to import exercise data. Please check the file format.');
-      }
-    } catch (error) {
-      console.error('Error importing data:', error);
-      alert('An error occurred while importing the data.');
-    } finally {
-      setShowImportModal(false);
-    }
-  };
-  const handleDateSelect = (exercises: Exercise[]) => {
-    setExercises(exercises);
-    // Calendar component also calls setSelectedDate when a date is clicked
+  // Add after the fetchExercises function
+  const handleDateSelect = (selectedExercises: ExerciseLogType[]) => {
+    setExercises(selectedExercises);
     setShowCalendar(false);
   };
 
-  const handleOpenSetLogger = (exercise: Exercise) => {
+  const handleOpenSetLogger = (exercise: ExerciseLogType) => {
     setSelectedExercise(exercise);
     setShowSetLogger(true);
   };
 
-  const handleCloseSetLogger = () => {
+  const handleSaveSets = (sets: ExerciseSet[], exerciseId: string) => {
+    if (!selectedExercise) return;
+
+    const updatedExercise: ExerciseLogType = {
+      ...selectedExercise,
+      sets
+    };
+
+    saveExerciseLog(updatedExercise);
+
+    setExercises(prevExercises => 
+      prevExercises.map(ex => 
+        ex.id === exerciseId ? updatedExercise : ex
+      )
+    );
+
     setShowSetLogger(false);
     setSelectedExercise(null);
-  };  const handleSaveSets = (sets: Array<{ reps: number; weight: number; difficulty?: DifficultyCategory }>, exerciseId: string) => {
-    if (!selectedExercise || exerciseId !== selectedExercise.id) return;
-    
-    // Update the exercise with new sets
-    const updatedExercise: Exercise = {
-      id: exerciseId,
-      exerciseName: selectedExercise.exerciseName,
-      sets: sets.map(set => ({
-        reps: set.reps,
-        weight: set.weight || 0, // Default to 0 if weight is not provided
-        difficulty: set.difficulty
-      })),
-      timestamp: selectedExercise.timestamp,
-      deviceId: localStorage.getItem('device_id') || '',
-    };
-    
-    // Save to local storage
-    saveExerciseLog(updatedExercise);
-    
-    // Update exercises in state immediately for fast UI response
-    setExercises(prevExercises => prevExercises.map(ex => 
-      ex.id === exerciseId 
-        ? { ...ex, sets } 
-        : ex
-    ));
-    
-    // Also refresh from storage to ensure everything is synced
-    fetchExercises(selectedDate);
-    
-    // Close the set logger
-    handleCloseSetLogger();
   };
+
   const handleDeleteExercise = (exerciseId: string | undefined) => {
     if (!exerciseId) return;
     
@@ -163,6 +127,20 @@ export const ExerciseLog: React.FC = () => {
       day: 'numeric',
       month: 'long'
     }).toLowerCase();
+  };
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const logs = await importExerciseLogs(file);
+      if (logs && logs.length > 0) {
+        setExercises(prevExercises => [...prevExercises, ...logs]);
+      }
+      setShowImportModal(false);
+    } catch (error) {
+      console.error('Error importing data:', error);
+    }
   };
 
   return (
@@ -267,7 +245,7 @@ export const ExerciseLog: React.FC = () => {
             }))
           }}
           onSave={handleSaveSets}
-          onCancel={handleCloseSetLogger}
+          onCancel={() => setShowSetLogger(false)}
           isEditing={true}
         />
       )}
