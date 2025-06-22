@@ -99,15 +99,6 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
     }
   };
 
-  const removeSet = (index: number) => {
-    setSets(sets.filter((_, i) => i !== index));
-    if (selectedSetIndex === index) {
-      setSelectedSetIndex(Math.max(0, index - 1));
-    } else if (selectedSetIndex > index) {
-      setSelectedSetIndex(selectedSetIndex - 1);
-    }
-  };
-
   const updateSet = (field: keyof Set, value: number | DifficultyCategory) => {
     setSets(sets.map((set, index) => 
       index === selectedSetIndex
