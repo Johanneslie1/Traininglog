@@ -159,11 +159,14 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
                 className="w-12 h-12 bg-gray-800 rounded-lg text-white text-2xl flex items-center justify-center"
               >
                 -
-              </button>
-              <div className="flex-1 bg-gray-800 rounded-lg py-3 px-4 text-center">
-                <span className="text-xl text-white">{sets[selectedSetIndex].weight}</span>
-                <span className="text-gray-400 ml-2">kg</span>
-              </div>
+              </button>              <input
+                type="number"
+                value={sets[selectedSetIndex].weight}
+                onChange={(e) => updateSet('weight', Math.max(0, parseFloat(e.target.value) || 0))}
+                className="flex-1 bg-gray-800 rounded-lg py-3 px-4 text-center text-xl text-white"
+                step="2.5"
+                inputMode="decimal"
+              />
               <button 
                 onClick={() => adjustValue('weight', true)} 
                 className="w-12 h-12 bg-gray-800 rounded-lg text-white text-2xl flex items-center justify-center"
@@ -182,11 +185,13 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
                 className="w-12 h-12 bg-gray-800 rounded-lg text-white text-2xl flex items-center justify-center"
               >
                 -
-              </button>
-              <div className="flex-1 bg-gray-800 rounded-lg py-3 px-4 text-center">
-                <span className="text-xl text-white">{sets[selectedSetIndex].reps}</span>
-                <span className="text-gray-400 ml-2">rep</span>
-              </div>
+              </button>              <input
+                type="number"
+                value={sets[selectedSetIndex].reps}
+                onChange={(e) => updateSet('reps', Math.max(0, parseInt(e.target.value) || 0))}
+                className="flex-1 bg-gray-800 rounded-lg py-3 px-4 text-center text-xl text-white"
+                inputMode="numeric"
+              />
               <button 
                 onClick={() => adjustValue('reps', true)} 
                 className="w-12 h-12 bg-gray-800 rounded-lg text-white text-2xl flex items-center justify-center"
