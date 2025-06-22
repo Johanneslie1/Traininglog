@@ -116,124 +116,152 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
     ));
   };
 
+  const adjustValue = (field: 'weight' | 'reps', increment: boolean) => {
+    const step = field === 'weight' ? 2.5 : 1;
+    const currentValue = sets[selectedSetIndex][field];
+    const newValue = increment ? currentValue + step : Math.max(0, currentValue - step);
+    updateSet(field, newValue);
+  };
+
   return (
-    <div className="text-white p-4">
-      <div className="flex items-center mb-6">
-        <div className="w-12 h-12 rounded-lg overflow-hidden bg-[#2d2d2d] flex items-center justify-center mr-3">
-          <span className="text-2xl">🏋️</span>
+    <div className="flex flex-col h-full bg-[#1a1a1a] text-white">
+      {/* Exercise Header */}
+      <div className="flex items-center p-4 border-b border-[#2d2d2d]">
+        <div className="w-10 h-10 rounded-lg overflow-hidden bg-[#2d2d2d] flex items-center justify-center mr-3">
+          <span className="text-xl">🏆</span>
         </div>
-        <h2 className="text-xl font-semibold">{exercise.name}</h2>
+        <h2 className="text-lg font-semibold flex-grow">{exercise.name}</h2>
       </div>
 
-      {/* Sets Grid */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
+      {/* Sets Overview */}
+      <div className="flex overflow-x-auto p-4 gap-3 border-b border-[#2d2d2d]">
         {sets.map((set, index) => (
           <div
             key={index}
             onClick={() => setSelectedSetIndex(index)}
-            className={`p-4 rounded-lg ${
+            className={`flex-shrink-0 w-24 p-3 rounded-lg ${
               index === selectedSetIndex
                 ? 'bg-purple-600 ring-2 ring-purple-400'
                 : 'bg-[#2d2d2d]'
             } cursor-pointer transition-all`}
           >
             <div className="text-center">
-              <div className="text-2xl font-bold">{set.weight}</div>
-              <div className="text-sm text-gray-400">KG</div>
-            </div>
-            <div className="text-center mt-2">
-              <div className="text-xl">{set.reps}</div>
-              <div className="text-sm text-gray-400">REP</div>
-            </div>
-            <div className="text-center mt-1">
-              <div className="text-xs text-gray-400">{set.difficulty}</div>
+              <div className="text-lg font-bold">{set.weight}kg</div>
+              <div className="text-sm">{set.reps} reps</div>
+              <div className="text-xs text-gray-400 mt-1">{set.difficulty}</div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Set Editor */}
-      <div className="bg-[#2d2d2d] p-4 rounded-lg mb-6">
-        <h3 className="text-lg mb-4">Set {selectedSetIndex + 1}</h3>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-gray-400 mb-2">Weight (kg)</label>
+      {/* Current Set Editor */}
+      <div className="flex-grow p-4">
+        <h3 className="text-lg font-medium mb-4">Set {selectedSetIndex + 1}</h3>
+        
+        {/* Weight Input */}
+        <div className="mb-6">
+          <label className="block text-sm text-gray-400 mb-2">Weight (kg)</label>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => adjustValue('weight', false)}
+              className="w-12 h-12 rounded-lg bg-[#2d2d2d] text-2xl flex items-center justify-center"
+            >
+              -
+            </button>
             <input
               type="number"
               value={sets[selectedSetIndex]?.weight || 0}
               onChange={(e) => updateSet('weight', Math.max(0, parseFloat(e.target.value) || 0))}
-              className="bg-[#1a1a1a] text-white px-4 py-2 rounded-lg w-full"
-              step="0.5"
+              className="flex-grow bg-[#2d2d2d] text-center text-xl py-2 rounded-lg"
+              step="2.5"
             />
+            <button
+              onClick={() => adjustValue('weight', true)}
+              className="w-12 h-12 rounded-lg bg-[#2d2d2d] text-2xl flex items-center justify-center"
+            >
+              +
+            </button>
           </div>
-          <div>
-            <label className="block text-gray-400 mb-2">Reps</label>
+        </div>
+
+        {/* Reps Input */}
+        <div className="mb-6">
+          <label className="block text-sm text-gray-400 mb-2">Reps</label>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => adjustValue('reps', false)}
+              className="w-12 h-12 rounded-lg bg-[#2d2d2d] text-2xl flex items-center justify-center"
+            >
+              -
+            </button>
             <input
               type="number"
               value={sets[selectedSetIndex]?.reps || 0}
               onChange={(e) => updateSet('reps', Math.max(0, parseInt(e.target.value) || 0))}
-              className="bg-[#1a1a1a] text-white px-4 py-2 rounded-lg w-full"
+              className="flex-grow bg-[#2d2d2d] text-center text-xl py-2 rounded-lg"
             />
+            <button
+              onClick={() => adjustValue('reps', true)}
+              className="w-12 h-12 rounded-lg bg-[#2d2d2d] text-2xl flex items-center justify-center"
+            >
+              +
+            </button>
           </div>
-          <div>
-            <label className="block text-gray-400 mb-2">Difficulty</label>
-            <div className="grid grid-cols-3 gap-2">
-              {Object.values(DIFFICULTY_CATEGORIES).map(({ label }) => (
-                <button
-                  key={label}
-                  onClick={() => updateSet('difficulty', label)}
-                  className={`px-3 py-2 rounded-lg text-sm ${
-                    sets[selectedSetIndex]?.difficulty === label
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-[#1a1a1a] text-gray-400'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+        </div>
+
+        {/* Difficulty Selection */}
+        <div className="mb-6">
+          <label className="block text-sm text-gray-400 mb-2">Difficulty</label>
+          <div className="grid grid-cols-3 gap-2">
+            {Object.values(DIFFICULTY_CATEGORIES).map(({ label }) => (
+              <button
+                key={label}
+                onClick={() => updateSet('difficulty', label)}
+                className={`px-3 py-2 rounded-lg ${
+                  sets[selectedSetIndex]?.difficulty === label
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-[#2d2d2d] text-gray-400'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
       {/* Action Buttons */}
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <button
-          onClick={addSet}
-          className="bg-[#2d2d2d] text-white px-4 py-3 rounded-lg hover:bg-[#3d3d3d]"
-        >
-          Add Empty Set
-        </button>
-        <button
-          onClick={copyPreviousSet}
-          className="bg-[#2d2d2d] text-white px-4 py-3 rounded-lg hover:bg-[#3d3d3d]"
-        >
-          Copy Previous Set
-        </button>
-      </div>
+      <div className="p-4 border-t border-[#2d2d2d] space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={addSet}
+            className="bg-[#2d2d2d] text-white px-4 py-3 rounded-lg hover:bg-[#3d3d3d]"
+          >
+            Add Empty Set
+          </button>
+          <button
+            onClick={copyPreviousSet}
+            className="bg-[#2d2d2d] text-white px-4 py-3 rounded-lg hover:bg-[#3d3d3d]"
+          >
+            Copy Previous Set
+          </button>
+        </div>
 
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <button
-          onClick={() => removeSet(selectedSetIndex)}
-          className="bg-red-600 text-white px-4 py-3 rounded-lg hover:bg-red-700 disabled:opacity-50"
-          disabled={sets.length <= 1}
-        >
-          Remove Set
-        </button>
-        <button
-          onClick={handleSave}
-          className="bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700"
-        >
-          Save Exercise
-        </button>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={onCancel}
+            className="bg-[#2d2d2d] text-white px-4 py-3 rounded-lg hover:bg-[#3d3d3d]"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            className="bg-purple-600 text-white px-4 py-3 rounded-lg hover:bg-purple-700"
+          >
+            Save Exercise
+          </button>
+        </div>
       </div>
-
-      <button
-        onClick={onCancel}
-        className="w-full bg-[#2d2d2d] text-white px-4 py-3 rounded-lg hover:bg-[#3d3d3d]"
-      >
-        Cancel
-      </button>
     </div>
   );
 };
