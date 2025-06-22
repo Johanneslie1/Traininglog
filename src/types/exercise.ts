@@ -51,10 +51,13 @@ export interface ExerciseFilter {
 // Program management interfaces
 export interface ProgramExercise {
   id: string;
-  exerciseId: string;
-  exerciseName: string;
+  name: string;
   sets: number;
   order: number;
+  // Additional fields for program-specific exercise data
+  suggestedReps?: number;
+  suggestedWeight?: number;
+  notes?: string;
 }
 
 export interface Program {

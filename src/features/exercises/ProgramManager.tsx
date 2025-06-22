@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import { Program, ProgramExercise, DifficultyCategory, ExerciseSet } from '@/types/exercise';
+import { Program, ProgramExercise, ExerciseSet, DifficultyCategory } from '@/types/exercise';
 import { getPrograms, saveProgram, deleteProgram, getDeviceId } from '@/utils/localStorageUtils';
 import ExerciseSearch from './ExerciseSearch';
-import { ExerciseSetLogger } from './ExerciseSetLogger';
+import { ExerciseSetLogger, ExerciseSetLoggerProps } from './ExerciseSetLogger';
 
 interface ProgramManagerProps {
   onClose: () => void;
@@ -18,12 +18,12 @@ const ProgramManager: React.FC<ProgramManagerProps> = ({ onClose, onProgramSelec
   const [programDescription, setProgramDescription] = useState('');
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [currentExercise, setCurrentExercise] = useState<ProgramExercise | null>(null);
+  const loadPrograms = async () => {
+    const storedPrograms = await getPrograms();
+    setPrograms(storedPrograms);
+  };
 
   useEffect(() => {
-    const loadPrograms = async () => {
-      const storedPrograms = await getPrograms();
-      setPrograms(storedPrograms);
-    };
     loadPrograms();
   }, []);
 
@@ -76,16 +76,17 @@ const ProgramManager: React.FC<ProgramManagerProps> = ({ onClose, onProgramSelec
     saveProgram(updatedProgram);
     loadPrograms();
     setActiveView('list');
-  };
-  const handleAddExercise = (exercise: any) => {
+  };  const handleAddExercise = (exercise: { name: string }) => {
     if (!currentProgram) return;
     
-    // Save the selected exercise for the set logger
-    // Make sure we have a valid name field
-    const validExercise = {
-      ...exercise,
+    // Create a new program exercise from the template
+    const validExercise: ProgramExercise = {
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       name: exercise.name || 'Unknown Exercise',
-      id: exercise.id,
+      sets: 1,
+      order: currentProgram.exercises.length,
+      suggestedReps: 10, // Default values
+      suggestedWeight: undefined // Optional for bodyweight exercises
     };
     
     setCurrentExercise(validExercise);
@@ -140,16 +141,27 @@ const ProgramManager: React.FC<ProgramManagerProps> = ({ onClose, onProgramSelec
       ...currentProgram,
       exercises: reorderedExercises
     });
-  };
+  };  // Convert ProgramExercise to Exercise type for ExerciseSetLogger
+  const programExerciseToExercise = (pe: ProgramExercise): { id: string; name: string; sets?: ExerciseSet[] } => ({
+    id: pe.id,
+    name: pe.name,
+    sets: Array(pe.sets).fill({ 
+      reps: pe.suggestedReps || 10,
+      weight: pe.suggestedWeight,
+      difficulty: 'NORMAL' as DifficultyCategory
+    })
+  });
 
   // Handle saving sets for an exercise
-  const handleSaveSets = (sets: ExerciseSet[], exerciseId: string) => {
+  const handleSaveSets = async (sets: ExerciseSet[], exerciseId: string) => {
     if (!currentProgram || !currentExercise) return;
     
-    // Update the exercise with new sets
-    const updatedExercise = {
+    // Update the exercise with new sets and their suggested values
+    const updatedExercise: ProgramExercise = {
       ...currentExercise,
-      sets: sets.length
+      sets: sets.length,
+      suggestedReps: sets[0]?.reps || currentExercise.suggestedReps,
+      suggestedWeight: sets[0]?.weight || currentExercise.suggestedWeight
     };
 
     // Update the program with the modified exercise
@@ -166,7 +178,7 @@ const ProgramManager: React.FC<ProgramManagerProps> = ({ onClose, onProgramSelec
     };
 
     // Save to storage and update state
-    saveProgram(updatedProgram);
+    await saveProgram(updatedProgram);
     setCurrentProgram(updatedProgram);
     setPrograms(prev => prev.map(p => p.id === updatedProgram.id ? updatedProgram : p));
     setActiveView('edit');
@@ -296,7 +308,7 @@ const ProgramManager: React.FC<ProgramManagerProps> = ({ onClose, onProgramSelec
   if (activeView === 'setLogger' && currentExercise) {
     return (
       <ExerciseSetLogger
-        exercise={currentExercise}
+        exercise={currentExercise ? programExerciseToExercise(currentExercise) : { id: '', name: '', sets: [] }}
         onSave={handleSaveSets}
         onCancel={handleCancelSetLogger}
       />
@@ -365,7 +377,7 @@ const ProgramManager: React.FC<ProgramManagerProps> = ({ onClose, onProgramSelec
                             </div>
                             
                             <div className="flex-1">
-                              <div className="text-white">{exercise.exerciseName}</div>
+                              <div className="text-white">{exercise.name}</div>
                               <div className="flex items-center mt-1">
                                 <span className="text-gray-400 text-sm mr-2">Sets:</span>                                <button 
                                   className="w-6 h-6 bg-gymkeeper-light rounded-full text-white flex items-center justify-center"
