@@ -12,9 +12,9 @@ export const DIFFICULTY_CATEGORIES: { [key: string]: { label: DifficultyCategory
   DROP: { label: 'DROP', rpe: 10 },
 };
 
-interface Set {
+export interface Set {
   reps: number;
-  weight: number;
+  weight?: number;  // Make weight optional
   difficulty?: DifficultyCategory;
 }
 
@@ -48,7 +48,7 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
         difficulty: set.difficulty || convertRpeToDifficulty(set.rpe)
       }));
     }
-    return [{ reps: 0, weight: 0, difficulty: 'NORMAL' }];
+    return [{ reps: 1, difficulty: 'NORMAL' }];
   });
 
   const [selectedSetIndex, setSelectedSetIndex] = useState<number>(sets.length - 1);
@@ -63,15 +63,14 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
     if (rpe <= 9) return 'FAILURE';
     return 'DROP';
   };
-
   const handleSave = () => {
-    // Filter out empty sets
-    const validSets = sets.filter(set => set.reps > 0 && set.weight > 0);
-    if (validSets.length === 0) {
-      alert('Please add at least one valid set with reps and weight');
+    // Validate that all sets have at least 1 rep
+    const invalidSets = sets.filter(set => !set.reps || set.reps < 1);
+    if (invalidSets.length > 0) {
+      alert('Each set must have at least 1 rep');
       return;
     }
-    onSave(validSets, exercise.id);
+    onSave(sets, exercise.id);
   };
 
   const addSet = () => {
@@ -79,16 +78,15 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
     if (lastSet && lastSet.reps === 0 && lastSet.weight === 0) {
       return;
     }
-    const newSet: Set = { reps: 0, weight: 0, difficulty: 'NORMAL' as DifficultyCategory };
+    const newSet: Set = { reps: 1, difficulty: 'NORMAL' as DifficultyCategory };
     setSets([...sets, newSet]);
     setSelectedSetIndex(sets.length);
   };
-  
-  const copyPreviousSet = () => {
+    const copyPreviousSet = () => {
     if (sets.length > 0) {
       const lastSet = sets[sets.length - 1];
-      // Only copy if the last set has valid values
-      if (lastSet.reps > 0 && lastSet.weight > 0) {
+      // Only copy if the last set has valid values (at least 1 rep)
+      if (lastSet.reps > 0) {
         const newSet = { ...lastSet };
         setSets([...sets, newSet]);
         setSelectedSetIndex(sets.length);
@@ -106,10 +104,10 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
         : set
     ));
   };
-
   const adjustValue = (field: 'weight' | 'reps', increment: boolean) => {
     const step = field === 'weight' ? 2.5 : 1;
-    const currentValue = sets[selectedSetIndex][field];
+    const currentSet = sets[selectedSetIndex];
+    const currentValue = field === 'reps' ? (currentSet.reps || 0) : (currentSet.weight || 0);
     const newValue = increment ? currentValue + step : Math.max(0, currentValue - step);
     updateSet(field, newValue);
   };

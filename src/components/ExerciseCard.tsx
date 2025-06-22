@@ -11,9 +11,10 @@ interface ExerciseCardProps {
   name: string;
   sets: Set[];
   icon?: string;
-  onAdd?: () => void;
+  onEdit?: () => void;
   onDelete?: () => void;
   onMenu?: () => void;
+  isToday?: boolean;
 }
 
 const getDifficultyColor = (difficulty?: DifficultyCategory): string => {
@@ -32,24 +33,24 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
   name,
   sets,
   icon,
-  onAdd,
+  onEdit,
   onDelete,
-  onMenu
+  onMenu,
+  isToday = false
 }) => {
   const totalVolume = sets.reduce((acc, set) => acc + (set.weight * set.reps), 0);
   
   return (
     <div className="card group relative overflow-hidden">
-      {/* Swipe Actions - Hidden by default, shown on swipe */}
+      {/* Action buttons - Only shown if isToday is true */}
       <div className="absolute inset-y-0 right-0 flex opacity-0 group-hover:opacity-100 transition-opacity">
-        {onAdd && (
+        {isToday && onEdit && (
           <button 
-            onClick={onAdd}
+            onClick={onEdit}
             className="px-4 flex items-center justify-center bg-accent-primary text-white"
-            aria-label="Add set"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            aria-label="Edit sets"
+          >            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
           </button>
         )}

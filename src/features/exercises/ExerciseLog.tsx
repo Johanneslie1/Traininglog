@@ -10,20 +10,8 @@ import { getExerciseLogsByDate, saveExerciseLog, deleteExerciseLog } from '@/uti
 import ExerciseCard from '@/components/ExerciseCard';
 import SideMenu from '@/components/SideMenu';
 
-// Import difficulty type
 import { DifficultyCategory } from './ExerciseSetLogger';
-
-interface Exercise {
-  id: string;
-  exerciseName: string;
-  sets: Array<{
-    reps: number;
-    weight: number;
-    difficulty?: DifficultyCategory;
-    rpe?: number; // Keep for backward compatibility
-  }>;
-  timestamp: Date;
-}
+import { ExerciseLog as Exercise } from '@/utils/localStorageUtils';
 
 export const ExerciseLog: React.FC = () => {
   const [showLogOptions, setShowLogOptions] = useState(false);
@@ -45,12 +33,12 @@ export const ExerciseLog: React.FC = () => {
       const localExercises = getExerciseLogsByDate(date);
       
       // If we have local exercises, use them
-      if (localExercises.length > 0) {
-        setExercises(localExercises.map(exercise => ({
+      if (localExercises.length > 0) {        setExercises(localExercises.map(exercise => ({
           id: exercise.id || 'local-id',
           exerciseName: exercise.exerciseName,
           sets: exercise.sets,
-          timestamp: exercise.timestamp
+          timestamp: exercise.timestamp,
+          deviceId: exercise.deviceId || localStorage.getItem('device_id') || ''
         })));
         setLoading(false);
         return;
@@ -122,14 +110,19 @@ export const ExerciseLog: React.FC = () => {
   const handleCloseSetLogger = () => {
     setShowSetLogger(false);
     setSelectedExercise(null);
-  };
-  const handleSaveSets = (sets: Array<{ reps: number; weight: number; rpe?: number }>) => {
-    if (!selectedExercise) return;
+  };  const handleSaveSets = (sets: Array<{ reps: number; weight: number; difficulty?: DifficultyCategory }>, exerciseId: string) => {
+    if (!selectedExercise || exerciseId !== selectedExercise.id) return;
     
     // Update the exercise with new sets
-    const updatedExercise = {
-      ...selectedExercise,
-      sets,
+    const updatedExercise: Exercise = {
+      id: exerciseId,
+      exerciseName: selectedExercise.exerciseName,
+      sets: sets.map(set => ({
+        reps: set.reps,
+        weight: set.weight || 0, // Default to 0 if weight is not provided
+        difficulty: set.difficulty
+      })),
+      timestamp: selectedExercise.timestamp,
       deviceId: localStorage.getItem('device_id') || '',
     };
     
@@ -138,7 +131,7 @@ export const ExerciseLog: React.FC = () => {
     
     // Update exercises in state immediately for fast UI response
     setExercises(prevExercises => prevExercises.map(ex => 
-      ex.id === selectedExercise.id 
+      ex.id === exerciseId 
         ? { ...ex, sets } 
         : ex
     ));
@@ -149,8 +142,9 @@ export const ExerciseLog: React.FC = () => {
     // Close the set logger
     handleCloseSetLogger();
   };
-
-  const handleDeleteExercise = (exerciseId: string) => {
+  const handleDeleteExercise = (exerciseId: string | undefined) => {
+    if (!exerciseId) return;
+    
     // Confirm before deleting
     if (window.confirm('Are you sure you want to delete this exercise?')) {
       // Delete from local storage
@@ -203,17 +197,21 @@ export const ExerciseLog: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-2">
-            {exercises.map((exercise) => (              <ExerciseCard
-                key={exercise.id}
-                name={exercise.exerciseName}
-                sets={exercise.sets}
-                onAdd={() => handleOpenSetLogger(exercise)}
-                onDelete={() => handleDeleteExercise(exercise.id)}
-              />
-            ))}
+            {exercises.map((exercise) => {
+              const isToday = new Date(exercise.timestamp).toDateString() === new Date().toDateString();
+              return (
+                <ExerciseCard
+                  key={exercise.id}
+                  name={exercise.exerciseName}
+                  sets={exercise.sets}
+                  onEdit={isToday ? () => handleOpenSetLogger(exercise) : undefined}
+                  onDelete={isToday && exercise.id ? () => handleDeleteExercise(exercise.id) : undefined}
+                  isToday={isToday}
+                />
+              );
+            })}
           </div>
-        )}
-      </div>      {/* Add Exercise Button */}
+        )}      </div>      {/* Add Exercise Button */}
       <button
         onClick={() => setShowLogOptions(true)}
         className="fixed bottom-6 right-6 w-16 h-16 bg-[#8B5CF6] hover:bg-[#7C3AED] rounded-full flex items-center justify-center text-white shadow-lg transition-colors"
@@ -223,13 +221,16 @@ export const ExerciseLog: React.FC = () => {
         </svg>
       </button>
 
-      {/* Side Menu */}
-      <SideMenu
+      {/* Side Menu */}<SideMenu
         isOpen={showMenu}
         onClose={() => setShowMenu(false)}
         onImport={() => setShowImportModal(true)}
         onExport={() => exportExerciseData(exercises)}
         onShowWorkoutSummary={() => setShowWorkoutSummary(true)}
+        onNavigateToday={() => setSelectedDate(new Date())}
+        onNavigateHistory={() => setShowCalendar(true)}
+        onNavigatePrograms={() => {/* TODO: Implement programs navigation */}}
+        onNavigateProfile={() => {/* TODO: Implement profile navigation */}}
       />
 
       {/* Log Options Modal */}
@@ -254,13 +255,16 @@ export const ExerciseLog: React.FC = () => {
         </div>
       )}
 
-      {/* Set Logger Modal */}
-      {showSetLogger && selectedExercise && (
+      {/* Set Logger Modal */}      {showSetLogger && selectedExercise && selectedExercise.id && (
         <ExerciseSetLogger
           exercise={{
             id: selectedExercise.id,
             name: selectedExercise.exerciseName,
-            sets: selectedExercise.sets
+            sets: selectedExercise.sets.map(set => ({
+              reps: set.reps,
+              weight: set.weight || 0,
+              difficulty: set.difficulty
+            }))
           }}
           onSave={handleSaveSets}
           onCancel={handleCloseSetLogger}
@@ -296,12 +300,15 @@ export const ExerciseLog: React.FC = () => {
             </div>
           </div>
         </div>
-      )}
-
-      {/* Workout Summary Modal */}
+      )}      {/* Workout Summary Modal */}
       {showWorkoutSummary && exercises.length > 0 && (
         <WorkoutSummary
-          exercises={exercises}
+          exercises={exercises.map(ex => ({
+            id: ex.id || 'temp-id',
+            exerciseName: ex.exerciseName,
+            sets: ex.sets,
+            timestamp: ex.timestamp
+          }))}
           onClose={() => setShowWorkoutSummary(false)}
         />
       )}
