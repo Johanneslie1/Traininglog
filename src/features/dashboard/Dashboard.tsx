@@ -2,8 +2,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { User } from '@/services/firebase/auth';
 import { useEffect, useState } from 'react';
-import { collection, query, where, getDocs, orderBy, deleteDoc, doc } from 'firebase/firestore';
-import { db } from '@/services/firebase/config';
+import { getExerciseLogs, deleteExerciseLog } from '@/services/firebase/exerciseLogs';
 import ExerciseCard from '@/components/ExerciseCard';
 import { getExerciseLogsByDate, ExerciseLog } from '@/utils/localStorageUtils';
 
@@ -12,10 +11,12 @@ const Dashboard = () => {
   const [todaysExercises, setTodaysExercises] = useState<ExerciseLog[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchExercises = async () => {
       setIsLoading(true);
+      setError(null);
       try {
         // Get exercises from local storage first
         const localExercises = getExerciseLogsByDate(selectedDate);
@@ -26,43 +27,26 @@ const Dashboard = () => {
         }
 
         // Fallback to Firebase if no local exercises
-        const exercisesRef = collection(db, 'exerciseLogs');
+        if (!user?.id) {
+          throw new Error('User not authenticated');
+        }
+
         const startOfDay = new Date(selectedDate);
         startOfDay.setHours(0, 0, 0, 0);
         const endOfDay = new Date(selectedDate);
         endOfDay.setHours(23, 59, 59, 999);
 
-        const q = query(
-          exercisesRef,
-          where('userId', '==', user.id),
-          where('timestamp', '>=', startOfDay),
-          where('timestamp', '<=', endOfDay),
-          orderBy('timestamp', 'desc')
-        );
-
-        const querySnapshot = await getDocs(q);
-        const exercises = querySnapshot.docs.map((doc) => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            exerciseName: data.exerciseName,
-            sets: data.sets,
-            timestamp: data.timestamp.toDate(),
-            deviceId: data.deviceId || 'legacy',
-          } as ExerciseLog;
-        });
-
+        const exercises = await getExerciseLogs(user.id, startOfDay, endOfDay);
         setTodaysExercises(exercises);
       } catch (err) {
         console.error('Error fetching exercises:', err);
+        setError('Failed to load exercises');
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (user) {
-      fetchExercises();
-    }
+    fetchExercises();
   }, [user, selectedDate]);
 
   const handleDateChange = (newDate: Date) => {
@@ -82,26 +66,17 @@ const Dashboard = () => {
   };
 
   const handleDeleteExercise = async (exerciseId: string) => {
-    if (!exerciseId || !user) {
-      console.error('Missing exerciseId or user');
-      throw new Error('Failed to delete exercise');
+    if (!exerciseId) {
+      setError('Invalid exercise ID');
+      return;
     }
 
     try {
-      // Get the exercise reference
-      const exerciseRef = doc(db, 'exerciseLogs', exerciseId);
-      
-      // Delete from Firebase
-      await deleteDoc(exerciseRef);
-
-      // Update local state only after successful deletion
+      await deleteExerciseLog(exerciseId);
       setTodaysExercises((prev) => prev.filter((ex) => ex.id !== exerciseId));
-
-      // Show success message (if you have a toast/notification system)
-      console.log('Exercise deleted successfully');
     } catch (error) {
       console.error('Error deleting exercise:', error);
-      throw new Error('Failed to delete exercise');
+      setError('Failed to delete exercise. Please try again.');
     }
   };
 
@@ -115,6 +90,14 @@ const Dashboard = () => {
 
   return (
     <div className="p-4 bg-black min-h-screen text-white">
+      {error && (
+        <div className="bg-red-500 text-white p-4 rounded-lg mb-4 flex justify-between items-center">
+          <span>{error}</span>
+          <button onClick={() => setError(null)} className="text-white">
+            ✕
+          </button>
+        </div>
+      )}
       {/* Date and controls header */}
       <div className="flex items-center justify-between mb-6">
         <div>
