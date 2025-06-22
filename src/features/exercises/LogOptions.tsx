@@ -142,7 +142,7 @@ export const LogOptions: React.FC<LogOptionsProps> = ({ onClose, onExerciseAdded
           difficulty: 'NORMAL' as DifficultyCategory        }));
         
         const exerciseLog = {
-          exerciseName: programExercise.exerciseName,
+          exerciseName: programExercise.name,
           sets,
           timestamp: selectedDate || new Date(),
           deviceId

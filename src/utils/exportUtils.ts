@@ -1,5 +1,5 @@
 import { getExerciseLogs, importExerciseLogs } from './localStorageUtils';
-import { ExerciseLog, ExerciseSet } from '@/types/exercise';
+import { ExerciseLog } from '@/types/exercise';
 
 export const exerciseDataToCsv = (exercises: ExerciseLog[]): string => {
   if (exercises.length === 0) return '';

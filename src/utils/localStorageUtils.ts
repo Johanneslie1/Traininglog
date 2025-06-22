@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { Program, ExerciseLog as ExerciseLogType, ExerciseSet } from '@/types/exercise';
+import { Program, ExerciseLog as ExerciseLogType } from '@/types/exercise';
 
 // Use ExerciseLogType to define our storage type
 export type ExerciseLog = Omit<ExerciseLogType, 'id'> & { id?: string };

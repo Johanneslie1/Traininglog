@@ -3,7 +3,7 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { Program, ProgramExercise, ExerciseSet, DifficultyCategory } from '@/types/exercise';
 import { getPrograms, saveProgram, deleteProgram, getDeviceId } from '@/utils/localStorageUtils';
 import ExerciseSearch from './ExerciseSearch';
-import { ExerciseSetLogger, ExerciseSetLoggerProps } from './ExerciseSetLogger';
+import { ExerciseSetLogger } from './ExerciseSetLogger';
 
 interface ProgramManagerProps {
   onClose: () => void;

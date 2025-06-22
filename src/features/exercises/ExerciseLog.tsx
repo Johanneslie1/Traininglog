@@ -7,6 +7,7 @@ import { db } from '@/services/firebase/config';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { exportExerciseData } from '@/utils/exportUtils';
 import { getExerciseLogsByDate, saveExerciseLog, deleteExerciseLog } from '@/utils/localStorageUtils';
+import { importExerciseLogs } from '@/utils/importUtils';
 import ExerciseCard from '@/components/ExerciseCard';
 import SideMenu from '@/components/SideMenu';
 import { ExerciseLog as ExerciseLogType, ExerciseSet } from '@/types/exercise';
