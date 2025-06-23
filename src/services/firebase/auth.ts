@@ -2,9 +2,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
-  onAuthStateChanged,
-  User as FirebaseUser
-} from 'firebase/auth';
+  onAuthStateChanged} from 'firebase/auth';
 import { doc, setDoc, getDoc, Timestamp } from 'firebase/firestore';
 import { auth, db } from './config';
 
@@ -13,7 +11,7 @@ console.log('Auth service initialized with origin:', window.location.origin);
 
 let authInitialized = false;
 
-export interface User {
+export interface AppUser {
   id: string;
   email: string;
   firstName: string;
@@ -47,7 +45,7 @@ export interface LoginData {
 }
 
 // Helper function to convert Timestamp to Date
-const convertTimestamps = (data: any): User => {
+const convertTimestamps = (data: any): AppUser => {
   return {
     ...data,
     createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : data.createdAt,
@@ -55,7 +53,7 @@ const convertTimestamps = (data: any): User => {
   };
 };
 
-export const registerUser = async (data: RegisterData): Promise<User> => {
+export const registerUser = async (data: RegisterData): Promise<AppUser> => {
   const { email, password, firstName, lastName, role } = data;
   
   try {
@@ -82,7 +80,7 @@ export const registerUser = async (data: RegisterData): Promise<User> => {
   }
 };
 
-export const loginUser = async (data: LoginData): Promise<User> => {
+export const loginUser = async (data: LoginData): Promise<AppUser> => {
   const { email, password } = data;
 
   try {
@@ -99,7 +97,7 @@ export const loginUser = async (data: LoginData): Promise<User> => {
     }
     console.log('User data retrieved from Firestore');
 
-    return convertTimestamps(userDoc.data() as User);
+    return convertTimestamps(userDoc.data() as AppUser);
   } catch (error: any) {
     console.error('Login error:', error);
     throw new Error(error.message);
@@ -117,7 +115,7 @@ export const logoutUser = async (): Promise<void> => {
 export const initializeAuth = (): Promise<void> => {
   return new Promise((resolve, reject) => {
     try {
-      const unsubscribe = onAuthStateChanged(auth, (user) => {
+      const unsubscribe = onAuthStateChanged(auth, () => {
         authInitialized = true;
         unsubscribe();
         resolve();
@@ -132,7 +130,7 @@ export const initializeAuth = (): Promise<void> => {
   });
 };
 
-export const getCurrentUser = async (): Promise<User | null> => {
+export const getCurrentUser = async (): Promise<AppUser | null> => {
   try {
     if (!authInitialized) {
       await initializeAuth();

@@ -1,4 +1,3 @@
-import { User } from './user'; // Adjust the import path as necessary
 
 export interface Exercise {
   id: string;
@@ -72,7 +71,14 @@ export interface Program {
   deviceId: string;
 }
 
-export type DifficultyCategory = 'easy' | 'moderate' | 'hard' | 'very hard' | 'max effort';
+export enum DifficultyCategory {
+  WARMUP = 'WARMUP',
+  EASY = 'EASY',
+  NORMAL = 'NORMAL',
+  HARD = 'HARD',
+  FAILURE = 'FAILURE',
+  DROP = 'DROP'
+}
 
 /** Represents a set of an exercise with reps and optional weight */
 export interface ExerciseSet {

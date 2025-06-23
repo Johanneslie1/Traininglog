@@ -4,11 +4,10 @@ import Calendar from './Calendar';
 import ProgramManager from './ProgramManager';
 import { ExerciseSetLogger } from './ExerciseSetLogger';
 import { db, auth } from '@/services/firebase/config';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import { getDeviceId, saveExerciseLog } from '@/utils/localStorageUtils';
 import { Program, ExerciseSet, DifficultyCategory } from '@/types/exercise';
 import { ExerciseData } from '@/services/exerciseDataService';
-import { FirebaseError } from 'firebase/app';
 
 interface LogOptionsProps {
   onClose: () => void;
@@ -47,7 +46,7 @@ export const LogOptions: React.FC<LogOptionsProps> = ({ onClose, onExerciseAdded
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [recentExercises, setRecentExercises] = useState<ExerciseData[]>([]);
   const [currentExercise, setCurrentExercise] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);// Simple placeholder for recent exercises button
+  // Using local state for UI management only
 
   const handleCategorySelect= (category: Category) => {
     setSelectedCategory(category);

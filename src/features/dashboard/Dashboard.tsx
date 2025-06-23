@@ -1,6 +1,6 @@
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
-import { User } from '@/services/firebase/auth';
+// import { User } from '@/services/firebase/auth';
 import { useEffect, useState } from 'react';
 import { deleteExerciseLog } from '@/services/firebase/exerciseLogs';
 import ExerciseCard from '@/components/ExerciseCard';
@@ -18,7 +18,7 @@ import {
 } from 'firebase/firestore';
 
 const Dashboard = () => {
-  const user = useSelector((state: RootState) => state.auth.user) as User;
+  const user = useSelector((state: RootState) => state.auth.user);
   const [todaysExercises, setTodaysExercises] = useState<ExerciseLog[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isLoading, setIsLoading] = useState(true);
@@ -32,48 +32,50 @@ const Dashboard = () => {
     deviceId: exercise.deviceId || ''
   });
 
-  useEffect(() => {
-    const fetchExercises = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        // First try local storage
-        const localExercises = getExerciseLogsByDate(selectedDate);
-        if (localExercises && localExercises.length > 0) {
-          setTodaysExercises(localExercises.map(convertLocalExerciseToExerciseLog));
-          setIsLoading(false);
-          return;
-        }        // If no local exercises, try Firebase
-        const startOfDay = new Date(selectedDate);
-        startOfDay.setHours(0, 0, 0, 0);
-        const endOfDay = new Date(selectedDate);
-        endOfDay.setHours(23, 59, 59, 999);
-
-        const exercisesRef = collection(db, 'exerciseLogs');
-        const q = query(
-          exercisesRef,
-          where('userId', '==', user.id),
-          where('timestamp', '>=', startOfDay),
-          where('timestamp', '<=', endOfDay),
-          orderBy('timestamp', 'desc')
-        );
-        
-        const snapshot = await getDocs(q);
-        const exercises = snapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => ({
-          id: doc.id,
-          ...doc.data(),
-          timestamp: doc.data().timestamp.toDate()
-        }));
-
-        setTodaysExercises(exercises.map(convertLocalExerciseToExerciseLog));
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
-        console.error('Error fetching exercises:', err);
-      } finally {
+  // Move fetchExercises to component scope so it can be reused
+  const fetchExercises = async (date: Date = selectedDate) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      // First try local storage
+      const localExercises = getExerciseLogsByDate(date);
+      if (localExercises && localExercises.length > 0) {
+        setTodaysExercises(localExercises.map(convertLocalExerciseToExerciseLog));
         setIsLoading(false);
+        return;
       }
-    };
+      // If no local exercises, try Firebase
+      const startOfDay = new Date(date);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
 
+      const exercisesRef = collection(db, 'exerciseLogs');
+      const q = query(
+        exercisesRef,
+        where('userId', '==', user.id),
+        where('timestamp', '>=', startOfDay),
+        where('timestamp', '<=', endOfDay),
+        orderBy('timestamp', 'desc')
+      );
+      
+      const snapshot = await getDocs(q);
+      const exercises = snapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => ({
+        id: doc.id,
+        ...doc.data(),
+        timestamp: doc.data().timestamp.toDate()
+      }));
+
+      setTodaysExercises(exercises.map(convertLocalExerciseToExerciseLog));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+      console.error('Error fetching exercises:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchExercises();
   }, [selectedDate, user.id]);
 
@@ -81,15 +83,6 @@ const Dashboard = () => {
     setSelectedDate(newDate);
   };
 
-  const handleDateSelect = (date: Date, exercises: ExerciseLog[] = []) => {
-    setSelectedDate(date);
-    if (exercises.length > 0) {
-      setTodaysExercises(exercises);
-    } else {
-      // Fetch exercises for the new date
-      fetchExercises(date);
-    }
-  };
 
   const formatDate = (date: Date): string => {
     return date.toLocaleDateString('no-NO', {
@@ -98,10 +91,6 @@ const Dashboard = () => {
     });
   };
 
-  const handleAddSet = (exerciseId: string) => {
-    // TODO: Implement adding a set
-    console.log('Adding set to exercise:', exerciseId);
-  };
 
   const handleDeleteExercise = async (exerciseId: string) => {
     if (!exerciseId) {
@@ -166,14 +155,23 @@ const Dashboard = () => {
             </button>
           </div>
         ) : (
-          todaysExercises.map((exercise) => (
-            <ExerciseCard
-              key={exercise.id || `${exercise.exerciseName}-${new Date(exercise.timestamp).getTime()}`}
-              name={exercise.exerciseName}
-              sets={exercise.sets}              onAddSet={() => handleAddSet(exercise.id || '')}
-              onDelete={() => handleDeleteExercise(exercise.id || '')}
-            />
-          ))
+          todaysExercises.map((exercise) => {
+            // Ensure timestamp is always a Date
+            const exerciseWithDate = {
+              ...exercise,
+              timestamp: exercise.timestamp instanceof Date
+                ? exercise.timestamp
+                : new Date(exercise.timestamp),
+              userId: exercise.userId ?? user.id // Ensure userId is always a string
+            };
+            return (
+              <ExerciseCard
+                key={exercise.id || `${exercise.exerciseName}-${new Date(exercise.timestamp).getTime()}`}
+                exercise={exerciseWithDate}
+                onDelete={() => handleDeleteExercise(exercise.id || '')}
+              />
+            );
+          })
         )}
       </div>
 

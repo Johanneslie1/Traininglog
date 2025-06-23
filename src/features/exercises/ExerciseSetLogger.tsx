@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Exercise, ExerciseSet, DifficultyCategory } from '@/types/exercise';
 
-export const DIFFICULTY_CATEGORIES: { [key: string]: { label: DifficultyCategory, rpe: number } } = {  easy: { label: 'easy', rpe: 4 },
-  moderate: { label: 'moderate', rpe: 6 },
-  hard: { label: 'hard', rpe: 8 },
-  'very hard': { label: 'very hard', rpe: 9 },
-  'max effort': { label: 'max effort', rpe: 10 },
+export const DIFFICULTY_CATEGORIES: { [key: string]: { label: DifficultyCategory, rpe: number } } = {
+  easy: { label: DifficultyCategory.EASY, rpe: 4 },
+  moderate: { label: DifficultyCategory.MODERATE, rpe: 6 },
+  hard: { label: DifficultyCategory.HARD, rpe: 8 },
+  'very hard': { label: DifficultyCategory.VERY_HARD, rpe: 9 },
+  'max effort': { label: DifficultyCategory.MAX_EFFORT, rpe: 10 },
 };
 
 interface ExerciseSetLoggerProps {

@@ -7,7 +7,6 @@ const combinedExercises = [...allExercises, ...importedExercises.map(ex => ({
   ...ex,
   id: `imported-${ex.name.replace(/\s+/g, '-').toLowerCase()}`  // Create a pseudo-id
 }))];
-
 interface Category {
   id: string;
   name: string;

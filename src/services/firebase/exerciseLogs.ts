@@ -15,20 +15,24 @@ const COLLECTION_NAME = 'exerciseLogs';
 
 export const deleteExerciseLog = async (logId: string, userId: string): Promise<void> => {
   try {
-    // First verify the user owns this exercise
-    const exerciseRef = doc(db, COLLECTION_NAME, logId);
-    const exerciseDoc = await getDoc(exerciseRef);
+    // First verify the user owns this exercise    const exerciseRef = doc(db, COLLECTION_NAME, logId);
+    const exerciseDoc = await getDocs(query(
+      collection(db, COLLECTION_NAME),
+      where('id', '==', logId),
+      where('userId', '==', userId)
+    ));
     
-    if (!exerciseDoc.exists()) {
-      throw new Error('Exercise not found');
+    if (exerciseDoc.empty) {
+      throw new Error('Exercise not found or you do not have permission to delete it');
     }
-    
-    // Verify ownership
-    const exerciseData = exerciseDoc.data();
-    if (exerciseData.userId !== userId) {
+
+    const exerciseData = exerciseDoc.docs[0]?.data();
+    if (!exerciseData || exerciseData.userId !== userId) {
       throw new Error('You do not have permission to delete this exercise');
     }
-    
+
+    // Define the document reference for deletion
+    const exerciseRef = doc(db, COLLECTION_NAME, logId);
     // Delete from Firestore
     await deleteDoc(exerciseRef);
   } catch (error) {
