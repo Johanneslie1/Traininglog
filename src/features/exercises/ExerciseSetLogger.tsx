@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
 import { Exercise, ExerciseSet, DifficultyCategory } from '@/types/exercise';
 
-export const DIFFICULTY_CATEGORIES: { [key: string]: { label: DifficultyCategory, rpe: number } } = {
-  WARMUP: { label: 'WARMUP', rpe: 2 },
-  EASY: { label: 'EASY', rpe: 4 },
-  NORMAL: { label: 'NORMAL', rpe: 6 },
-  HARD: { label: 'HARD', rpe: 8 },
-  FAILURE: { label: 'FAILURE', rpe: 9 },
-  DROP: { label: 'DROP', rpe: 10 },
+export const DIFFICULTY_CATEGORIES: { [key: string]: { label: DifficultyCategory, rpe: number } } = {  easy: { label: 'easy', rpe: 4 },
+  moderate: { label: 'moderate', rpe: 6 },
+  hard: { label: 'hard', rpe: 8 },
+  'very hard': { label: 'very hard', rpe: 9 },
+  'max effort': { label: 'max effort', rpe: 10 },
 };
 
 interface ExerciseSetLoggerProps {
@@ -27,14 +25,13 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
   isEditing = false
 }) => {
   const [sets, setSets] = useState<ExerciseSet[]>(() => {
-    if (isEditing && exercise.sets && exercise.sets.length > 0) {
-      return exercise.sets.map(set => ({
+    if (isEditing && exercise.sets && exercise.sets.length > 0) {      return exercise.sets.map(set => ({
         reps: set.reps || 0,
         weight: set.weight || 0,
-        difficulty: set.difficulty || 'NORMAL'
+        difficulty: set.difficulty || 'moderate'
       }));
     }
-    return [{ reps: 0, weight: 0, difficulty: 'NORMAL' as DifficultyCategory }];
+    return [{ reps: 0, weight: 0, difficulty: 'moderate' as DifficultyCategory }];
   });
 
   const [selectedSetIndex, setSelectedSetIndex] = useState<number>(sets.length - 1);
@@ -132,7 +129,7 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
           ))}
           <button
             onClick={() => {
-              setSets([...sets, { reps: 0, weight: 0, difficulty: 'NORMAL' }]);
+              setSets([...sets, { reps: 0, weight: 0, difficulty: 'moderate' as DifficultyCategory }]);
               setSelectedSetIndex(sets.length);
             }}
             className="flex-shrink-0 w-16 bg-[#2a2a2a] rounded-lg flex items-center justify-center text-[#8B5CF6] hover:bg-white/5"

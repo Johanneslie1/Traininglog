@@ -148,7 +148,7 @@ const ProgramManager: React.FC<ProgramManagerProps> = ({ onClose, onProgramSelec
     sets: Array(pe.sets).fill({ 
       reps: pe.suggestedReps || 10,
       weight: pe.suggestedWeight,
-      difficulty: 'NORMAL' as DifficultyCategory
+      difficulty: 'moderate' as DifficultyCategory
     })
   });
 

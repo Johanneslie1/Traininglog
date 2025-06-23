@@ -133,7 +133,8 @@ export const LogOptions: React.FC<LogOptionsProps> = ({ onClose, onExerciseAdded
         const sets = Array(programExercise.sets).fill(null).map(() => ({
           reps: 0,
           weight: 0,
-          difficulty: 'NORMAL' as DifficultyCategory        }));
+          difficulty: 'moderate' as DifficultyCategory
+        }));
         
         const exerciseLog = {
           exerciseName: programExercise.name,
