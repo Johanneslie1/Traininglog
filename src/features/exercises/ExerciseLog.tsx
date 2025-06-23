@@ -295,6 +295,21 @@ export const ExerciseLog: React.FC = () => {
     }
   }, [selectedDate, selectedExercise, areDatesEqual, handleCloseSetLogger]);
 
+  // Debug auth state
+  useEffect(() => {
+    console.log('Auth state:', {
+      isAuthenticated: !!user,
+      userId: user?.id,
+      hasRequiredFields: user ? {
+        hasId: !!user.id,
+        hasEmail: !!user.email,
+        hasFirstName: !!user.firstName,
+        hasLastName: !!user.lastName,
+        hasRole: !!user.role
+      } : null
+    });
+  }, [user]);
+
   return (
     <div className="relative min-h-screen bg-black">
       {/* Header */}
