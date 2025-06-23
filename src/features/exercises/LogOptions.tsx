@@ -225,127 +225,108 @@ export const LogOptions: React.FC<LogOptionsProps> = ({ onClose, onExerciseAdded
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end">
-      <div className="bg-[#1a1a1a] w-full p-4 rounded-t-3xl max-h-[90vh] overflow-y-auto">
-        <div className="text-2xl text-white mb-6 px-2">Exercises</div>
-        
-        <div className="grid grid-cols-2 gap-4 mb-6">          <button 
-            onClick={() => setView('program')}
-            className="bg-[#2a1f42] p-4 rounded-xl hover:bg-[#3a2f52] transition-colors flex flex-col items-center"
-          >
-            <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center mb-2">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-            </div>
-            <div className="text-purple-400 font-medium">From program</div>
-          </button>
+    <div className="fixed inset-0 flex flex-col bg-black">
+      {/* Header */}
+      <header className="flex-none flex items-center justify-between p-4 bg-[#1a1a1a] border-b border-white/10">
+        <h1 className="text-xl font-medium text-white">Add Exercise</h1>
+        <button
+          onClick={onClose}
+          className="p-2 hover:bg-white/5 rounded-lg transition-colors"
+        >
+          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </header>
+
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-4 space-y-6 pb-safe">
+          {/* Quick Actions */}
+          <div className="grid grid-cols-2 gap-4">
             <button 
-            onClick={() => setView('calendar')}
-            className="bg-[#1f2e24] p-4 rounded-xl hover:bg-[#2f3e34] transition-colors flex flex-col items-center"
-          >
-            <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center mb-2">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <div className="text-green-400 font-medium">From another day</div>
-          </button>
-        </div>
+              onClick={() => setView('program')}
+              className="bg-[#2a1f42] p-4 rounded-xl hover:bg-[#3a2f52] transition-colors flex flex-col items-center"
+            >
+              <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center mb-2">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              </div>
+              <div className="text-purple-400 font-medium">From program</div>
+            </button>
 
-        <div className="grid grid-cols-2 gap-4 mb-6">          <button 
-            onClick={fetchRecentExercises}
-            className="bg-[#1a2942] p-4 rounded-xl hover:bg-[#2a3952] transition-colors flex flex-col items-center"
-          >
-            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center mb-2">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div className="text-blue-400 font-medium">Recent exercises</div>
-          </button>
-          
-          <button 
-            onClick={() => setView('search')}
-            className="bg-[#1f2e42] p-4 rounded-xl hover:bg-[#2f3e52] transition-colors flex flex-col items-center"
-          >
-            <div className="w-10 h-10 bg-cyan-600 rounded-lg flex items-center justify-center mb-2">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
-            <div className="text-cyan-400 font-medium">Add exercise</div>
-          </button>
-        </div>
-
-        {/* Muscle Groups */}
-        <div className="mb-4">
-          <h3 className="text-lg text-white mb-2">Muscle Groups</h3>
-          <div className="space-y-2">
-            {muscleGroups.map((category) => (
-              <button
-                key={category.id}
-                onClick={() => handleCategorySelect(category)}
-                className={`flex items-center w-full p-3 ${category.bgColor} rounded-xl hover:bg-opacity-90 transition-colors`}
-              >
-                <div className={`w-8 h-8 ${category.iconBgColor} rounded-lg flex items-center justify-center mr-3`}>
-                  <span className="text-white">{category.icon}</span>
-                </div>
-                <span className={category.textColor}>{category.name}</span>
-                <span className="ml-auto text-gray-400">•••</span>
-              </button>
-            ))}
+            <button 
+              onClick={() => setView('calendar')}
+              className="bg-[#1f2e24] p-4 rounded-xl hover:bg-[#2f3e34] transition-colors flex flex-col items-center"
+            >
+              <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center mb-2">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div className="text-green-400 font-medium">From another day</div>
+            </button>
           </div>
-        </div>
 
-        {/* Training Types */}
-        <div className="mb-4">
-          <h3 className="text-lg text-white mb-2">Training Types</h3>
-          <div className="space-y-2">
-            {trainingTypes.map((category) => (
-              <button
-                key={category.id}
-                onClick={() => handleCategorySelect(category)}
-                className={`flex items-center w-full p-3 ${category.bgColor} rounded-xl hover:bg-opacity-90 transition-colors`}
-              >
-                <div className={`w-8 h-8 ${category.iconBgColor} rounded-lg flex items-center justify-center mr-3`}>
-                  <span className="text-white">{category.icon}</span>
-                </div>
-                <span className={category.textColor}>{category.name}</span>
-                <span className="ml-auto text-gray-400">•••</span>
-              </button>
-            ))}
-          </div>
-        </div>
+          {/* Recent Exercises */}
+          {recentExercises.length > 0 && (
+            <div>
+              <h2 className="text-lg font-medium text-white mb-3">Recent Exercises</h2>
+              <div className="space-y-2">
+                {recentExercises.map((exercise) => (
+                  <button
+                    key={exercise.id}
+                    onClick={() => addExerciseToToday(exercise)}
+                    className="w-full p-3 bg-[#1a1a1a] rounded-xl hover:bg-[#222] transition-colors"
+                  >
+                    <div className="text-white">{exercise.exerciseName}</div>
+                    <div className="text-sm text-gray-400">
+                      {new Date(exercise.timestamp).toLocaleDateString()}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
-        {/* Recent Exercises List */}
-        {recentExercises.length > 0 && (
-          <div className="mb-4">
-            <h3 className="text-lg text-white mb-2">Recent Exercises</h3>
-            <div className="space-y-2">
-              {recentExercises.map((exercise) => (
+          {/* Categories */}
+          <div>
+            <h2 className="text-lg font-medium text-white mb-3">Muscle Groups</h2>
+            <div className="grid grid-cols-2 gap-3">
+              {muscleGroups.map((category) => (
                 <button
-                  key={exercise.id}
-                  className="p-3 bg-[#222] rounded-xl w-full text-left hover:bg-[#333] transition-colors"
-                  onClick={() => addExerciseToToday(exercise)}
+                  key={category.id}
+                  onClick={() => handleCategorySelect(category)}
+                  className="flex items-center p-4 bg-[#1a1a1a] rounded-xl hover:bg-[#222] transition-colors"
                 >
-                  <div className="text-white">{exercise.exerciseName}</div>
-                  <div className="text-sm text-gray-400">
-                    {new Date(exercise.timestamp).toLocaleDateString()}
+                  <div className={`w-10 h-10 ${category.iconBgColor} rounded-lg flex items-center justify-center mr-3`}>
+                    <span className="text-lg">{category.icon}</span>
                   </div>
+                  <span className="text-white">{category.name}</span>
                 </button>
               ))}
             </div>
           </div>
-        )}
 
-        {/* Cancel Button */}
-        <button 
-          onClick={onClose}
-          className="w-full mt-4 p-3 bg-[#2a2a2a] text-white rounded-xl hover:bg-[#3a3a3a] transition-colors"
-        >
-          CANCEL
-        </button>
+          <div>
+            <h2 className="text-lg font-medium text-white mb-3">Training Types</h2>
+            <div className="grid grid-cols-2 gap-3">
+              {trainingTypes.map((category) => (
+                <button
+                  key={category.id}
+                  onClick={() => handleCategorySelect(category)}
+                  className="flex items-center p-4 bg-[#1a1a1a] rounded-xl hover:bg-[#222] transition-colors"
+                >
+                  <div className={`w-10 h-10 ${category.iconBgColor} rounded-lg flex items-center justify-center mr-3`}>
+                    <span className="text-lg">{category.icon}</span>
+                  </div>
+                  <span className="text-white">{category.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

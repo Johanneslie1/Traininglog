@@ -25,218 +25,236 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
   onSave,
   onCancel,
   isEditing = false
-}) => {  const [sets, setSets] = useState<ExerciseSet[]>(() => {
+}) => {
+  const [sets, setSets] = useState<ExerciseSet[]>(() => {
     if (isEditing && exercise.sets && exercise.sets.length > 0) {
       return exercise.sets.map(set => ({
         reps: set.reps || 0,
-        weight: set.weight,
-        difficulty: set.difficulty || convertRpeToDifficulty(set.rpe)
+        weight: set.weight || 0,
+        difficulty: set.difficulty || 'NORMAL'
       }));
     }
-    return [{ reps: 1, difficulty: 'NORMAL' as DifficultyCategory }];
+    return [{ reps: 0, weight: 0, difficulty: 'NORMAL' as DifficultyCategory }];
   });
 
   const [selectedSetIndex, setSelectedSetIndex] = useState<number>(sets.length - 1);
 
-  // Helper function to convert RPE to difficulty
-  const convertRpeToDifficulty = (rpe?: number): DifficultyCategory => {
-    if (!rpe) return 'NORMAL';
-    if (rpe <= 3) return 'WARMUP';
-    if (rpe <= 5) return 'EASY';
-    if (rpe <= 7) return 'NORMAL';
-    if (rpe <= 8) return 'HARD';
-    if (rpe <= 9) return 'FAILURE';
-    return 'DROP';
-  };
-  const handleSave = () => {
-    // Validate that all sets have at least 1 rep
-    const invalidSets = sets.filter(set => !set.reps || set.reps < 1);
-    if (invalidSets.length > 0) {
-      alert('Each set must have at least 1 rep');
-      return;
-    }
-    onSave(sets, exercise.id);
-  };
-
-  const addSet = () => {
-    const lastSet = sets[sets.length - 1];
-    if (lastSet && lastSet.reps === 0 && lastSet.weight === 0) {
-      return;
-    }    const newSet: ExerciseSet = { reps: 1, difficulty: 'NORMAL' as DifficultyCategory };
-    setSets([...sets, newSet]);
-    setSelectedSetIndex(sets.length);
-  };
-    const copyPreviousSet = () => {
-    if (sets.length > 0) {
-      const lastSet = sets[sets.length - 1];    // Only copy if the last set has valid values (at least 1 rep)
-      if ((lastSet.reps || 0) > 0) {
-        const newSet: ExerciseSet = { 
-          reps: lastSet.reps || 0,
-          weight: lastSet.weight,
-          difficulty: lastSet.difficulty
+  const handleIncrement = (type: 'weight' | 'reps', amount: number) => {
+    setSets(sets.map((set, index) => {
+      if (index === selectedSetIndex) {
+        const currentValue = type === 'weight' ? set.weight : set.reps;
+        const newValue = Math.max(0, (currentValue || 0) + amount);
+        return {
+          ...set,
+          [type]: type === 'weight' ? Math.min(999, newValue) : Math.min(99, newValue)
         };
-        setSets([...sets, newSet]);
-        setSelectedSetIndex(sets.length);
       }
+      return set;
+    }));
+  };
+
+  const handleInputChange = (type: 'weight' | 'reps', value: string) => {
+    const numValue = parseInt(value) || 0;
+    const maxValue = type === 'weight' ? 999 : 99;
+    
+    setSets(sets.map((set, index) => {
+      if (index === selectedSetIndex) {
+        return {
+          ...set,
+          [type]: Math.min(maxValue, Math.max(0, numValue))
+        };
+      }
+      return set;
+    }));
+  };
+
+  const handleDelete = () => {
+    if (sets.length > 1) {
+      const newSets = sets.filter((_, index) => index !== selectedSetIndex);
+      setSets(newSets);
+      setSelectedSetIndex(Math.min(selectedSetIndex, newSets.length - 1));
     }
   };
 
-  const updateSet = (field: keyof ExerciseSet, value: number | DifficultyCategory) => {
-    setSets(sets.map((set, index) => 
-      index === selectedSetIndex
-        ? { ...set, [field]: value }
-        : set
-    ));
-  };
-  const adjustValue = (field: 'weight' | 'reps', increment: boolean) => {
-    const step = field === 'weight' ? 2.5 : 1;
-    const currentSet = sets[selectedSetIndex];
-    const currentValue = field === 'reps' ? (currentSet.reps || 0) : (currentSet.weight || 0);
-    const newValue = increment ? currentValue + step : Math.max(0, currentValue - step);
-    updateSet(field, newValue);
+  const handleCopyPreviousSet = () => {
+    if (selectedSetIndex > 0) {
+      const previousSet = sets[selectedSetIndex - 1];
+      setSets(sets.map((set, index) => 
+        index === selectedSetIndex
+          ? { ...previousSet }
+          : set
+      ));
+    }
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-900 flex flex-col max-w-md mx-auto">
-      {/* Exercise Header */}
-      <div className="flex items-center gap-4 p-4 border-b border-gray-800">
-        <div className="w-12 h-12 bg-gray-800 rounded-lg flex items-center justify-center">
-          <span className="text-2xl">🏋️</span>
+    <div className="fixed inset-0 bg-black flex flex-col">
+      {/* Header */}
+      <header className="flex items-center justify-between p-4 bg-[#1a1a1a] border-b border-white/10">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onCancel}
+            className="p-2 hover:bg-white/5 rounded-lg transition-colors"
+          >
+            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          <h2 className="text-white text-lg font-medium">{exercise.name}</h2>
         </div>
-        <h2 className="text-xl text-white">{exercise.name}</h2>
-      </div>
+        <button
+          onClick={() => onSave(sets, exercise.id)}
+          className="px-4 py-2 bg-[#8B5CF6] text-white rounded-lg hover:bg-[#7C3AED] transition-colors"
+        >
+          Save
+        </button>
+      </header>
 
       {/* Sets Overview */}
-      <div className="p-4 border-b border-gray-800">
-        <div className="flex gap-2 overflow-x-auto pb-2">
+      <div className="bg-[#1a1a1a] border-b border-white/10">
+        <div className="flex gap-2 p-4 overflow-x-auto">
           {sets.map((set, index) => (
-            <div
+            <button
               key={index}
               onClick={() => setSelectedSetIndex(index)}
-              className={`flex-shrink-0 w-24 bg-gray-800 p-3 rounded-lg cursor-pointer transition-all ${
-                selectedSetIndex === index ? 'ring-2 ring-purple-500' : ''
+              className={`flex-shrink-0 p-3 rounded-lg ${
+                selectedSetIndex === index 
+                  ? 'bg-[#8B5CF6] text-white' 
+                  : 'bg-[#2a2a2a] text-gray-400'
               }`}
             >
               <div className="text-center">
-                <div className="text-xl text-white">{set.weight}<span className="text-sm text-gray-400 ml-1">kg</span></div>
-                <div className="text-lg text-white">{set.reps}<span className="text-sm text-gray-400 ml-1">rep</span></div>
-                <div className="text-xs text-gray-400 mt-1">{set.difficulty}</div>
+                <div className="text-lg">{set.weight || 0}<span className="text-xs ml-1">kg</span></div>
+                <div className="text-lg">{set.reps || 0}<span className="text-xs ml-1">reps</span></div>
+                <div className="text-xs mt-1">{set.difficulty}</div>
               </div>
-            </div>
+            </button>
           ))}
+          <button
+            onClick={() => {
+              setSets([...sets, { reps: 0, weight: 0, difficulty: 'NORMAL' }]);
+              setSelectedSetIndex(sets.length);
+            }}
+            className="flex-shrink-0 w-16 bg-[#2a2a2a] rounded-lg flex items-center justify-center text-[#8B5CF6] hover:bg-white/5"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+          </button>
         </div>
       </div>
 
-      {/* Set Editor */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="p-4">
-          <h3 className="text-lg text-white mb-6">Set {selectedSetIndex + 1}</h3>
+      {/* Copy Previous Set Button */}
+      {selectedSetIndex > 0 && (
+        <button
+          onClick={handleCopyPreviousSet}
+          className="mx-4 mt-4 py-3 px-4 bg-[#2a2a2a] rounded-lg text-[#8B5CF6] font-medium hover:bg-white/5 transition-colors flex items-center justify-center gap-2"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+          Copy Previous Set
+        </button>
+      )}
 
-          {/* Weight Input */}
-          <div className="mb-6">
-            <label className="block text-gray-400 mb-2">Weight</label>
-            <div className="flex items-center gap-3">
-              <button 
-                onClick={() => adjustValue('weight', false)} 
-                className="w-12 h-12 bg-gray-800 rounded-lg text-white text-2xl flex items-center justify-center"
-              >
-                -
-              </button>              <input
+      {/* Input Area */}
+      <div className="flex-1 bg-[#1a1a1a] p-4 space-y-6">
+        {/* Weight Input */}
+        <div>
+          <label className="text-sm text-gray-400 block mb-2">Weight (kg)</label>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => handleIncrement('weight', -2.5)}
+              className="w-14 h-14 bg-[#2a2a2a] rounded-lg text-white text-2xl flex items-center justify-center hover:bg-white/5"
+            >
+              -
+            </button>
+            <div className="flex-1">
+              <input
                 type="number"
-                value={sets[selectedSetIndex].weight}
-                onChange={(e) => updateSet('weight', Math.max(0, parseFloat(e.target.value) || 0))}
-                className="flex-1 bg-gray-800 rounded-lg py-3 px-4 text-center text-xl text-white"
-                step="2.5"
                 inputMode="decimal"
+                value={sets[selectedSetIndex].weight || 0}
+                onChange={(e) => handleInputChange('weight', e.target.value)}
+                className="w-full bg-[#2a2a2a] text-white text-center px-4 py-3 rounded-lg border border-white/10 focus:outline-none focus:border-[#8B5CF6]"
               />
-              <button 
-                onClick={() => adjustValue('weight', true)} 
-                className="w-12 h-12 bg-gray-800 rounded-lg text-white text-2xl flex items-center justify-center"
-              >
-                +
-              </button>
             </div>
+            <button
+              onClick={() => handleIncrement('weight', 2.5)}
+              className="w-14 h-14 bg-[#2a2a2a] rounded-lg text-white text-2xl flex items-center justify-center hover:bg-white/5"
+            >
+              +
+            </button>
           </div>
+        </div>
 
-          {/* Reps Input */}
-          <div className="mb-6">
-            <label className="block text-gray-400 mb-2">Reps</label>
-            <div className="flex items-center gap-3">
-              <button 
-                onClick={() => adjustValue('reps', false)} 
-                className="w-12 h-12 bg-gray-800 rounded-lg text-white text-2xl flex items-center justify-center"
-              >
-                -
-              </button>              <input
+        {/* Reps Input */}
+        <div>
+          <label className="text-sm text-gray-400 block mb-2">Reps</label>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => handleIncrement('reps', -1)}
+              className="w-14 h-14 bg-[#2a2a2a] rounded-lg text-white text-2xl flex items-center justify-center hover:bg-white/5"
+            >
+              -
+            </button>
+            <div className="flex-1">
+              <input
                 type="number"
-                value={sets[selectedSetIndex].reps}
-                onChange={(e) => updateSet('reps', Math.max(0, parseInt(e.target.value) || 0))}
-                className="flex-1 bg-gray-800 rounded-lg py-3 px-4 text-center text-xl text-white"
                 inputMode="numeric"
+                value={sets[selectedSetIndex].reps || 0}
+                onChange={(e) => handleInputChange('reps', e.target.value)}
+                className="w-full bg-[#2a2a2a] text-white text-center px-4 py-3 rounded-lg border border-white/10 focus:outline-none focus:border-[#8B5CF6]"
               />
-              <button 
-                onClick={() => adjustValue('reps', true)} 
-                className="w-12 h-12 bg-gray-800 rounded-lg text-white text-2xl flex items-center justify-center"
+            </div>
+            <button
+              onClick={() => handleIncrement('reps', 1)}
+              className="w-14 h-14 bg-[#2a2a2a] rounded-lg text-white text-2xl flex items-center justify-center hover:bg-white/5"
+            >
+              +
+            </button>
+          </div>
+        </div>
+
+        {/* Difficulty Selector */}
+        <div>
+          <label className="text-sm text-gray-400 block mb-2">Difficulty</label>
+          <div className="grid grid-cols-3 gap-2">
+            {Object.entries(DIFFICULTY_CATEGORIES).map(([key, { label }]) => (
+              <button
+                key={key}
+                onClick={() => {
+                  setSets(sets.map((set, index) => 
+                    index === selectedSetIndex
+                      ? { ...set, difficulty: label }
+                      : set
+                  ));
+                }}
+                className={`py-3 px-3 rounded-lg text-sm font-medium ${
+                  sets[selectedSetIndex]?.difficulty === label
+                    ? 'bg-[#8B5CF6] text-white'
+                    : 'bg-[#2a2a2a] text-gray-400'
+                }`}
               >
-                +
+                {label}
               </button>
-            </div>
-          </div>
-
-          {/* Difficulty Buttons */}
-          <div>
-            <label className="block text-gray-400 mb-2">Difficulty</label>
-            <div className="grid grid-cols-3 gap-2">
-              {Object.values(DIFFICULTY_CATEGORIES).map(({ label }) => (
-                <button
-                  key={label}
-                  onClick={() => updateSet('difficulty', label)}
-                  className={`py-2 px-3 rounded-lg text-sm ${
-                    sets[selectedSetIndex].difficulty === label
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-gray-800 text-gray-400'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Action Buttons */}
-      <div className="p-4 border-t border-gray-800 space-y-3">
-        <div className="grid grid-cols-2 gap-3">
+      {/* Delete Set Button */}
+      {sets.length > 1 && (
+        <div className="bg-[#1a1a1a] p-4 border-t border-white/10">
           <button
-            onClick={addSet}
-            className="bg-gray-800 text-white px-4 py-3 rounded-lg"
+            onClick={handleDelete}
+            className="w-full py-3 text-red-500 bg-[#2a2a2a] rounded-lg hover:bg-white/5 transition-colors"
           >
-            Add Empty Set
-          </button>
-          <button
-            onClick={copyPreviousSet}
-            className="bg-gray-800 text-white px-4 py-3 rounded-lg"
-          >
-            Copy Previous Set
+            Delete Set
           </button>
         </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            onClick={onCancel}
-            className="bg-gray-800 text-white px-4 py-3 rounded-lg"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            className="bg-purple-600 text-white px-4 py-3 rounded-lg"
-          >
-            {isEditing ? 'Save Changes' : 'Add Exercise'}
-          </button>
-        </div>
-      </div>
+      )}
     </div>
   );
 };
+
+export default ExerciseSetLogger;

@@ -29,7 +29,6 @@ export const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
   category 
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [showSearch, setShowSearch] = useState(false);
 
   const matchesCategory = (exercise: typeof combinedExercises[0], categoryId: string): boolean => {
     const primaryMuscles = Array.isArray(exercise.primaryMuscles) 
@@ -74,80 +73,69 @@ export const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
   });
 
   return (
-    <div className="fixed inset-0 bg-black">
+    <div className="fixed inset-0 bg-black flex flex-col">
       {/* Header */}
-      <div className="flex items-center p-4 border-b border-[#2d2d2d]">
-        {showSearch ? (
-          <div className="flex w-full items-center">
+      <div className="sticky top-0 z-10 bg-[#121212] border-b border-[#2a2a2a]">
+        <div className="flex items-center p-4">
+          <button
+            onClick={onClose}
+            className="mr-4 p-2 rounded-full hover:bg-[#2a2a2a] transition-colors"
+          >
+            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <div className="flex-grow">
             <input
               autoFocus
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search exercises..."
-              className="flex-grow bg-[#2a2a2a] text-white px-4 py-2 rounded-lg border border-[#3d3d3d] focus:outline-none focus:border-[#8B5CF6]"
+              placeholder={`Search ${category ? category.name.toLowerCase() : 'exercises'}...`}
+              className="w-full bg-[#1a1a1a] text-white px-4 py-3 rounded-xl border border-[#2a2a2a] focus:outline-none focus:border-blue-600 transition-colors"
             />
-            <button
-              onClick={() => {
-                setShowSearch(false);
-                setSearchTerm('');
-              }}
-              className="ml-2 p-2 text-gray-400 hover:text-white"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
           </div>
-        ) : (
-          <>
-            <div className="flex items-center flex-grow">
-              <button
-                onClick={onClose}
-                className="mr-4 text-gray-400 hover:text-white"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-              <h1 className="text-white text-xl">
-                {category ? category.name : 'All Exercises'}
-              </h1>
-            </div>
-            <button
-              onClick={() => setShowSearch(true)}
-              className="p-2 text-gray-400 hover:text-white"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </button>
-          </>
-        )}
+        </div>
       </div>
 
       {/* Exercise List */}
-      <div className="overflow-y-auto h-[calc(100vh-64px)]">
-        {filteredExercises.map((exercise) => (
-          <button
-            key={`exercise-${exercise.name}`}
-            onClick={() => onSelectExercise(exercise)}
-            className="w-full text-left p-4 border-b border-[#2d2d2d] text-white hover:bg-[#2a2a2a]"
-          >
-            <div className="font-medium">{exercise.name}</div>
-            <div className="text-sm text-gray-400">
-              {Array.isArray(exercise.primaryMuscles) 
-                ? exercise.primaryMuscles.join(', ') 
-                : exercise.primaryMuscles}
-            </div>
-          </button>
-        ))}
+      <div className="flex-1 overflow-y-auto pb-safe">
+        <div className="p-4 space-y-2">
+          {filteredExercises.map((exercise, index) => (
+            <button
+              key={`exercise-${exercise.name}-${index}`}
+              onClick={() => onSelectExercise(exercise)}
+              className="w-full text-left p-4 bg-[#1a1a1a] rounded-xl hover:bg-[#222] transition-colors"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-white font-medium">{exercise.name}</div>
+                  <div className="text-sm text-gray-400 mt-1">
+                    {Array.isArray(exercise.primaryMuscles) 
+                      ? exercise.primaryMuscles.join(', ') 
+                      : exercise.primaryMuscles}
+                  </div>
+                </div>
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </button>
+          ))}
 
-        {filteredExercises.length === 0 && (
-          <div className="p-4 text-center text-gray-400">
-            No exercises found. Try adjusting your search.
-          </div>
-        )}
+          {filteredExercises.length === 0 && (
+            <div className="p-8 text-center">
+              <div className="inline-flex items-center justify-center w-12 h-12 mb-4 bg-[#1a1a1a] rounded-full">
+                <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <div className="text-gray-400">
+                No exercises found. Try adjusting your search.
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
