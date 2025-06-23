@@ -14,67 +14,56 @@ import { UpdateNotification } from '@/components/common/UpdateNotification';
 import 'mobile-drag-drop/default.css';
 import '@/styles/dragAndDrop.css';
 
+// Initialize drag and drop polyfill
+polyfill();
+
 const App: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
-
-  // Handle auth initialization
+  // Initialize auth state
   useEffect(() => {
-    const initializeAuth = async () => {
-      return new Promise<void>((resolve) => {
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
-          if (user) {
-            try {
-              const userDoc = await getDoc(doc(db, 'users', user.uid));
-              if (userDoc.exists()) {
-                const userData = userDoc.data();
-                store.dispatch(setUser({
-                  id: user.uid,
-                  email: userData.email,
-                  firstName: userData.firstName,
-                  lastName: userData.lastName,
-                  role: userData.role,
-                  createdAt: userData.createdAt.toDate(),
-                  updatedAt: userData.updatedAt.toDate()
-                }));
-              }
-            } catch (error) {
-              console.error('Error fetching user data:', error);
-              setErrorMessage('Failed to fetch user data. Please try again later.');
-            }
-          } else {
-            store.dispatch(setUser(null));
+    store.dispatch(setLoading(true));
+
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      try {
+        if (user) {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            store.dispatch(setUser({
+              id: user.uid,
+              email: userData.email,
+              firstName: userData.firstName,
+              lastName: userData.lastName,
+              role: userData.role,
+              createdAt: userData.createdAt.toDate(),
+              updatedAt: userData.updatedAt.toDate()
+            }));
           }
-          store.dispatch(setLoading(false));
-          setIsAuthReady(true);
-          resolve();
-        });
-      });
-    };
-
-    initializeAuth().catch(error => {
-      console.error('Auth initialization error:', error);
-      setErrorMessage('Failed to initialize authentication. Please try again later.');
-      store.dispatch(setLoading(false));
-      setIsAuthReady(true);
+        } else {
+          store.dispatch(setUser(null));
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        setErrorMessage('Failed to fetch user data. Please try again later.');
+      } finally {
+        store.dispatch(setLoading(false));
+        setIsAuthReady(true);
+      }
     });
-  }, []);
 
+    return () => unsubscribe();
+  }, []);
+  // Initialize drag and drop functionality
   useEffect(() => {
     try {
       // Initialize the mobile drag and drop polyfill with enhanced options
       const polyfillResult = polyfill({
-        // Use this to make the drag image appear at a more natural position
-        dragImageTranslateOverride: () => {
-          // Simplified positioning that works well on mobile
-          return {
-            x: -10,
-            y: -10
-          };
-        },
-        // Enable long press for better mobile drag initiation
-        holdToDrag: 300, // Hold for 300ms to start dragging
-        // Force to scroll while dragging to enable scrolling during drag operations
+        dragImageTranslateOverride: () => ({
+          x: -10,
+          y: -10
+        }),
+        holdToDrag: 300,
         forceApply: true
       });
       
@@ -83,55 +72,21 @@ const App: React.FC = () => {
       }
       
       // Prevent auto-scrolling and enable manual scrolling during drag operations
-      window.addEventListener('touchmove', function(e) {
+      const touchMoveHandler = (e: TouchEvent) => {
         const dragElement = document.querySelector('.is-dragging');
         if (dragElement) {
-          // Allow scrolling during drag
           e.stopPropagation();
         }
-      }, { passive: false });
+      };
 
-      console.log('Setting auth loading state...');
-      store.dispatch(setLoading(true));
+      window.addEventListener('touchmove', touchMoveHandler, { passive: false });
       
-      const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-        console.log('Auth state changed, user:', firebaseUser ? 'logged in' : 'logged out');
-        try {
-          if (firebaseUser) {
-            console.log('Fetching additional user data for:', firebaseUser.uid);
-            // Get additional user data from Firestore
-            const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-            if (userDoc.exists()) {
-              console.log('User document exists, setting user state');
-              const userData = userDoc.data();
-              store.dispatch(setUser({
-                id: firebaseUser.uid,
-                email: firebaseUser.email || '',
-                firstName: userData.firstName || '',
-                lastName: userData.lastName || '',
-                role: userData.role || 'athlete',
-                createdAt: userData.createdAt?.toDate() || new Date(),
-                updatedAt: userData.updatedAt?.toDate() || new Date(),
-              }));
-            } else {
-              console.warn('User document not found in Firestore');
-              store.dispatch(setUser(null));
-            }
-          } else {
-            console.log('No user logged in, clearing user state');
-            store.dispatch(setUser(null));
-          }
-        } catch (error) {
-          console.error('Error fetching user data:', error);
-          setErrorMessage('Failed to fetch user data. Please try again later.');
-          store.dispatch(setUser(null));
-        }
-      });
-
-      return () => unsubscribe();
+      return () => {
+        window.removeEventListener('touchmove', touchMoveHandler);
+      };
     } catch (error) {
-      console.error('Error initializing app:', error);
-      setErrorMessage('Failed to initialize the app. Please try again later.');
+      console.error('Error initializing drag and drop:', error);
+      setErrorMessage('Failed to initialize drag and drop functionality.');
     }
   }, []);
   if (errorMessage) {

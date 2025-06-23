@@ -29,23 +29,19 @@ export const ExerciseLog: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   
   // Date utility functions
-  const normalizeDate = useCallback((date: Date | null): Date | null => {
-    if (!date) return null;
+  const normalizeDate = useCallback((date: Date): Date => {
     const normalized = new Date(date);
     normalized.setHours(0, 0, 0, 0);
     return normalized;
   }, []);
 
-  const areDatesEqual = useCallback((date1: Date | null, date2: Date | null): boolean => {
+  const areDatesEqual = useCallback((date1: Date, date2: Date): boolean => {
     const normalized1 = normalizeDate(date1);
     const normalized2 = normalizeDate(date2);
-    
-    if (!normalized1 || !normalized2) return false;
     return normalized1.getTime() === normalized2.getTime();
   }, [normalizeDate]);
 
-  const isToday = useCallback((date: Date | null): boolean => {
-    if (!date) return false;
+  const isToday = useCallback((date: Date): boolean => {
     return areDatesEqual(date, new Date());
   }, [areDatesEqual]);
 
@@ -55,6 +51,39 @@ export const ExerciseLog: React.FC = () => {
     endOfDay.setHours(23, 59, 59, 999);
     return { startOfDay, endOfDay };
   }, [normalizeDate]);
+  
+  type UIState = {
+    showLogOptions: boolean;
+    showCalendar: boolean;
+    showSetLogger: boolean;
+    showImportModal: boolean;
+    showWorkoutSummary: boolean;
+    showMenu: boolean;
+  };
+
+  // State management
+  const [uiState, setUiState] = useState<UIState>({
+    showLogOptions: false,
+    showCalendar: false,
+    showSetLogger: false,
+    showImportModal: false,
+    showWorkoutSummary: false,
+    showMenu: false,
+  });
+
+  const updateUiState = useCallback((key: keyof UIState, value: boolean) => {
+    setUiState((prev: UIState) => ({ ...prev, [key]: value }));
+  }, []);
+
+  const toggleCalendar = useCallback((show?: boolean) => {
+    updateUiState('showCalendar', show ?? !uiState.showCalendar);
+  }, [uiState.showCalendar, updateUiState]);
+
+  // Exercise data loading
+  const [selectedDate, setSelectedDate] = useState<Date>(() => normalizeDate(new Date()));
+  const [exercises, setExercises] = useState<ExerciseData[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedExercise, setSelectedExercise] = useState<ExerciseData | null>(null);
 
   // Convert local storage exercise to ExerciseData format
   const convertToExerciseData = useCallback((exercise: Omit<ExerciseLogType, 'id'> & { id?: string }, userId: string): ExerciseData => ({
@@ -65,22 +94,7 @@ export const ExerciseLog: React.FC = () => {
     userId: userId,
     deviceId: exercise.deviceId || localStorage.getItem('device_id') || ''
   }), []);
-  
-  // State management
-  const [uiState, setUiState] = useState({
-    showLogOptions: false,
-    showCalendar: false,
-    showSetLogger: false,
-    showImportModal: false,
-    showWorkoutSummary: false,
-    showMenu: false,
-  });
 
-  // Data-related state with normalized dates
-  const [selectedDate, setSelectedDate] = useState<Date>(() => normalizeDate(new Date()) || new Date());
-  const [exercises, setExercises] = useState<ExerciseData[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [selectedExercise, setSelectedExercise] = useState<ExerciseData | null>(null);
   // Handle exercise data loading
   const loadExercises = useCallback(async (date: Date) => {
     // Guard against null user
@@ -162,16 +176,7 @@ export const ExerciseLog: React.FC = () => {
     }
   }, [user, areDatesEqual, normalizeDate, getDateRange, convertToExerciseData]);
 
-  const updateUiState = useCallback((key: keyof typeof uiState, value: boolean) => {
-    setUiState(prev => ({ ...prev, [key]: value }));
-  }, []);
-
   // UI event handlers
-  const toggleCalendar = useCallback((show?: boolean) => {
-    updateUiState('showCalendar', show ?? !uiState.showCalendar);
-  }, [uiState.showCalendar, updateUiState]);
-
-  // Date handlers
   const handleDateChange = useCallback((date: Date) => {
     const normalizedDate = normalizeDate(date);
     setSelectedDate(normalizedDate || date);

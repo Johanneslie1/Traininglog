@@ -81,6 +81,16 @@ const Dashboard = () => {
     setSelectedDate(newDate);
   };
 
+  const handleDateSelect = (date: Date, exercises: ExerciseLog[] = []) => {
+    setSelectedDate(date);
+    if (exercises.length > 0) {
+      setTodaysExercises(exercises);
+    } else {
+      // Fetch exercises for the new date
+      fetchExercises(date);
+    }
+  };
+
   const formatDate = (date: Date): string => {
     return date.toLocaleDateString('no-NO', {
       day: 'numeric',
@@ -100,7 +110,7 @@ const Dashboard = () => {
     }
 
     try {
-      await deleteExerciseLog(exerciseId);
+      await deleteExerciseLog(exerciseId, user.id);
       setTodaysExercises((prev) => prev.filter((ex) => ex.id !== exerciseId));
     } catch (error) {
       console.error('Error deleting exercise:', error);
