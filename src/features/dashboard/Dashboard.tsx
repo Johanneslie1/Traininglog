@@ -160,8 +160,7 @@ const Dashboard = () => {
             <ExerciseCard
               key={exercise.id || `${exercise.exerciseName}-${new Date(exercise.timestamp).getTime()}`}
               name={exercise.exerciseName}
-              sets={exercise.sets}
-              onAdd={() => handleAddSet(exercise.id || '')}
+              sets={exercise.sets}              onAddSet={() => handleAddSet(exercise.id || '')}
               onDelete={() => handleDeleteExercise(exercise.id || '')}
             />
           ))

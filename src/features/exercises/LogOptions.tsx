@@ -43,15 +43,9 @@ const trainingTypes: Category[] = [
 export const LogOptions: React.FC<LogOptionsProps> = ({ onClose, onExerciseAdded, selectedDate }) => {
   const [view, setView] = useState<'main' | 'search' | 'calendar' | 'setLogger' | 'program'>('main');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
-  const [recentExercises, setRecentExercises] = useState<ExerciseLog[]>([]);
-  const [currentExercise, setCurrentExercise] = useState<any>(null);  // Simple placeholder for recent exercises button
-  const fetchRecentExercises = () => {
-    // This would normally load recent exercises
-    // This function is simplified since we've removed the exercise loading logic
-    setView('search');
-  };
+  const [recentExercises, setRecentExercises] = useState<ExerciseLog[]>([]);  const [currentExercise, setCurrentExercise] = useState<any>(null);  // Simple placeholder for recent exercises button
 
-  const handleCategorySelect = (category: Category) => {
+  const handleCategorySelect= (category: Category) => {
     setSelectedCategory(category);
     setView('search');
   };
