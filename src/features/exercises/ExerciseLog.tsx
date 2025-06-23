@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import LogOptions from './LogOptions';
 import Calendar from './Calendar';
 import { ExerciseSetLogger } from './ExerciseSetLogger';
@@ -10,25 +11,56 @@ import { getExerciseLogsByDate, saveExerciseLog, deleteExerciseLog } from '@/uti
 import { importExerciseLogs } from '@/utils/importUtils';
 import ExerciseCard from '@/components/ExerciseCard';
 import SideMenu from '@/components/SideMenu';
-import { ExerciseLog as ExerciseLogType, ExerciseSet } from '@/types/exercise';
+import { ExerciseSet, ExerciseLog as ExerciseLogType } from '@/types/exercise';
+import { ExerciseData } from '@/services/exerciseDataService';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
+
+// Convert local storage exercise to ExerciseData format
+const convertToExerciseData = (exercise: Omit<ExerciseLogType, 'id'> & { id?: string }, userId: string): ExerciseData => ({
+  id: exercise.id ?? uuidv4(), // Use nullish coalescing to generate new ID if none exists
+  exerciseName: exercise.exerciseName,
+  sets: exercise.sets,
+  timestamp: new Date(exercise.timestamp),
+  userId: userId,
+  deviceId: exercise.deviceId || localStorage.getItem('device_id') || ''
+});
+
+// Convert ExerciseData to ExerciseLog format for export
+const convertToExerciseLog = (exercise: ExerciseData): ExerciseLogType => ({
+  id: exercise.id || uuidv4(), // Ensure ID is always present for export
+  exerciseName: exercise.exerciseName,
+  sets: exercise.sets,
+  timestamp: exercise.timestamp,
+  deviceId: exercise.deviceId
+});
 
 export const ExerciseLog: React.FC = () => {
+  const { user } = useSelector((state: RootState) => state.auth);
   const [showLogOptions, setShowLogOptions] = useState(false);
-  const [showCalendar, setShowCalendar] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [exercises, setExercises] = useState<ExerciseLogType[]>([]);
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
+  });
+  const [exercises, setExercises] = useState<ExerciseData[]>([]);
   const [loading, setLoading] = useState(false);
   const [showSetLogger, setShowSetLogger] = useState(false);
-  const [selectedExercise, setSelectedExercise] = useState<ExerciseLogType | null>(null);
+  const [selectedExercise, setSelectedExercise] = useState<ExerciseData | null>(null);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showWorkoutSummary, setShowWorkoutSummary] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
 
+  // Fetch exercises when date changes or user changes
   useEffect(() => {
-    fetchExercises(selectedDate);
-  }, [selectedDate]);
+    if (user?.id) {
+      fetchExercises(selectedDate);
+    }
+  }, [selectedDate, user]);
 
   const fetchExercises = async (date: Date) => {
+    if (!user) return;
     setLoading(true);
 
     try {
@@ -37,13 +69,7 @@ export const ExerciseLog: React.FC = () => {
       
       // If we have local exercises, use them
       if (localExercises.length > 0) {
-        setExercises(localExercises.map(exercise => ({
-          id: exercise.id || 'local-id',
-          exerciseName: exercise.exerciseName,
-          sets: exercise.sets,
-          timestamp: exercise.timestamp,
-          deviceId: exercise.deviceId || localStorage.getItem('device_id') || ''
-        })));
+        setExercises(localExercises.map(exercise => convertToExerciseData(exercise, user.id)));
         setLoading(false);
         return;
       }
@@ -56,6 +82,7 @@ export const ExerciseLog: React.FC = () => {
 
       const q = query(
         collection(db, 'exerciseLogs'),
+        where('userId', '==', user.id),
         where('timestamp', '>=', startOfDay),
         where('timestamp', '<=', endOfDay)
       );
@@ -63,13 +90,13 @@ export const ExerciseLog: React.FC = () => {
       const snapshot = await getDocs(q);
       const fetchedExercises = snapshot.docs.map(doc => {
         const data = doc.data();
-        return {
+        return convertToExerciseData({
           id: doc.id,
           exerciseName: data.exerciseName,
           sets: data.sets,
           timestamp: data.timestamp.toDate(),
           deviceId: data.deviceId
-        };
+        }, user.id);
       });
 
       setExercises(fetchedExercises);
@@ -78,21 +105,47 @@ export const ExerciseLog: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };  // Handle date selection from calendar
+  const handleDateSelect = (date: Date) => {
+    const normalizedDate = new Date(date);
+    normalizedDate.setHours(0, 0, 0, 0);
+    setSelectedDate(normalizedDate);
   };
 
-  // Add after the fetchExercises function
-  const handleDateSelect = (selectedExercises: ExerciseLogType[]) => {
+  // Handle exercises selection from calendar
+  const handleExercisesSelect = (selectedExercises: ExerciseData[]) => {
     setExercises(selectedExercises);
-    setShowCalendar(false);
+    // Don't automatically close the calendar - let the user decide when to close it
   };
 
-  const handleOpenSetLogger = (exercise: ExerciseLogType) => {
+  // Handle calendar open/close
+  const toggleCalendar = (show?: boolean) => {
+    setShowCalendar(prev => typeof show === 'boolean' ? show : !prev);
+  };
+
+  // Focus trap for calendar modal
+  useEffect(() => {
+    if (showCalendar) {
+      // Trap focus within calendar modal
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          toggleCalendar(false);
+        }
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [showCalendar]);
+
+  const handleOpenSetLogger = (exercise: ExerciseData) => {
     setSelectedExercise(exercise);
     setShowSetLogger(true);
   };
 
   const handleSaveSets = (sets: ExerciseSet[], exerciseId: string) => {
-    if (!selectedExercise) return;    const updatedExercise: ExerciseLogType = {
+    if (!selectedExercise || !user) return;
+    
+    const updatedExercise: ExerciseData = {
       ...selectedExercise,
       sets,
       timestamp: selectedDate
@@ -131,15 +184,18 @@ export const ExerciseLog: React.FC = () => {
       day: 'numeric',
       month: 'long'
     }).toLowerCase();
-  };
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  };  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file || !user?.id) return;
 
     try {
       const logs = await importExerciseLogs(file);
       if (logs && logs.length > 0) {
-        setExercises(prevExercises => [...prevExercises, ...logs]);
+        // Convert imported logs to ExerciseData format
+        setExercises(prevExercises => [
+          ...prevExercises,
+          ...logs.map(log => convertToExerciseData(log, user.id))
+        ]);
       }
       setShowImportModal(false);
     } catch (error) {
@@ -164,11 +220,11 @@ export const ExerciseLog: React.FC = () => {
           <h1 className="text-white text-xl font-medium">{formatDate(selectedDate)}</h1>
         </div>
         
-        <div className="flex items-center">
-          <button 
+        <div className="flex items-center">          <button 
             onClick={() => setShowCalendar(!showCalendar)} 
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            className={`p-2 rounded-lg transition-colors ${showCalendar ? 'bg-white/10' : 'hover:bg-white/10'}`}
             aria-label="Open calendar"
+            aria-expanded={showCalendar}
           >
             <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -205,24 +261,54 @@ export const ExerciseLog: React.FC = () => {
 
       {/* Calendar Modal */}
       {showCalendar && (
-        <div className="fixed top-[72px] right-0 z-40 w-[300px] mr-4 shadow-lg">
-          <div className="bg-[#1a1a1a] rounded-xl overflow-hidden border border-white/10">
-            <div className="flex items-center justify-between p-3 border-b border-white/10">
-              <h2 className="text-white font-medium">Calendar</h2>
-              <button
-                onClick={() => setShowCalendar(false)}
-                className="p-1 hover:bg-white/10 rounded-lg transition-colors"
-              >
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+        <div 
+          className="fixed inset-0 z-40 overflow-hidden"
+          onClick={(e) => {
+            // Only close if clicking the overlay
+            if (e.target === e.currentTarget) {
+              toggleCalendar(false);
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              toggleCalendar(false);
+            }
+          }}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="calendar-title"
+        >
+          <div 
+            className="fixed top-[72px] right-0 w-[300px] mr-4 shadow-lg"
+            role="document"
+          >
+            <div className="bg-[#1a1a1a] rounded-xl overflow-hidden border border-white/10">
+              <div className="flex items-center justify-between p-3 border-b border-white/10">
+                <h2 id="calendar-title" className="text-white font-medium">Calendar</h2>
+                <button
+                  onClick={() => toggleCalendar(false)}
+                  className="p-1 hover:bg-white/10 rounded-lg transition-colors"
+                  aria-label="Close calendar"
+                >
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              {loading ? (
+                <div className="flex justify-center items-center h-[300px]" aria-live="polite">
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white">
+                    <span className="sr-only">Loading calendar data...</span>
+                  </div>
+                </div>
+              ) : (
+                <Calendar 
+                  onClose={() => toggleCalendar(false)}
+                  onSelectExercises={handleExercisesSelect}
+                  onDateSelect={handleDateSelect}
+                />
+              )}
             </div>
-            <Calendar 
-              onClose={() => setShowCalendar(false)}
-              onSelectExercises={handleDateSelect}
-              onDateSelect={(date) => setSelectedDate(date)}
-            />
           </div>
         </div>
       )}
@@ -242,7 +328,7 @@ export const ExerciseLog: React.FC = () => {
         isOpen={showMenu}
         onClose={() => setShowMenu(false)}
         onImport={() => setShowImportModal(true)}
-        onExport={() => exportExerciseData(exercises)}
+        onExport={() => exportExerciseData(exercises.map(convertToExerciseLog))}
         onShowWorkoutSummary={() => setShowWorkoutSummary(true)}
         onNavigateToday={() => setSelectedDate(new Date())}
         onNavigateHistory={() => setShowCalendar(true)}

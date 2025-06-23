@@ -70,18 +70,16 @@ export interface Program {
   deviceId: string;
 }
 
-export type DifficultyCategory = 'WARMUP' | 'EASY' | 'NORMAL' | 'HARD' | 'FAILURE' | 'DROP';
+export type DifficultyCategory = 'easy' | 'moderate' | 'hard' | 'very hard' | 'max effort';
 
 /** Represents a set of an exercise with reps and optional weight */
 export interface ExerciseSet {
   /** Number of repetitions performed */
   reps: number;
   /** Weight used in kg (optional for bodyweight exercises) */
-  weight?: number;
+  weight: number;
   /** Difficulty level of the set */
   difficulty?: DifficultyCategory;
-  /** RPE (Rate of Perceived Exertion) value */
-  rpe?: number;
 }
 
 /** A logged exercise entry with sets performed */
