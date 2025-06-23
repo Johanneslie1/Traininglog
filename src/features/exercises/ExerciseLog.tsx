@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import LogOptions from './LogOptions';
 import Calendar from './Calendar';
@@ -16,16 +16,6 @@ import { ExerciseData } from '@/services/exerciseDataService';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 
-// Convert local storage exercise to ExerciseData format
-const convertToExerciseData = (exercise: Omit<ExerciseLogType, 'id'> & { id?: string }, userId: string): ExerciseData => ({
-  id: exercise.id ?? uuidv4(), // Use nullish coalescing to generate new ID if none exists
-  exerciseName: exercise.exerciseName,
-  sets: exercise.sets,
-  timestamp: new Date(exercise.timestamp),
-  userId: userId,
-  deviceId: exercise.deviceId || localStorage.getItem('device_id') || ''
-});
-
 // Convert ExerciseData to ExerciseLog format for export
 const convertToExerciseLog = (exercise: ExerciseData): ExerciseLogType => ({
   id: exercise.id || uuidv4(), // Ensure ID is always present for export
@@ -37,113 +27,166 @@ const convertToExerciseLog = (exercise: ExerciseData): ExerciseLogType => ({
 
 export const ExerciseLog: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
-  const [showLogOptions, setShowLogOptions] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return today;
+  
+  // Date utility functions
+  const normalizeDate = useCallback((date: Date): Date => {
+    const normalized = new Date(date);
+    normalized.setHours(0, 0, 0, 0);
+    return normalized;
+  }, []);
+
+  const areDatesEqual = useCallback((date1: Date | null, date2: Date | null): boolean => {
+    if (!date1 || !date2) return false;
+    return normalizeDate(date1).getTime() === normalizeDate(date2).getTime();
+  }, [normalizeDate]);
+
+  const getDateRange = useCallback((date: Date): { startOfDay: Date; endOfDay: Date } => {
+    const startOfDay = normalizeDate(date);
+    const endOfDay = new Date(startOfDay);
+    endOfDay.setHours(23, 59, 59, 999);
+    return { startOfDay, endOfDay };
+  }, [normalizeDate]);
+
+  // Convert local storage exercise to ExerciseData format
+  const convertToExerciseData = useCallback((exercise: Omit<ExerciseLogType, 'id'> & { id?: string }, userId: string): ExerciseData => ({
+    id: exercise.id ?? uuidv4(),
+    exerciseName: exercise.exerciseName,
+    sets: exercise.sets,
+    timestamp: new Date(exercise.timestamp),
+    userId: userId,
+    deviceId: exercise.deviceId || localStorage.getItem('device_id') || ''
+  }), []);
+  
+  // State management
+  const [uiState, setUiState] = useState({
+    showLogOptions: false,
+    showCalendar: false,
+    showSetLogger: false,
+    showImportModal: false,
+    showWorkoutSummary: false,
+    showMenu: false,
   });
+
+  // Data-related state with normalized dates
+  const [selectedDate, setSelectedDate] = useState(() => normalizeDate(new Date()));
   const [exercises, setExercises] = useState<ExerciseData[]>([]);
   const [loading, setLoading] = useState(false);
-  const [showSetLogger, setShowSetLogger] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<ExerciseData | null>(null);
-  const [showImportModal, setShowImportModal] = useState(false);
-  const [showWorkoutSummary, setShowWorkoutSummary] = useState(false);
-  const [showMenu, setShowMenu] = useState(false);
-  const [showCalendar, setShowCalendar] = useState(false);
-
-  // Fetch exercises when date changes or user changes
-  useEffect(() => {
-    if (user?.id) {
-      fetchExercises(selectedDate);
+  // Handle exercise data loading
+  const loadExercises = useCallback(async (date: Date) => {
+    // Guard against null user
+    const userId = user?.id;
+    if (!userId) {
+      setLoading(false);
+      setExercises([]);
+      return;
     }
-  }, [selectedDate, user]);
 
-  const fetchExercises = async (date: Date) => {
-    if (!user) return;
+    // Normalize the target date and set loading state
+    const loadedDate = normalizeDate(date);
+    let currentLoadedDate = loadedDate; // Keep track of which date we're loading
     setLoading(true);
+    setExercises([]); // Clear previous exercises while loading
 
     try {
-      // First, get exercises from local storage for the selected date
-      const localExercises = getExerciseLogsByDate(date);
-      
-      // If we have local exercises, use them
-      if (localExercises.length > 0) {
-        setExercises(localExercises.map(exercise => convertToExerciseData(exercise, user.id)));
-        setLoading(false);
-        return;
-      }
-      
-      // As a fallback, try to get exercises from Firebase
-      const startOfDay = new Date(date);
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(date);
-      endOfDay.setHours(23, 59, 59, 999);
-
-      const q = query(
-        collection(db, 'exerciseLogs'),
-        where('userId', '==', user.id),
-        where('timestamp', '>=', startOfDay),
-        where('timestamp', '<=', endOfDay)
+      // First, get exercises from local storage
+      const localExercises = getExerciseLogsByDate(loadedDate);
+      const allExercises = localExercises.map(exercise => 
+        convertToExerciseData(exercise, userId)
       );
+      
+      // Only continue with Firebase if we haven't changed dates
+      if (areDatesEqual(currentLoadedDate, loadedDate)) {
+        // Check Firebase for additional exercises
+        const { startOfDay, endOfDay } = getDateRange(loadedDate);
+        const q = query(
+          collection(db, 'exerciseLogs'),
+          where('userId', '==', userId),
+          where('timestamp', '>=', startOfDay),
+          where('timestamp', '<=', endOfDay)
+        );
 
-      const snapshot = await getDocs(q);
-      const fetchedExercises = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return convertToExerciseData({
-          id: doc.id,
-          exerciseName: data.exerciseName,
-          sets: data.sets,
-          timestamp: data.timestamp.toDate(),
-          deviceId: data.deviceId
-        }, user.id);
-      });
+        const snapshot = await getDocs(q);
+        const firebaseExercises = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return convertToExerciseData({
+            id: doc.id,
+            exerciseName: data.exerciseName,
+            sets: data.sets,
+            timestamp: data.timestamp.toDate(),
+            deviceId: data.deviceId
+          }, userId);
+        });
 
-      setExercises(fetchedExercises);
+        // Only update if we're still loading the same date
+        if (areDatesEqual(currentLoadedDate, loadedDate)) {
+          // Merge Firebase exercises with local ones, avoiding duplicates by ID
+          const exerciseMap = new Map<string, ExerciseData>();
+          
+          // Add local exercises first
+          allExercises.forEach(exercise => {
+            if (exercise.id) {
+              exerciseMap.set(exercise.id, exercise);
+            }
+          });
+          
+          // Add Firebase exercises, overwriting local ones if they exist
+          firebaseExercises.forEach(exercise => {
+            if (exercise.id) {
+              exerciseMap.set(exercise.id, exercise);
+            }
+          });
+
+          setExercises(Array.from(exerciseMap.values()));
+        }
+      }
     } catch (error) {
       console.error('Error fetching exercises:', error);
+      // If there was an error with Firebase, still show local exercises
+      if (areDatesEqual(currentLoadedDate, loadedDate)) {
+        setExercises([]);
+      }
     } finally {
-      setLoading(false);
+      if (areDatesEqual(currentLoadedDate, loadedDate)) {
+        setLoading(false);
+      }
     }
-  };  // Handle date selection from calendar
-  const handleDateSelect = (date: Date) => {
-    const normalizedDate = new Date(date);
-    normalizedDate.setHours(0, 0, 0, 0);
+  }, [user, areDatesEqual, normalizeDate, getDateRange, convertToExerciseData]);
+
+  // UI state updater
+  const updateUiState = useCallback((key: keyof typeof uiState, value: boolean) => {
+    setUiState(prev => ({ ...prev, [key]: value }));
+  }, []);
+
+  // UI event handlers
+  const toggleCalendar = useCallback((show?: boolean) => {
+    updateUiState('showCalendar', show ?? !uiState.showCalendar);
+  }, [uiState.showCalendar, updateUiState]);
+
+  // Calendar handlers
+  const handleDateSelect = useCallback((date: Date) => {
+    const normalizedDate = normalizeDate(date);
     setSelectedDate(normalizedDate);
-  };
+    toggleCalendar(false);
+  }, [normalizeDate, toggleCalendar]);
 
-  // Handle exercises selection from calendar
-  const handleExercisesSelect = (selectedExercises: ExerciseData[]) => {
+  const handleExercisesSelect = useCallback((selectedExercises: ExerciseData[]) => {
     setExercises(selectedExercises);
-    // Don't automatically close the calendar - let the user decide when to close it
-  };
+  }, []);
 
-  // Handle calendar open/close
-  const toggleCalendar = (show?: boolean) => {
-    setShowCalendar(prev => typeof show === 'boolean' ? show : !prev);
-  };
-
-  // Focus trap for calendar modal
-  useEffect(() => {
-    if (showCalendar) {
-      // Trap focus within calendar modal
-      const handleKeyDown = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') {
-          toggleCalendar(false);
-        }
-      };
-      window.addEventListener('keydown', handleKeyDown);
-      return () => window.removeEventListener('keydown', handleKeyDown);
-    }
-  }, [showCalendar]);
-
-  const handleOpenSetLogger = (exercise: ExerciseData) => {
+  // Exercise handlers
+  const handleOpenSetLogger = useCallback((exercise: ExerciseData) => {
     setSelectedExercise(exercise);
-    setShowSetLogger(true);
-  };
+    updateUiState('showSetLogger', true);
+  }, [updateUiState]);
 
-  const handleSaveSets = (sets: ExerciseSet[], exerciseId: string) => {
-    if (!selectedExercise || !user) return;
+  const handleCloseSetLogger = useCallback(() => {
+    setSelectedExercise(null);
+    updateUiState('showSetLogger', false);
+  }, [updateUiState]);
+
+  const handleSaveSets = useCallback((sets: ExerciseSet[], exerciseId: string) => {
+    if (!selectedExercise || !user?.id) return;
     
     const updatedExercise: ExerciseData = {
       ...selectedExercise,
@@ -152,33 +195,26 @@ export const ExerciseLog: React.FC = () => {
     };
 
     saveExerciseLog(updatedExercise);
-
     setExercises(prevExercises => 
       prevExercises.map(ex => 
         ex.id === exerciseId ? updatedExercise : ex
       )
     );
+    handleCloseSetLogger();
+  }, [selectedExercise, user, selectedDate, handleCloseSetLogger]);
 
-    setShowSetLogger(false);
-    setSelectedExercise(null);
-  };
-
-  const handleDeleteExercise = (exerciseId: string | undefined) => {
+  const handleDeleteExercise = useCallback((exerciseId: string | undefined) => {
     if (!exerciseId) return;
     
-    // Confirm before deleting
     if (window.confirm('Are you sure you want to delete this exercise?')) {
-      // Delete from local storage
       const success = deleteExerciseLog(exerciseId);
-      
       if (success) {
-        // Update UI immediately
         setExercises(prevExercises => prevExercises.filter(ex => ex.id !== exerciseId));
       } else {
         alert('Failed to delete the exercise. Please try again.');
       }
     }
-  };
+  }, []);
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('no-NO', { 
       day: 'numeric',
@@ -197,11 +233,31 @@ export const ExerciseLog: React.FC = () => {
           ...logs.map(log => convertToExerciseData(log, user.id))
         ]);
       }
-      setShowImportModal(false);
+      updateUiState('showImportModal', false);
     } catch (error) {
       console.error('Error importing data:', error);
     }
   };
+
+  // Load exercises when date or user changes
+  useEffect(() => {
+    if (user?.id && selectedDate) {
+      const timeoutId = setTimeout(() => {
+        loadExercises(selectedDate);
+      }, 50); // Small delay to ensure any local storage updates have completed
+      return () => clearTimeout(timeoutId);
+    } else {
+      setExercises([]);
+      setLoading(false);
+    }
+  }, [selectedDate, user, loadExercises]);
+
+  // Clear selected exercise when changing dates
+  useEffect(() => {
+    if (selectedExercise && !areDatesEqual(selectedExercise.timestamp, selectedDate)) {
+      handleCloseSetLogger();
+    }
+  }, [selectedDate, selectedExercise, areDatesEqual, handleCloseSetLogger]);
 
   return (
     <div className="relative min-h-screen bg-black">
@@ -210,7 +266,7 @@ export const ExerciseLog: React.FC = () => {
         <div className="flex items-center gap-3">
           <button 
             className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-            onClick={() => setShowMenu(true)}
+            onClick={() => setUiState(prev => ({ ...prev, showMenu: true }))}
             aria-label="Open menu"
           >
             <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -221,10 +277,10 @@ export const ExerciseLog: React.FC = () => {
         </div>
         
         <div className="flex items-center">          <button 
-            onClick={() => setShowCalendar(!showCalendar)} 
-            className={`p-2 rounded-lg transition-colors ${showCalendar ? 'bg-white/10' : 'hover:bg-white/10'}`}
+            onClick={() => toggleCalendar()} 
+            className={`p-2 rounded-lg transition-colors ${uiState.showCalendar ? 'bg-white/10' : 'hover:bg-white/10'}`}
             aria-label="Open calendar"
-            aria-expanded={showCalendar}
+            aria-expanded={uiState.showCalendar}
           >
             <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -235,87 +291,107 @@ export const ExerciseLog: React.FC = () => {
 
       {/* Main Content */}
       <main className="px-4 pb-24 pt-20">
-        {loading ? (
-          <div className="flex justify-center items-center h-[60vh]">
-            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
+        <div className="relative flex flex-col h-full">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-bold text-white">
+              Exercise Log - {selectedDate.toLocaleDateString()}
+            </h2>
+            <button
+              onClick={() => toggleCalendar()}
+              className="px-4 py-2 text-white rounded-lg transition-colors"
+              aria-label="Toggle calendar"
+              aria-expanded={uiState.showCalendar}
+            >
+              {uiState.showCalendar ? 'Hide Calendar' : 'Show Calendar'}
+            </button>
           </div>
-        ) : (
-          <div className="space-y-3">
-            {exercises.map((exercise) => {
-              const isToday = new Date(exercise.timestamp).toDateString() === new Date().toDateString();
-              return (
-                <ExerciseCard
-                  key={exercise.id}
-                  name={exercise.exerciseName}
-                  sets={exercise.sets}
-                  onEdit={isToday ? () => handleOpenSetLogger(exercise) : undefined}
-                  onDelete={isToday && exercise.id ? () => handleDeleteExercise(exercise.id) : undefined}
-                  onAddSet={isToday ? () => handleOpenSetLogger(exercise) : undefined}
-                  isToday={isToday}
-                />
-              );
-            })}
-          </div>
-        )}
-      </main>
 
-      {/* Calendar Modal */}
-      {showCalendar && (
-        <div 
-          className="fixed inset-0 z-40 overflow-hidden"
-          onClick={(e) => {
-            // Only close if clicking the overlay
-            if (e.target === e.currentTarget) {
-              toggleCalendar(false);
-            }
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Escape') {
-              toggleCalendar(false);
-            }
-          }}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="calendar-title"
-        >
-          <div 
-            className="fixed top-[72px] right-0 w-[300px] mr-4 shadow-lg"
-            role="document"
-          >
-            <div className="bg-[#1a1a1a] rounded-xl overflow-hidden border border-white/10">
-              <div className="flex items-center justify-between p-3 border-b border-white/10">
-                <h2 id="calendar-title" className="text-white font-medium">Calendar</h2>
+          {uiState.showCalendar && (
+            <div className="mb-4 bg-[#1a1a1a] rounded-xl border border-white/10 overflow-hidden p-4">
+              <Calendar 
+                onDateSelect={handleDateSelect} 
+                selectedDate={selectedDate}
+                onSelectExercises={handleExercisesSelect}
+                onClose={() => toggleCalendar(false)}
+              />
+            </div>
+          )}
+
+          <div className="flex-grow">
+            {loading ? (
+              <div className="flex justify-center items-center h-32">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#8B5CF6]"></div>
+              </div>
+            ) : exercises.length === 0 ? (
+              <div className="text-center py-8 text-gray-400">
+                <p className="text-lg">No exercises logged for this date</p>
                 <button
-                  onClick={() => toggleCalendar(false)}
-                  className="p-1 hover:bg-white/10 rounded-lg transition-colors"
-                  aria-label="Close calendar"
+                  onClick={() => updateUiState('showLogOptions', true)}
+                  className="mt-4 px-4 py-2 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white rounded-lg transition-colors"
                 >
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  Add Exercise
                 </button>
               </div>
-              {loading ? (
-                <div className="flex justify-center items-center h-[300px]" aria-live="polite">
-                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white">
-                    <span className="sr-only">Loading calendar data...</span>
-                  </div>
-                </div>
-              ) : (
-                <Calendar 
-                  onClose={() => toggleCalendar(false)}
-                  onSelectExercises={handleExercisesSelect}
-                  onDateSelect={handleDateSelect}
-                />
-              )}
-            </div>
+            ) : (
+              <div className="space-y-4">
+                {exercises.map((exercise, index) => (
+                  <ExerciseCard
+                    key={exercise.id || index}
+                    name={exercise.exerciseName}
+                    sets={exercise.sets}
+                    onEdit={areDatesEqual(exercise.timestamp, new Date()) ? () => handleOpenSetLogger(exercise) : undefined}
+                    onDelete={areDatesEqual(exercise.timestamp, new Date()) ? () => handleDeleteExercise(exercise.id) : undefined}
+                    onAddSet={areDatesEqual(exercise.timestamp, new Date()) ? () => handleOpenSetLogger(exercise) : undefined}
+                    isToday={areDatesEqual(exercise.timestamp, new Date())}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
-      )}
+      </main>
+
+      {/* Calendar Modal - Always rendered but conditionally visible */}
+      <div className="fixed inset-0 z-40 overflow-hidden pointer-events-none">
+        <div 
+          className={`absolute inset-0 bg-black/50 transition-opacity duration-200 ${
+            uiState.showCalendar ? 'opacity-100 pointer-events-auto' : 'opacity-0'
+          }`}
+          onClick={() => toggleCalendar(false)}
+        />
+        <div 
+          className={`fixed top-[72px] right-0 w-[300px] mr-4 shadow-lg transition-transform duration-200 ${
+            uiState.showCalendar ? 'translate-x-0 pointer-events-auto' : 'translate-x-full'
+          }`}
+          role={uiState.showCalendar ? "dialog" : "none"}
+          aria-modal={uiState.showCalendar}
+          aria-labelledby="calendar-title"
+        >
+          <div className="bg-[#1a1a1a] rounded-xl overflow-hidden border border-white/10">
+            <div className="flex items-center justify-between p-3 border-b border-white/10">
+              <h2 id="calendar-title" className="text-white font-medium">Calendar</h2>
+              <button
+                onClick={() => toggleCalendar(false)}
+                className="p-1 hover:bg-white/10 rounded-lg transition-colors"
+                aria-label="Close calendar"
+              >
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>            <Calendar 
+              onClose={() => toggleCalendar(false)}
+              onSelectExercises={handleExercisesSelect}
+              onDateSelect={handleDateSelect}
+              selectedDate={selectedDate}
+            />
+          </div>
+        </div>
+      </div>
 
       {/* Add Exercise Button */}
       <button
-        onClick={() => setShowLogOptions(true)}
+        onClick={() => setUiState(prev => ({ ...prev, showLogOptions: true }))}
         className="fixed bottom-6 right-6 w-16 h-16 bg-[#8B5CF6] hover:bg-[#7C3AED] rounded-full flex items-center justify-center text-white shadow-lg transition-colors z-40"
       >
         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -325,30 +401,30 @@ export const ExerciseLog: React.FC = () => {
 
       {/* Side Menu */}
       <SideMenu
-        isOpen={showMenu}
-        onClose={() => setShowMenu(false)}
-        onImport={() => setShowImportModal(true)}
+        isOpen={uiState.showMenu}
+        onClose={() => updateUiState('showMenu', false)}
+        onImport={() => updateUiState('showImportModal', true)}
         onExport={() => exportExerciseData(exercises.map(convertToExerciseLog))}
-        onShowWorkoutSummary={() => setShowWorkoutSummary(true)}
+        onShowWorkoutSummary={() => updateUiState('showWorkoutSummary', true)}
         onNavigateToday={() => setSelectedDate(new Date())}
-        onNavigateHistory={() => setShowCalendar(true)}
+        onNavigateHistory={() => toggleCalendar(true)}
         onNavigatePrograms={() => {/* TODO: Implement programs navigation */}}
         onNavigateProfile={() => {/* TODO: Implement profile navigation */}}
       />
 
       {/* Log Options Modal */}
-      {showLogOptions && (
+      {uiState.showLogOptions && (
         <div className="fixed inset-0 bg-black/90 z-50">
           <LogOptions 
-            onClose={() => setShowLogOptions(false)} 
-            onExerciseAdded={() => fetchExercises(selectedDate)}
+            onClose={() => updateUiState('showLogOptions', false)} 
+            onExerciseAdded={() => loadExercises(selectedDate)}
             selectedDate={selectedDate}
           />
         </div>
       )}
 
       {/* Set Logger Modal */}
-      {showSetLogger && selectedExercise && selectedExercise.id && (
+      {uiState.showSetLogger && selectedExercise && selectedExercise.id && (
         <div className="fixed inset-0 bg-black/90 z-50">
           <ExerciseSetLogger
             exercise={{
@@ -361,20 +437,20 @@ export const ExerciseLog: React.FC = () => {
               }))
             }}
             onSave={handleSaveSets}
-            onCancel={() => setShowSetLogger(false)}
+            onCancel={() => updateUiState('showSetLogger', false)}
             isEditing={true}
           />
         </div>
       )}
 
       {/* Import Modal */}
-      {showImportModal && (
+      {uiState.showImportModal && (
         <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50">
           <div className="bg-[#1a1a1a] rounded-xl p-6 max-w-md w-full border border-white/10">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl text-white font-medium">Import Exercise Data</h2>
               <button
-                onClick={() => setShowImportModal(false)}
+                onClick={() => updateUiState('showImportModal', false)}
                 className="p-2 hover:bg-white/10 rounded-lg transition-colors"
               >
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -395,7 +471,7 @@ export const ExerciseLog: React.FC = () => {
             </div>
             <div className="flex justify-end">
               <button
-                onClick={() => setShowImportModal(false)}
+                onClick={() => updateUiState('showImportModal', false)}
                 className="px-6 py-3 bg-[#2a2a2a] text-white rounded-xl hover:bg-[#3a3a3a] transition-colors"
               >
                 Cancel
@@ -406,7 +482,7 @@ export const ExerciseLog: React.FC = () => {
       )}
 
       {/* Workout Summary Modal */}
-      {showWorkoutSummary && exercises.length > 0 && (
+      {uiState.showWorkoutSummary && exercises.length > 0 && (
         <div className="fixed inset-0 bg-black/90 z-50">
           <WorkoutSummary
             exercises={exercises.map(ex => ({
@@ -415,7 +491,7 @@ export const ExerciseLog: React.FC = () => {
               sets: ex.sets,
               timestamp: ex.timestamp
             }))}
-            onClose={() => setShowWorkoutSummary(false)}
+            onClose={() => updateUiState('showWorkoutSummary', false)}
           />
         </div>
       )}

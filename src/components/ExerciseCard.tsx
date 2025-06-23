@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ExerciseSet, DifficultyCategory } from '@/types/exercise';
+import { ExerciseSet } from '@/types/exercise';
 
 interface ExerciseCardProps {
   name: string;
@@ -11,7 +11,9 @@ interface ExerciseCardProps {
   isToday?: boolean;
 }
 
-const getDifficultyColor = (difficulty?: DifficultyCategory): string => {
+const getDifficultyColor = (difficulty?: string): string => {
+  if (!difficulty) return 'var(--color-normal)';
+  
   switch (difficulty) {
     case 'WARMUP': return 'var(--color-warmup)';
     case 'EASY': return 'var(--color-easy)';
@@ -124,7 +126,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
       </div>
 
       {/* Sets Display */}
-      {sets.length > 0 && (
+      {sets?.length > 0 && (
         <div className="border-t border-white/5">
           <div className="overflow-x-auto pb-2 px-4 pt-3">
             <div className="flex gap-2">

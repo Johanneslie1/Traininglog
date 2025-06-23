@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { ExerciseDataService, ExerciseData } from '@/services/exerciseDataService';
@@ -7,6 +7,7 @@ interface CalendarProps {
   onClose: () => void;
   onSelectExercises: (exercises: ExerciseData[]) => void;
   onDateSelect?: (date: Date) => void;
+  selectedDate: Date;
 }
 
 interface User {
@@ -14,18 +15,49 @@ interface User {
   email: string | null;
 }
 
-export const Calendar: React.FC<CalendarProps> = ({ onClose, onSelectExercises, onDateSelect }) => {
-  const [currentDate, setCurrentDate] = useState<Date>(new Date());
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+// Utility functions
+const normalizeDate = (date: Date): Date => {
+  const normalized = new Date(date);
+  normalized.setHours(0, 0, 0, 0);
+  return normalized;
+};
+
+export const Calendar: React.FC<CalendarProps> = ({ 
+  onClose, 
+  onSelectExercises, 
+  onDateSelect,
+  selectedDate
+}) => {
+  const [currentDate, setCurrentDate] = useState<Date>(() => normalizeDate(selectedDate));
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useSelector((state: RootState) => state.auth) as { user: User | null };
 
-  useEffect(() => {
-    // Load exercises for the initially selected date
-    if (user) {
-      handleDateSelect(selectedDate);
+  const handleDateSelect = useCallback(async (date: Date) => {
+    if (!date || !user) return;
+    
+    const newDate = normalizeDate(date);
+    
+    // Notify parent component about the date change
+    if (onDateSelect) {
+      onDateSelect(newDate);
     }
-  }, [user]); // Run when user changes
+
+    setIsLoading(true);
+    try {
+      const exercises = await ExerciseDataService.getExercisesByDate(newDate, user.id);
+      onSelectExercises(exercises);
+    } catch (error) {
+      console.error('Error fetching exercises:', error);
+      onSelectExercises([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user, onDateSelect, onSelectExercises]);
+
+  // Update current month view when selected date changes
+  useEffect(() => {
+    setCurrentDate(normalizeDate(selectedDate));
+  }, [selectedDate]);
 
   // Get month details
   const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
@@ -48,30 +80,7 @@ export const Calendar: React.FC<CalendarProps> = ({ onClose, onSelectExercises, 
 
   const goToNextYear = () => {
     setCurrentDate(new Date(currentDate.getFullYear() + 1, currentDate.getMonth()));
-  };  const handleDateSelect = async (date: Date) => {
-    if (!date || !user) return;
-    
-    const newDate = new Date(date);
-    newDate.setHours(0, 0, 0, 0);
-    setSelectedDate(newDate);
-    setIsLoading(true);
-    
-    // Important: Notify parent component about the date change first
-    if (onDateSelect) {
-      onDateSelect(newDate);
-    }
-
-    try {
-      // Get exercises using the ExerciseDataService
-      const exercises = await ExerciseDataService.getExercisesByDate(newDate, user.id);
-      onSelectExercises(exercises);
-    } catch (error) {
-      console.error('Error fetching exercises:', error);
-      onSelectExercises([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  };  
 
   // Calendar grid array
   const calendarDays = Array.from({ length: 42 }, (_, i) => {
