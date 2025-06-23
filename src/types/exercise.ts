@@ -1,4 +1,3 @@
-
 export interface Exercise {
   id: string;
   name: string;
@@ -75,7 +74,10 @@ export enum DifficultyCategory {
   WARMUP = 'WARMUP',
   EASY = 'EASY',
   NORMAL = 'NORMAL',
+  MODERATE = 'MODERATE',
   HARD = 'HARD',
+  VERY_HARD = 'VERY_HARD',
+  MAX_EFFORT = 'MAX_EFFORT',
   FAILURE = 'FAILURE',
   DROP = 'DROP'
 }

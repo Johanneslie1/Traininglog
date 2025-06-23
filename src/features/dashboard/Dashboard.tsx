@@ -50,6 +50,11 @@ const Dashboard = () => {
       const endOfDay = new Date(date);
       endOfDay.setHours(23, 59, 59, 999);
 
+      if (!user) {
+        setTodaysExercises([]);
+        setIsLoading(false);
+        return;
+      }
       const exercisesRef = collection(db, 'exerciseLogs');
       const q = query(
         exercisesRef,
@@ -76,8 +81,10 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    fetchExercises();
-  }, [selectedDate, user.id]);
+    if (user) {
+      fetchExercises();
+    }
+  }, [selectedDate, user]);
 
   const handleDateChange = (newDate: Date) => {
     setSelectedDate(newDate);
@@ -95,6 +102,10 @@ const Dashboard = () => {
   const handleDeleteExercise = async (exerciseId: string) => {
     if (!exerciseId) {
       setError('Invalid exercise ID');
+      return;
+    }
+    if (!user) {
+      setError('User not authenticated');
       return;
     }
 
@@ -162,7 +173,7 @@ const Dashboard = () => {
               timestamp: exercise.timestamp instanceof Date
                 ? exercise.timestamp
                 : new Date(exercise.timestamp),
-              userId: exercise.userId ?? user.id // Ensure userId is always a string
+              userId: exercise.userId ?? (user ? user.id : '') // Ensure userId is always a string and user is not null
             };
             return (
               <ExerciseCard

@@ -41,9 +41,6 @@ export const ExerciseLog: React.FC = () => {
     return normalized1.getTime() === normalized2.getTime();
   }, [normalizeDate]);
 
-  const isToday = useCallback((date: Date): boolean => {
-    return areDatesEqual(date, new Date());
-  }, [areDatesEqual]);
 
   const getDateRange = useCallback((date: Date): { startOfDay: Date; endOfDay: Date } => {
     const startOfDay = normalizeDate(date);

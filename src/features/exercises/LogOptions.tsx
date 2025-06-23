@@ -4,7 +4,7 @@ import Calendar from './Calendar';
 import ProgramManager from './ProgramManager';
 import { ExerciseSetLogger } from './ExerciseSetLogger';
 import { db, auth } from '@/services/firebase/config';
-import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { collection, addDoc } from 'firebase/firestore';
 import { getDeviceId, saveExerciseLog } from '@/utils/localStorageUtils';
 import { Program, ExerciseSet, DifficultyCategory } from '@/types/exercise';
 import { ExerciseData } from '@/services/exerciseDataService';

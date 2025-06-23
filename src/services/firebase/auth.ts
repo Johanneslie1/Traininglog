@@ -11,7 +11,7 @@ console.log('Auth service initialized with origin:', window.location.origin);
 
 let authInitialized = false;
 
-export interface AppUser {
+export interface User {
   id: string;
   email: string;
   firstName: string;
@@ -45,7 +45,7 @@ export interface LoginData {
 }
 
 // Helper function to convert Timestamp to Date
-const convertTimestamps = (data: any): AppUser => {
+const convertTimestamps = (data: any): User => {
   return {
     ...data,
     createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : data.createdAt,
@@ -53,7 +53,7 @@ const convertTimestamps = (data: any): AppUser => {
   };
 };
 
-export const registerUser = async (data: RegisterData): Promise<AppUser> => {
+export const registerUser = async (data: RegisterData): Promise<User> => {
   const { email, password, firstName, lastName, role } = data;
   
   try {
@@ -80,7 +80,7 @@ export const registerUser = async (data: RegisterData): Promise<AppUser> => {
   }
 };
 
-export const loginUser = async (data: LoginData): Promise<AppUser> => {
+export const loginUser = async (data: LoginData): Promise<User> => {
   const { email, password } = data;
 
   try {
@@ -97,7 +97,7 @@ export const loginUser = async (data: LoginData): Promise<AppUser> => {
     }
     console.log('User data retrieved from Firestore');
 
-    return convertTimestamps(userDoc.data() as AppUser);
+    return convertTimestamps(userDoc.data() as User);
   } catch (error: any) {
     console.error('Login error:', error);
     throw new Error(error.message);
@@ -130,7 +130,7 @@ export const initializeAuth = (): Promise<void> => {
   });
 };
 
-export const getCurrentUser = async (): Promise<AppUser | null> => {
+export const getCurrentUser = async (): Promise<User | null> => {
   try {
     if (!authInitialized) {
       await initializeAuth();

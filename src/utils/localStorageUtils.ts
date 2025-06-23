@@ -1,12 +1,10 @@
 import { auth } from '@/services/firebase/config';
-import { deleteExerciseLog as deleteFirestoreExerciseLog } from '@/services/firebase/exerciseLogs';
 import { v4 as uuidv4 } from 'uuid';
 import { Program, ExerciseLog as ExerciseLogType } from '@/types/exercise';
 import { db } from '@/services/firebase/config';
 import { doc, deleteDoc, getDoc } from 'firebase/firestore';
 
 const LOGS_STORAGE_KEY = 'exercise_logs';
-const DEVICE_ID_KEY = 'device_id';
 
 // Use ExerciseLogType to define our storage type
 export type ExerciseLog = Omit<ExerciseLogType, 'id'> & { id?: string };
