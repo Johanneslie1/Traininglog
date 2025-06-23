@@ -29,10 +29,10 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
     if (isEditing && exercise.sets && exercise.sets.length > 0) {      return exercise.sets.map(set => ({
         reps: set.reps || 0,
         weight: set.weight || 0,
-        difficulty: set.difficulty || 'moderate'
+        difficulty: set.difficulty || DifficultyCategory.MODERATE
       }));
     }
-    return [{ reps: 0, weight: 0, difficulty: 'moderate' as DifficultyCategory }];
+    return [{ reps: 0, weight: 0, difficulty: DifficultyCategory.MODERATE }];
   });
 
   const [selectedSetIndex, setSelectedSetIndex] = useState<number>(sets.length - 1);

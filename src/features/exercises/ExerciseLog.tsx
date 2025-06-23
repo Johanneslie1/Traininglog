@@ -172,15 +172,6 @@ export const ExerciseLog: React.FC = () => {
       }
     }
   }, [user, areDatesEqual, normalizeDate, getDateRange, convertToExerciseData]);
-
-  // UI event handlers
-  const handleDateChange = useCallback((date: Date) => {
-    const normalizedDate = normalizeDate(date);
-    setSelectedDate(normalizedDate || date);
-    updateUiState('showSetLogger', false);
-    updateUiState('showLogOptions', false);
-  }, [normalizeDate, updateUiState]);
-  
   // Always ensure selectedDate is valid
   useEffect(() => {
     if (!selectedDate) {
