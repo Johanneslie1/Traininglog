@@ -3,10 +3,12 @@ import ExerciseSearch from './ExerciseSearch';
 import Calendar from './Calendar';
 import ProgramManager from './ProgramManager';
 import { ExerciseSetLogger } from './ExerciseSetLogger';
-import { db } from '@/services/firebase/config';
-import { collection, addDoc } from 'firebase/firestore';
+import { db, auth } from '@/services/firebase/config';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { getDeviceId, saveExerciseLog } from '@/utils/localStorageUtils';
-import { Program, ExerciseLog, ExerciseSet, DifficultyCategory } from '@/types/exercise';
+import { Program, ExerciseSet, DifficultyCategory } from '@/types/exercise';
+import { ExerciseData } from '@/services/exerciseDataService';
+import { FirebaseError } from 'firebase/app';
 
 interface LogOptionsProps {
   onClose: () => void;
@@ -43,38 +45,46 @@ const trainingTypes: Category[] = [
 export const LogOptions: React.FC<LogOptionsProps> = ({ onClose, onExerciseAdded, selectedDate }) => {
   const [view, setView] = useState<'main' | 'search' | 'calendar' | 'setLogger' | 'program'>('main');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
-  const [recentExercises, setRecentExercises] = useState<ExerciseLog[]>([]);  const [currentExercise, setCurrentExercise] = useState<any>(null);  // Simple placeholder for recent exercises button
+  const [recentExercises, setRecentExercises] = useState<ExerciseData[]>([]);
+  const [currentExercise, setCurrentExercise] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);// Simple placeholder for recent exercises button
 
   const handleCategorySelect= (category: Category) => {
     setSelectedCategory(category);
     setView('search');
   };
-
-  const handleSelectExercisesFromDay = (exercises: ExerciseLog[]) => {
+  const handleSelectExercisesFromDay = (exercises: ExerciseData[]) => {
     setRecentExercises(exercises);
     setView('main');
-  };  
-  
-  const addExerciseToToday = async (exercise: ExerciseLog) => {
+  };
+    const addExerciseToToday = async (exercise: ExerciseData) => {
     try {
+      if (!auth.currentUser) {
+        throw new Error('You must be logged in to save exercises');
+      }
+
       const deviceId = getDeviceId();
+      const timestamp = selectedDate || new Date();
       
-      // Create the exercise log with the device ID
+      // Create the exercise log with the device ID and userId
       const newExercise = {
         ...exercise,
-        timestamp: selectedDate || new Date(),
-        deviceId
+        timestamp,
+        deviceId,
+        userId: auth.currentUser.uid
       };
       
       // Save to local storage
       saveExerciseLog(newExercise);
-        // Also save to Firebase (optional, for backup)
+
       try {
         // Remove id so Firestore generates a new one
         const { id, ...exerciseData } = newExercise;
+        console.log('Adding exercise log to Firebase:', exerciseData);
         await addDoc(collection(db, 'exerciseLogs'), exerciseData);
+        console.log('Successfully saved to Firebase');
       } catch (firebaseError) {
-        console.error('Failed to save to Firebase, but saved locally:', firebaseError);
+        console.error('Failed to save to Firebase:', firebaseError);
       }
       
       // Notify parent that an exercise was added
@@ -87,27 +97,36 @@ export const LogOptions: React.FC<LogOptionsProps> = ({ onClose, onExerciseAdded
       console.error('Failed to add exercise:', error);
       alert('Failed to add exercise to today.');    }
   };  
-  
-  const handleSaveSets = async (sets: ExerciseSet[]) => {
+    const handleSaveSets = async (sets: ExerciseSet[]) => {
     if (!currentExercise) return;
     
-    try {      const deviceId = getDeviceId();
+    try {      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        throw new Error('You must be logged in to save exercises');
+      }
+
+      const deviceId = getDeviceId();
+      const timestamp = selectedDate || new Date();
       
       const exerciseLog = {
         exerciseName: currentExercise.name,
         sets: sets,
-        timestamp: selectedDate || new Date(),
-        deviceId
+        timestamp,
+        deviceId,
+        userId: currentUser.uid
       };
-        // Save to local storage
+
+      // Save to local storage
       saveExerciseLog(exerciseLog);
       
-      // Also save to Firebase (optional, for backup)
+      // Save to Firebase
       try {
-        console.log('Adding exercise log:', exerciseLog);
+        console.log('Adding exercise log to Firebase:', exerciseLog);
         await addDoc(collection(db, 'exerciseLogs'), exerciseLog);
+        console.log('Successfully saved to Firebase');
       } catch (firebaseError) {
-        console.error('Failed to save to Firebase, but saved locally:', firebaseError);
+        console.error('Failed to save to Firebase:', firebaseError);
+        // Don't throw since we saved locally
       }
       
       // Notify parent that an exercise was added
@@ -121,11 +140,15 @@ export const LogOptions: React.FC<LogOptionsProps> = ({ onClose, onExerciseAdded
       alert('Failed to add exercise to today.');
     }
   };
-
   const handleProgramSelected = (program: Program) => {
     // When a program is selected, we want to add each exercise with empty sets
-    try {
+    try {      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        throw new Error('You must be logged in to save exercises');
+      }
+
       const deviceId = getDeviceId();
+      const timestamp = selectedDate || new Date();
       
       // For each exercise in the program, create an exercise log
       program.exercises.forEach(async (programExercise) => {
@@ -139,18 +162,21 @@ export const LogOptions: React.FC<LogOptionsProps> = ({ onClose, onExerciseAdded
         const exerciseLog = {
           exerciseName: programExercise.name,
           sets,
-          timestamp: selectedDate || new Date(),
-          deviceId
+          timestamp,
+          deviceId,
+          userId: currentUser.uid
         };
         
         // Save to local storage
         saveExerciseLog(exerciseLog);
         
-        // Optionally save to Firebase as backup
+        // Save to Firebase
         try {
+          console.log('Adding program exercise to Firebase:', exerciseLog);
           await addDoc(collection(db, 'exerciseLogs'), exerciseLog);
+          console.log('Successfully saved program exercise to Firebase');
         } catch (firebaseError) {
-          console.error('Failed to save to Firebase, but saved locally:', firebaseError);
+          console.error('Failed to save to Firebase:', firebaseError);
         }
       });
       
@@ -184,8 +210,8 @@ export const LogOptions: React.FC<LogOptionsProps> = ({ onClose, onExerciseAdded
       />
     );
   }  if (view === 'calendar') {
-    return (
-      <Calendar 
+    return (      <Calendar 
+        selectedDate={selectedDate || new Date()}
         onClose={() => setView('main')}
         onSelectExercises={handleSelectExercisesFromDay}
         onDateSelect={(_) => {

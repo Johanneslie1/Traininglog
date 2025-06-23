@@ -11,6 +11,8 @@ import { auth, db } from './config';
 // Log the current origin - useful for debugging GitHub Pages
 console.log('Auth service initialized with origin:', window.location.origin);
 
+let authInitialized = false;
+
 export interface User {
   id: string;
   email: string;
@@ -27,6 +29,16 @@ export interface RegisterData {
   firstName: string;
   lastName: string;
   role: 'athlete' | 'coach';
+}
+
+// Add a function to wait for auth to be ready
+export const waitForAuth = (): Promise<void> => {
+  return new Promise((resolve) => {
+    const unsubscribe = onAuthStateChanged(auth, () => {
+      unsubscribe();
+      resolve();
+    });
+  });
 }
 
 export interface LoginData {
@@ -102,30 +114,61 @@ export const logoutUser = async (): Promise<void> => {
   }
 };
 
-export const getCurrentUser = (): Promise<User | null> => {
+export const initializeAuth = (): Promise<void> => {
   return new Promise((resolve, reject) => {
-    const unsubscribe = onAuthStateChanged(
-      auth,
-      async (user: FirebaseUser | null) => {
+    try {
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        authInitialized = true;
         unsubscribe();
-        if (!user) {
-          resolve(null);
-          return;
-        }
-
-        try {
-          const userDoc = await getDoc(doc(db, 'users', user.uid));
-          if (!userDoc.exists()) {
-            resolve(null);
-            return;
-          }
-
-          resolve(userDoc.data() as User);
-        } catch (error) {
-          reject(error);
-        }
-      },
-      reject
-    );
+        resolve();
+      }, (error) => {
+        console.error('Auth initialization error:', error);
+        reject(error);
+      });
+    } catch (error) {
+      console.error('Auth setup error:', error);
+      reject(error);
+    }
   });
+};
+
+export const getCurrentUser = async (): Promise<User | null> => {
+  try {
+    if (!authInitialized) {
+      await initializeAuth();
+    }
+    
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) {
+      console.log('No current user found');
+      return null;
+    }
+
+    console.log('Fetching user data for:', firebaseUser.uid);
+    const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+    
+    if (!userDoc.exists()) {
+      console.warn('User document not found in Firestore');
+      // Sign out the user if their document doesn't exist
+      await signOut(auth);
+      return null;
+    }
+
+    const userData = userDoc.data();
+    console.log('User data retrieved successfully');
+    
+    return {
+      id: firebaseUser.uid,
+      email: userData.email || firebaseUser.email || '',
+      firstName: userData.firstName || '',
+      lastName: userData.lastName || '',
+      role: userData.role || 'athlete',
+      createdAt: userData.createdAt?.toDate() || new Date(),
+      updatedAt: userData.updatedAt?.toDate() || new Date()
+    };
+  } catch (error) {
+    console.error('Error getting user data:', error);
+    // Don't throw, return null to allow the app to handle the error gracefully
+    return null;
+  }
 };

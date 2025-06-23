@@ -1,6 +1,7 @@
-import { db } from '@/services/firebase/config';
+import { db, auth } from '@/services/firebase/config';
 import { collection, query, where, getDocs, addDoc, updateDoc, doc } from 'firebase/firestore';
 import { DifficultyCategory } from '@/types/exercise';
+import { signInAnonymously } from 'firebase/auth';
 
 export interface ExerciseData {
   id?: string;
@@ -18,6 +19,13 @@ export interface ExerciseData {
 export class ExerciseDataService {
   private static STORAGE_KEY = 'exercise_logs';
 
+  private static async ensureAuth(): Promise<string> {
+    if (!auth.currentUser) {
+      await signInAnonymously(auth);
+    }
+    return auth.currentUser?.uid || '';
+  }
+
   private static getDateRange(date: Date): { startOfDay: Date, endOfDay: Date } {
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
@@ -30,11 +38,15 @@ export class ExerciseDataService {
 
   static async saveExercise(exercise: ExerciseData): Promise<void> {
     try {
+      // Ensure we have authentication
+      const userId = await this.ensureAuth();
+
       // Save to Firebase if user is online
-      if (navigator.onLine && exercise.userId) {
+      if (navigator.onLine) {
         const exerciseData = {
           ...exercise,
-          timestamp: exercise.timestamp
+          timestamp: exercise.timestamp,
+          userId // Use the authenticated user's ID
         };
 
         const exercisesRef = collection(db, 'exerciseLogs');
@@ -48,12 +60,15 @@ export class ExerciseDataService {
 
       // Always save to localStorage as backup
       const existingData = this.getLocalExercises();
-      const updatedData = [...existingData.filter(e => e.id !== exercise.id), exercise];
+      const updatedData = [...existingData.filter(e => e.id !== exercise.id), { ...exercise, userId }];
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updatedData));
 
     } catch (error) {
       console.error('Error saving exercise:', error);
-      throw new Error('Failed to save exercise');
+      // Save to local storage even if Firebase fails
+      const existingData = this.getLocalExercises();
+      const updatedData = [...existingData.filter(e => e.id !== exercise.id), exercise];
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updatedData));
     }
   }
 

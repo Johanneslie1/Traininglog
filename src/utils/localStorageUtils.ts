@@ -1,5 +1,12 @@
+import { auth } from '@/services/firebase/config';
+import { deleteExerciseLog as deleteFirestoreExerciseLog } from '@/services/firebase/exerciseLogs';
 import { v4 as uuidv4 } from 'uuid';
 import { Program, ExerciseLog as ExerciseLogType } from '@/types/exercise';
+import { db } from '@/services/firebase/config';
+import { doc, deleteDoc, getDoc } from 'firebase/firestore';
+
+const LOGS_STORAGE_KEY = 'exercise_logs';
+const DEVICE_ID_KEY = 'device_id';
 
 // Use ExerciseLogType to define our storage type
 export type ExerciseLog = Omit<ExerciseLogType, 'id'> & { id?: string };
@@ -25,7 +32,8 @@ export const saveExerciseLog = (log: ExerciseLog): ExerciseLog => {
     ...log,
     id: log.id || uuidv4(),
     deviceId: log.deviceId || getDeviceId(),
-    timestamp: log.timestamp || new Date()
+    timestamp: log.timestamp || new Date(),
+    userId: auth.currentUser?.uid || 'anonymous'  // Fallback to anonymous if not authenticated
   };
     // Convert Date to string for storage
   const storableLog = {
@@ -247,21 +255,34 @@ export const importPrograms = (jsonData: string): boolean => {
   }
 };
 
-// Delete an exercise log
-export const deleteExerciseLog = (logId: string): boolean => {
-  const logs = getExerciseLogs();
-  const filteredLogs = logs.filter(log => log.id !== logId);
-  
-  // If no logs were removed, return false
-  if (filteredLogs.length === logs.length) {
-    return false;
-  }
-  
-  // Save the filtered logs
-  localStorage.setItem('exercise_logs', JSON.stringify(filteredLogs.map(log => ({
-    ...log,
-    timestamp: log.timestamp instanceof Date ? log.timestamp.toISOString() : new Date(log.timestamp).toISOString()
-  }))));
+// Delete exercise log from both local storage and Firestore
+export const deleteExerciseLog = async (log: ExerciseLogType): Promise<void> => {
+  try {
+    // Always delete from local storage first
+    const logs = getExerciseLogs();
+    const updatedLogs = logs.filter(l => l.id !== log.id);
+    localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(updatedLogs));
 
-  return true;
+    // Only attempt Firestore operations if authenticated and we have an ID
+    if (log.id && auth.currentUser) {
+      try {
+        const docRef = doc(db, 'exerciseLogs', log.id);
+        // Get the document first to verify ownership
+        const docSnap = await getDoc(docRef);
+        
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.userId === auth.currentUser.uid) {
+            await deleteDoc(docRef);
+          }
+        }
+      } catch (firestoreError) {
+        console.error('Firestore deletion failed, but local delete succeeded:', firestoreError);
+        // Don't throw here, as we've already deleted from local storage
+      }
+    }
+  } catch (error) {
+    console.error('Error deleting exercise log:', error);
+    throw error;
+  }
 };

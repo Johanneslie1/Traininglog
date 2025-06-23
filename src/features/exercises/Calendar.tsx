@@ -94,6 +94,10 @@ export const Calendar: React.FC<CalendarProps> = ({
     "July", "August", "September", "October", "November", "December"
   ];
 
+  const areDatesEqual = (date1: Date, date2: Date): boolean => {
+    return normalizeDate(date1).getTime() === normalizeDate(date2).getTime();
+  };
+
   return (
     <div className="bg-[#1a1a1a] w-full h-screen p-4">
       {/* Header with Navigation */}
@@ -182,12 +186,17 @@ export const Calendar: React.FC<CalendarProps> = ({
         role="grid"
         aria-label="Calendar"
       >
-        {calendarDays.map((date, i) => (
-          <button
-            key={i}
-            onClick={() => date && handleDateSelect(date)}
-            onKeyDown={(e) => {
-              if (date) {
+        {calendarDays.map((date, i) => {
+          if (!date) return <div key={i} className="h-10" />; // Empty cell for days outside current month
+          
+          const isSelected = areDatesEqual(date, selectedDate);
+          const isCurrentMonth = date.getMonth() === currentDate.getMonth();
+          
+          return (
+            <button
+              key={i}
+              onClick={() => handleDateSelect(date)}
+              onKeyDown={(e) => {
                 if (e.key === 'ArrowLeft') {
                   e.preventDefault();
                   const prevDate = new Date(date);
@@ -198,47 +207,30 @@ export const Calendar: React.FC<CalendarProps> = ({
                   const nextDate = new Date(date);
                   nextDate.setDate(date.getDate() + 1);
                   handleDateSelect(nextDate);
-                } else if (e.key === 'ArrowUp') {
-                  e.preventDefault();
-                  const prevWeekDate = new Date(date);
-                  prevWeekDate.setDate(date.getDate() - 7);
-                  handleDateSelect(prevWeekDate);
-                } else if (e.key === 'ArrowDown') {
-                  e.preventDefault();
-                  const nextWeekDate = new Date(date);
-                  nextWeekDate.setDate(date.getDate() + 7);
-                  handleDateSelect(nextWeekDate);
                 }
-              }
-            }}
-            disabled={!date}
-            aria-label={date ? date.toLocaleDateString('no-NO', { 
-              weekday: 'long', 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
-            }) : undefined}
-            aria-selected={date?.toDateString() === selectedDate.toDateString()}
-            className={`
-              aspect-square flex items-center justify-center rounded-lg text-sm relative
-              ${!date ? 'bg-transparent' : 
-                date.toDateString() === selectedDate.toDateString()
-                  ? 'bg-blue-600 text-white ring-2 ring-white focus:ring-offset-2' 
-                  : date.toDateString() === new Date().toDateString()
-                    ? 'bg-[#333] text-white ring-2 ring-blue-500 after:absolute after:w-2 after:h-2 after:bg-blue-500 after:rounded-full after:-top-1 after:-right-1'
-                    : 'bg-[#222] text-gray-300 hover:bg-[#333] hover:ring-1 hover:ring-gray-400 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
-              }
-              focus:outline-none transition-all
-            `}
-          >
-            {date?.getDate()}
-            {isLoading && date?.toDateString() === selectedDate.toDateString() && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
-                <div className="w-4 h-4 border-2 border-transparent border-t-white rounded-full animate-spin"></div>
-              </div>
-            )}
-          </button>
-        ))}
+              }}
+              disabled={isLoading}
+              className={`
+                h-10 rounded-lg text-sm font-medium relative
+                ${isSelected ? 'bg-[#8B5CF6] text-white' : 'text-gray-400'}
+                ${isCurrentMonth ? 'hover:bg-white/10' : 'opacity-50'}
+                ${isLoading ? 'cursor-wait' : 'cursor-pointer'}
+                disabled:cursor-wait disabled:opacity-50
+                transition-colors
+              `}
+              aria-label={`${date.toLocaleDateString()} ${isSelected ? '(Selected)' : ''}`}
+              aria-current={isSelected ? 'date' : undefined}
+              aria-disabled={isLoading}
+            >
+              {date.getDate()}
+              {isLoading && isSelected && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                </div>
+              )}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

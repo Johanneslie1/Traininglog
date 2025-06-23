@@ -1,3 +1,5 @@
+import { User } from './user'; // Adjust the import path as necessary
+
 export interface Exercise {
   id: string;
   name: string;
@@ -78,6 +80,8 @@ export interface ExerciseSet {
   reps: number;
   /** Weight used in kg (optional for bodyweight exercises) */
   weight: number;
+  /** Rating of Perceived Exertion (1-10) */
+  rpe?: string;
   /** Difficulty level of the set */
   difficulty?: DifficultyCategory;
 }
@@ -94,4 +98,6 @@ export interface ExerciseLog {
   timestamp: Date | number;
   /** Device ID for syncing */
   deviceId?: string;
+  /** User ID who owns this exercise log */
+  userId?: string;
 }

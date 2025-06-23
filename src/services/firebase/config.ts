@@ -22,12 +22,24 @@ const firebaseConfig = {
 console.log('Initializing Firebase with config:', { ...firebaseConfig, apiKey: '[REDACTED]' });
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
+let app;
+try {
+  app = initializeApp(firebaseConfig);
+  console.log('Firebase app initialized successfully');
+} catch (error) {
+  console.error('Error initializing Firebase:', error);
+  throw error;
+}
 
 // Get Firebase services - without persistence to simplify mobile support
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+
+// Add initialization status check
+export const isInitialized = () => {
+  return app !== undefined && auth !== undefined;
+};
 
 // Log auth settings
 console.log('Auth domain configured as:', auth.config.authDomain);

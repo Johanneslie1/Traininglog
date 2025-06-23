@@ -16,6 +16,50 @@ import '@/styles/dragAndDrop.css';
 
 const App: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isAuthReady, setIsAuthReady] = useState(false);
+
+  // Handle auth initialization
+  useEffect(() => {
+    const initializeAuth = async () => {
+      return new Promise<void>((resolve) => {
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+          if (user) {
+            try {
+              const userDoc = await getDoc(doc(db, 'users', user.uid));
+              if (userDoc.exists()) {
+                const userData = userDoc.data();
+                store.dispatch(setUser({
+                  id: user.uid,
+                  email: userData.email,
+                  firstName: userData.firstName,
+                  lastName: userData.lastName,
+                  role: userData.role,
+                  createdAt: userData.createdAt.toDate(),
+                  updatedAt: userData.updatedAt.toDate()
+                }));
+              }
+            } catch (error) {
+              console.error('Error fetching user data:', error);
+              setErrorMessage('Failed to fetch user data. Please try again later.');
+            }
+          } else {
+            store.dispatch(setUser(null));
+          }
+          store.dispatch(setLoading(false));
+          setIsAuthReady(true);
+          resolve();
+        });
+      });
+    };
+
+    initializeAuth().catch(error => {
+      console.error('Auth initialization error:', error);
+      setErrorMessage('Failed to initialize authentication. Please try again later.');
+      store.dispatch(setLoading(false));
+      setIsAuthReady(true);
+    });
+  }, []);
+
   useEffect(() => {
     try {
       // Initialize the mobile drag and drop polyfill with enhanced options
@@ -109,6 +153,30 @@ Host: ${window.location.host}`}
         >
           Reload Application
         </button>
+      </div>
+    );
+  }
+  if (!isAuthReady) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#8B5CF6]"></div>
+      </div>
+    );
+  }
+
+  if (errorMessage) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="bg-[#1a1a1a] p-6 rounded-xl max-w-md w-full mx-4">
+          <h1 className="text-white text-xl font-medium mb-4">Application Error</h1>
+          <p className="text-gray-300 mb-6">{errorMessage}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="w-full bg-[#8B5CF6] text-white py-3 rounded-lg hover:bg-[#7C3AED] transition-colors"
+          >
+            Reload Application
+          </button>
+        </div>
       </div>
     );
   }

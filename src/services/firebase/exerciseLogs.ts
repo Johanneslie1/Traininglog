@@ -13,9 +13,23 @@ import { ExerciseLog } from '@/utils/localStorageUtils';
 
 const COLLECTION_NAME = 'exerciseLogs';
 
-export const deleteExerciseLog = async (logId: string): Promise<void> => {
+export const deleteExerciseLog = async (logId: string, userId: string): Promise<void> => {
   try {
+    // First verify the user owns this exercise
     const exerciseRef = doc(db, COLLECTION_NAME, logId);
+    const exerciseDoc = await getDoc(exerciseRef);
+    
+    if (!exerciseDoc.exists()) {
+      throw new Error('Exercise not found');
+    }
+    
+    // Verify ownership
+    const exerciseData = exerciseDoc.data();
+    if (exerciseData.userId !== userId) {
+      throw new Error('You do not have permission to delete this exercise');
+    }
+    
+    // Delete from Firestore
     await deleteDoc(exerciseRef);
   } catch (error) {
     console.error('Error deleting exercise log:', error);

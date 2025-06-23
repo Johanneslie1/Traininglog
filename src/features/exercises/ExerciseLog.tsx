@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import LogOptions from './LogOptions';
-import Calendar from './Calendar';
+import { Calendar } from './Calendar';
 import { ExerciseSetLogger } from './ExerciseSetLogger';
 import WorkoutSummary from './WorkoutSummary';
 import { db } from '@/services/firebase/config';
@@ -29,16 +29,25 @@ export const ExerciseLog: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   
   // Date utility functions
-  const normalizeDate = useCallback((date: Date): Date => {
+  const normalizeDate = useCallback((date: Date | null): Date | null => {
+    if (!date) return null;
     const normalized = new Date(date);
     normalized.setHours(0, 0, 0, 0);
     return normalized;
   }, []);
 
   const areDatesEqual = useCallback((date1: Date | null, date2: Date | null): boolean => {
-    if (!date1 || !date2) return false;
-    return normalizeDate(date1).getTime() === normalizeDate(date2).getTime();
+    const normalized1 = normalizeDate(date1);
+    const normalized2 = normalizeDate(date2);
+    
+    if (!normalized1 || !normalized2) return false;
+    return normalized1.getTime() === normalized2.getTime();
   }, [normalizeDate]);
+
+  const isToday = useCallback((date: Date | null): boolean => {
+    if (!date) return false;
+    return areDatesEqual(date, new Date());
+  }, [areDatesEqual]);
 
   const getDateRange = useCallback((date: Date): { startOfDay: Date; endOfDay: Date } => {
     const startOfDay = normalizeDate(date);
@@ -68,7 +77,7 @@ export const ExerciseLog: React.FC = () => {
   });
 
   // Data-related state with normalized dates
-  const [selectedDate, setSelectedDate] = useState(() => normalizeDate(new Date()));
+  const [selectedDate, setSelectedDate] = useState<Date>(() => normalizeDate(new Date()) || new Date());
   const [exercises, setExercises] = useState<ExerciseData[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<ExerciseData | null>(null);
@@ -153,7 +162,6 @@ export const ExerciseLog: React.FC = () => {
     }
   }, [user, areDatesEqual, normalizeDate, getDateRange, convertToExerciseData]);
 
-  // UI state updater
   const updateUiState = useCallback((key: keyof typeof uiState, value: boolean) => {
     setUiState(prev => ({ ...prev, [key]: value }));
   }, []);
@@ -163,22 +171,43 @@ export const ExerciseLog: React.FC = () => {
     updateUiState('showCalendar', show ?? !uiState.showCalendar);
   }, [uiState.showCalendar, updateUiState]);
 
-  // Calendar handlers
-  const handleDateSelect = useCallback((date: Date) => {
+  // Date handlers
+  const handleDateChange = useCallback((date: Date) => {
     const normalizedDate = normalizeDate(date);
-    setSelectedDate(normalizedDate);
+    setSelectedDate(normalizedDate || date);
+    updateUiState('showSetLogger', false);
+    updateUiState('showLogOptions', false);
+  }, [normalizeDate, updateUiState]);
+  
+  // Always ensure selectedDate is valid
+  useEffect(() => {
+    if (!selectedDate) {
+      setSelectedDate(new Date());
+    }
+  }, [selectedDate]);
+  
+  // Calendar handlers
+  const handleDateSelect = useCallback(async (date: Date) => {
+    const normalized = normalizeDate(date);
+    if (!normalized) return;
+    
+    setSelectedDate(normalized);
+    await loadExercises(normalized);
     toggleCalendar(false);
-  }, [normalizeDate, toggleCalendar]);
+  }, [normalizeDate, loadExercises, toggleCalendar]);
 
-  const handleExercisesSelect = useCallback((selectedExercises: ExerciseData[]) => {
+  // Automatic initialization and data loading when user changes
+  useEffect(() => {
+    if (user?.id) {
+      loadExercises(selectedDate);
+    }
+  }, [user?.id, loadExercises, selectedDate]);
+
+  // Handle exercise select from calendar
+  const handleExerciseSelect = useCallback((selectedExercises: ExerciseData[]) => {
     setExercises(selectedExercises);
-  }, []);
-
-  // Exercise handlers
-  const handleOpenSetLogger = useCallback((exercise: ExerciseData) => {
-    setSelectedExercise(exercise);
-    updateUiState('showSetLogger', true);
-  }, [updateUiState]);
+    toggleCalendar(false);
+  }, [toggleCalendar]);
 
   const handleCloseSetLogger = useCallback(() => {
     setSelectedExercise(null);
@@ -201,26 +230,40 @@ export const ExerciseLog: React.FC = () => {
       )
     );
     handleCloseSetLogger();
-  }, [selectedExercise, user, selectedDate, handleCloseSetLogger]);
-
-  const handleDeleteExercise = useCallback((exerciseId: string | undefined) => {
-    if (!exerciseId) return;
+  }, [selectedExercise, user, selectedDate, handleCloseSetLogger]);  const handleDeleteExercise = async (exercise: ExerciseData) => {
+    if (!user?.id || !exercise.id) return;
     
     if (window.confirm('Are you sure you want to delete this exercise?')) {
-      const success = deleteExerciseLog(exerciseId);
-      if (success) {
-        setExercises(prevExercises => prevExercises.filter(ex => ex.id !== exerciseId));
-      } else {
-        alert('Failed to delete the exercise. Please try again.');
+      try {
+        await deleteExerciseLog({
+          id: exercise.id,
+          exerciseName: exercise.exerciseName,
+          sets: exercise.sets,
+          timestamp: exercise.timestamp,
+          deviceId: exercise.deviceId || ''
+        });
+        await loadExercises(selectedDate);
+      } catch (error) {
+        console.error('Error deleting exercise:', error);
+        alert('Failed to delete exercise. Please try again.');
       }
     }
-  }, []);
-  const formatDate = (date: Date) => {
+  };
+
+  const handleEditExercise = (exercise: ExerciseData) => {
+    setSelectedExercise(exercise);
+    updateUiState('showSetLogger', true);
+  };
+
+  const formatDate = useCallback((date: Date | null) => {
+    if (!date) return '';
     return date.toLocaleDateString('no-NO', { 
       day: 'numeric',
       month: 'long'
     }).toLowerCase();
-  };  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  }, []);
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !user?.id) return;
 
@@ -304,20 +347,7 @@ export const ExerciseLog: React.FC = () => {
             >
               {uiState.showCalendar ? 'Hide Calendar' : 'Show Calendar'}
             </button>
-          </div>
-
-          {uiState.showCalendar && (
-            <div className="mb-4 bg-[#1a1a1a] rounded-xl border border-white/10 overflow-hidden p-4">
-              <Calendar 
-                onDateSelect={handleDateSelect} 
-                selectedDate={selectedDate}
-                onSelectExercises={handleExercisesSelect}
-                onClose={() => toggleCalendar(false)}
-              />
-            </div>
-          )}
-
-          <div className="flex-grow">
+          </div>          <div className="flex-grow">
             {loading ? (
               <div className="flex justify-center items-center h-32">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#8B5CF6]"></div>
@@ -334,15 +364,13 @@ export const ExerciseLog: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                {exercises.map((exercise, index) => (
+                {exercises.map((exercise) => (
                   <ExerciseCard
-                    key={exercise.id || index}
-                    name={exercise.exerciseName}
-                    sets={exercise.sets}
-                    onEdit={areDatesEqual(exercise.timestamp, new Date()) ? () => handleOpenSetLogger(exercise) : undefined}
-                    onDelete={areDatesEqual(exercise.timestamp, new Date()) ? () => handleDeleteExercise(exercise.id) : undefined}
-                    onAddSet={areDatesEqual(exercise.timestamp, new Date()) ? () => handleOpenSetLogger(exercise) : undefined}
-                    isToday={areDatesEqual(exercise.timestamp, new Date())}
+                    key={exercise.id}
+                    exercise={exercise}
+                    onEdit={() => handleEditExercise(exercise)}
+                    onDelete={() => handleDeleteExercise(exercise)}
+                    showActions={true}
                   />
                 ))}
               </div>
@@ -351,43 +379,16 @@ export const ExerciseLog: React.FC = () => {
         </div>
       </main>
 
-      {/* Calendar Modal - Always rendered but conditionally visible */}
-      <div className="fixed inset-0 z-40 overflow-hidden pointer-events-none">
-        <div 
-          className={`absolute inset-0 bg-black/50 transition-opacity duration-200 ${
-            uiState.showCalendar ? 'opacity-100 pointer-events-auto' : 'opacity-0'
-          }`}
-          onClick={() => toggleCalendar(false)}
-        />
-        <div 
-          className={`fixed top-[72px] right-0 w-[300px] mr-4 shadow-lg transition-transform duration-200 ${
-            uiState.showCalendar ? 'translate-x-0 pointer-events-auto' : 'translate-x-full'
-          }`}
-          role={uiState.showCalendar ? "dialog" : "none"}
-          aria-modal={uiState.showCalendar}
-          aria-labelledby="calendar-title"
-        >
-          <div className="bg-[#1a1a1a] rounded-xl overflow-hidden border border-white/10">
-            <div className="flex items-center justify-between p-3 border-b border-white/10">
-              <h2 id="calendar-title" className="text-white font-medium">Calendar</h2>
-              <button
-                onClick={() => toggleCalendar(false)}
-                className="p-1 hover:bg-white/10 rounded-lg transition-colors"
-                aria-label="Close calendar"
-              >
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>            <Calendar 
-              onClose={() => toggleCalendar(false)}
-              onSelectExercises={handleExercisesSelect}
-              onDateSelect={handleDateSelect}
-              selectedDate={selectedDate}
-            />
-          </div>
+      {/* Calendar */}
+      {uiState.showCalendar && (
+        <div className="fixed inset-0 bg-black/90 z-50">          <Calendar 
+            onClose={() => toggleCalendar(false)}
+            onSelectExercises={handleExerciseSelect}
+            onDateSelect={handleDateSelect}
+            selectedDate={selectedDate}
+          />
         </div>
-      </div>
+      )}
 
       {/* Add Exercise Button */}
       <button
