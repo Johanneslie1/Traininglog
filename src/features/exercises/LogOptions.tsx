@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import ExerciseSearch from './ExerciseSearch';
 import Calendar from './Calendar';
 import ProgramManager from './ProgramManager';
 import { ExerciseSetLogger } from './ExerciseSetLogger';
 import { db, auth } from '@/services/firebase/config';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
 import { getDeviceId, saveExerciseLog } from '@/utils/localStorageUtils';
 import { Program, ExerciseSet, DifficultyCategory } from '@/types/exercise';
 import { ExerciseData } from '@/services/exerciseDataService';
+import { v4 as uuidv4 } from 'uuid';
 
 interface LogOptionsProps {
   onClose: () => void;
@@ -56,7 +57,59 @@ export const LogOptions: React.FC<LogOptionsProps> = ({ onClose, onExerciseAdded
     setRecentExercises(exercises);
     setView('main');
   };
-    const addExerciseToToday = async (exercise: ExerciseData) => {
+  
+  // Utility function to check if an exercise already exists for the day
+  const checkExerciseExists = async (exerciseName: string, timestamp: Date, userId: string) => {
+    const startOfDay = new Date(timestamp);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(timestamp);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const q = query(
+      collection(db, 'exerciseLogs'),
+      where('userId', '==', userId),
+      where('exerciseName', '==', exerciseName),
+      where('timestamp', '>=', startOfDay),
+      where('timestamp', '<=', endOfDay)
+    );
+
+    const snapshot = await getDocs(q);
+    return !snapshot.empty;
+  };
+
+  // Utility function to save exercise with proper error handling
+  const saveExerciseWithRetry = async (exerciseData: ExerciseData) => {
+    const maxRetries = 3;
+    let lastError = null;
+
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        // First save to Firestore
+        const { id, ...dataForFirestore } = exerciseData;
+        const docRef = await addDoc(collection(db, 'exerciseLogs'), dataForFirestore);
+        
+        // If Firestore save successful, save to localStorage with Firestore ID
+        const exerciseWithId = {
+          ...exerciseData,
+          id: docRef.id
+        };
+        saveExerciseLog(exerciseWithId);
+        return true;
+      } catch (error) {
+        console.error(`Attempt ${i + 1} failed:`, error);
+        lastError = error;
+        await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1))); // Exponential backoff
+      }
+    }
+
+    // If all retries failed, save to localStorage with a temporary ID
+    console.error('Failed to save to Firebase after retries:', lastError);
+    const tempId = `local-${uuidv4()}`;
+    saveExerciseLog({ ...exerciseData, id: tempId });
+    return false;
+  };
+
+  const addExerciseToToday = async (exercise: ExerciseData) => {
     try {
       if (!auth.currentUser) {
         throw new Error('You must be logged in to save exercises');
@@ -65,42 +118,39 @@ export const LogOptions: React.FC<LogOptionsProps> = ({ onClose, onExerciseAdded
       const deviceId = getDeviceId();
       const timestamp = selectedDate || new Date();
       
-      // Create the exercise log with the device ID and userId
+      // Check for duplicates
+      const exists = await checkExerciseExists(exercise.exerciseName, timestamp, auth.currentUser.uid);
+      if (exists) {
+        const proceed = window.confirm('This exercise already exists for today. Add it anyway?');
+        if (!proceed) return;
+      }
+
       const newExercise = {
         ...exercise,
         timestamp,
         deviceId,
         userId: auth.currentUser.uid
       };
-      
-      // Save to local storage
-      saveExerciseLog(newExercise);
 
-      try {
-        // Remove id so Firestore generates a new one
-        const { id, ...exerciseData } = newExercise;
-        console.log('Adding exercise log to Firebase:', exerciseData);
-        await addDoc(collection(db, 'exerciseLogs'), exerciseData);
-        console.log('Successfully saved to Firebase');
-      } catch (firebaseError) {
-        console.error('Failed to save to Firebase:', firebaseError);
-      }
-      
+      await saveExerciseWithRetry(newExercise);
+
       // Notify parent that an exercise was added
       if (onExerciseAdded) {
         onExerciseAdded();
       }
       
-      onClose(); // Close modal after adding
+      onClose();
     } catch (error) {
-      console.error('Failed to add exercise:', error);
-      alert('Failed to add exercise to today.');    }
-  };  
-    const handleSaveSets = async (sets: ExerciseSet[]) => {
+      console.error('Error saving exercise:', error);
+      alert('Failed to add exercise. Please try again.');
+    }
+  };
+
+  const handleSaveSets = async (sets: ExerciseSet[]) => {
     if (!currentExercise) return;
     
-    try {      const currentUser = auth.currentUser;
-      if (!currentUser) {
+    try {
+      if (!auth.currentUser) {
         throw new Error('You must be logged in to save exercises');
       }
 
@@ -108,35 +158,24 @@ export const LogOptions: React.FC<LogOptionsProps> = ({ onClose, onExerciseAdded
       const timestamp = selectedDate || new Date();
       
       const exerciseLog = {
+        id: uuidv4(),
         exerciseName: currentExercise.name,
-        sets: sets,
+        sets,
         timestamp,
         deviceId,
-        userId: currentUser.uid
+        userId: auth.currentUser.uid
       };
 
-      // Save to local storage
-      saveExerciseLog(exerciseLog);
+      await saveExerciseWithRetry(exerciseLog);
       
-      // Save to Firebase
-      try {
-        console.log('Adding exercise log to Firebase:', exerciseLog);
-        await addDoc(collection(db, 'exerciseLogs'), exerciseLog);
-        console.log('Successfully saved to Firebase');
-      } catch (firebaseError) {
-        console.error('Failed to save to Firebase:', firebaseError);
-        // Don't throw since we saved locally
-      }
-      
-      // Notify parent that an exercise was added
       if (onExerciseAdded) {
         onExerciseAdded();
       }
       
-      onClose(); // Close modal after adding
+      onClose();
     } catch (error) {
       console.error('Error saving exercise with sets:', error);
-      alert('Failed to add exercise to today.');
+      alert('Failed to save exercise. Please try again.');
     }
   };
   const handleProgramSelected = (program: Program) => {

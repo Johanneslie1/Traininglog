@@ -104,67 +104,59 @@ export const ExerciseLog: React.FC = () => {
 
     // Normalize the target date and set loading state
     const loadedDate = normalizeDate(date);
-    let currentLoadedDate = loadedDate; // Keep track of which date we're loading
+    let currentLoadedDate = loadedDate;
     setLoading(true);
-    setExercises([]); // Clear previous exercises while loading
+    setExercises([]);
 
     try {
-      // First, get exercises from local storage
-      const localExercises = getExerciseLogsByDate(loadedDate);
-      const allExercises = localExercises.map(exercise => 
-        convertToExerciseData(exercise, userId)
+      // First, try to get exercises from Firestore
+      const { startOfDay, endOfDay } = getDateRange(loadedDate);
+      const q = query(
+        collection(db, 'exerciseLogs'),
+        where('userId', '==', userId),
+        where('timestamp', '>=', startOfDay),
+        where('timestamp', '<=', endOfDay)
       );
-      
-      // Only continue with Firebase if we haven't changed dates
-      if (areDatesEqual(currentLoadedDate, loadedDate)) {
-        // Check Firebase for additional exercises
-        const { startOfDay, endOfDay } = getDateRange(loadedDate);
-        const q = query(
-          collection(db, 'exerciseLogs'),
-          where('userId', '==', userId),
-          where('timestamp', '>=', startOfDay),
-          where('timestamp', '<=', endOfDay)
-        );
 
-        const snapshot = await getDocs(q);
-        const firebaseExercises = snapshot.docs.map(doc => {
-          const data = doc.data();
-          return convertToExerciseData({
-            id: doc.id,
-            exerciseName: data.exerciseName,
-            sets: data.sets,
-            timestamp: data.timestamp.toDate(),
-            deviceId: data.deviceId
-          }, userId);
+      const snapshot = await getDocs(q);
+      const firebaseExercises = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return convertToExerciseData({
+          id: doc.id,
+          exerciseName: data.exerciseName,
+          sets: data.sets,
+          timestamp: data.timestamp.toDate(),
+          deviceId: data.deviceId
+        }, userId);
+      });
+
+      // Only get local exercises that don't have a matching Firestore ID
+      const localExercises = getExerciseLogsByDate(loadedDate)
+        .filter(exercise => !exercise.id || !firebaseExercises.some(fEx => fEx.id === exercise.id))
+        .map(exercise => convertToExerciseData(exercise, userId));
+
+      // If we're still loading the same date, update the exercises
+      if (areDatesEqual(currentLoadedDate, loadedDate)) {
+        // Combine Firestore and unique local exercises
+        const allExercises = [...firebaseExercises, ...localExercises];
+
+        // Sort by timestamp to maintain consistent order
+        allExercises.sort((a, b) => {
+          if (a.timestamp instanceof Date && b.timestamp instanceof Date) {
+            return a.timestamp.getTime() - b.timestamp.getTime();
+          }
+          return 0;
         });
 
-        // Only update if we're still loading the same date
-        if (areDatesEqual(currentLoadedDate, loadedDate)) {
-          // Merge Firebase exercises with local ones, avoiding duplicates by ID
-          const exerciseMap = new Map<string, ExerciseData>();
-          
-          // Add local exercises first
-          allExercises.forEach(exercise => {
-            if (exercise.id) {
-              exerciseMap.set(exercise.id, exercise);
-            }
-          });
-          
-          // Add Firebase exercises, overwriting local ones if they exist
-          firebaseExercises.forEach(exercise => {
-            if (exercise.id) {
-              exerciseMap.set(exercise.id, exercise);
-            }
-          });
-
-          setExercises(Array.from(exerciseMap.values()));
-        }
+        setExercises(allExercises);
       }
     } catch (error) {
       console.error('Error fetching exercises:', error);
-      // If there was an error with Firebase, still show local exercises
+      // On Firestore error, fall back to local data
       if (areDatesEqual(currentLoadedDate, loadedDate)) {
-        setExercises([]);
+        const localExercises = getExerciseLogsByDate(loadedDate)
+          .map(exercise => convertToExerciseData(exercise, userId));
+        setExercises(localExercises);
       }
     } finally {
       if (areDatesEqual(currentLoadedDate, loadedDate)) {
