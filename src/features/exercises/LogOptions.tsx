@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import ExerciseSearch from './ExerciseSearch';
 import Calendar from './Calendar';
 import ProgramManager from './ProgramManager';
