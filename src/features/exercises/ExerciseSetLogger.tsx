@@ -50,20 +50,42 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
       return set;
     }));
   };
-
   const handleInputChange = (type: 'weight' | 'reps', value: string) => {
-    const numValue = parseInt(value) || 0;
+    // Only allow digits and one decimal point for weights
+    const cleanValue = type === 'weight' 
+      ? value.replace(/[^\d.,]/g, '').replace(/,/g, '.').replace(/(\..*)\./g, '$1')
+      : value.replace(/[^\d]/g, '');
+    
+    // Convert to number based on input type
+    let numValue = type === 'weight' 
+      ? parseFloat(cleanValue) || 0
+      : parseInt(cleanValue) || 0;
+    
     const maxValue = type === 'weight' ? 999 : 99;
+    numValue = Math.min(maxValue, Math.max(0, numValue));
     
     setSets(sets.map((set, index) => {
       if (index === selectedSetIndex) {
         return {
           ...set,
-          [type]: Math.min(maxValue, Math.max(0, numValue))
+          [type]: numValue
         };
       }
       return set;
     }));
+
+    // If it's not a valid partial input (like a lone decimal point), keep the original value
+    if ((type === 'weight' && cleanValue !== '.') || type === 'reps') {
+      setSets(prev => prev.map((set, index) => {
+        if (index === selectedSetIndex && !isNaN(numValue)) {
+          return {
+            ...set,
+            [type]: numValue
+          };
+        }
+        return set;
+      }));
+    }
   };
 
   const handleDelete = () => {
@@ -167,13 +189,17 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
             >
               -
             </button>
-            <div className="flex-1">
-              <input
-                type="number"
+            <div className="flex-1">              <input
+                type="text"
                 inputMode="decimal"
+                pattern="[0-9]*[.,]?[0-9]*"
                 value={sets[selectedSetIndex].weight || 0}
                 onChange={(e) => handleInputChange('weight', e.target.value)}
                 className="w-full bg-[#2a2a2a] text-white text-center px-4 py-3 rounded-lg border border-white/10 focus:outline-none focus:border-[#8B5CF6]"
+                onBlur={(e) => {
+                  const numValue = parseFloat(e.target.value) || 0;
+                  handleInputChange('weight', numValue.toString());
+                }}
               />
             </div>
             <button
@@ -195,13 +221,17 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
             >
               -
             </button>
-            <div className="flex-1">
-              <input
-                type="number"
+            <div className="flex-1">              <input
+                type="text"
                 inputMode="numeric"
+                pattern="[0-9]*"
                 value={sets[selectedSetIndex].reps || 0}
                 onChange={(e) => handleInputChange('reps', e.target.value)}
                 className="w-full bg-[#2a2a2a] text-white text-center px-4 py-3 rounded-lg border border-white/10 focus:outline-none focus:border-[#8B5CF6]"
+                onBlur={(e) => {
+                  const numValue = parseInt(e.target.value) || 0;
+                  handleInputChange('reps', numValue.toString());
+                }}
               />
             </div>
             <button
