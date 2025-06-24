@@ -9,7 +9,6 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   
   return {
-    // Base path for production deployment
     base: '/',
     define: {
       __APP_URL__: JSON.stringify(env.VITE_APP_URL || 'http://localhost:3000'),
@@ -30,32 +29,16 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       VitePWA({
-        registerType: 'autoUpdate',
-        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
-        manifest: {
-          name: 'Training Log App',
-          short_name: 'TrainingLog',
-          description: 'A professional strength training logging application',
-          theme_color: '#ffffff',
-          icons: [
-            {
-              src: '/icons/icon-192x192.png',
-              sizes: '192x192',
-              type: 'image/png',
-              purpose: 'any'
-            },
-            {
-              src: '/icons/icon-512x512.png',
-              sizes: '512x512',
-              type: 'image/png',
-              purpose: 'any'
-            }
-          ]
+        registerType: 'prompt',
+        devOptions: {
+          enabled: true,
+          type: 'module'
         },
         workbox: {
+          cleanupOutdatedCaches: true,
+          sourcemap: true,
           clientsClaim: true,
           skipWaiting: true,
-          cleanupOutdatedCaches: true,
           runtimeCaching: [
             {
               urlPattern: /^https:\/\/traininglog-zied\.vercel\.app\/.*/i,
@@ -70,7 +53,33 @@ export default defineConfig(({ mode }) => {
             }
           ]
         },
-      })  ],
+        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+        manifest: {
+          name: 'Training Log App',
+          short_name: 'TrainingLog',
+          description: 'A professional strength training logging application',
+          theme_color: '#121212',
+          background_color: '#121212',
+          display: 'standalone',
+          orientation: 'any',
+          start_url: '/',
+          icons: [
+            {
+              src: '/icons/icon-192x192.png',
+              sizes: '192x192',
+              type: 'image/png',
+              purpose: 'any'
+            },
+            {
+              src: '/icons/icon-512x512.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'any'
+            }
+          ]
+        }
+      })
+    ],
     preview: {
       port: 4173,
       strictPort: false,

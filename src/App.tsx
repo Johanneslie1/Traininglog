@@ -16,6 +16,49 @@ import '@/styles/dragAndDrop.css';
 // Initialize drag and drop polyfill
 polyfill();
 
+// Register service worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(registration => {
+        console.log('ServiceWorker registration successful');
+        
+        // Handle updates
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          if (newWorker) {
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                // New content is available, trigger app update
+                window.dispatchEvent(new CustomEvent('swUpdated'));
+              }
+            });
+          }
+        });
+      })
+      .catch(error => {
+        console.error('ServiceWorker registration failed:', error);
+      });
+
+    // Handle controller change
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!refreshing) {
+        refreshing = true;
+        window.location.reload();
+      }
+    });
+  });
+}
+
+// Handle service worker messages
+navigator.serviceWorker?.addEventListener('message', event => {
+  if (event.data && event.data.type === 'CACHE_UPDATED') {
+    // Handle cache updates
+    console.log('Cache updated:', event.data.url);
+  }
+});
+
 const AppContent: React.FC = () => {
   console.log('AppContent rendering');  const [isAuthReady, setIsAuthReady] = useState(false);
 
