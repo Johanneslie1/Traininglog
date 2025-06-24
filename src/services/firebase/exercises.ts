@@ -148,3 +148,59 @@ export const searchExerciseSuggestions = async (searchText: string): Promise<Exe
     throw new Error(`Error searching exercise suggestions: ${error.message}`);
   }
 };
+
+export const getExerciseList = async (searchTerm?: string): Promise<Exercise[]> => {
+  try {
+    const exercisesRef = collection(db, 'exercises');
+    let q: Query<DocumentData>;
+    
+    if (searchTerm) {
+      // Create a case-insensitive search
+      const searchTermLower = searchTerm.toLowerCase();
+      q = query(
+        exercisesRef,
+        where('nameLower', '>=', searchTermLower),
+        where('nameLower', '<=', searchTermLower + '\uf8ff'),
+        limit(20)
+      );
+    } else {
+      q = query(exercisesRef, orderBy('name'), limit(20));
+    }
+    
+    const querySnapshot = await getDocs(q);
+    const exercises: Exercise[] = [];
+
+    querySnapshot.forEach((doc) => {
+      exercises.push({ id: doc.id, ...doc.data() } as Exercise);
+    });
+
+    return exercises;
+  } catch (error: any) {
+    throw new Error(`Error getting exercise list: ${error.message}`);
+  }
+};
+
+export const getExerciseSuggestions = async (term: string): Promise<Exercise[]> => {
+  try {
+    const exercisesRef = collection(db, 'exercises');
+    const searchTermLower = term.toLowerCase();
+    
+    const q = query(
+      exercisesRef,
+      where('nameLower', '>=', searchTermLower),
+      where('nameLower', '<=', searchTermLower + '\uf8ff'),
+      limit(10)
+    );
+    
+    const querySnapshot = await getDocs(q);
+    const exercises: Exercise[] = [];
+
+    querySnapshot.forEach((doc) => {
+      exercises.push({ id: doc.id, ...doc.data() } as Exercise);
+    });
+
+    return exercises;
+  } catch (error: any) {
+    throw new Error(`Error getting exercise suggestions: ${error.message}`);
+  }
+};

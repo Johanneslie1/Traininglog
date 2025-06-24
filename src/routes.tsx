@@ -5,6 +5,7 @@ import { RootState } from '@/store/store';
 
 // Lazy load components
 const ExerciseLog = lazy(() => import('@/features/exercises/ExerciseLog'));
+const ProgramManager = lazy(() => import('@/features/programs/ProgramManager'));
 const Login = lazy(() => import('@/features/auth/Login'));
 const Register = lazy(() => import('@/features/auth/Register'));
 const Debug = lazy(() => import('@/features/debug/Debug'));
@@ -16,11 +17,9 @@ interface ProtectedRouteProps {
 // Protected Route wrapper
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { isAuthenticated, isLoading } = useSelector((state: RootState) => state.auth);
-  
-  console.log('ProtectedRoute state:', { isAuthenticated, isLoading });
+  console.log('ProtectedRoute:', { isAuthenticated, isLoading });
   
   if (isLoading) {
-    console.log('Auth is still loading...');
     return (
       <div className="flex items-center justify-center min-h-screen bg-black">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
@@ -29,12 +28,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     );
   }
 
-  console.log('Auth loaded, authenticated:', isAuthenticated);
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
 };
 
 // App Routes
 const AppRoutes: React.FC = () => {
+  console.log('AppRoutes rendering');
   return (
     <Suspense fallback={
       <div className="flex items-center justify-center min-h-screen bg-black">
@@ -44,6 +43,11 @@ const AppRoutes: React.FC = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/debug" element={<Debug />} />
+        <Route path="/programs" element={
+          <ProtectedRoute>
+            <ProgramManager />
+          </ProtectedRoute>
+        } />
         <Route path="/" element={
           <ProtectedRoute>
             <ExerciseLog />

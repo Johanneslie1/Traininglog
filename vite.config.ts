@@ -69,13 +69,28 @@ export default defineConfig(({ mode }) => {
               }
             }
           ]
-        }
+        },
       })  ],
     preview: {
       port: 4173,
       strictPort: false,
       host: true,
       cors: true
+    },
+    test: {
+      globals: true,
+      environment: 'jsdom',
+      setupFiles: './src/tests/setup.ts',
+      coverage: {
+        reporter: ['text', 'json', 'html'],
+        exclude: [
+          'node_modules/',
+          'src/tests/setup.ts',
+        ],
+      },
+      deps: {
+        inline: ['@testing-library/user-event']
+      }
     }
   }
 });

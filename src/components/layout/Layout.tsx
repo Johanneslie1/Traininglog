@@ -13,7 +13,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   
   // Determine if we're on a page that should have a different background
   const isDarkBackground = ['/'].includes(location.pathname);
-
   const handleExport = () => {
     // TODO: Implement export functionality
   };
@@ -24,6 +23,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const handleShowWorkoutSummary = () => {
     // TODO: Implement workout summary functionality
+  };
+  const handleNavigate = (path: string) => {
+    console.log('Navigating to:', path);
+    navigate(path);
+    setShowMenu(false);
   };
 
   return (
@@ -52,11 +56,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         onClose={() => setShowMenu(false)}
         onImport={handleImport}
         onExport={handleExport}
-        onShowWorkoutSummary={handleShowWorkoutSummary}
-        onNavigateToday={() => navigate('/')}
-        onNavigateProfile={() => navigate('/profile')}
-        onNavigateHistory={() => navigate('/history')}
-        onNavigatePrograms={() => navigate('/programs')}
+        onShowWorkoutSummary={handleShowWorkoutSummary}        onNavigateToday={() => handleNavigate('/')}
+        onNavigateProfile={() => handleNavigate('/profile')}
+        onNavigateHistory={() => handleNavigate('/history')}
+        onNavigatePrograms={() => handleNavigate('/programs')}
       />
     </div>
   );
