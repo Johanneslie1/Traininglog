@@ -5,7 +5,7 @@ import { vi } from 'vitest';
 import { configureStore } from '@reduxjs/toolkit';
 import ProgramManager from './ProgramManager';
 import { ProgramsProvider } from '@/context/ProgramsContext';
-import { Program, CreateProgramInput } from '@/types/program';
+import { Program } from '@/types/program';
 import { Exercise } from '@/types/exercise';
 import { act } from 'react-dom/test-utils';
 

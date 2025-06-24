@@ -17,9 +17,7 @@ import '@/styles/dragAndDrop.css';
 polyfill();
 
 const AppContent: React.FC = () => {
-  console.log('AppContent rendering');
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isAuthReady, setIsAuthReady] = useState(false);
+  console.log('AppContent rendering');  const [isAuthReady, setIsAuthReady] = useState(false);
 
   // Initialize auth state
   useEffect(() => {
@@ -46,10 +44,8 @@ const AppContent: React.FC = () => {
         } else {
           store.dispatch(setUser(null));
         }
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-        setErrorMessage('Failed to fetch user data. Please try again later.');
-      } finally {
+      } catch (error) {        console.error('Error fetching user data:', error);
+        // Optionally handle error UI here if needed
         store.dispatch(setLoading(false));
         setIsAuthReady(true);
       }
@@ -90,3 +86,6 @@ const App: React.FC = () => {
 };
 
 export default App;
+
+// Remove this unused function, and instead define setErrorMessage as a state setter in AppContent
+
