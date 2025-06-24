@@ -28,25 +28,22 @@ const SideMenu: React.FC<SideMenuProps> = ({
 
   if (!isOpen) return null;
 
-  return (
-    <>
+  return (    <>
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-black bg-opacity-50 z-40"
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 transition-opacity"
         onClick={onClose}
       />
       
       {/* Menu */}
-      <div className="fixed left-0 top-0 bottom-0 w-72 bg-bg-primary z-50 shadow-lg flex flex-col">
-        <div className="p-4 border-b border-border">
+      <div className="fixed left-0 top-0 bottom-0 w-72 bg-[#23272F] z-50 shadow-xl flex flex-col translate-x-0 transition-transform duration-300 ease-in-out">        <div className="p-4 border-b border-[#3E4652]">
           <div className="flex items-center justify-between">
-            <h2 className="text-text-primary text-xl font-medium">GYM KEEPER</h2>
+            <h2 className="text-[#F2F3F7] text-xl font-medium">GYM KEEPER</h2>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-bg-secondary rounded-full transition-colors"
+              className="p-2 hover:bg-[#2D3440] rounded-full transition-colors"
               aria-label="Close Menu"
-            >
-              <svg className="w-5 h-5 text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            >              <svg className="w-5 h-5 text-[#B0B8C1] hover:text-[#F2F3F7] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -56,9 +53,8 @@ const SideMenu: React.FC<SideMenuProps> = ({
         <div className="flex-1 overflow-y-auto p-2 space-y-4">
           {/* Navigation Section */}
           <div className="space-y-1">
-            <button
-              onClick={onNavigateToday}
-              className="w-full flex items-center gap-3 px-4 py-3 text-text-primary hover:bg-bg-secondary rounded-lg transition-colors"
+            <button              onClick={onNavigateToday}
+              className="w-full flex items-center gap-3 px-4 py-3 text-[#F2F3F7] hover:bg-[#2D3440] rounded-lg transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -97,8 +93,7 @@ const SideMenu: React.FC<SideMenuProps> = ({
             </button>
           </div>
 
-          {/* Data Management Section */}
-          <div className="pt-4 border-t border-border space-y-1">
+          {/* Data Management Section */}          <div className="pt-4 border-t border-[#3E4652] space-y-1">
             <button
               onClick={onShowWorkoutSummary}
               className="w-full flex items-center gap-3 px-4 py-3 text-text-primary hover:bg-bg-secondary rounded-lg transition-colors"
