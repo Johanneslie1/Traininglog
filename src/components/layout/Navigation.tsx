@@ -27,15 +27,6 @@ const menuItems: MenuItem[] = [
     )
   },
   {
-    name: 'Programs',
-    path: '/programs',
-    icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-      </svg>
-    )
-  },
-  {
     name: 'Profile',
     path: '/profile',
     icon: (
@@ -46,9 +37,14 @@ const menuItems: MenuItem[] = [
   }
 ];
 
-const Navigation: React.FC = () => {
+const Navigation: React.FC = () => {  
   const navigate = useNavigate();
   const location = useLocation();
+
+  const handleNavigate = (path: string) => {
+    console.log('Navigating to:', path);
+    navigate(path);
+  };
 
   return (
     <nav className="fixed bottom-0 inset-x-0 z-40 bg-bg-primary border-t border-border backdrop-blur-sm bg-opacity-90">
@@ -59,12 +55,11 @@ const Navigation: React.FC = () => {
             return (
               <button
                 key={item.path}
-                onClick={() => navigate(item.path)}
+                onClick={() => handleNavigate(item.path)}
                 className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
-                  isActive 
-                    ? 'text-accent-primary'
-                    : 'text-text-secondary hover:text-text-primary'
+                  isActive ? 'text-accent-primary' : 'text-text-secondary hover:text-text-primary'
                 }`}
+                aria-current={isActive ? 'page' : undefined}
               >
                 <div className="relative">
                   {item.icon}

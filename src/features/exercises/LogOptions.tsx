@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
+import { useState, useCallback } from 'react';
 import ExerciseSearch from './ExerciseSearch';
 import Calendar from './Calendar';
-import ProgramManager from './ProgramManager';
 import { ExerciseSetLogger } from './ExerciseSetLogger';
-import { db, auth } from '@/services/firebase/config';
+import { db } from '@/services/firebase/config';
 import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
-import { getDeviceId, saveExerciseLog } from '@/utils/localStorageUtils';
-import { Program, ExerciseSet, DifficultyCategory } from '@/types/exercise';
+import { ExerciseSet, Exercise } from '@/types/exercise';
 import { ExerciseData } from '@/services/exerciseDataService';
-import { v4 as uuidv4 } from 'uuid';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
+
+type ExerciseTemplate = Omit<Exercise, 'id'>;
+type ExerciseWithId = Exercise & { sets?: ExerciseSet[] };
 
 interface LogOptionsProps {
   onClose: () => void;
@@ -42,24 +44,26 @@ const trainingTypes: Category[] = [
   { id: 'stretching', name: 'Stretching', icon: '🧘‍♂️', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-green-600', textColor: 'text-white' },
 ];
 
-export const LogOptions: React.FC<LogOptionsProps> = ({ onClose, onExerciseAdded, selectedDate }) => {
-  const [view, setView] = useState<'main' | 'search' | 'calendar' | 'setLogger' | 'program'>('main');
+export const LogOptions = ({ onClose, onExerciseAdded, selectedDate }: LogOptionsProps): JSX.Element => {
+  const { user } = useSelector((state: RootState) => state.auth);
+  const [view, setView] = useState<'main' | 'search' | 'calendar' | 'setLogger'>('main');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [recentExercises, setRecentExercises] = useState<ExerciseData[]>([]);
-  const [currentExercise, setCurrentExercise] = useState<any>(null);
-  // Using local state for UI management only
+  const [currentExercise, setCurrentExercise] = useState<ExerciseWithId | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleCategorySelect= (category: Category) => {
+  const handleCategorySelect = useCallback((category: Category) => {
     setSelectedCategory(category);
     setView('search');
-  };
-  const handleSelectExercisesFromDay = (exercises: ExerciseData[]) => {
+  }, []);
+
+  const handleSelectExercisesFromDay = useCallback((exercises: ExerciseData[]) => {
     setRecentExercises(exercises);
     setView('main');
-  };
-  
+  }, []);
+
   // Utility function to check if an exercise already exists for the day
-  const checkExerciseExists = async (exerciseName: string, timestamp: Date, userId: string) => {
+  const checkExerciseExists = useCallback(async (exerciseName: string, timestamp: Date, userId: string) => {
     const startOfDay = new Date(timestamp);
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(timestamp);
@@ -75,51 +79,19 @@ export const LogOptions: React.FC<LogOptionsProps> = ({ onClose, onExerciseAdded
 
     const snapshot = await getDocs(q);
     return !snapshot.empty;
-  };
+  }, []);
 
-  // Utility function to save exercise with proper error handling
-  const saveExerciseWithRetry = async (exerciseData: ExerciseData) => {
-    const maxRetries = 3;
-    let lastError = null;
-
-    for (let i = 0; i < maxRetries; i++) {
-      try {
-        // First save to Firestore
-        const { id, ...dataForFirestore } = exerciseData;
-        const docRef = await addDoc(collection(db, 'exerciseLogs'), dataForFirestore);
-        
-        // If Firestore save successful, save to localStorage with Firestore ID
-        const exerciseWithId = {
-          ...exerciseData,
-          id: docRef.id
-        };
-        saveExerciseLog(exerciseWithId);
-        return true;
-      } catch (error) {
-        console.error(`Attempt ${i + 1} failed:`, error);
-        lastError = error;
-        await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1))); // Exponential backoff
-      }
-    }
-
-    // If all retries failed, save to localStorage with a temporary ID
-    console.error('Failed to save to Firebase after retries:', lastError);
-    const tempId = `local-${uuidv4()}`;
-    saveExerciseLog({ ...exerciseData, id: tempId });
-    return false;
-  };
-
-  const addExerciseToToday = async (exercise: ExerciseData) => {
+  // Add exercise to today's workout
+  const addExerciseToToday = useCallback(async (exercise: ExerciseData) => {
     try {
-      if (!auth.currentUser) {
+      if (!user?.id) {
         throw new Error('You must be logged in to save exercises');
       }
 
-      const deviceId = getDeviceId();
       const timestamp = selectedDate || new Date();
       
       // Check for duplicates
-      const exists = await checkExerciseExists(exercise.exerciseName, timestamp, auth.currentUser.uid);
+      const exists = await checkExerciseExists(exercise.exerciseName, timestamp, user.id);
       if (exists) {
         const proceed = window.confirm('This exercise already exists for today. Add it anyway?');
         if (!proceed) return;
@@ -128,13 +100,13 @@ export const LogOptions: React.FC<LogOptionsProps> = ({ onClose, onExerciseAdded
       const newExercise = {
         ...exercise,
         timestamp,
-        deviceId,
-        userId: auth.currentUser.uid
+        userId: user.id
       };
 
-      await saveExerciseWithRetry(newExercise);
-
-      // Notify parent that an exercise was added
+      // Save to Firestore
+      const { id, ...dataForFirestore } = newExercise;
+      await addDoc(collection(db, 'exerciseLogs'), dataForFirestore);
+      
       if (onExerciseAdded) {
         onExerciseAdded();
       }
@@ -142,31 +114,24 @@ export const LogOptions: React.FC<LogOptionsProps> = ({ onClose, onExerciseAdded
       onClose();
     } catch (error) {
       console.error('Error saving exercise:', error);
-      alert('Failed to add exercise. Please try again.');
+      setError('Failed to add exercise. Please try again.');
     }
-  };
+  }, [user, selectedDate, checkExerciseExists, onExerciseAdded, onClose]);
 
-  const handleSaveSets = async (sets: ExerciseSet[]) => {
-    if (!currentExercise) return;
+  const handleSaveSets = useCallback(async (sets: ExerciseSet[]) => {
+    if (!currentExercise || !user?.id) return;
     
     try {
-      if (!auth.currentUser) {
-        throw new Error('You must be logged in to save exercises');
-      }
-
-      const deviceId = getDeviceId();
-      const timestamp = selectedDate || new Date();
+      setError(null);
       
-      const exerciseLog = {
-        id: uuidv4(),
+      const exerciseLog: ExerciseData = {
         exerciseName: currentExercise.name,
         sets,
-        timestamp,
-        deviceId,
-        userId: auth.currentUser.uid
+        timestamp: selectedDate || new Date(),
+        userId: user.id
       };
-
-      await saveExerciseWithRetry(exerciseLog);
+      
+      await addDoc(collection(db, 'exerciseLogs'), exerciseLog);
       
       if (onExerciseAdded) {
         onExerciseAdded();
@@ -175,86 +140,36 @@ export const LogOptions: React.FC<LogOptionsProps> = ({ onClose, onExerciseAdded
       onClose();
     } catch (error) {
       console.error('Error saving exercise with sets:', error);
-      alert('Failed to save exercise. Please try again.');
+      setError('Failed to save exercise. Please try again.');
     }
-  };
-  const handleProgramSelected = (program: Program) => {
-    // When a program is selected, we want to add each exercise with empty sets
-    try {      const currentUser = auth.currentUser;
-      if (!currentUser) {
-        throw new Error('You must be logged in to save exercises');
-      }
+  }, [currentExercise, user, selectedDate, onExerciseAdded, onClose]);
 
-      const deviceId = getDeviceId();
-      const timestamp = selectedDate || new Date();
-      
-      // For each exercise in the program, create an exercise log
-      program.exercises.forEach(async (programExercise) => {
-        // Create empty sets based on the number specified in the program
-        const sets = Array(programExercise.sets).fill(null).map(() => ({
-          reps: 0,
-          weight: 0,
-          difficulty: 'moderate' as DifficultyCategory
-        }));
-        
-        const exerciseLog = {
-          exerciseName: programExercise.name,
-          sets,
-          timestamp,
-          deviceId,
-          userId: currentUser.uid
-        };
-        
-        // Save to local storage
-        saveExerciseLog(exerciseLog);
-        
-        // Save to Firebase
-        try {
-          console.log('Adding program exercise to Firebase:', exerciseLog);
-          await addDoc(collection(db, 'exerciseLogs'), exerciseLog);
-          console.log('Successfully saved program exercise to Firebase');
-        } catch (firebaseError) {
-          console.error('Failed to save to Firebase:', firebaseError);
-        }
-      });
-      
-      // Notify parent that exercises were added
-      if (onExerciseAdded) {
-        onExerciseAdded();
-      }
-      
-      onClose(); // Close modal after adding
-    } catch (error) {
-      console.error('Failed to add program exercises:', error);
-      alert('Failed to add program exercises.');
-    }
-  };
   if (view === 'search') {
     return (
       <ExerciseSearch 
         onClose={() => setView('main')}
-        onSelectExercise={(exercise) => {
-          // Save the selected exercise for the set logger
-          // Make sure we have a valid name field
-          const validExercise = {
+        onSelectExercise={(exercise: ExerciseTemplate) => {
+          // Generate a temporary ID for the exercise
+          const exerciseWithId: ExerciseWithId = {
             ...exercise,
-            name: exercise.name || 'Unknown Exercise'
+            id: `temp-${Date.now()}`,
+            sets: []
           };
-          console.log('Selected exercise:', validExercise);
-          setCurrentExercise(validExercise);
+          setCurrentExercise(exerciseWithId);
           setView('setLogger');
         }}
         category={selectedCategory}
       />
     );
-  }  if (view === 'calendar') {
-    return (      <Calendar 
+  }
+
+  if (view === 'calendar') {
+    return (
+      <Calendar 
         selectedDate={selectedDate || new Date()}
         onClose={() => setView('main')}
         onSelectExercises={handleSelectExercisesFromDay}
-        onDateSelect={(_) => {
-          // This ensures that when a date is selected in the calendar,
-          // any exercise added will be logged for that day
+        onDateSelect={(_date: Date) => {
           if (onExerciseAdded) {
             onExerciseAdded();
           }
@@ -263,22 +178,13 @@ export const LogOptions: React.FC<LogOptionsProps> = ({ onClose, onExerciseAdded
       />
     );
   }
-  
+
   if (view === 'setLogger' && currentExercise) {
     return (
       <ExerciseSetLogger
         exercise={currentExercise}
         onSave={handleSaveSets}
         onCancel={() => setView('main')}
-      />
-    );
-  }
-
-  if (view === 'program') {
-    return (
-      <ProgramManager
-        onClose={() => setView('main')}
-        onProgramSelected={handleProgramSelected}
       />
     );
   }
@@ -304,18 +210,6 @@ export const LogOptions: React.FC<LogOptionsProps> = ({ onClose, onExerciseAdded
           {/* Quick Actions */}
           <div className="grid grid-cols-2 gap-4">
             <button 
-              onClick={() => setView('program')}
-              className="bg-[#2a1f42] p-4 rounded-xl hover:bg-[#3a2f52] transition-colors flex flex-col items-center"
-            >
-              <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center mb-2">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-              </div>
-              <div className="text-purple-400 font-medium">From program</div>
-            </button>
-
-            <button 
               onClick={() => setView('calendar')}
               className="bg-[#1f2e24] p-4 rounded-xl hover:bg-[#2f3e34] transition-colors flex flex-col items-center"
             >
@@ -327,27 +221,6 @@ export const LogOptions: React.FC<LogOptionsProps> = ({ onClose, onExerciseAdded
               <div className="text-green-400 font-medium">From another day</div>
             </button>
           </div>
-
-          {/* Recent Exercises */}
-          {recentExercises.length > 0 && (
-            <div>
-              <h2 className="text-lg font-medium text-white mb-3">Recent Exercises</h2>
-              <div className="space-y-2">
-                {recentExercises.map((exercise) => (
-                  <button
-                    key={exercise.id}
-                    onClick={() => addExerciseToToday(exercise)}
-                    className="w-full p-3 bg-[#1a1a1a] rounded-xl hover:bg-[#222] transition-colors"
-                  >
-                    <div className="text-white">{exercise.exerciseName}</div>
-                    <div className="text-sm text-gray-400">
-                      {new Date(exercise.timestamp).toLocaleDateString()}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Categories */}
           <div>
@@ -385,6 +258,33 @@ export const LogOptions: React.FC<LogOptionsProps> = ({ onClose, onExerciseAdded
               ))}
             </div>
           </div>
+
+          {/* Recent Exercises */}
+          {recentExercises.length > 0 && (
+            <div>
+              <h2 className="text-lg font-medium text-white mb-3">Recent Exercises</h2>
+              <div className="space-y-2">
+                {recentExercises.map((exercise) => (
+                  <button
+                    key={exercise.id}
+                    onClick={() => addExerciseToToday(exercise)}
+                    className="w-full p-3 bg-[#1a1a1a] rounded-xl hover:bg-[#222] transition-colors"
+                  >
+                    <div className="text-white">{exercise.exerciseName}</div>
+                    <div className="text-sm text-gray-400">
+                      {new Date(exercise.timestamp).toLocaleDateString()}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {error && (
+            <div className="text-red-500 text-sm mt-2">
+              {error}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -16,8 +16,8 @@ import '@/styles/dragAndDrop.css';
 // Initialize drag and drop polyfill
 polyfill();
 
-// Register service worker
-if ('serviceWorker' in navigator) {
+// Register service worker only in production
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
       .then(registration => {
@@ -39,15 +39,15 @@ if ('serviceWorker' in navigator) {
       .catch(error => {
         console.error('ServiceWorker registration failed:', error);
       });
+  });
 
-    // Handle controller change
-    let refreshing = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (!refreshing) {
-        refreshing = true;
-        window.location.reload();
-      }
-    });
+  // Handle controller change only in production
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!refreshing && import.meta.env.PROD) {
+      refreshing = true;
+      window.location.reload();
+    }
   });
 }
 

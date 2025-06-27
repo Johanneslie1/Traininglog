@@ -5,7 +5,6 @@ import { RootState } from '@/store/store';
 
 // Lazy load components
 const ExerciseLog = lazy(() => import('@/features/exercises/ExerciseLog'));
-const ProgramManager = lazy(() => import('@/features/programs/ProgramManager'));
 const Login = lazy(() => import('@/features/auth/Login'));
 const Register = lazy(() => import('@/features/auth/Register'));
 const Debug = lazy(() => import('@/features/debug/Debug'));
@@ -41,13 +40,7 @@ const AppRoutes: React.FC = () => {
       </div>
     }>      <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/debug" element={<Debug />} />
-        <Route path="/programs" element={
-          <ProtectedRoute>
-            <ProgramManager />
-          </ProtectedRoute>
-        } />
+        <Route path="/register" element={<Register />} />        <Route path="/debug" element={<Debug />} />
         <Route path="/" element={
           <ProtectedRoute>
             <ExerciseLog />

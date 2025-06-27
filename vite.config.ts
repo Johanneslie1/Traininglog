@@ -18,10 +18,31 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, './src'),
       },
     },
+    build: {
+      sourcemap: true,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          },
+        },
+      },
+    },
+    optimizeDeps: {
+      include: ['react', 'react-dom', 'react-router-dom'],
+    },
     server: {
       port: 3000,
-      strictPort: false,
-      hmr: true,
+      strictPort: true,
+      hmr: {
+        protocol: 'ws',
+        host: 'localhost',
+        port: 3000,
+        timeout: 30000,
+      },
+      watch: {
+        usePolling: true,
+      },
       cors: true,
       open: false,
       host: true
@@ -31,8 +52,7 @@ export default defineConfig(({ mode }) => {
       VitePWA({
         registerType: 'prompt',
         devOptions: {
-          enabled: true,
-          type: 'module'
+          enabled: false // Disable service worker in development
         },
         workbox: {
           cleanupOutdatedCaches: true,
@@ -52,54 +72,8 @@ export default defineConfig(({ mode }) => {
               }
             }
           ]
-        },
-        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
-        manifest: {
-          name: 'Training Log App',
-          short_name: 'TrainingLog',
-          description: 'A professional strength training logging application',
-          theme_color: '#121212',
-          background_color: '#121212',
-          display: 'standalone',
-          orientation: 'any',
-          start_url: '/',
-          icons: [
-            {
-              src: '/icons/icon-192x192.png',
-              sizes: '192x192',
-              type: 'image/png',
-              purpose: 'any'
-            },
-            {
-              src: '/icons/icon-512x512.png',
-              sizes: '512x512',
-              type: 'image/png',
-              purpose: 'any'
-            }
-          ]
         }
       })
-    ],
-    preview: {
-      port: 4173,
-      strictPort: false,
-      host: true,
-      cors: true
-    },
-    test: {
-      globals: true,
-      environment: 'jsdom',
-      setupFiles: './src/tests/setup.ts',
-      coverage: {
-        reporter: ['text', 'json', 'html'],
-        exclude: [
-          'node_modules/',
-          'src/tests/setup.ts',
-        ],
-      },
-      deps: {
-        inline: ['@testing-library/user-event']
-      }
-    }
-  }
+    ]
+  };
 });

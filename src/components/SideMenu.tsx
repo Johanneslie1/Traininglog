@@ -10,7 +10,6 @@ interface SideMenuProps {
   onNavigateToday: () => void;
   onNavigateProfile: () => void;
   onNavigateHistory: () => void;
-  onNavigatePrograms: () => void;
 }
 
 const SideMenu: React.FC<SideMenuProps> = ({
@@ -20,9 +19,7 @@ const SideMenu: React.FC<SideMenuProps> = ({
   onExport,
   onShowWorkoutSummary,
   onNavigateToday,
-  onNavigateProfile,
-  onNavigateHistory,
-  onNavigatePrograms
+  onNavigateProfile,  onNavigateHistory
 }) => {
   console.log('SideMenu rendering, isOpen:', isOpen);
   const [showSettings, setShowSettings] = useState(false);
@@ -31,11 +28,6 @@ const SideMenu: React.FC<SideMenuProps> = ({
     console.log('SideMenu mounted');
     return () => console.log('SideMenu unmounting');
   }, []);
-
-  const handleProgramsClick = () => {
-    console.log('Programs button clicked');
-    onNavigatePrograms();
-  };
 
   if (!isOpen) return null;
 
@@ -80,17 +72,7 @@ const SideMenu: React.FC<SideMenuProps> = ({
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              History
-            </button>
-              <button
-              onClick={handleProgramsClick}
-              className="w-full flex items-center gap-3 px-4 py-3 text-[#F2F3F7] hover:bg-[#2D3440] rounded-lg transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-              Programs
-            </button>
+              History            </button>
 
             <button
               onClick={onNavigateProfile}

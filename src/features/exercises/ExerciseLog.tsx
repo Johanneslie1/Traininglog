@@ -406,10 +406,8 @@ export const ExerciseLog: React.FC = () => {
         onClose={() => updateUiState('showMenu', false)}
         onImport={() => updateUiState('showImportModal', true)}
         onExport={() => exportExerciseData(exercises.map(convertToExerciseLog))}
-        onShowWorkoutSummary={() => updateUiState('showWorkoutSummary', true)}
-        onNavigateToday={() => setSelectedDate(new Date())}
+        onShowWorkoutSummary={() => updateUiState('showWorkoutSummary', true)}        onNavigateToday={() => setSelectedDate(new Date())}
         onNavigateHistory={() => toggleCalendar(true)}
-        onNavigatePrograms={() => {/* TODO: Implement programs navigation */}}
         onNavigateProfile={() => {/* TODO: Implement profile navigation */}}
       />
 
