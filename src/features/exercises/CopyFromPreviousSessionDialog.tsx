@@ -44,6 +44,8 @@ const CopyFromPreviousSessionDialog: React.FC<Props> = ({
             ...doc.data()
           } as ExerciseData));
           setPreviousExercises(exercises);
+          // Clear selected exercises when loading new data
+          setSelectedExercises(new Set());
         })
         .catch(error => {
           console.error('Error fetching exercises:', error);
@@ -51,29 +53,40 @@ const CopyFromPreviousSessionDialog: React.FC<Props> = ({
         .finally(() => setLoading(false));
     } else {
       setPreviousExercises([]);
+      setSelectedExercises(new Set());
     }
   }, [selectedDate, userId]);
 
-  const handleToggleExercise = (id: string) => {
+  const handleToggleExercise = (id: string | undefined) => {
+    if (!id) return; // Guard against undefined IDs
     setSelectedExercises((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return next;
     });
   };
 
   const handleSelectAll = () => {
-    setSelectedExercises(new Set(previousExercises.map((ex) => ex.id)));
+    // Create a set of all valid exercise IDs
+    const validExerciseIds = previousExercises
+      .map(ex => ex.id)
+      .filter((id): id is string => typeof id === 'string' && id.length > 0);
+    setSelectedExercises(new Set(validExerciseIds));
   };
 
   const handleCopy = () => {
-    const selectedExercisesList = previousExercises.filter(ex => 
-      selectedExercises.has(ex.id || '')
-    ).map(ex => ({
-      ...ex,
-      timestamp: currentDate
-    }));
+    const selectedExercisesList = previousExercises
+      .filter(ex => typeof ex.id === 'string' && ex.id.length > 0 && selectedExercises.has(ex.id))
+      .map(ex => ({
+        ...ex,
+        timestamp: currentDate,
+        // Omit the id to ensure a new one is generated
+        id: undefined
+      }));
     
     if (selectedExercisesList.length > 0) {
       onExercisesSelected(selectedExercisesList);
@@ -99,13 +112,12 @@ const CopyFromPreviousSessionDialog: React.FC<Props> = ({
         </div>
 
         <div className="mb-4">
-          <label className="block mb-2 text-sm text-gray-300">Select a date:</label>
-          <input
-            type="date"
-            className="w-full px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            max={currentDate.toISOString().split('T')[0]}
+          <label className="block mb-2 text-sm text-gray-300">Select a date:</label>            <input
+              type="date"
+              className="w-full px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              max={new Date().toISOString().split('T')[0]}
           />
         </div>
 
@@ -132,12 +144,16 @@ const CopyFromPreviousSessionDialog: React.FC<Props> = ({
 
             <div className="mb-6 max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
               {previousExercises.map((ex) => (
-                <label key={ex.id} className="flex items-center p-2 hover:bg-white/5 rounded-lg cursor-pointer">
+                <label 
+                  key={ex.id} 
+                  className="flex items-center p-2 hover:bg-white/5 rounded-lg cursor-pointer"
+                >
                   <input
                     type="checkbox"
                     className="form-checkbox rounded border-white/10 bg-[#2a2a2a] text-purple-500 focus:ring-purple-500"
-                    checked={selectedExercises.has(ex.id || '')}
-                    onChange={() => handleToggleExercise(ex.id || '')}
+                    checked={ex.id ? selectedExercises.has(ex.id) : false}
+                    onChange={() => ex.id && handleToggleExercise(ex.id)}
+                    disabled={!ex.id}
                   />
                   <span className="ml-3">{ex.exerciseName}</span>
                 </label>
