@@ -8,6 +8,7 @@ import { ExerciseSet, Exercise } from '@/types/exercise';
 import { ExerciseData } from '@/services/exerciseDataService';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
+import CopyFromPreviousSessionDialog from './CopyFromPreviousSessionDialog';
 
 type ExerciseTemplate = Omit<Exercise, 'id'>;
 type ExerciseWithId = Exercise & { sets?: ExerciseSet[] };
@@ -51,6 +52,30 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate }: LogOption
   const [recentExercises, setRecentExercises] = useState<ExerciseData[]>([]);
   const [currentExercise, setCurrentExercise] = useState<ExerciseWithId | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showCopyDialog, setShowCopyDialog] = useState(false);
+
+  const handleCopyExercises = async (exercises: ExerciseData[]) => {
+    try {
+      setError(null);
+      
+      // Save all selected exercises
+      for (const exercise of exercises) {
+        await addDoc(collection(db, 'exerciseLogs'), {
+          ...exercise,
+          timestamp: selectedDate || new Date()
+        });
+      }
+      
+      if (onExerciseAdded) {
+        onExerciseAdded();
+      }
+      
+      onClose();
+    } catch (error) {
+      console.error('Error copying exercises:', error);
+      setError('Failed to copy exercises. Please try again.');
+    }
+  };
 
   const handleCategorySelect = useCallback((category: Category) => {
     setSelectedCategory(category);
@@ -220,6 +245,18 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate }: LogOption
               </div>
               <div className="text-green-400 font-medium">From another day</div>
             </button>
+
+            <button 
+              onClick={() => setShowCopyDialog(true)}
+              className="bg-[#1f1f2e] p-4 rounded-xl hover:bg-[#2f2f3e] transition-colors flex flex-col items-center"
+            >
+              <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center mb-2">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div className="text-purple-400 font-medium">Copy Previous Session</div>
+            </button>
           </div>
 
           {/* Categories */}
@@ -287,6 +324,15 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate }: LogOption
           )}
         </div>
       </div>
+
+      {/* Copy from Previous Session Dialog */}
+      <CopyFromPreviousSessionDialog
+        isOpen={showCopyDialog}
+        onClose={() => setShowCopyDialog(false)}
+        currentDate={selectedDate || new Date()}
+        onExercisesSelected={handleCopyExercises}
+        userId={user?.id || ''}
+      />
     </div>
   );
 };
