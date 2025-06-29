@@ -48,28 +48,6 @@ export interface ExerciseFilter {
   searchText?: string;
 }
 
-// Program management interfaces
-export interface ProgramExercise {
-  id: string;
-  name: string;
-  sets: number;
-  order: number;
-  // Additional fields for program-specific exercise data
-  suggestedReps?: number;
-  suggestedWeight?: number;
-  notes?: string;
-}
-
-export interface Program {
-  id: string;
-  name: string;
-  description?: string;
-  exercises: ProgramExercise[];
-  createdAt: Date;
-  lastModified: Date;
-  deviceId: string;
-}
-
 export enum DifficultyCategory {
   WARMUP = 'WARMUP',
   EASY = 'EASY',
