@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { ProgramsProvider, usePrograms } from '@/context/ProgramsContext';
 import ProgramList from './ProgramList';
 import ProgramDetail from './ProgramDetail';
-import { Program } from '@/types/program';
 
 const ProgramsRoot: React.FC = () => {
   const { programs, update } = usePrograms();
