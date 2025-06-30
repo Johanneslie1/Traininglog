@@ -1,5 +1,5 @@
 // Program CRUD and utility functions
-import { Program, ProgramWeek, ProgramDay, ProgramSession, ProgramExercise } from '@/types/program';
+import type { Program, ProgramWeek, ProgramDay } from '@/types/program';
 
 // In-memory store for now (replace with Firebase or persistent storage as needed)
 let programs: Program[] = [];
