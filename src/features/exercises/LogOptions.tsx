@@ -57,7 +57,6 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate }: LogOption
   const handleCopyExercises = async (exercises: ExerciseData[]) => {
     try {
       setError(null);
-      
       // Save all selected exercises
       for (const exercise of exercises) {
         await addDoc(collection(db, 'exerciseLogs'), {
@@ -65,12 +64,10 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate }: LogOption
           timestamp: selectedDate || new Date()
         });
       }
-      
       if (onExerciseAdded) {
         onExerciseAdded();
       }
-      
-      onClose();
+      setShowCopyDialog(false); // Only close the copy dialog, not the main log options
     } catch (error) {
       console.error('Error copying exercises:', error);
       setError('Failed to copy exercises. Please try again.');

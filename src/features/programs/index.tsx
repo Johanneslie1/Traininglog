@@ -1,0 +1,34 @@
+import React, { useState } from 'react';
+import { ProgramsProvider, usePrograms } from '@/context/ProgramsContext';
+import ProgramList from './ProgramList';
+import ProgramDetail from './ProgramDetail';
+import { Program } from '@/types/program';
+
+const ProgramsRoot: React.FC = () => {
+  const { programs, update } = usePrograms();
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const selectedProgram = programs.find(p => p.id === selectedId) || null;
+
+  return (
+    <div className="p-8">
+      {!selectedProgram ? (
+        <ProgramList onSelect={setSelectedId} />
+      ) : (
+        <ProgramDetail
+          program={selectedProgram}
+          onBack={() => setSelectedId(null)}
+          onUpdate={updated => update(updated.id, updated)}
+        />
+      )}
+    </div>
+  );
+};
+
+const ProgramsApp: React.FC = () => (
+  <ProgramsProvider>
+    <ProgramsRoot />
+  </ProgramsProvider>
+);
+
+export default ProgramsApp;
