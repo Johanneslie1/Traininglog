@@ -10,6 +10,7 @@ interface SideMenuProps {
   onNavigateToday: () => void;
   onNavigateProfile: () => void;
   onNavigateHistory: () => void;
+  onNavigatePrograms: () => void;
 }
 
 const SideMenu: React.FC<SideMenuProps> = ({
@@ -19,7 +20,9 @@ const SideMenu: React.FC<SideMenuProps> = ({
   onExport,
   onShowWorkoutSummary,
   onNavigateToday,
-  onNavigateProfile,  onNavigateHistory
+  onNavigateProfile,
+  onNavigateHistory,
+  onNavigatePrograms
 }) => {
   console.log('SideMenu rendering, isOpen:', isOpen);
   const [showSettings, setShowSettings] = useState(false);
@@ -56,28 +59,26 @@ const SideMenu: React.FC<SideMenuProps> = ({
         <div className="flex-1 overflow-y-auto p-2 space-y-4">
           {/* Navigation Section */}
           <div className="space-y-1">
-            <button              onClick={onNavigateToday}
-              className="w-full flex items-center gap-3 px-4 py-3 text-[#F2F3F7] hover:bg-[#2D3440] rounded-lg transition-colors"
-            >
+            <button onClick={onNavigateToday} className="w-full flex items-center gap-3 px-4 py-3 text-[#F2F3F7] hover:bg-[#2D3440] rounded-lg transition-colors">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
               </svg>
               Today
             </button>
-            
-            <button
-              onClick={onNavigateHistory}
-              className="w-full flex items-center gap-3 px-4 py-3 text-text-primary hover:bg-bg-secondary rounded-lg transition-colors"
-            >
+            <button onClick={onNavigateHistory} className="w-full flex items-center gap-3 px-4 py-3 text-text-primary hover:bg-bg-secondary rounded-lg transition-colors">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              History            </button>
-
-            <button
-              onClick={onNavigateProfile}
-              className="w-full flex items-center gap-3 px-4 py-3 text-text-primary hover:bg-bg-secondary rounded-lg transition-colors"
-            >
+              History
+            </button>
+            <button onClick={onNavigatePrograms} className="w-full flex items-center gap-3 px-4 py-3 text-text-primary hover:bg-blue-700 rounded-lg transition-colors">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2a4 4 0 014-4h6" />
+                <circle cx="9" cy="7" r="4" />
+              </svg>
+              Programs
+            </button>
+            <button onClick={onNavigateProfile} className="w-full flex items-center gap-3 px-4 py-3 text-text-primary hover:bg-bg-secondary rounded-lg transition-colors">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>

@@ -45,7 +45,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <svg className="w-6 h-6 text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
         </svg>
-      </button>      {/* Main Content */}
+      </button>
+      {/* Main Content */}
       <main className="flex-1 relative">
         <div className="container mx-auto px-4 py-6 pb-20">
           {children}
@@ -60,7 +61,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         onExport={handleExport}
         onShowWorkoutSummary={handleShowWorkoutSummary}
         onNavigateToday={() => handleNavigate('/')}
-        onNavigateProfile={() => handleNavigate('/profile')}        onNavigateHistory={() => handleNavigate('/history')}
+        onNavigateProfile={() => handleNavigate('/profile')}
+        onNavigateHistory={() => handleNavigate('/history')}
+        onNavigatePrograms={() => handleNavigate('/programs')}
       />
     </div>
   );

@@ -4,21 +4,21 @@ export type Program = {
   id: string;
   name: string;
   description?: string;
-  weeks: ProgramWeek[];
+  level: string; // Added for UI and data model
+  createdBy: string;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
+  routines?: Routine[];
+  sessions?: ProgramSession[]; // Flat list of sessions
 };
 
-export type ProgramWeek = {
-  weekNumber: number;
-  days: ProgramDay[];
+export type Routine = {
+  id: string;
+  name: string;
+  exercises: ProgramExercise[];
 };
 
-export type ProgramDay = {
-  dayNumber: number;
-  label?: string; // e.g. "Upper Body", "Rest", etc.
-  sessions: ProgramSession[];
-};
+// Removed ProgramWeek and ProgramDay for flat structure
 
 export type ProgramSession = {
   id: string;

@@ -6,7 +6,7 @@ interface ProgramsContextValue {
   programs: Program[];
   refresh: () => Promise<void>;
   create: (program: Program) => Promise<void>;
-  update: (id: string, updated: Partial<Program>) => Promise<void>;
+  update: (id: string, updated: Program) => Promise<void>;
   remove: (id: string) => Promise<void>;
 }
 
@@ -16,16 +16,28 @@ export const ProgramsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [programs, setPrograms] = useState<Program[]>([]);
 
   const refresh = async () => {
-    setPrograms(await programService.getPrograms());
+    try {
+      const progs = await programService.getPrograms();
+      console.log('[ProgramsContext] Refreshed programs:', progs);
+      setPrograms(progs);
+    } catch (err) {
+      console.error('[ProgramsContext] Error refreshing programs:', err);
+    }
   };
 
   const create = async (program: Program) => {
-    await programService.createProgram(program);
-    await refresh();
+    try {
+      console.log('[ProgramsContext] Creating program:', program);
+      await programService.createProgram(program);
+      await refresh();
+    } catch (err) {
+      console.error('[ProgramsContext] Error creating program:', err);
+    }
   };
 
-  const update = async (id: string, updated: Partial<Program>) => {
-    await programService.updateProgram(id, updated);
+  // Always send the full updated program object
+  const update = async (id: string, updated: Program) => {
+    await programService.replaceProgram(id, updated);
     await refresh();
   };
 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Program } from '@/types/program';
+import { Program, ProgramSession } from '@/types/program';
 import CopyFromPreviousDayButton from './CopyFromPreviousDayButton';
+import SessionModal from './SessionModal';
 
 interface Props {
   program: Program;
@@ -9,19 +10,31 @@ interface Props {
 }
 
 const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate }) => {
-  const [selectedWeek, setSelectedWeek] = useState(0);
-  const [selectedDay, setSelectedDay] = useState(0);
 
-  const week = program.weeks[selectedWeek];
-  const day = week.days[selectedDay];
+  // Flat sessions list (no weeks/days)
+  const sessions: ProgramSession[] = program.sessions ?? [];
 
-  const handleCopyFromPreviousDay = (newDay: typeof day) => {
-    const newWeeks = program.weeks.map((w, wi) =>
-      wi === selectedWeek
-        ? { ...w, days: w.days.map((d, di) => (di === selectedDay ? newDay : d)) }
-        : w
-    );
-    onUpdate({ ...program, weeks: newWeeks });
+  const [showSessionModal, setShowSessionModal] = useState(false);
+
+  // No copy from previous day needed
+
+  // Add a new session to the flat sessions array
+  const handleAddSession = (session: ProgramSession) => {
+    const updatedSessions = [...sessions, session];
+    onUpdate({ ...program, sessions: updatedSessions });
+    setShowSessionModal(false);
+  };
+
+  // Edit a session
+  const handleEditSession = (updatedSession: ProgramSession) => {
+    const updatedSessions = sessions.map(s => s.id === updatedSession.id ? updatedSession : s);
+    onUpdate({ ...program, sessions: updatedSessions });
+  };
+
+  // Remove a session
+  const handleRemoveSession = (sessionId: string) => {
+    const updatedSessions = sessions.filter(s => s.id !== sessionId);
+    onUpdate({ ...program, sessions: updatedSessions });
   };
 
   return (
@@ -30,21 +43,31 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate }) => {
       <h2 className="text-2xl font-bold mb-2">{program.name}</h2>
       <div className="mb-4 text-gray-400">{program.description}</div>
       <div className="mb-4">
-        <label>Week: </label>
-        <select value={selectedWeek} onChange={e => setSelectedWeek(Number(e.target.value))}>
-          {program.weeks.map((w, i) => (
-            <option key={i} value={i}>Week {w.weekNumber}</option>
-          ))}
-        </select>
-        <label className="ml-4">Day: </label>
-        <select value={selectedDay} onChange={e => setSelectedDay(Number(e.target.value))}>
-          {week.days.map((d, i) => (
-            <option key={i} value={i}>Day {d.dayNumber} {d.label ? `- ${d.label}` : ''}</option>
-          ))}
-        </select>
+        <h3 className="text-lg font-semibold text-white mb-2">Sessions</h3>
+        {sessions.length > 0 ? (
+          sessions.map(session => (
+            <div key={session.id} className="bg-[#181A20] rounded p-3 mb-2">
+              <div className="font-bold text-white flex justify-between items-center">
+                {session.name}
+                <span>
+                  <button className="text-blue-400 mr-2" onClick={() => {/* TODO: open edit modal */}}>Edit</button>
+                  <button className="text-red-400" onClick={() => handleRemoveSession(session.id)}>Delete</button>
+                </span>
+              </div>
+              <ul className="ml-4 mt-1">
+                {session.exercises.map((ex, idx) => (
+                  <li key={ex.id || ex.name + '-' + idx} className="text-gray-300 text-sm">{ex.name} - {ex.sets} x {ex.reps}</li>
+                ))}
+              </ul>
+            </div>
+          ))
+        ) : (
+          <div className="text-gray-500">No sessions yet.</div>
+        )}
+        <button onClick={() => setShowSessionModal(true)} className="mt-2 px-4 py-2 bg-blue-600 text-white rounded">Add Session</button>
       </div>
-      <CopyFromPreviousDayButton week={week} dayIndex={selectedDay} onCopy={handleCopyFromPreviousDay} />
-      {/* Render sessions and exercises here */}
+
+      <SessionModal isOpen={showSessionModal} onClose={() => setShowSessionModal(false)} onSave={handleAddSession} />
     </div>
   );
 };
