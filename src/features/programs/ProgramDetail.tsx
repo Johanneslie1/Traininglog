@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Program, ProgramSession } from '@/types/program';
-import CopyFromPreviousDayButton from './CopyFromPreviousDayButton';
+// Removed CopyFromPreviousDayButton import (no longer needed)
 import SessionModal from './SessionModal';
 
 interface Props {
@@ -25,11 +25,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate }) => {
     setShowSessionModal(false);
   };
 
-  // Edit a session
-  const handleEditSession = (updatedSession: ProgramSession) => {
-    const updatedSessions = sessions.map(s => s.id === updatedSession.id ? updatedSession : s);
-    onUpdate({ ...program, sessions: updatedSessions });
-  };
+  // Removed unused handleEditSession (no longer needed)
 
   // Remove a session
   const handleRemoveSession = (sessionId: string) => {

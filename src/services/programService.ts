@@ -1,6 +1,6 @@
 
 // Program CRUD and utility functions (Firestore integration)
-import type { Program, ProgramWeek, ProgramDay } from '@/types/program';
+import type { Program } from '@/types/program';
 import { db } from './firebase/firebase';
 import {
   collection,
@@ -8,7 +8,7 @@ import {
   getDocs,
   getDoc,
   setDoc,
-  updateDoc,
+  // updateDoc, // removed unused import
   deleteDoc
 } from 'firebase/firestore';
 
@@ -33,22 +33,12 @@ export const getProgramById = async (id: string): Promise<Program | undefined> =
 // Utility: Deeply remove all undefined fields from an object or array
 function removeUndefinedFields<T>(obj: T): T {
   if (Array.isArray(obj)) {
-    // Recursively clean each item in the array
     return obj.map(removeUndefinedFields) as unknown as T;
   } else if (obj && typeof obj === 'object') {
-    // Recursively clean each property in the object
     const cleaned: any = {};
     Object.entries(obj).forEach(([key, value]) => {
       if (value !== undefined) {
-        const cleanedValue = removeUndefinedFields(value);
-        // Only add property if it's not undefined (for objects) or if it's not an empty array/object
-        if (
-          cleanedValue !== undefined &&
-          !(Array.isArray(cleanedValue) && cleanedValue.length === 0) &&
-          !(typeof cleanedValue === 'object' && cleanedValue !== null && Object.keys(cleanedValue).length === 0)
-        ) {
-          cleaned[key] = cleanedValue;
-        }
+        cleaned[key] = removeUndefinedFields(value);
       }
     });
     return cleaned;
@@ -81,18 +71,4 @@ export const deleteProgram = async (id: string): Promise<void> => {
   await deleteDoc(docRef);
 };
 
-// Utility: Copy previous day (deep clone sessions/exercises)
-export function copyPreviousDay(week: ProgramWeek, dayIndex: number): ProgramDay | null {
-  if (dayIndex <= 0 || dayIndex >= week.days.length) return null;
-  const prevDay = week.days[dayIndex - 1];
-  // Deep clone sessions and exercises
-  const newSessions = prevDay.sessions.map(session => ({
-    ...session,
-    id: crypto.randomUUID(),
-    exercises: session.exercises.map(ex => ({ ...ex, id: crypto.randomUUID() }))
-  }));
-  return {
-    ...week.days[dayIndex],
-    sessions: newSessions
-  };
-}
+// Removed copyPreviousDay utility (feature removed)

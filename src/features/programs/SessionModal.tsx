@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ProgramSession, ProgramExercise } from '@/types/program';
+import { ProgramSession } from '@/types/program';
 import ExerciseLogOptionsForm, { ExerciseWithSets } from '../exercises/ExerciseLogOptionsForm';
 import SessionExerciseLogOptions, { ExerciseWithSets as SessionExerciseWithSets } from './SessionExerciseLogOptions';
 import { ExerciseSetLogger } from '../exercises/ExerciseSetLogger';
@@ -118,8 +118,8 @@ const SessionModal: React.FC<SessionModalProps> = ({ isOpen, onClose, onSave }) 
             <SessionExerciseLogOptions
               onSave={handleAddExercise}
               onClose={() => setShowAddExercise(false)}
-              onCopyFromAnotherDay={() => {/* TODO: implement copy from another day */}}
-              onCopyPreviousSession={() => {/* TODO: implement copy previous session */}}
+              // Removed onCopyFromAnotherDay prop (feature removed)
+              // Removed onCopyPreviousSession prop (feature removed from this context)
             />
           </div>
         </div>
