@@ -1,4 +1,4 @@
-import { createExercise } from '../services/firebase/exercises';
+// import { createExercise } from '../services/firebase/exercises'; // Firebase removed
 import { Exercise } from '../types/exercise';
 
 const defaultExercises: Omit<Exercise, 'id'>[] = [
@@ -126,3 +126,15 @@ const seedDatabase = async () => {
 };
 
 export default seedDatabase;
+
+/**_exercise
+ * Creates a new exercise in the database.
+ *
+ * @param {Omit<Exercise, "id">} _exercise - The exercise object without the id property.
+ * @throws {Error} If the function is not implemented.
+ */
+function createExercise(_exercise: Omit<Exercise, "id">) {
+  throw new Error('Function not implemented.');
+}
+// Remove the unused createExercise function to avoid the unused parameter error.
+

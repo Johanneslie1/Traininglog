@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
-import { db } from '@/services/firebase/config';
-import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
-import { RootState } from '@/store/store';
+// import { useSelector } from 'react-redux'; // Unused after auth removal
+// import { db } from '@/services/firebase/config'; // Firebase removed
+// import { collection, query, where, orderBy, getDocs } from 'firebase/firestore'; // Firebase removed
+// import { RootState } from '@/store/store'; // Unused after auth removal
 
 interface ExerciseLog {
   id: string;
@@ -18,37 +18,13 @@ interface ExerciseLog {
 export const ExerciseHistory: React.FC = () => {
   const [logs, setLogs] = useState<ExerciseLog[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user } = useSelector((state: RootState) => state.auth);
+  // const { user } = useSelector((state: RootState) => state.auth); // Auth removed
 
   useEffect(() => {
-    const fetchLogs = async () => {
-      if (!user) return;
-
-      try {
-        const logsRef = collection(db, 'exerciseLogs');
-        const q = query(
-          logsRef,
-          where('userId', '==', user.id),
-          orderBy('timestamp', 'desc')
-        );
-
-        const snapshot = await getDocs(q);
-        const exerciseLogs = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          timestamp: doc.data().timestamp.toDate()
-        })) as ExerciseLog[];
-
-        setLogs(exerciseLogs);
-      } catch (error) {
-        console.error('Error fetching exercise logs:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchLogs();
-  }, [user]);
+    // TODO: Replace with localStorage logic to fetch exercise logs
+    setLogs([]); // No-op, Firebase removed
+    setLoading(false);
+  }, []);
 
   if (loading) {
     return (

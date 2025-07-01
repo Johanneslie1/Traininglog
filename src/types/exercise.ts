@@ -12,7 +12,7 @@ export interface Exercise {
   videoUrl?: string;
   imageUrl?: string;
   customExercise?: boolean; // If true, this exercise was created by a user
-  userId?: string; // Only set if customExercise is true
+  // userId removed (no longer needed)
   defaultUnit: 'kg' | 'lbs' | 'time' | 'distance' | 'reps';
   metrics: {
     trackWeight?: boolean;
@@ -84,6 +84,5 @@ export interface ExerciseLog {
   timestamp: Date | number;
   /** Device ID for syncing */
   deviceId?: string;
-  /** User ID who owns this exercise log */
-  userId?: string;
+  // userId removed (no longer needed)
 }

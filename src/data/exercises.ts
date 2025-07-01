@@ -423,11 +423,5 @@ export const coreExercises: ExerciseTemplate[] = [
 ];
 
 // Export all exercises
-export const allExercises = [
-  ...chestExercises,
-  ...backExercises,
-  ...legExercises,
-  ...shoulderExercises,
-  ...armExercises,
-  ...coreExercises
-];
+import generatedExercises from './generatedExercises.json';
+export const allExercises = generatedExercises;

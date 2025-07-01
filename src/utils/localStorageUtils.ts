@@ -1,5 +1,3 @@
-import { auth, db } from '@/services/firebase/config';
-import { doc, deleteDoc, getDoc } from 'firebase/firestore';
 import { v4 as uuidv4 } from 'uuid';
 import { ExerciseLog as ExerciseLogType } from '@/types/exercise';
 
@@ -14,26 +12,33 @@ export type ExerciseLog = Omit<ExerciseLogType, 'id'> & {
   timestamp?: Date | string;
 };
 
+// Helper to normalize date to start of day
+const normalizeDate = (date: Date): Date => {
+  const normalized = new Date(date);
+  normalized.setHours(0, 0, 0, 0);
+  return normalized;
+};
+
 // Helper to get date range
 const getDateRange = (date: Date) => {
-  const startOfDay = new Date(date);
-  startOfDay.setHours(0, 0, 0, 0);
-  
-  const endOfDay = new Date(date);
+  const startOfDay = normalizeDate(date);
+  const endOfDay = new Date(startOfDay);
   endOfDay.setHours(23, 59, 59, 999);
-  
   return { startOfDay, endOfDay };
+};
+
+// Helper to compare dates (ignoring time)
+const isSameDay = (date1: Date, date2: Date): boolean => {
+  return normalizeDate(date1).getTime() === normalizeDate(date2).getTime();
 };
 
 // Get or create a persistent device ID
 export const getDeviceId = (): string => {
   let deviceId = localStorage.getItem('device_id');
-  
   if (!deviceId) {
     deviceId = uuidv4();
     localStorage.setItem('device_id', deviceId);
   }
-  
   return deviceId;
 };
 
@@ -57,12 +62,22 @@ export const getExerciseLogs = (): ExerciseLog[] => {
 // Get exercise logs for a specific date
 export const getExerciseLogsByDate = (date: Date): ExerciseLog[] => {
   const logs = getExerciseLogs();
-  const { startOfDay, endOfDay } = getDateRange(date);
-
-  return logs.filter(log => {
-    const logDate = new Date(log.timestamp);
-    return logDate >= startOfDay && logDate <= endOfDay;
+  console.log('All logs:', logs);
+  console.log('Looking for date:', date);
+  
+  const filtered = logs.filter(log => {
+    const logDate = log.timestamp instanceof Date ? log.timestamp : new Date(log.timestamp || '');
+    const isSame = isSameDay(logDate, date);
+    console.log('Comparing:', {
+      logDate,
+      targetDate: date,
+      isSameDay: isSame
+    });
+    return isSame;
   });
+  
+  console.log('Filtered logs:', filtered);
+  return filtered;
 };
 
 // Save exercise log to local storage
@@ -75,7 +90,7 @@ export const saveExerciseLog = (log: ExerciseLog): ExerciseLog => {
     id: log.id || uuidv4(),
     deviceId: log.deviceId || getDeviceId(),
     timestamp: log.timestamp || new Date(),
-    userId: auth.currentUser?.uid || 'anonymous'  // Fallback to anonymous if not authenticated
+    userId: log.userId || 'anonymous'  // Fallback to anonymous if not provided
   };
 
   // Convert Date to string for storage
@@ -106,27 +121,14 @@ export const saveExerciseLog = (log: ExerciseLog): ExerciseLog => {
   return newLog;
 };
 
-// Delete an exercise log
+// Delete an exercise log (local storage only)
 export const deleteExerciseLog = async (log: ExerciseLog): Promise<boolean> => {
   try {
-    // First try to delete from Firestore if we have an ID
-    if (log.id && auth.currentUser) {
-      const docRef = doc(db, 'exerciseLogs', log.id);
-      const docSnap = await getDoc(docRef);
-      
-      if (docSnap.exists()) {
-        await deleteDoc(docRef);
-      }
-    }
-    
-    // Then delete from local storage
     const logs = getExerciseLogs();
     const filteredLogs = logs.filter(l => l.id !== log.id);
-    
     if (filteredLogs.length === logs.length) {
       return false; // Log wasn't found
     }
-    
     localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(filteredLogs));
     return true;
   } catch (error) {

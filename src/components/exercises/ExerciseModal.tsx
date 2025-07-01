@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Exercise, ExerciseFilter, MuscleGroup } from '@/types/exercise';
-import { searchExercises } from '@/services/firebase/exercises';
+// import { searchExercises } from '@/services/firebase/exercises'; // Firebase removed
 
 type ExerciseType = Exercise['type'];
 type ExerciseCategory = Exercise['category'];
@@ -26,17 +26,58 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ onSelect, onClose }) => {
     loadExercises();
   }, []);
 
-  // Load exercises with current filters
+  // Load exercises with current filters (local only)
   const loadExercises = async () => {
     try {
       setLoading(true);
-      const result = await searchExercises({
-        ...filters,
-        searchText: searchText || undefined
-      });
-      setExercises(result.exercises);
+      // Load from local static file or in-memory DB
+      // For now, try to import from '@/data/exercises' or '@/data/exerciseDatabase'
+
+      let allExercises: Exercise[] = [];
+      try {
+        // Use allExercises from exercises.ts (local static array)
+        const imported = (await import('@/data/exercises')).allExercises;
+        // Add fake IDs for each exercise (since ExerciseTemplate has no id)
+        allExercises = imported.map((ex, idx) => ({
+          id: `${ex.name.replace(/\s+/g, '_').toLowerCase()}_${idx}`,
+          ...ex
+        }));
+      } catch {
+        allExercises = [];
+      }
+
+      // Filter by searchText and filters
+      let filtered = allExercises;
+      if (searchText) {
+        const lower = searchText.toLowerCase();
+        filtered = filtered.filter(ex =>
+          ex.name.toLowerCase().includes(lower) ||
+          (ex.description && ex.description.toLowerCase().includes(lower))
+        );
+      }
+      if (filters.type && filters.type.length > 0) {
+        filtered = filtered.filter(ex => filters.type?.includes(ex.type));
+      }
+      if (filters.category && filters.category.length > 0) {
+        filtered = filtered.filter(ex => filters.category?.includes(ex.category));
+      }
+      if (filters.muscles && filters.muscles.length > 0) {
+        filtered = filtered.filter(ex =>
+          (ex.primaryMuscles && ex.primaryMuscles.some(m => filters.muscles?.includes(m))) ||
+          (ex.secondaryMuscles && ex.secondaryMuscles.some(m => filters.muscles?.includes(m)))
+        );
+      }
+      if (filters.equipment && filters.equipment.length > 0) {
+        filtered = filtered.filter(ex =>
+          Array.isArray(ex.equipment)
+            ? ex.equipment.some(eq => filters.equipment?.includes(eq))
+            : (ex.equipment && filters.equipment?.includes(ex.equipment))
+        );
+      }
+      setExercises(filtered);
     } catch (error) {
       console.error('Error loading exercises:', error);
+      setExercises([]);
     } finally {
       setLoading(false);
     }

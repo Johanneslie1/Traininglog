@@ -1,77 +1,34 @@
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store/store';
-// import { User } from '@/services/firebase/auth';
+
 import { useEffect, useState } from 'react';
-import { deleteExerciseLog } from '@/services/firebase/exerciseLogs';
 import ExerciseCard from '@/components/ExerciseCard';
-import { getExerciseLogsByDate } from '@/utils/localStorageUtils';
+import { getExerciseLogsByDate, deleteExerciseLog } from '@/utils/localStorageUtils';
 import { ExerciseLog } from '@/types/exercise';
-import { db } from '@/services/firebase/config';
-import {
-  collection,
-  getDocs,
-  query,
-  where,
-  orderBy,
-  DocumentData,
-  QueryDocumentSnapshot
-} from 'firebase/firestore';
+
 
 const Dashboard = () => {
-  const user = useSelector((state: RootState) => state.auth.user);
+  // Local-only dashboard logic
   const [todaysExercises, setTodaysExercises] = useState<ExerciseLog[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+
   const convertLocalExerciseToExerciseLog = (exercise: any): ExerciseLog => ({
     id: exercise.id || 'temp-id',
     exerciseName: exercise.exerciseName,
     sets: exercise.sets,
-    timestamp: exercise.timestamp,
+    timestamp: exercise.timestamp instanceof Date ? exercise.timestamp : new Date(exercise.timestamp),
     deviceId: exercise.deviceId || ''
   });
 
-  // Move fetchExercises to component scope so it can be reused
-  const fetchExercises = async (date: Date = selectedDate) => {
+
+  // Fetch exercises from localStorage only
+  const fetchExercises = (date: Date = selectedDate) => {
     setIsLoading(true);
     setError(null);
     try {
-      // First try local storage
       const localExercises = getExerciseLogsByDate(date);
-      if (localExercises && localExercises.length > 0) {
-        setTodaysExercises(localExercises.map(convertLocalExerciseToExerciseLog));
-        setIsLoading(false);
-        return;
-      }
-      // If no local exercises, try Firebase
-      const startOfDay = new Date(date);
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(date);
-      endOfDay.setHours(23, 59, 59, 999);
-
-      if (!user) {
-        setTodaysExercises([]);
-        setIsLoading(false);
-        return;
-      }
-      const exercisesRef = collection(db, 'exerciseLogs');
-      const q = query(
-        exercisesRef,
-        where('userId', '==', user.id),
-        where('timestamp', '>=', startOfDay),
-        where('timestamp', '<=', endOfDay),
-        orderBy('timestamp', 'desc')
-      );
-      
-      const snapshot = await getDocs(q);
-      const exercises = snapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => ({
-        id: doc.id,
-        ...doc.data(),
-        timestamp: doc.data().timestamp.toDate()
-      }));
-
-      setTodaysExercises(exercises.map(convertLocalExerciseToExerciseLog));
+      setTodaysExercises(localExercises.map(convertLocalExerciseToExerciseLog));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
       console.error('Error fetching exercises:', err);
@@ -80,11 +37,11 @@ const Dashboard = () => {
     }
   };
 
+
   useEffect(() => {
-    if (user) {
-      fetchExercises();
-    }
-  }, [selectedDate, user]);
+    fetchExercises();
+    // eslint-disable-next-line
+  }, [selectedDate]);
 
   const handleDateChange = (newDate: Date) => {
     setSelectedDate(newDate);
@@ -99,18 +56,26 @@ const Dashboard = () => {
   };
 
 
+
   const handleDeleteExercise = async (exerciseId: string) => {
     if (!exerciseId) {
       setError('Invalid exercise ID');
       return;
     }
-    if (!user) {
-      setError('User not authenticated');
-      return;
-    }
-
     try {
-      await deleteExerciseLog(exerciseId, user.id);
+      // Find the exercise object to pass to deleteExerciseLog
+      const exerciseToDelete = todaysExercises.find(ex => ex.id === exerciseId);
+      if (!exerciseToDelete) {
+        setError('Exercise not found');
+        return;
+      }
+      await deleteExerciseLog({
+        id: exerciseToDelete.id,
+        exerciseName: exerciseToDelete.exerciseName,
+        sets: exerciseToDelete.sets,
+        timestamp: exerciseToDelete.timestamp instanceof Date ? exerciseToDelete.timestamp : new Date(exerciseToDelete.timestamp),
+        deviceId: exerciseToDelete.deviceId || ''
+      });
       setTodaysExercises((prev) => prev.filter((ex) => ex.id !== exerciseId));
     } catch (error) {
       console.error('Error deleting exercise:', error);
@@ -172,8 +137,7 @@ const Dashboard = () => {
               ...exercise,
               timestamp: exercise.timestamp instanceof Date
                 ? exercise.timestamp
-                : new Date(exercise.timestamp),
-              userId: exercise.userId ?? (user ? user.id : '') // Ensure userId is always a string and user is not null
+                : new Date(exercise.timestamp)
             };
             return (
               <ExerciseCard

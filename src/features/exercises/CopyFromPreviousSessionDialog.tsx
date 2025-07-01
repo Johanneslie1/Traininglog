@@ -1,28 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '@/services/firebase/config';
 import { ExerciseData } from '@/services/exerciseDataService';
-import { startOfDay, endOfDay } from '@/utils/dateUtils';
-import { SearchIcon } from '@heroicons/react/solid';
-import { XIcon } from '@heroicons/react/solid';
-import { CheckIcon } from '@heroicons/react/solid';
+import { SearchIcon, XIcon, CheckIcon } from '@heroicons/react/solid';
+import { getExerciseLogsByDate } from '@/utils/localStorageUtils';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   currentDate: Date;
   onExercisesSelected: (exercises: ExerciseData[]) => void;
-  userId: string;
 }
+
+// Normalize date to start of day for consistent comparison
+const normalizeDate = (date: Date): Date => {
+  const normalized = new Date(date);
+  normalized.setHours(0, 0, 0, 0);
+  return normalized;
+};
+
+// Format date for input value (YYYY-MM-DD)
+const formatDateForInput = (date: Date): string => {
+  return date.toISOString().split('T')[0];
+};
 
 const CopyFromPreviousSessionDialog: React.FC<Props> = ({
   isOpen,
   onClose,
   currentDate,
   onExercisesSelected,
-  userId
 }) => {
-  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [selectedDate, setSelectedDate] = useState<string>(formatDateForInput(new Date()));
   const [loading, setLoading] = useState(false);
   const [previousExercises, setPreviousExercises] = useState<ExerciseData[]>([]);
   const [selectedExercises, setSelectedExercises] = useState<Set<string>>(new Set());
@@ -30,37 +36,40 @@ const CopyFromPreviousSessionDialog: React.FC<Props> = ({
   const [copySuccess, setCopySuccess] = useState(false);
 
   useEffect(() => {
-    if (selectedDate && userId) {
+    if (selectedDate) {
       setLoading(true);
       setCopySuccess(false);
-      const start = startOfDay(new Date(selectedDate));
-      const end = endOfDay(new Date(selectedDate));
+      try {
+        // Parse the selected date string to Date object
+        const dateObj = new Date(selectedDate);
+        console.log('Fetching exercises for date:', dateObj);
+        
+        // Get logs for the selected date
+        const logs = getExerciseLogsByDate(dateObj);
+        console.log('Found logs:', logs);
 
-      const exercisesQuery = query(
-        collection(db, 'exerciseLogs'),
-        where('userId', '==', userId),
-        where('timestamp', '>=', start),
-        where('timestamp', '<=', end)
-      );
+        // Convert to ExerciseData format
+        const exerciseData = logs.map((log: any) => ({
+          id: log.id || crypto.randomUUID(),
+          exerciseName: log.exerciseName,
+          sets: Array.isArray(log.sets) ? log.sets : [],
+          timestamp: normalizeDate(log.timestamp instanceof Date ? log.timestamp : new Date(log.timestamp)),
+          deviceId: log.deviceId || ''
+        }));
 
-      getDocs(exercisesQuery)
-        .then((snapshot) => {
-          const exercises = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          } as ExerciseData));
-          setPreviousExercises(exercises);
-          setSelectedExercises(new Set());
-        })
-        .catch(error => {
-          console.error('Error fetching exercises:', error);
-        })
-        .finally(() => setLoading(false));
+        console.log('Converted to exercise data:', exerciseData);
+        setPreviousExercises(exerciseData);
+      } catch (e) {
+        console.error('Error loading exercises:', e);
+        setPreviousExercises([]);
+      }
+      setSelectedExercises(new Set());
+      setLoading(false);
     } else {
       setPreviousExercises([]);
       setSelectedExercises(new Set());
     }
-  }, [selectedDate, userId]);
+  }, [selectedDate]);
 
   const handleToggleExercise = (id: string | undefined) => {
     if (!id) return;
