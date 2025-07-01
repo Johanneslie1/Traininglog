@@ -23,13 +23,7 @@ const normalizeDate = (date: Date): Date => {
   return normalized;
 };
 
-// Helper to get date range
-const getDateRange = (date: Date) => {
-  const startOfDay = normalizeDate(date);
-  const endOfDay = new Date(startOfDay);
-  endOfDay.setHours(23, 59, 59, 999);
-  return { startOfDay, endOfDay };
-};
+
 
 // Helper to compare dates (ignoring time)
 const isSameDay = (date1: Date, date2: Date): boolean => {

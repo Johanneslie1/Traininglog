@@ -8,11 +8,24 @@ export interface ExerciseSet {
 }
 
 export interface ExerciseData {
-  id: string;  // Changed from optional to required
+  id: string;
   exerciseName: string;
-  timestamp: Date;
+  name?: string; // For compatibility with Exercise type
+  timestamp: Date | number;
   sets: ExerciseSet[];
   deviceId?: string;
+  type?: 'strength' | 'cardio' | 'flexibility' | 'bodyweight';
+  category?: 'compound' | 'isolation' | 'olympic' | 'cardio' | 'stretching' | 'power';
+  primaryMuscles?: string[];
+  secondaryMuscles?: string[];
+  defaultUnit?: 'kg' | 'lbs' | 'time' | 'distance' | 'reps';
+  metrics?: {
+    trackWeight?: boolean;
+    trackReps?: boolean;
+    trackTime?: boolean;
+    trackDistance?: boolean;
+    trackRPE?: boolean;
+  };
 }
 
 export class ExerciseDataService {

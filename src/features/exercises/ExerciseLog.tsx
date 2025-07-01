@@ -15,13 +15,21 @@ import { ExerciseData } from '@/services/exerciseDataService';
 import CopyFromPreviousSessionDialog from './CopyFromPreviousSessionDialog';
 
 // Convert ExerciseData to ExerciseLog format for export
-const convertToExerciseLog = (exercise: ExerciseData): ExerciseLogType => ({
-  id: exercise.id || uuidv4(),
-  exerciseName: exercise.exerciseName,
-  sets: exercise.sets,
-  timestamp: exercise.timestamp,
-  deviceId: exercise.deviceId
-});
+const convertToExerciseLog = (exercise: ExerciseData): ExerciseLogType => {
+  const timestamp = exercise.timestamp instanceof Date ? exercise.timestamp : new Date(exercise.timestamp);
+  return {
+    id: exercise.id || uuidv4(),
+    exerciseName: exercise.exerciseName,
+    sets: exercise.sets.map(set => ({
+      reps: set.reps,
+      weight: set.weight,
+      difficulty: set.difficulty,
+      rpe: set.rpe
+    })),
+    timestamp,
+    deviceId: exercise.deviceId
+  };
+};
 
 export const ExerciseLog: React.FC = () => {
   const navigate = useNavigate();

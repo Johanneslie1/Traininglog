@@ -37,10 +37,28 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ onSelect, onClose }) => {
       try {
         // Use allExercises from exercises.ts (local static array)
         const imported = (await import('@/data/exercises')).allExercises;
-        // Add fake IDs for each exercise (since ExerciseTemplate has no id)
+        // Convert imported exercises to proper Exercise type
         allExercises = imported.map((ex, idx) => ({
           id: `${ex.name.replace(/\s+/g, '_').toLowerCase()}_${idx}`,
-          ...ex
+          name: ex.name,
+          description: ex.description,
+          type: ex.type,
+          category: ex.category,
+          primaryMuscles: ex.primaryMuscles,
+          secondaryMuscles: ex.secondaryMuscles || [],
+          equipment: ex.equipment || [],
+          instructions: ex.instructions || [],
+          tips: ex.tips || [],
+          videoUrl: ex.videoUrl || '',
+          imageUrl: ex.imageUrl || '',
+          defaultUnit: ex.defaultUnit || 'kg',
+          metrics: ex.metrics || {
+            trackWeight: true,
+            trackReps: true,
+            trackTime: false,
+            trackDistance: false,
+            trackRPE: false
+          }
         }));
       } catch {
         allExercises = [];
