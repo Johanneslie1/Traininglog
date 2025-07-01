@@ -49,12 +49,17 @@ const CopyFromPreviousSessionDialog: React.FC<Props> = ({
         console.log('Found logs:', logs);
 
         // Convert to ExerciseData format
-        const exerciseData = logs.map((log: any) => ({
-          id: log.id || crypto.randomUUID(),
+        const exerciseData = logs.map((log) => ({
+          id: log.id ?? crypto.randomUUID(),
           exerciseName: log.exerciseName,
-          sets: Array.isArray(log.sets) ? log.sets : [],
+          sets: Array.isArray(log.sets) ? log.sets.map(set => ({
+            reps: set.reps,
+            weight: set.weight,
+            difficulty: set.difficulty,
+            rpe: set.rpe
+          })) : [],
           timestamp: normalizeDate(log.timestamp instanceof Date ? log.timestamp : new Date(log.timestamp)),
-          deviceId: log.deviceId || ''
+          deviceId: log.deviceId ?? ''
         }));
 
         console.log('Converted to exercise data:', exerciseData);

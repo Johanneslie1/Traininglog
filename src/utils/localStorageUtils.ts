@@ -5,11 +5,15 @@ import { ExerciseLog as ExerciseLogType } from '@/types/exercise';
 const LOGS_STORAGE_KEY = 'exercise_logs';
 
 // Types
-export type ExerciseLog = Omit<ExerciseLogType, 'id'> & {
+export interface ExerciseLogBase extends Omit<ExerciseLogType, 'id' | 'timestamp'> {
   id?: string;
   deviceId?: string;
-  userId?: string;
   timestamp?: Date | string;
+}
+
+export type ExerciseLog = ExerciseLogBase & {
+  id: string;  // Required when stored
+  timestamp: Date | string;  // Required when stored
 };
 
 // Helper to normalize date to start of day
@@ -42,6 +46,24 @@ export const getDeviceId = (): string => {
   return deviceId;
 };
 
+// Validate exercise log data
+const isValidExerciseLog = (data: any): data is ExerciseLog => {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    typeof data.id === 'string' &&
+    typeof data.exerciseName === 'string' &&
+    Array.isArray(data.sets) &&
+    data.sets.every((set: any) =>
+      typeof set === 'object' &&
+      typeof set.reps === 'number' &&
+      typeof set.weight === 'number'
+    ) &&
+    (data.timestamp instanceof Date || typeof data.timestamp === 'string') &&
+    (data.deviceId === undefined || typeof data.deviceId === 'string')
+  );
+};
+
 // Get all exercise logs from local storage
 export const getExerciseLogs = (): ExerciseLog[] => {
   const logsString = localStorage.getItem(LOGS_STORAGE_KEY);
@@ -49,28 +71,54 @@ export const getExerciseLogs = (): ExerciseLog[] => {
 
   try {
     const logs = JSON.parse(logsString);
-    return Array.isArray(logs) ? logs.map(log => ({
-      ...log,
-      timestamp: new Date(log.timestamp)
-    })) : [];
+    if (!Array.isArray(logs)) {
+      console.error('Invalid logs format in localStorage');
+      return [];
+    }
+
+    return logs
+      .filter(isValidExerciseLog)
+      .map(log => ({
+        ...log,
+        id: log.id,
+        exerciseName: log.exerciseName,
+        sets: log.sets.map(set => ({
+          reps: set.reps,
+          weight: set.weight,
+          difficulty: set.difficulty,
+          rpe: set.rpe
+        })),
+        timestamp: new Date(log.timestamp),
+        deviceId: log.deviceId
+      }));
   } catch (error) {
-    console.error('Error parsing exercise logs:', error);
+    console.error('Error parsing exercise logs:', error instanceof Error ? error.message : error);
     return [];
   }
 };
 
 // Get exercise logs for a specific date
 export const getExerciseLogsByDate = (date: Date): ExerciseLog[] => {
+  if (!(date instanceof Date)) {
+    console.error('Invalid date provided to getExerciseLogsByDate');
+    return [];
+  }
+
   const logs = getExerciseLogs();
-  console.log('All logs:', logs);
-  console.log('Looking for date:', date);
+  console.log('All logs:', logs.length, 'logs found');
+  console.log('Looking for date:', date.toISOString());
   
   const filtered = logs.filter(log => {
-    const logDate = log.timestamp instanceof Date ? log.timestamp : new Date(log.timestamp || '');
+    const logDate = log.timestamp instanceof Date ? log.timestamp : new Date(log.timestamp);
+    if (isNaN(logDate.getTime())) {
+      console.warn('Invalid timestamp found in log:', log);
+      return false;
+    }
+    
     const isSame = isSameDay(logDate, date);
-    console.log('Comparing:', {
-      logDate,
-      targetDate: date,
+    console.debug('Comparing dates:', {
+      logDate: logDate.toISOString(),
+      targetDate: date.toISOString(),
       isSameDay: isSame
     });
     return isSame;

@@ -1,14 +1,17 @@
 import { DifficultyCategory } from '@/types/exercise';
 
+export interface ExerciseSet {
+  reps: number;
+  weight: number;
+  difficulty?: DifficultyCategory;
+  rpe?: string;
+}
+
 export interface ExerciseData {
-  id?: string;
+  id: string;  // Changed from optional to required
   exerciseName: string;
   timestamp: Date;
-  sets: Array<{
-    reps: number;
-    weight: number;
-    difficulty?: DifficultyCategory;
-  }>;
+  sets: ExerciseSet[];
   deviceId?: string;
 }
 
@@ -27,14 +30,15 @@ export class ExerciseDataService {
     return { startOfDay, endOfDay };
   }
 
-  static async saveExercise(exercise: ExerciseData): Promise<void> {
+  static async saveExercise(exercise: ExerciseData): Promise<boolean> {
     try {
-      // Save to localStorage only
       const existingData = this.getLocalExercises();
       const updatedData = [...existingData.filter(e => e.id !== exercise.id), exercise];
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updatedData));
+      return true;
     } catch (error) {
-      console.error('Error saving exercise:', error);
+      console.error('Error saving exercise:', error instanceof Error ? error.message : error);
+      return false;
     }
   }
 
@@ -43,7 +47,7 @@ export class ExerciseDataService {
       const allExercises = this.getLocalExercises();
       return this.filterExercisesByDate(allExercises, date);
     } catch (error) {
-      console.error('Error getting exercises by date:', error);
+      console.error('Error getting exercises by date:', error instanceof Error ? error.message : error);
       return [];
     }
   }
@@ -51,18 +55,48 @@ export class ExerciseDataService {
 
   // Removed syncWithFirebase, not needed for local storage
 
+  private static validateExerciseData(data: any): data is ExerciseData {
+    return (
+      typeof data === 'object' &&
+      data !== null &&
+      typeof data.id === 'string' &&
+      typeof data.exerciseName === 'string' &&
+      Array.isArray(data.sets) &&
+      data.sets.every((set: any) =>
+        typeof set === 'object' &&
+        typeof set.reps === 'number' &&
+        typeof set.weight === 'number'
+      )
+    );
+  }
+
   static getLocalExercises(): ExerciseData[] {
     const data = localStorage.getItem(this.STORAGE_KEY);
     if (!data) return [];
 
     try {
-      const exercises: ExerciseData[] = JSON.parse(data);
-      return exercises.map(exercise => ({
-        ...exercise,
-        timestamp: new Date(exercise.timestamp)
-      }));
+      const parsedData = JSON.parse(data);
+      if (!Array.isArray(parsedData)) {
+        console.error('Invalid data format in localStorage');
+        return [];
+      }
+
+      const validExercises = parsedData
+        .filter(this.validateExerciseData)
+        .map(exercise => ({
+          ...exercise,
+          timestamp: new Date(exercise.timestamp),
+          sets: exercise.sets.map(set => ({
+            reps: set.reps,
+            weight: set.weight,
+            difficulty: set.difficulty,
+            rpe: set.rpe
+          }))
+        }));
+
+      return validExercises;
     } catch (error) {
-      console.error('Error parsing exercises from localStorage:', error);
+      console.error('Error parsing exercises from localStorage:', error instanceof Error ? error.message : error);
       return [];
     }
   }
