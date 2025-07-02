@@ -1,20 +1,13 @@
 import React, { useState } from 'react';
 import { allExercises } from '@/data/exercises';
 import { importedExercises } from '@/data/importedExercises';
+import { Category } from './CategoryButton';
 
 // Combine both exercise lists
 const combinedExercises = [...allExercises, ...importedExercises.map(ex => ({
   ...ex,
   id: `imported-${ex.name.replace(/\s+/g, '-').toLowerCase()}`  // Create a pseudo-id
 }))];
-interface Category {
-  id: string;
-  name: string;
-  icon: string;
-  bgColor: string;
-  iconBgColor: string;
-  textColor: string;
-}
 
 interface ExerciseSearchProps {
   onClose: () => void;

@@ -1,8 +1,9 @@
 import React, { Suspense, lazy } from 'react';
-import { Routes, Route, Navigate, useParams, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { usePrograms } from '@/context/ProgramsContext';
+import { Exercise, ExerciseSet } from '@/types/exercise';
 
 // Wrapper to fetch program by id and render ProgramDetail
 const ProgramDetailWrapper: React.FC = () => {
@@ -12,6 +13,33 @@ const ProgramDetailWrapper: React.FC = () => {
   const program = programs.find(p => p.id === id);
   if (!program) return <div className="text-white p-4">Program not found</div>;
   return <ProgramDetail program={program} onBack={() => navigate('/programs')} onUpdate={updated => update(program.id, updated)} />;
+};
+
+// Wrapper for program selection mode
+const ProgramSelectionWrapper: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { programs } = usePrograms();
+  const state = location.state as { onSelect?: (exercises: { exercise: Exercise; sets: ExerciseSet[] }[]) => void } | null;
+
+  if (!programs.length) {
+    return <div className="text-white p-4">No programs found</div>;
+  }
+
+  return (
+    <ProgramDetail
+      program={programs[0]} // Show first program by default
+      selectionMode={true}
+      onBack={() => navigate('/')}
+      onSelectExercises={exercises => {
+        if (state?.onSelect) {
+          state.onSelect(exercises);
+        }
+        navigate('/');
+      }}
+      onUpdate={() => {}} // Dummy update handler for selection mode
+    />
+  );
 };
 
 // Lazy load components
@@ -69,6 +97,11 @@ const AppRoutes: React.FC = () => {
         <Route path="/programs/:id" element={
           <ProtectedRoute>
             <ProgramDetailWrapper />
+          </ProtectedRoute>
+        } />
+        <Route path="/programs/select" element={
+          <ProtectedRoute>
+            <ProgramSelectionWrapper />
           </ProtectedRoute>
         } />
       </Routes>

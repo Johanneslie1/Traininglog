@@ -1,18 +1,29 @@
-import { useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import ExerciseSearch from './ExerciseSearch';
 import Calendar from './Calendar';
 import { ExerciseSetLogger } from './ExerciseSetLogger';
 import { db } from '@/services/firebase/config';
-import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
-import { ExerciseSet, Exercise } from '@/types/exercise';
-import { ExerciseData } from '@/services/exerciseDataService';
+import { collection, addDoc } from 'firebase/firestore';
+import { Exercise, ExerciseSet } from '@/types/exercise';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import CopyFromPreviousSessionDialog from './CopyFromPreviousSessionDialog';
+import CategoryButton, { Category } from './CategoryButton';
+import ProgramExercisePicker from '@/features/programs/ProgramExercisePicker';
 
-type ExerciseTemplate = Omit<Exercise, 'id'>;
-type ExerciseWithId = Exercise & { sets?: ExerciseSet[] };
+type ExerciseType = Exercise['type'];
+type ExerciseWithSets = Exercise & { sets?: ExerciseSet[] };
+
+type ExerciseData = Partial<ExerciseWithSets>;
+type ExerciseWithId = Required<Pick<ExerciseWithSets, 'id' | 'name' | 'type' | 'category'>> & Partial<ExerciseWithSets>;
+
+interface ExerciseLog {
+  exerciseName: string;
+  timestamp: Date;
+  userId: string;
+  sets: ExerciseSet[];
+  deviceId?: string;
+}
 
 interface LogOptionsProps {
   onClose: () => void;
@@ -20,14 +31,12 @@ interface LogOptionsProps {
   selectedDate?: Date;
 }
 
-interface Category {
-  id: string;
-  name: string;
-  icon: string;
-  bgColor: string;
-  iconBgColor: string;
-  textColor: string;
-}
+type ViewState = 'main' | 'search' | 'calendar' | 'setLogger' | 'programPicker' | 'copyPrevious';
+
+const helperCategories: Category[] = [
+  { id: 'programs', name: 'Add from Program', icon: '📋', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-purple-600', textColor: 'text-white' },
+  { id: 'copyPrevious', name: 'Copy from Previous', icon: '📝', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-blue-600', textColor: 'text-white' },
+];
 
 const muscleGroups: Category[] = [
   { id: 'chest', name: 'Chest', icon: '💪', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-green-600', textColor: 'text-white' },
@@ -46,316 +55,239 @@ const trainingTypes: Category[] = [
   { id: 'stretching', name: 'Stretching', icon: '🧘‍♂️', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-green-600', textColor: 'text-white' },
 ];
 
-const helperCategories: Category[] = [
-  { id: 'programs', name: 'Add from Program', icon: '📋', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-purple-600', textColor: 'text-white' },
-];
-
 export const LogOptions = ({ onClose, onExerciseAdded, selectedDate }: LogOptionsProps): JSX.Element => {
-  const { user } = useSelector((state: RootState) => state.auth);
-  const navigate = useNavigate();
-  const [view, setView] = useState<'main' | 'search' | 'calendar' | 'setLogger'>('main');
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
-  const [recentExercises, setRecentExercises] = useState<ExerciseData[]>([]);
+  const authState = useSelector((state: RootState) => state.auth);
+  const [view, setView] = useState<ViewState>('main');
   const [currentExercise, setCurrentExercise] = useState<ExerciseWithId | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [showCopyDialog, setShowCopyDialog] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  
+  const handleExerciseLog = async (exercise: ExerciseWithId, date: Date, sets: ExerciseSet[] = []) => {
+    if (!authState?.user) return;
 
-  const handleCopyExercises = async (exercises: ExerciseData[]) => {
     try {
-      setError(null);
-      // Save all selected exercises
-      for (const exercise of exercises) {
-        await addDoc(collection(db, 'exerciseLogs'), {
-          ...exercise,
-          timestamp: selectedDate || new Date()
-        });
-      }
-      if (onExerciseAdded) {
-        onExerciseAdded();
-      }
-      setShowCopyDialog(false); // Only close the copy dialog, not the main log options
+      const exerciseLog: ExerciseLog = {
+        exerciseName: exercise.name,
+        userId: String(authState.user.id), // Convert whatever ID format to string
+        timestamp: date,
+        sets: sets,
+        deviceId: 'web'
+      };
+
+      await addDoc(collection(db, 'exerciseLogs'), exerciseLog);
+      onExerciseAdded?.();
+      onClose();
     } catch (error) {
-      console.error('Error copying exercises:', error);
-      setError('Failed to copy exercises. Please try again.');
+      console.error('Error logging exercise:', error);
+    }
+  };
+  
+  const addExerciseToSession = async (exercise: ExerciseData) => {
+    try {
+      const exerciseWithId: ExerciseWithId = {
+        id: String(Date.now()),
+        name: exercise.name || 'Unnamed Exercise',
+        type: exercise.type || 'strength',
+        category: exercise.category || 'compound', // Using 'compound' as default category for strength exercises
+        description: exercise.description || '',
+        primaryMuscles: exercise.primaryMuscles || [],
+        secondaryMuscles: exercise.secondaryMuscles || [],
+        instructions: exercise.instructions || [],
+        defaultUnit: exercise.defaultUnit || 'kg',
+        metrics: exercise.metrics || {
+          trackWeight: true,
+          trackReps: true
+        },
+        sets: exercise.sets || []
+      };
+      await handleExerciseLog(exerciseWithId, selectedDate || new Date());
+    } catch (error) {
+      console.error('Error adding exercise to session:', error);
     }
   };
 
-  const handleCategorySelect = useCallback((category: Category) => {
-    setSelectedCategory(category);
-    setView('search');
-  }, []);
-
-  const handleSelectExercisesFromDay = useCallback((exercises: ExerciseData[]) => {
-    setRecentExercises(exercises);
-    setView('main');
-  }, []);
-
-  // Utility function to check if an exercise already exists for the day
-  const checkExerciseExists = useCallback(async (exerciseName: string, timestamp: Date, userId: string) => {
-    const startOfDay = new Date(timestamp);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(timestamp);
-    endOfDay.setHours(23, 59, 59, 999);
-
-    const q = query(
-      collection(db, 'exerciseLogs'),
-      where('userId', '==', userId),
-      where('exerciseName', '==', exerciseName),
-      where('timestamp', '>=', startOfDay),
-      where('timestamp', '<=', endOfDay)
-    );
-
-    const snapshot = await getDocs(q);
-    return !snapshot.empty;
-  }, []);
-
-  // Add exercise to today's workout
-  const addExerciseToToday = useCallback(async (exercise: ExerciseData) => {
-    try {
-      if (!user?.id) {
-        throw new Error('You must be logged in to save exercises');
-      }
-
-      const timestamp = selectedDate || new Date();
-      
-      // Check for duplicates
-      const exists = await checkExerciseExists(exercise.exerciseName, timestamp, user.id);
-      if (exists) {
-        const proceed = window.confirm('This exercise already exists for today. Add it anyway?');
-        if (!proceed) return;
-      }
-
-      const newExercise = {
-        ...exercise,
-        timestamp,
-        userId: user.id
+  const handleCopyExercises = (exercises: ExerciseData[]) => {
+    exercises.forEach(exercise => {
+      const validExercise: ExerciseData = {
+        name: String(exercise.name || ''),
+        type: 'strength' as Exercise['type'],
+        category: 'compound' as Exercise['category'],
+        sets: exercise.sets || [],
+        metrics: {
+          trackWeight: true,
+          trackReps: true
+        },
+        defaultUnit: 'kg'
       };
-
-      // Save to Firestore
-      const { id, ...dataForFirestore } = newExercise;
-      await addDoc(collection(db, 'exerciseLogs'), dataForFirestore);
-      
-      if (onExerciseAdded) {
-        onExerciseAdded();
-      }
-      
-      onClose();
-    } catch (error) {
-      console.error('Error saving exercise:', error);
-      setError('Failed to add exercise. Please try again.');
-    }
-  }, [user, selectedDate, checkExerciseExists, onExerciseAdded, onClose]);
-
-  const handleSaveSets = useCallback(async (sets: ExerciseSet[]) => {
-    if (!currentExercise || !user?.id) return;
-    
-    try {
-      setError(null);
-      
-      const exerciseLog: ExerciseData = {
-        exerciseName: currentExercise.name,
-        sets,
-        timestamp: selectedDate || new Date(),
-        userId: user.id
-      };
-      
-      await addDoc(collection(db, 'exerciseLogs'), exerciseLog);
-      
-      if (onExerciseAdded) {
-        onExerciseAdded();
-      }
-      
-      onClose();
-    } catch (error) {
-      console.error('Error saving exercise with sets:', error);
-      setError('Failed to save exercise. Please try again.');
-    }
-  }, [currentExercise, user, selectedDate, onExerciseAdded, onClose]);
-
-  if (view === 'search') {
-    return (
-      <ExerciseSearch 
-        onClose={() => setView('main')}
-        onSelectExercise={(exercise: ExerciseTemplate) => {
-          // Generate a temporary ID for the exercise
-          const exerciseWithId: ExerciseWithId = {
-            ...exercise,
-            id: `temp-${Date.now()}`,
-            sets: []
-          };
-          setCurrentExercise(exerciseWithId);
-          setView('setLogger');
-        }}
-        category={selectedCategory}
-      />
-    );
-  }
-
-  if (view === 'calendar') {
-    return (
-      <Calendar 
-        selectedDate={selectedDate || new Date()}
-        onClose={() => setView('main')}
-        onSelectExercises={handleSelectExercisesFromDay}
-        onDateSelect={(_date: Date) => {
-          if (onExerciseAdded) {
-            onExerciseAdded();
-          }
-          onClose();
-        }}
-      />
-    );
-  }
-
-  if (view === 'setLogger' && currentExercise) {
-    return (
-      <ExerciseSetLogger
-        exercise={currentExercise}
-        onSave={handleSaveSets}
-        onCancel={() => setView('main')}
-      />
-    );
-  }
-
+      addExerciseToSession(validExercise).catch(console.error);
+    });
+  };
+  
   return (
-    <div className="fixed inset-0 flex flex-col bg-black">
-      {/* Header */}
-      <header className="flex-none flex items-center justify-between p-4 bg-[#1a1a1a] border-b border-white/10">
-        <h1 className="text-xl font-medium text-white">Add Exercise</h1>
-        <button
-          onClick={onClose}
-          className="p-2 hover:bg-white/5 rounded-lg transition-colors"
-        >
-          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </header>
-
-      {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="p-4 space-y-6 pb-safe">
-          {/* Quick Actions */}
-          <div className="grid grid-cols-2 gap-4">
-            <button 
-              onClick={() => navigate('/programs')}
-              className="bg-[#1f2e24] p-4 rounded-xl hover:bg-[#2f3e34] transition-colors flex flex-col items-center"
-            >
-              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center mb-2">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2a4 4 0 014-4h6" />
-                  <circle cx="9" cy="7" r="4" />
-                </svg>
-              </div>
-              <div className="text-blue-400 font-medium">Add from Program</div>
-            </button>
-
-            <button 
-              onClick={() => setShowCopyDialog(true)}
-              className="bg-[#1f1f2e] p-4 rounded-xl hover:bg-[#2f2f3e] transition-colors flex flex-col items-center"
-            >
-              <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center mb-2">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <div className="text-purple-400 font-medium">Copy Previous Session</div>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-gymkeeper-dark rounded-xl w-full max-w-lg overflow-hidden">
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-white">Add Exercise</h2>
+            <button onClick={onClose} className="text-white hover:text-gray-300">
+              <span className="sr-only">Close</span>
+              ✕
             </button>
           </div>
-
-          {/* Categories */}
-          <div>
-            <h2 className="text-lg font-medium text-white mb-3">Muscle Groups</h2>
-            <div className="grid grid-cols-2 gap-3">
-              {muscleGroups.map((category) => (
-                <button
-                  key={category.id}
-                  onClick={() => handleCategorySelect(category)}
-                  className="flex items-center p-4 bg-[#1a1a1a] rounded-xl hover:bg-[#222] transition-colors"
-                >
-                  <div className={`w-10 h-10 ${category.iconBgColor} rounded-lg flex items-center justify-center mr-3`}>
-                    <span className="text-lg">{category.icon}</span>
-                  </div>
-                  <span className="text-white">{category.name}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <h2 className="text-lg font-medium text-white mb-3">Training Types</h2>
-            <div className="grid grid-cols-2 gap-3">
-              {trainingTypes.map((category) => (
-                <button
-                  key={category.id}
-                  onClick={() => handleCategorySelect(category)}
-                  className="flex items-center p-4 bg-[#1a1a1a] rounded-xl hover:bg-[#222] transition-colors"
-                >
-                  <div className={`w-10 h-10 ${category.iconBgColor} rounded-lg flex items-center justify-center mr-3`}>
-                    <span className="text-lg">{category.icon}</span>
-                  </div>
-                  <span className="text-white">{category.name}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Helper Categories */}
-          <div>
-            <h2 className="text-lg font-medium text-white mb-3">Quick Actions</h2>
-            <div className="grid grid-cols-2 gap-3">
-              {helperCategories.map((category) => (
-                <button
-                  key={category.id}
-                  onClick={() => handleCategorySelect(category)}
-                  className="flex items-center p-4 bg-[#1a1a1a] rounded-xl hover:bg-[#222] transition-colors"
-                >
-                  <div className={`w-10 h-10 ${category.iconBgColor} rounded-lg flex items-center justify-center mr-3`}>
-                    <span className="text-lg">{category.icon}</span>
-                  </div>
-                  <span className="text-white">{category.name}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Recent Exercises */}
-          {recentExercises.length > 0 && (
+          
+          {view === 'main' && (
             <div>
-              <h2 className="text-lg font-medium text-white mb-3">Recent Exercises</h2>
-              <div className="space-y-2">
-                {recentExercises.map((exercise) => (
-                  <button
-                    key={exercise.id}
-                    onClick={() => addExerciseToToday(exercise)}
-                    className="w-full p-3 bg-[#1a1a1a] rounded-xl hover:bg-[#222] transition-colors"
-                  >
-                    <div className="text-white">{exercise.exerciseName}</div>
-                    <div className="text-sm text-gray-400">
-                      {new Date(exercise.timestamp).toLocaleDateString()}
-                    </div>
-                  </button>
-                ))}
+              {/* Helper Categories */}
+              <div className="mb-8">
+                <h3 className="text-lg font-medium text-white mb-4">Other Options</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  {helperCategories.map(category => (
+                    <CategoryButton 
+                      key={category.id}
+                      category={category}
+                      onClick={() => {
+                        if (category.id === 'programs') {
+                          setView('programPicker');
+                        } else if (category.id === 'copyPrevious') {
+                          setView('copyPrevious');
+                        }
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Muscle Groups */}
+              <div className="mb-8">
+                <h3 className="text-lg font-medium text-white mb-4">Muscle Groups</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  {muscleGroups.map(category => (
+                    <CategoryButton 
+                      key={category.id}
+                      category={category}
+                      onClick={() => {
+                        setSelectedCategory(category);
+                        setView('search');
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Training Types */}
+              <div className="mb-8">
+                <h3 className="text-lg font-medium text-white mb-4">Training Types</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  {trainingTypes.map(category => (
+                    <CategoryButton 
+                      key={category.id}
+                      category={category}
+                      onClick={() => {
+                        setSelectedCategory(category);
+                        setView('search');
+                      }}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
           )}
 
-          {error && (
-            <div className="text-red-500 text-sm mt-2">
-              {error}
-            </div>
+          {view === 'search' && selectedCategory && (
+            <ExerciseSearch
+              category={selectedCategory}
+              onSelectExercise={(exercise) => {
+                const exerciseWithId: ExerciseWithId = {
+                  id: String(Date.now()),
+                  name: exercise.name || 'Unnamed Exercise',
+                  type: 'strength',
+                  category: selectedCategory.id as any,
+                  description: exercise.description || '',
+                  primaryMuscles: [],
+                  secondaryMuscles: [],
+                  equipment: exercise.equipment,
+                  instructions: [],
+                  defaultUnit: 'kg',
+                  metrics: {
+                    trackWeight: true,
+                    trackReps: true
+                  },
+                  sets: []
+                };
+                setCurrentExercise(exerciseWithId);
+                setView('setLogger');
+              }}
+              onClose={onClose}
+            />
+          )}
+
+          {view === 'calendar' && (
+            <Calendar
+              selectedDate={selectedDate || new Date()}
+              onDateSelect={(date: Date) => {
+                if (currentExercise) {
+                  handleExerciseLog(currentExercise, date);
+                }
+              }}
+              onSelectExercises={() => {}} // Not used in this context
+              onClose={onClose}
+            />
+          )}
+
+          {view === 'programPicker' && (
+            <ProgramExercisePicker
+              onClose={() => {
+                setView('main');
+                onClose();
+              }}
+              onSelectExercises={(exercises) => {
+                exercises.forEach(({ exercise, sets }) => {
+                  addExerciseToSession({
+                    ...exercise,
+                    name: exercise.name,
+                    type: exercise.type as ExerciseType,
+                    category: exercise.category,
+                    sets
+                  });
+                });
+                onClose();
+              }}
+            />
+          )}
+
+          {view === 'setLogger' && currentExercise && (
+            <ExerciseSetLogger
+              exercise={{
+                id: currentExercise.id,
+                name: currentExercise.name,
+                type: 'strength' as ExerciseType,
+                sets: currentExercise.sets || [],
+              }}
+              onSave={async (sets: ExerciseSet[]) => {
+                await handleExerciseLog(currentExercise, selectedDate || new Date(), sets);
+              }}
+              onCancel={() => setView('search')}
+            />
+          )}
+
+          {view === 'copyPrevious' && (
+            <CopyFromPreviousSessionDialog
+              isOpen={true}
+              onClose={() => setView('main')}
+              currentDate={selectedDate || new Date()}
+              onExercisesSelected={async (exercises: ExerciseData[]) => {
+                const validExercises = exercises.map(exercise => ({
+                  name: String(exercise.name || ''),
+                  type: 'strength' as Exercise['type'],
+                  category: 'compound' as Exercise['category'], // Default to compound for copied exercises
+                  sets: exercise.sets || []
+                }));
+                await handleCopyExercises(validExercises);
+              }}
+              userId={authState.user?.id || ''}
+            />
           )}
         </div>
       </div>
-
-      {/* Copy from Previous Session Dialog */}
-      <CopyFromPreviousSessionDialog
-        isOpen={showCopyDialog}
-        onClose={() => setShowCopyDialog(false)}
-        currentDate={selectedDate || new Date()}
-        onExercisesSelected={handleCopyExercises}
-        userId={user?.id || ''}
-      />
     </div>
   );
 };
