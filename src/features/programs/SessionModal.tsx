@@ -8,12 +8,33 @@ interface SessionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (session: ProgramSession) => void;
+  initialData?: ProgramSession;
 }
 
-const SessionModal: React.FC<SessionModalProps> = ({ isOpen, onClose, onSave }) => {
-  const [name, setName] = useState('');
-
-  const [exercises, setExercises] = useState<ExerciseWithSets[]>([]);
+const SessionModal: React.FC<SessionModalProps> = ({ isOpen, onClose, onSave, initialData }) => {
+  const [name, setName] = useState(initialData?.name || '');
+  const [exercises, setExercises] = useState<ExerciseWithSets[]>(
+    initialData?.exercises.map(ex => ({
+      id: ex.id,
+      name: ex.name,
+      description: '',
+      type: 'strength',
+      category: 'compound',
+      primaryMuscles: [],
+      secondaryMuscles: [],
+      defaultUnit: 'kg',
+      metrics: {
+        trackWeight: true,
+        trackReps: true
+      },
+      instructions: [],
+      sets: Array(ex.sets).fill({
+        reps: ex.reps,
+        weight: ex.weight || 0,
+        difficulty: 'MODERATE'
+      })
+    })) || []
+  );
   const [showForm, setShowForm] = useState(false);
   const [showAddExercise, setShowAddExercise] = useState(false);
   const [editIndex, setEditIndex] = useState<number | null>(null);

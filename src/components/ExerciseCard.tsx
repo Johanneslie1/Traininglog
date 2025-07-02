@@ -15,11 +15,9 @@ const getDifficultyColor = (difficulty?: string): string => {
   switch (difficulty) {
     case 'WARMUP': return 'var(--color-warmup)';
     case 'EASY': return 'var(--color-easy)';
-    case 'NORMAL': return 'var(--color-normal)';
+    case 'MODERATE': return 'var(--color-moderate)';
     case 'HARD': return 'var(--color-hard)';
-    case 'FAILURE': return 'var(--color-failure)';
-    case 'DROP': return 'var(--color-drop)';
-    default: return 'var(--color-normal)';
+    default: return 'var(--color-moderate)';
   }
 };
 

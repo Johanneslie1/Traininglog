@@ -28,4 +28,16 @@
   .purple-gradient {
     @apply bg-purple-gradient;
   }
+
+  .tooltip-container {
+    @apply relative;
+  }
+
+  .tooltip {
+    @apply invisible absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 rounded bg-black/90 text-white text-xs whitespace-nowrap;
+  }
+
+  .tooltip-container:hover .tooltip {
+    @apply visible;
+  }
 }

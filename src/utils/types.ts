@@ -1,4 +1,4 @@
-export type DifficultyCategory = 'WARMUP' | 'EASY' | 'NORMAL' | 'HARD' | 'FAILURE' | 'DROP';
+export type DifficultyCategory = 'WARMUP' | 'EASY' | 'MODERATE' | 'HARD';
 
 export interface ExerciseSet {
   reps: number;

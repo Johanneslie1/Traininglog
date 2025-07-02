@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Program, ProgramSession } from '@/types/program';
-// Removed CopyFromPreviousDayButton import (no longer needed)
 import SessionModal from './SessionModal';
 
 interface Props {
@@ -10,13 +9,11 @@ interface Props {
 }
 
 const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate }) => {
-
   // Flat sessions list (no weeks/days)
   const sessions: ProgramSession[] = program.sessions ?? [];
 
   const [showSessionModal, setShowSessionModal] = useState(false);
-
-  // No copy from previous day needed
+  const [editingSession, setEditingSession] = useState<ProgramSession | null>(null);
 
   // Add a new session to the flat sessions array
   const handleAddSession = (session: ProgramSession) => {
@@ -25,12 +22,21 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate }) => {
     setShowSessionModal(false);
   };
 
-  // Removed unused handleEditSession (no longer needed)
+  // Edit an existing session
+  const handleEditSession = (updated: ProgramSession) => {
+    const updatedSessions = sessions.map(s => 
+      s.id === updated.id ? updated : s
+    );
+    onUpdate({ ...program, sessions: updatedSessions });
+    setEditingSession(null);
+  };
 
   // Remove a session
   const handleRemoveSession = (sessionId: string) => {
-    const updatedSessions = sessions.filter(s => s.id !== sessionId);
-    onUpdate({ ...program, sessions: updatedSessions });
+    if (window.confirm('Are you sure you want to delete this session?')) {
+      const updatedSessions = sessions.filter(s => s.id !== sessionId);
+      onUpdate({ ...program, sessions: updatedSessions });
+    }
   };
 
   return (
@@ -46,13 +52,25 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate }) => {
               <div className="font-bold text-white flex justify-between items-center">
                 {session.name}
                 <span>
-                  <button className="text-blue-400 mr-2" onClick={() => {/* TODO: open edit modal */}}>Edit</button>
-                  <button className="text-red-400" onClick={() => handleRemoveSession(session.id)}>Delete</button>
+                  <button 
+                    className="text-blue-400 mr-2" 
+                    onClick={() => setEditingSession(session)}
+                  >
+                    Edit
+                  </button>
+                  <button 
+                    className="text-red-400" 
+                    onClick={() => handleRemoveSession(session.id)}
+                  >
+                    Delete
+                  </button>
                 </span>
               </div>
               <ul className="ml-4 mt-1">
                 {session.exercises.map((ex, idx) => (
-                  <li key={ex.id || ex.name + '-' + idx} className="text-gray-300 text-sm">{ex.name} - {ex.sets} x {ex.reps}</li>
+                  <li key={ex.id || ex.name + '-' + idx} className="text-gray-300 text-sm">
+                    {ex.name} - {ex.sets} x {ex.reps}
+                  </li>
                 ))}
               </ul>
             </div>
@@ -60,10 +78,25 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate }) => {
         ) : (
           <div className="text-gray-500">No sessions yet.</div>
         )}
-        <button onClick={() => setShowSessionModal(true)} className="mt-2 px-4 py-2 bg-blue-600 text-white rounded">Add Session</button>
+        <button onClick={() => setShowSessionModal(true)} className="mt-2 px-4 py-2 bg-blue-600 text-white rounded">
+          Add Session
+        </button>
       </div>
 
-      <SessionModal isOpen={showSessionModal} onClose={() => setShowSessionModal(false)} onSave={handleAddSession} />
+      <SessionModal 
+        isOpen={showSessionModal} 
+        onClose={() => setShowSessionModal(false)} 
+        onSave={handleAddSession} 
+      />
+
+      {editingSession && (
+        <SessionModal 
+          isOpen={true}
+          onClose={() => setEditingSession(null)}
+          onSave={handleEditSession}
+          initialData={editingSession}
+        />
+      )}
     </div>
   );
 };

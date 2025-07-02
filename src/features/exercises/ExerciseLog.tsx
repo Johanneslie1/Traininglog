@@ -454,6 +454,9 @@ export const ExerciseLog: React.FC = () => {
             onSave={handleSaveSets}
             onCancel={() => updateUiState('showSetLogger', false)}
             isEditing={true}
+            previousSet={selectedExercise.sets.length > 0 ? selectedExercise.sets[selectedExercise.sets.length - 1] : undefined}
+            showPreviousSets={true}
+            useExerciseId={true}
           />
         </div>
       )}
