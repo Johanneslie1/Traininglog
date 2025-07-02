@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useParams, useNavigate } from 'react-router-do
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { usePrograms } from '@/context/ProgramsContext';
+
 // Wrapper to fetch program by id and render ProgramDetail
 const ProgramDetailWrapper: React.FC = () => {
   const { id } = useParams();
@@ -70,7 +71,6 @@ const AppRoutes: React.FC = () => {
             <ProgramDetailWrapper />
           </ProtectedRoute>
         } />
-*** End Patch
       </Routes>
     </Suspense>
   );

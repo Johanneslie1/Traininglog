@@ -8,8 +8,6 @@ interface SideMenuProps {
   onExport: () => void;
   onShowWorkoutSummary: () => void;
   onNavigateToday: () => void;
-  onNavigateProfile: () => void;
-  onNavigateHistory: () => void;
   onNavigatePrograms: () => void;
 }
 
@@ -20,8 +18,6 @@ const SideMenu: React.FC<SideMenuProps> = ({
   onExport,
   onShowWorkoutSummary,
   onNavigateToday,
-  onNavigateProfile,
-  onNavigateHistory,
   onNavigatePrograms
 }) => {
   console.log('SideMenu rendering, isOpen:', isOpen);
@@ -34,7 +30,8 @@ const SideMenu: React.FC<SideMenuProps> = ({
 
   if (!isOpen) return null;
 
-  return (    <>
+  return (
+    <>
       {/* Backdrop */}
       <div 
         className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 transition-opacity"
@@ -42,14 +39,16 @@ const SideMenu: React.FC<SideMenuProps> = ({
       />
       
       {/* Menu */}
-      <div className="fixed left-0 top-0 bottom-0 w-72 bg-[#23272F] z-50 shadow-xl flex flex-col translate-x-0 transition-transform duration-300 ease-in-out">        <div className="p-4 border-b border-[#3E4652]">
+      <div className="fixed left-0 top-0 bottom-0 w-72 bg-[#23272F] z-50 shadow-xl flex flex-col translate-x-0 transition-transform duration-300 ease-in-out">
+        <div className="p-4 border-b border-[#3E4652]">
           <div className="flex items-center justify-between">
             <h2 className="text-[#F2F3F7] text-xl font-medium">GYM KEEPER</h2>
             <button
               onClick={onClose}
               className="p-2 hover:bg-[#2D3440] rounded-full transition-colors"
               aria-label="Close Menu"
-            >              <svg className="w-5 h-5 text-[#B0B8C1] hover:text-[#F2F3F7] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            >
+              <svg className="w-5 h-5 text-[#B0B8C1] hover:text-[#F2F3F7] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -65,12 +64,6 @@ const SideMenu: React.FC<SideMenuProps> = ({
               </svg>
               Today
             </button>
-            <button onClick={onNavigateHistory} className="w-full flex items-center gap-3 px-4 py-3 text-text-primary hover:bg-bg-secondary rounded-lg transition-colors">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              History
-            </button>
             <button onClick={onNavigatePrograms} className="w-full flex items-center gap-3 px-4 py-3 text-text-primary hover:bg-blue-700 rounded-lg transition-colors">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2a4 4 0 014-4h6" />
@@ -78,15 +71,10 @@ const SideMenu: React.FC<SideMenuProps> = ({
               </svg>
               Programs
             </button>
-            <button onClick={onNavigateProfile} className="w-full flex items-center gap-3 px-4 py-3 text-text-primary hover:bg-bg-secondary rounded-lg transition-colors">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-              Profile
-            </button>
           </div>
 
-          {/* Data Management Section */}          <div className="pt-4 border-t border-[#3E4652] space-y-1">
+          {/* Data Management Section */}
+          <div className="pt-4 border-t border-[#3E4652] space-y-1">
             <button
               onClick={onShowWorkoutSummary}
               className="w-full flex items-center gap-3 px-4 py-3 text-text-primary hover:bg-bg-secondary rounded-lg transition-colors"

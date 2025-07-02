@@ -59,7 +59,6 @@ export const ExerciseLog: React.FC = () => {
     showImportModal: boolean;
     showWorkoutSummary: boolean;
     showMenu: boolean;
-    showFabMenu: boolean;
     showProgramModal: boolean;
   };
 
@@ -71,7 +70,6 @@ export const ExerciseLog: React.FC = () => {
     showImportModal: false,
     showWorkoutSummary: false,
     showMenu: false,
-    showFabMenu: false,
     showProgramModal: false,
   });
 
@@ -397,33 +395,17 @@ export const ExerciseLog: React.FC = () => {
         </div>
       )}
 
-      {/* Add Button with Menu */}
+      {/* Add Button */}
       <div className="fixed bottom-6 right-6 z-50">
         <button
-          onClick={() => setUiState(prev => ({ ...prev, showFabMenu: !prev.showFabMenu }))}
+          onClick={() => updateUiState('showLogOptions', true)}
           className="w-16 h-16 bg-[#8B5CF6] hover:bg-[#7C3AED] rounded-full flex items-center justify-center text-white shadow-lg transition-colors"
-          aria-label="Add"
+          aria-label="Add Exercise"
         >
           <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
         </button>
-        {uiState.showFabMenu && (
-          <div className="absolute bottom-20 right-0 bg-[#23272F] rounded-xl shadow-lg flex flex-col w-48 border border-white/10 animate-fade-in z-50">
-            <button
-              onClick={() => { setUiState(prev => ({ ...prev, showLogOptions: true, showFabMenu: false })); }}
-              className="w-full px-4 py-3 text-left text-white hover:bg-[#181A20] rounded-t-xl transition-colors"
-            >
-              Add Exercise
-            </button>
-            <button
-              onClick={() => { setUiState(prev => ({ ...prev, showProgramModal: true, showFabMenu: false })); }}
-              className="w-full px-4 py-3 text-left text-white hover:bg-[#181A20] rounded-b-xl transition-colors"
-            >
-              Add Program
-            </button>
-          </div>
-        )}
       </div>
       {/* Program Modal */}
       {uiState.showProgramModal && (
@@ -442,8 +424,6 @@ export const ExerciseLog: React.FC = () => {
         onExport={() => exportExerciseData(exercises.map(convertToExerciseLog))}
         onShowWorkoutSummary={() => updateUiState('showWorkoutSummary', true)}
         onNavigateToday={() => setSelectedDate(new Date())}
-        onNavigateHistory={() => toggleCalendar(true)}
-        onNavigateProfile={() => {/* TODO: Implement profile navigation */}}
         onNavigatePrograms={() => { navigate('/programs'); }}
       />
 

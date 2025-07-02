@@ -81,9 +81,19 @@ export interface ExerciseLog {
   /** Array of sets performed */
   sets: ExerciseSet[];
   /** When the exercise was performed */
-  timestamp: Date | number;
+  timestamp: Date;
   /** Device ID for syncing */
   deviceId?: string;
   /** User ID who owns this exercise log */
   userId?: string;
+}
+
+export type ExerciseType = Exercise['type'];
+export type ExerciseCategory = Exercise['category'];
+export type UnitType = Exercise['defaultUnit'];
+
+export enum DifficultyLevel {
+  EASY = 'easy',
+  NORMAL = 'medium',
+  HARD = 'hard'
 }

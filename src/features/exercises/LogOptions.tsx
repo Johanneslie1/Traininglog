@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import ExerciseSearch from './ExerciseSearch';
 import Calendar from './Calendar';
 import { ExerciseSetLogger } from './ExerciseSetLogger';
@@ -45,8 +46,13 @@ const trainingTypes: Category[] = [
   { id: 'stretching', name: 'Stretching', icon: '🧘‍♂️', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-green-600', textColor: 'text-white' },
 ];
 
+const helperCategories: Category[] = [
+  { id: 'programs', name: 'Add from Program', icon: '📋', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-purple-600', textColor: 'text-white' },
+];
+
 export const LogOptions = ({ onClose, onExerciseAdded, selectedDate }: LogOptionsProps): JSX.Element => {
   const { user } = useSelector((state: RootState) => state.auth);
+  const navigate = useNavigate();
   const [view, setView] = useState<'main' | 'search' | 'calendar' | 'setLogger'>('main');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [recentExercises, setRecentExercises] = useState<ExerciseData[]>([]);
@@ -232,15 +238,16 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate }: LogOption
           {/* Quick Actions */}
           <div className="grid grid-cols-2 gap-4">
             <button 
-              onClick={() => setView('calendar')}
+              onClick={() => navigate('/programs')}
               className="bg-[#1f2e24] p-4 rounded-xl hover:bg-[#2f3e34] transition-colors flex flex-col items-center"
             >
-              <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center mb-2">
+              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center mb-2">
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2a4 4 0 014-4h6" />
+                  <circle cx="9" cy="7" r="4" />
                 </svg>
               </div>
-              <div className="text-green-400 font-medium">From another day</div>
+              <div className="text-blue-400 font-medium">Add from Program</div>
             </button>
 
             <button 
@@ -279,6 +286,25 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate }: LogOption
             <h2 className="text-lg font-medium text-white mb-3">Training Types</h2>
             <div className="grid grid-cols-2 gap-3">
               {trainingTypes.map((category) => (
+                <button
+                  key={category.id}
+                  onClick={() => handleCategorySelect(category)}
+                  className="flex items-center p-4 bg-[#1a1a1a] rounded-xl hover:bg-[#222] transition-colors"
+                >
+                  <div className={`w-10 h-10 ${category.iconBgColor} rounded-lg flex items-center justify-center mr-3`}>
+                    <span className="text-lg">{category.icon}</span>
+                  </div>
+                  <span className="text-white">{category.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Helper Categories */}
+          <div>
+            <h2 className="text-lg font-medium text-white mb-3">Quick Actions</h2>
+            <div className="grid grid-cols-2 gap-3">
+              {helperCategories.map((category) => (
                 <button
                   key={category.id}
                   onClick={() => handleCategorySelect(category)}

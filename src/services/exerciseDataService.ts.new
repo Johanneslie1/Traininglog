@@ -1,0 +1,84 @@
+import { ExerciseDataSchema } from '@/types/validation';
+import type { ValidatedExerciseData } from '@/types/validation';
+
+export type ExerciseData = ValidatedExerciseData;
+
+export class ExerciseDataService {
+  private static STORAGE_KEY = 'exercise_logs';
+
+  private static validateExerciseData(data: unknown): ExerciseData {
+    const result = ExerciseDataSchema.safeParse(data);
+    if (!result.success) {
+      console.error('Exercise data validation failed:', result.error);
+      throw new Error('Invalid exercise data');
+    }
+    return result.data;
+  }
+
+  private static getDateRange(date: Date): { startOfDay: Date; endOfDay: Date } {
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+    
+    return { startOfDay, endOfDay };
+  }
+
+  static async saveExercise(exercise: ExerciseData): Promise<boolean> {
+    try {
+      // Validate exercise data before saving
+      const validatedExercise = this.validateExerciseData(exercise);
+      const existingData = this.getLocalExercises();
+      const updatedData = [...existingData.filter(e => e.id !== validatedExercise.id), validatedExercise];
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updatedData));
+      return true;
+    } catch (error) {
+      console.error('Error saving exercise:', error instanceof Error ? error.message : error);
+      return false;
+    }
+  }
+
+  static async getExercisesByDate(date: Date): Promise<ExerciseData[]> {
+    try {
+      const exercises = this.getLocalExercises();
+      return this.filterExercisesByDate(exercises, date);
+    } catch (error) {
+      console.error('Error getting exercises:', error instanceof Error ? error.message : error);
+      return [];
+    }
+  }
+
+  static getLocalExercises(): ExerciseData[] {
+    try {
+      const rawData = localStorage.getItem(this.STORAGE_KEY);
+      if (!rawData) return [];
+      const parsedData = JSON.parse(rawData);
+      return Array.isArray(parsedData) ? parsedData.map(data => this.validateExerciseData(data)) : [];
+    } catch (error) {
+      console.error('Error parsing local exercises:', error instanceof Error ? error.message : error);
+      return [];
+    }
+  }
+
+  static filterExercisesByDate(exercises: ExerciseData[], targetDate: Date): ExerciseData[] {
+    const { startOfDay, endOfDay } = this.getDateRange(targetDate);
+    return exercises.filter(exercise => {
+      const exerciseDate = new Date(exercise.timestamp);
+      return exerciseDate >= startOfDay && exerciseDate <= endOfDay;
+    });
+  }
+
+  static async getExercisesByDateRange(startDate: Date, endDate: Date): Promise<ExerciseData[]> {
+    try {
+      const exercises = this.getLocalExercises();
+      return exercises.filter(exercise => {
+        const exerciseDate = new Date(exercise.timestamp);
+        return exerciseDate >= startDate && exerciseDate <= endDate;
+      });
+    } catch (error) {
+      console.error('Error getting exercises by date range:', error instanceof Error ? error.message : error);
+      return [];
+    }
+  }
+}

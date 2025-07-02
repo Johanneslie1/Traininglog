@@ -61,8 +61,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         onExport={handleExport}
         onShowWorkoutSummary={handleShowWorkoutSummary}
         onNavigateToday={() => handleNavigate('/')}
-        onNavigateProfile={() => handleNavigate('/profile')}
-        onNavigateHistory={() => handleNavigate('/history')}
         onNavigatePrograms={() => handleNavigate('/programs')}
       />
     </div>
