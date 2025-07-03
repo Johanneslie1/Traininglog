@@ -10,6 +10,7 @@ import { Providers } from '@/providers';
 import { store } from '@/store/store';
 import Layout from '@/components/layout/Layout';
 import AppRoutes from '@/routes';
+import { TestButton } from '@/components/TestButton';
 import 'mobile-drag-drop/default.css';
 import '@/styles/dragAndDrop.css';
 
@@ -59,77 +60,75 @@ navigator.serviceWorker?.addEventListener('message', event => {
   }
 });
 
-const AppContent: React.FC = () => {
-  console.log('AppContent rendering');  const [isAuthReady, setIsAuthReady] = useState(false);
+const App: React.FC = () => {
+  const [isAuthInitialized, setIsAuthInitialized] = useState(false);
 
   // Initialize auth state
   useEffect(() => {
-    console.log('AppContent mounted');
+    console.log('[Auth] Initializing auth state...');
     store.dispatch(setLoading(true));
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      console.log('Auth state changed, user:', user?.uid);      try {
+      console.log('[Auth] Auth state changed:', user?.uid);
+      try {
         if (user) {
+          // Check if user document exists
           const userDoc = await getDoc(doc(db, 'users', user.uid));
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
-            store.dispatch(setUser({
-              id: user.uid,
-              email: userData.email,
-              firstName: userData.firstName,
-              lastName: userData.lastName,
-              role: userData.role,
-              createdAt: userData.createdAt.toDate(),
-              updatedAt: userData.updatedAt.toDate()
-            }));
-          }
+          const userData = userDoc.exists() ? userDoc.data() : { email: user.email };
+          
+          // Dispatch user data to Redux
+          store.dispatch(setUser({
+            id: user.uid,
+            email: user.email || userData.email || '',
+            firstName: userData.firstName || '',
+            lastName: userData.lastName || '',
+            role: userData.role || 'athlete',
+            createdAt: userData.createdAt ? new Date(userData.createdAt) : new Date(),
+            updatedAt: userData.updatedAt ? new Date(userData.updatedAt) : new Date()
+          }));
+          console.log('[Auth] User authenticated:', user.uid);
         } else {
           store.dispatch(setUser(null));
+          console.log('[Auth] No user authenticated');
         }
       } catch (error) {
-        console.error('Error fetching user data:', error);
-        store.dispatch(setUser(null)); // Reset user state on error
+        console.error('[Auth] Error handling auth state change:', error);
+        store.dispatch(setUser(null));
       } finally {
         store.dispatch(setLoading(false));
-        setIsAuthReady(true);
+        setIsAuthInitialized(true);
       }
     });
 
     return () => {
-      console.log('AppContent unmounting');
+      console.log('[Auth] Cleaning up auth listener');
       unsubscribe();
     };
   }, []);
-  if (!isAuthReady) {
-    console.log('Auth not ready');
+
+  if (!isAuthInitialized) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-bg-primary text-text-primary">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-accent-primary border-t-transparent mb-4"></div>
-        <p className="text-text-secondary">Loading app...</p>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        fontSize: '1.2em' 
+      }}>
+        Initializing...
       </div>
     );
   }
 
   return (
-    <div className="app h-full">
+    <Providers>
       <UpdateNotification />
       <Layout>
         <AppRoutes />
       </Layout>
-    </div>
-  );
-};
-
-const App: React.FC = () => {
-  console.log('App rendering');
-  return (
-    <Providers>
-      <AppContent />
+      {import.meta.env.DEV && <TestButton />}
     </Providers>
   );
 };
 
 export default App;
-
-// Remove this unused function, and instead define setErrorMessage as a state setter in AppContent
-

@@ -9,9 +9,24 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   
   return {
-    base: '/',
+    base: mode === 'production' ? '/Traininglog/' : '/',
     define: {
-      __APP_URL__: JSON.stringify(env.VITE_APP_URL || 'http://localhost:3000'),
+      __APP_URL__: JSON.stringify(env.VITE_APP_URL || 'http://localhost:5173'),
+      __DEV__: mode === 'development'
+    },
+    optimizeDeps: {
+      include: [
+        'react',
+        'react-dom',
+        'react-router-dom',
+        '@reduxjs/toolkit',
+        'react-redux',
+        'mobile-drag-drop',
+        'firebase/app',
+        'firebase/auth',
+        'firebase/firestore'
+      ],
+      exclude: ['@vercel/analytics']
     },
     resolve: {
       alias: {
@@ -28,24 +43,17 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
-    optimizeDeps: {
-      include: ['react', 'react-dom', 'react-router-dom'],
-    },
     server: {
-      port: 3000,
-      strictPort: true,
-      hmr: {
-        protocol: 'ws',
-        host: 'localhost',
-        port: 3000,
-        timeout: 30000,
-      },
+      port: 5173,
+      strictPort: false,
+      hmr: true, // Let Vite handle the WebSocket configuration automatically
       watch: {
-        usePolling: true,
+        usePolling: false
       },
+      middlewareMode: false,
       cors: true,
       open: false,
-      host: true
+      host: 'localhost'
     },
     plugins: [
       react(),

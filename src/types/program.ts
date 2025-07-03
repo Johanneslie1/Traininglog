@@ -1,36 +1,34 @@
-// Program types for the new Programs feature
+import { ExerciseSet } from './exercise';
 
-export type Program = {
+export interface Program {
   id: string;
   name: string;
   description?: string;
-  level: string; // Added for UI and data model
+  level: 'beginner' | 'intermediate' | 'advanced';
   createdBy: string;
+  userId: string;  // Add userId for permissions
   createdAt: string;
-  updatedAt?: string;
-  routines?: Routine[];
-  sessions?: ProgramSession[]; // Flat list of sessions
-};
+  updatedAt: string;
+  sessions: ProgramSession[];
+  isPublic?: boolean;
+  tags?: string[];
+}
 
-export type Routine = {
+export interface ProgramSession {
   id: string;
   name: string;
   exercises: ProgramExercise[];
-};
+  notes?: string;
+  order?: number;
+  userId: string;  // Add userId for permissions
+}
 
-// Removed ProgramWeek and ProgramDay for flat structure
-
-export type ProgramSession = {
-  id: string;
-  name: string;
-  exercises: ProgramExercise[];
-};
-
-export type ProgramExercise = {
+export interface ProgramExercise {
   id: string;
   name: string;
   sets: number;
   reps: number;
   weight?: number;
   notes?: string;
+  setsData?: ExerciseSet[];  // Full set data from ExerciseSetLogger
 };

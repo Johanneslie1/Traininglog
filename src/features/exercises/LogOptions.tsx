@@ -1,7 +1,5 @@
 import { useState } from 'react';
 import ExerciseSearch from './ExerciseSearch';
-import Calendar from './Calendar';
-import { ExerciseSetLogger } from './ExerciseSetLogger';
 import { db } from '@/services/firebase/config';
 import { collection, addDoc } from 'firebase/firestore';
 import { Exercise, ExerciseSet } from '@/types/exercise';
@@ -10,20 +8,9 @@ import { RootState } from '@/store/store';
 import CopyFromPreviousSessionDialog from './CopyFromPreviousSessionDialog';
 import CategoryButton, { Category } from './CategoryButton';
 import ProgramExercisePicker from '@/features/programs/ProgramExercisePicker';
+import { SetEditorDialog } from '@/components/SetEditorDialog';
 
-type ExerciseType = Exercise['type'];
-type ExerciseWithSets = Exercise & { sets?: ExerciseSet[] };
-
-type ExerciseData = Partial<ExerciseWithSets>;
-type ExerciseWithId = Required<Pick<ExerciseWithSets, 'id' | 'name' | 'type' | 'category'>> & Partial<ExerciseWithSets>;
-
-interface ExerciseLog {
-  exerciseName: string;
-  timestamp: Date;
-  userId: string;
-  sets: ExerciseSet[];
-  deviceId?: string;
-}
+type ExerciseData = Partial<Exercise & { sets?: ExerciseSet[] }>;
 
 interface LogOptionsProps {
   onClose: () => void;
@@ -31,7 +18,7 @@ interface LogOptionsProps {
   selectedDate?: Date;
 }
 
-type ViewState = 'main' | 'search' | 'calendar' | 'setLogger' | 'programPicker' | 'copyPrevious';
+type ViewState = 'main' | 'search' | 'calendar' | 'setEditor' | 'programPicker' | 'copyPrevious';
 
 const helperCategories: Category[] = [
   { id: 'programs', name: 'Add from Program', icon: '📋', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-purple-600', textColor: 'text-white' },
@@ -56,238 +43,216 @@ const trainingTypes: Category[] = [
 ];
 
 export const LogOptions = ({ onClose, onExerciseAdded, selectedDate }: LogOptionsProps): JSX.Element => {
-  const authState = useSelector((state: RootState) => state.auth);
   const [view, setView] = useState<ViewState>('main');
-  const [currentExercise, setCurrentExercise] = useState<ExerciseWithId | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
-  
-  const handleExerciseLog = async (exercise: ExerciseWithId, date: Date, sets: ExerciseSet[] = []) => {
-    if (!authState?.user) return;
+  const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
+  const user = useSelector((state: RootState) => state.auth.user);
 
+  const handleProgramSelected = async (exercises: { exercise: Exercise; sets: ExerciseSet[] }[]) => {
+    if (!user?.id) return;
+    
     try {
-      const exerciseLog: ExerciseLog = {
-        exerciseName: exercise.name,
-        userId: String(authState.user.id), // Convert whatever ID format to string
-        timestamp: date,
-        sets: sets,
-        deviceId: 'web'
-      };
-
-      await addDoc(collection(db, 'exerciseLogs'), exerciseLog);
+      // Save each exercise with its sets
+      for (const { exercise, sets } of exercises) {
+        await addDoc(collection(db, 'exerciseLogs'), {
+          exerciseName: exercise.name,
+          timestamp: selectedDate || new Date(),
+          userId: user.id,
+          sets: sets,
+          exerciseId: exercise.id,
+          type: exercise.type || 'strength',
+          deviceId: window.navigator.userAgent
+        });
+      }
+      
+      setView('main');
       onExerciseAdded?.();
-      onClose();
     } catch (error) {
-      console.error('Error logging exercise:', error);
+      console.error('Error saving program exercises:', error);
+      // Here you might want to show an error notification to the user
     }
   };
-  
-  const addExerciseToSession = async (exercise: ExerciseData) => {
+
+  const handleCopiedExercises = async (exercises: ExerciseData[]) => {
+    if (!user?.id) return;
+    
     try {
-      const exerciseWithId: ExerciseWithId = {
-        id: String(Date.now()),
-        name: exercise.name || 'Unnamed Exercise',
-        type: exercise.type || 'strength',
-        category: exercise.category || 'compound', // Using 'compound' as default category for strength exercises
-        description: exercise.description || '',
-        primaryMuscles: exercise.primaryMuscles || [],
-        secondaryMuscles: exercise.secondaryMuscles || [],
-        instructions: exercise.instructions || [],
-        defaultUnit: exercise.defaultUnit || 'kg',
-        metrics: exercise.metrics || {
-          trackWeight: true,
-          trackReps: true
-        },
-        sets: exercise.sets || []
-      };
-      await handleExerciseLog(exerciseWithId, selectedDate || new Date());
+      // Save each copied exercise
+      for (const exercise of exercises) {
+        if (!exercise.name) continue;
+        
+        await addDoc(collection(db, 'exerciseLogs'), {
+          exerciseName: exercise.name,
+          timestamp: selectedDate || new Date(),
+          userId: user.id,
+          sets: exercise.sets || [],
+          exerciseId: exercise.id || `copied-${exercise.name.toLowerCase().replace(/\s+/g, '-')}`,
+          type: exercise.type || 'strength',
+          deviceId: window.navigator.userAgent
+        });
+      }
+      
+      setView('main');
+      onExerciseAdded?.();
     } catch (error) {
-      console.error('Error adding exercise to session:', error);
+      console.error('Error saving copied exercises:', error);
+      // Here you might want to show an error notification to the user
     }
   };
 
-  const handleCopyExercises = (exercises: ExerciseData[]) => {
-    exercises.forEach(exercise => {
-      const validExercise: ExerciseData = {
-        name: String(exercise.name || ''),
-        type: 'strength' as Exercise['type'],
-        category: 'compound' as Exercise['category'],
-        sets: exercise.sets || [],
-        metrics: {
-          trackWeight: true,
-          trackReps: true
-        },
-        defaultUnit: 'kg'
-      };
-      addExerciseToSession(validExercise).catch(console.error);
-    });
-  };
-  
+  // Conditional rendering for different views
+  if (view === 'programPicker') {
+    return (
+      <ProgramExercisePicker
+        onClose={() => setView('main')}
+        onSelectExercises={handleProgramSelected}
+      />
+    );
+  }
+
+  if (view === 'copyPrevious') {
+    return (
+      <CopyFromPreviousSessionDialog
+        isOpen={true}
+        onClose={() => setView('main')}
+        onExercisesSelected={handleCopiedExercises}
+        currentDate={selectedDate || new Date()}
+        userId={user?.id || ''}
+      />
+    );
+  }
+
+  if (view === 'search') {
+    return (
+      <ExerciseSearch
+        onClose={() => setView('main')}
+        category={selectedCategory}
+        onSelectExercise={(exercise) => {
+          // Convert the exercise template to a full Exercise
+          setSelectedExercise({
+            ...exercise,
+            id: `temp-${exercise.name.toLowerCase().replace(/\s+/g, '-')}`,
+            description: exercise.description || '',
+            primaryMuscles: [],
+            secondaryMuscles: [],
+            instructions: [],
+            metrics: {
+              trackWeight: true,
+              trackReps: true
+            },
+            defaultUnit: 'kg'
+          });
+          setView('setEditor');
+        }}
+      />
+    );
+  }
+
+  if (view === 'setEditor' && selectedExercise) {
+    return (
+      <SetEditorDialog
+        onClose={() => {
+          setSelectedExercise(null);
+          setView('main');
+        }}
+        onSave={async (set) => {
+          try {
+            if (!user?.id) throw new Error('User not authenticated');
+            
+            // Create exercise log entry
+            await addDoc(collection(db, 'exerciseLogs'), {
+              exerciseName: selectedExercise.name,
+              timestamp: selectedDate || new Date(),
+              userId: user.id,
+              sets: [set],
+              exerciseId: selectedExercise.id,
+              type: selectedExercise.type || 'strength',
+              deviceId: window.navigator.userAgent
+            });
+
+            onExerciseAdded?.();
+            setSelectedExercise(null);
+            setView('main');
+          } catch (error) {
+            console.error('Error saving exercise:', error);
+            // Here you might want to show an error notification to the user
+          }
+        }}
+        exerciseName={selectedExercise.name}
+        setNumber={1}
+        totalSets={1}
+      />
+    );
+  }
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-gymkeeper-dark rounded-xl w-full max-w-lg overflow-hidden">
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-white">Add Exercise</h2>
-            <button onClick={onClose} className="text-white hover:text-gray-300">
-              <span className="sr-only">Close</span>
-              ✕
-            </button>
-          </div>
-          
-          {view === 'main' && (
-            <div>
-              {/* Helper Categories */}
-              <div className="mb-8">
-                <h3 className="text-lg font-medium text-white mb-4">Other Options</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  {helperCategories.map(category => (
-                    <CategoryButton 
-                      key={category.id}
-                      category={category}
-                      onClick={() => {
-                        if (category.id === 'programs') {
-                          setView('programPicker');
-                        } else if (category.id === 'copyPrevious') {
-                          setView('copyPrevious');
-                        }
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
+    <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex flex-col z-50">
+      {/* Header - Fixed at top */}
+      <header className="sticky top-0 flex items-center justify-between p-4 bg-[#1a1a1a] border-b border-white/10">
+        <h2 className="text-xl font-bold text-white">Add Exercise</h2>
+        <button 
+          onClick={onClose}
+          className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white"
+          aria-label="Close"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </header>
 
-              {/* Muscle Groups */}
-              <div className="mb-8">
-                <h3 className="text-lg font-medium text-white mb-4">Muscle Groups</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  {muscleGroups.map(category => (
-                    <CategoryButton 
-                      key={category.id}
-                      category={category}
-                      onClick={() => {
-                        setSelectedCategory(category);
-                        setView('search');
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Training Types */}
-              <div className="mb-8">
-                <h3 className="text-lg font-medium text-white mb-4">Training Types</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  {trainingTypes.map(category => (
-                    <CategoryButton 
-                      key={category.id}
-                      category={category}
-                      onClick={() => {
-                        setSelectedCategory(category);
-                        setView('search');
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
+      {/* Main Content - Scrollable */}
+      <main className="flex-1 overflow-y-auto overscroll-contain pb-safe min-h-0">
+        <div className="max-w-md mx-auto p-4 space-y-6 md:space-y-8">
+          {/* Quick Add Section */}
+          <section className="space-y-3 md:space-y-4">
+            <h3 className="text-lg font-semibold text-white/90">Quick Add</h3>
+            <div className="grid grid-cols-2 gap-3 md:gap-4">
+              {helperCategories.map(category => (
+                <CategoryButton
+                  key={category.id}
+                  category={category}
+                  onClick={() => setView(category.id === 'programs' ? 'programPicker' : 'copyPrevious')}
+                />
+              ))}
             </div>
-          )}
+          </section>
 
-          {view === 'search' && selectedCategory && (
-            <ExerciseSearch
-              category={selectedCategory}
-              onSelectExercise={(exercise) => {
-                const exerciseWithId: ExerciseWithId = {
-                  id: String(Date.now()),
-                  name: exercise.name || 'Unnamed Exercise',
-                  type: 'strength',
-                  category: selectedCategory.id as any,
-                  description: exercise.description || '',
-                  primaryMuscles: [],
-                  secondaryMuscles: [],
-                  equipment: exercise.equipment,
-                  instructions: [],
-                  defaultUnit: 'kg',
-                  metrics: {
-                    trackWeight: true,
-                    trackReps: true
-                  },
-                  sets: []
-                };
-                setCurrentExercise(exerciseWithId);
-                setView('setLogger');
-              }}
-              onClose={onClose}
-            />
-          )}
+          {/* Muscle Groups Section */}
+          <section className="space-y-3 md:space-y-4">
+            <h3 className="text-lg font-semibold text-white/90">Muscle Groups</h3>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4">
+              {muscleGroups.map(category => (
+                <CategoryButton
+                  key={category.id}
+                  category={category}
+                  onClick={() => {
+                    setSelectedCategory(category);
+                    setView('search');
+                  }}
+                />
+              ))}
+            </div>
+          </section>
 
-          {view === 'calendar' && (
-            <Calendar
-              selectedDate={selectedDate || new Date()}
-              onDateSelect={(date: Date) => {
-                if (currentExercise) {
-                  handleExerciseLog(currentExercise, date);
-                }
-              }}
-              onSelectExercises={() => {}} // Not used in this context
-              onClose={onClose}
-            />
-          )}
-
-          {view === 'programPicker' && (
-            <ProgramExercisePicker
-              onClose={() => {
-                setView('main');
-                onClose();
-              }}
-              onSelectExercises={(exercises) => {
-                exercises.forEach(({ exercise, sets }) => {
-                  addExerciseToSession({
-                    ...exercise,
-                    name: exercise.name,
-                    type: exercise.type as ExerciseType,
-                    category: exercise.category,
-                    sets
-                  });
-                });
-                onClose();
-              }}
-            />
-          )}
-
-          {view === 'setLogger' && currentExercise && (
-            <ExerciseSetLogger
-              exercise={{
-                id: currentExercise.id,
-                name: currentExercise.name,
-                type: 'strength' as ExerciseType,
-                sets: currentExercise.sets || [],
-              }}
-              onSave={async (sets: ExerciseSet[]) => {
-                await handleExerciseLog(currentExercise, selectedDate || new Date(), sets);
-              }}
-              onCancel={() => setView('search')}
-            />
-          )}
-
-          {view === 'copyPrevious' && (
-            <CopyFromPreviousSessionDialog
-              isOpen={true}
-              onClose={() => setView('main')}
-              currentDate={selectedDate || new Date()}
-              onExercisesSelected={async (exercises: ExerciseData[]) => {
-                const validExercises = exercises.map(exercise => ({
-                  name: String(exercise.name || ''),
-                  type: 'strength' as Exercise['type'],
-                  category: 'compound' as Exercise['category'], // Default to compound for copied exercises
-                  sets: exercise.sets || []
-                }));
-                await handleCopyExercises(validExercises);
-              }}
-              userId={authState.user?.id || ''}
-            />
-          )}
+          {/* Training Types Section */}
+          <section className="space-y-3 md:space-y-4">
+            <h3 className="text-lg font-semibold text-white/90">Training Types</h3>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4">
+              {trainingTypes.map(category => (
+                <CategoryButton
+                  key={category.id}
+                  category={category}
+                  onClick={() => {
+                    setSelectedCategory(category);
+                    setView('search');
+                  }}
+                />
+              ))}
+            </div>
+          </section>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

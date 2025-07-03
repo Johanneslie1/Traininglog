@@ -30,25 +30,88 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // Skip non-GET requests
+  if (event.request.method !== 'GET') {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  // Skip Firebase-related requests
+  if (event.request.url.includes('firestore.googleapis.com') || 
+      event.request.url.includes('firebase')) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
   event.respondWith(
-    fetch(event.request)
-      .catch(() => {
-        return caches.match(event.request)
-          .then((cachedResponse) => {
-            if (cachedResponse) {
-              return cachedResponse;
+    caches.match(event.request)
+      .then((cachedResponse) => {
+        // If we have a cached response, use it but update cache in background
+        if (cachedResponse) {
+          // Clone the cached response since we'll use it multiple times
+          const responseToReturn = cachedResponse.clone();
+          
+          // Update cache in background
+          fetch(event.request)
+            .then(response => {
+              if (!response.ok) return;
+              const responseToCache = response.clone();
+              caches.open('v3')
+                .then(cache => cache.put(event.request, responseToCache))
+                .catch(err => console.warn('Background cache update failed:', err));
+            })
+            .catch(err => console.warn('Background fetch failed:', err));
+          
+          return responseToReturn;
+        }
+
+        // No cache hit, try network
+        return fetch(event.request)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('Network response was not ok');
             }
-            // If both network and cache fail, return a simple offline page
+            
+            // Clone the response since we'll use it twice
+            const responseToReturn = response.clone();
+            
+            // Cache the response
+            caches.open('v3')
+              .then(cache => cache.put(event.request, response))
+              .catch(err => console.warn('Caching failed:', err));
+            
+            return responseToReturn;
+          })
+          .catch(() => {
+            // For navigation requests, try to return offline.html
             if (event.request.mode === 'navigate') {
-              return caches.match('/offline.html');
+              return caches.match('/offline.html')
+                .then(response => {
+                  if (response) return response;
+                  return new Response('Offline - Service Unavailable', {
+                    status: 503,
+                    statusText: 'Service Unavailable',
+                    headers: { 'Content-Type': 'text/plain' }
+                  });
+                });
             }
-            return new Response('', {
-              status: 408,
-              statusText: 'Request timed out.'
+            
+            // For other requests, return a simple offline response
+            return new Response('Offline - Service Unavailable', {
+              status: 503,
+              statusText: 'Service Unavailable',
+              headers: { 'Content-Type': 'text/plain' }
             });
           });
       })
-  );
+      .catch(err => {
+        console.error('Service Worker fetch handler error:', err);
+        return new Response('Service Worker Error', {
+          status: 500,
+          statusText: 'Internal Server Error',
+          headers: { 'Content-Type': 'text/plain' }
+        });
+      }));
 });
 
 // Handle messages from the client

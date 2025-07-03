@@ -10,12 +10,14 @@ interface ProvidersProps {
 
 export const Providers: React.FC<ProvidersProps> = ({ children }) => {
   return (
-    <Provider store={store}>
-      <Router>
-        <ProgramsProvider>
-          {children}
-        </ProgramsProvider>
-      </Router>
-    </Provider>
+    <React.StrictMode>
+      <Provider store={store}>
+        <Router>
+          <ProgramsProvider>
+            {children}
+          </ProgramsProvider>
+        </Router>
+      </Provider>
+    </React.StrictMode>
   );
 };

@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { ProgramSession } from '@/types/program';
 import ExerciseLogOptionsForm, { ExerciseWithSets } from '../exercises/ExerciseLogOptionsForm';
 import SessionExerciseLogOptions, { ExerciseWithSets as SessionExerciseWithSets } from './SessionExerciseLogOptions';
 import { ExerciseSetLogger } from '../exercises/ExerciseSetLogger';
+import { getAuth } from 'firebase/auth';
 
 interface SessionModalProps {
   isOpen: boolean;
@@ -39,7 +40,14 @@ const SessionModal: React.FC<SessionModalProps> = ({ isOpen, onClose, onSave, in
   const [showAddExercise, setShowAddExercise] = useState(false);
   const [editIndex, setEditIndex] = useState<number | null>(null);
 
-
+  // Get current user ID
+  const getCurrentUserId = useCallback(() => {
+    const auth = getAuth();
+    if (!auth.currentUser?.uid) {
+      throw new Error('User must be logged in to perform this action');
+    }
+    return auth.currentUser.uid;
+  }, []);
 
   // Add a single exercise (from SessionExerciseLogOptions)
   const handleAddExercise = (exercise: SessionExerciseWithSets) => {
@@ -63,14 +71,27 @@ const SessionModal: React.FC<SessionModalProps> = ({ isOpen, onClose, onSave, in
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name) return;
+    
+    const userId = getCurrentUserId();
+    
     // Convert ExerciseWithSets to ProgramExercise[] for saving in session
     const sessionExercises = exercises.map(ex => ({
       id: (!ex.id || ex.id.startsWith('temp-')) ? crypto.randomUUID() : ex.id,
       name: ex.name,
       sets: ex.sets.length > 0 ? ex.sets.length : 3,
-      reps: ex.sets[0]?.reps || 10
+      reps: ex.sets[0]?.reps || 10,
+      weight: ex.sets[0]?.weight || 0,
+      setsData: ex.sets // Preserve full set data
     }));
-    onSave({ id: crypto.randomUUID(), name, exercises: sessionExercises });
+    
+    const sessionId = initialData?.id || crypto.randomUUID();
+    onSave({ 
+      id: sessionId, 
+      name, 
+      exercises: sessionExercises,
+      userId,
+      order: initialData?.order // Preserve order if editing existing session
+    });
     setName('');
     setExercises([]);
   };

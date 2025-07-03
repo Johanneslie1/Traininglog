@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Settings from './Settings';
 
 interface SideMenuProps {
@@ -20,13 +20,7 @@ const SideMenu: React.FC<SideMenuProps> = ({
   onNavigateToday,
   onNavigatePrograms
 }) => {
-  console.log('SideMenu rendering, isOpen:', isOpen);
   const [showSettings, setShowSettings] = useState(false);
-
-  useEffect(() => {
-    console.log('SideMenu mounted');
-    return () => console.log('SideMenu unmounting');
-  }, []);
 
   if (!isOpen) return null;
 

@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { ProgramsProvider, usePrograms } from '@/context/ProgramsContext';
+import { ProgramsProvider, useProgramsContext } from '@/context/ProgramsContext';
 import ProgramList from './ProgramList';
 import ProgramDetail from './ProgramDetail';
 
 const ProgramsRoot: React.FC = () => {
-  const { programs, update } = usePrograms();
+  const { programs, update } = useProgramsContext();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const selectedProgram = programs.find(p => p.id === selectedId) || null;
+  const selectedProgram = programs.find((p: { id: string }) => p.id === selectedId) || null;
 
   return (
     <div className="p-8">
