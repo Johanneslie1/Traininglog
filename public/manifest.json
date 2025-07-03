@@ -2,7 +2,7 @@
   "name": "Training Log App",
   "short_name": "TrainingLog",
   "description": "A professional strength training logging application",
-  "start_url": "/",
+  "start_url": ".",
   "display": "standalone",  "background_color": "#23272F",
   "theme_color": "#23272F",  "icons": [
     {

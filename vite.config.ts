@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   
   return {
-    base: mode === 'production' ? '/Traininglog/' : '/',
+    base: '/',
     define: {
       __APP_URL__: JSON.stringify(env.VITE_APP_URL || 'http://localhost:5173'),
       __DEV__: mode === 'development'
