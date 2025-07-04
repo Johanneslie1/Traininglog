@@ -82,14 +82,14 @@ define(['./workbox-ed3775ef'], (function (workbox) { 'use strict';
     "revision": "3ca0b8505b4bec776b69afdba2768812"
   }, {
     "url": "index.html",
-    "revision": "0.sp9v1a7juq8"
+    "revision": "0.uplutb98kmg"
   }], {});
   workbox.cleanupOutdatedCaches();
   workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("index.html"), {
     allowlist: [/^\/$/]
   }));
-  workbox.registerRoute(/^https:\/\/traininglog-zied\.vercel\.app\/.*/i, new workbox.NetworkFirst({
-    "cacheName": "api-cache",
+  workbox.registerRoute(/^https:\/\/.*\.firebaseapp\.com\/.*$/, new workbox.NetworkFirst({
+    "cacheName": "firebase-cache",
     "networkTimeoutSeconds": 10,
     plugins: [new workbox.CacheableResponsePlugin({
       statuses: [0, 200]

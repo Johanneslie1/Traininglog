@@ -1,7 +1,7 @@
 import React from 'react';
 import { Provider } from 'react-redux';
 import { store } from '@/store/store';
-import { HashRouter as Router } from 'react-router-dom';
+import { HashRouter } from 'react-router-dom';
 import { ProgramsProvider } from '@/context/ProgramsContext';
 
 interface ProvidersProps {
@@ -10,14 +10,12 @@ interface ProvidersProps {
 
 export const Providers: React.FC<ProvidersProps> = ({ children }) => {
   return (
-    <React.StrictMode>
-      <Provider store={store}>
-        <Router>
-          <ProgramsProvider>
-            {children}
-          </ProgramsProvider>
-        </Router>
-      </Provider>
-    </React.StrictMode>
+    <Provider store={store}>
+      <HashRouter>
+        <ProgramsProvider>
+          {children}
+        </ProgramsProvider>
+      </HashRouter>
+    </Provider>
   );
 };

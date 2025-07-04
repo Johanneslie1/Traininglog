@@ -127,9 +127,18 @@ export const ProgramsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   return <ProgramsContext.Provider value={value}>{children}</ProgramsContext.Provider>;
 };
 
-export const useProgramsContext = () => {
+// Custom hook for using programs context
+export const usePrograms = () => {
   const context = useContext(ProgramsContext);
   if (context === undefined) {
+    throw new Error('usePrograms must be used within a ProgramsProvider');
+  }
+  return context;
+};
+
+export const useProgramsContext = () => {
+  const context = useContext(ProgramsContext);
+  if (!context) {
     throw new Error('useProgramsContext must be used within a ProgramsProvider');
   }
   return context;

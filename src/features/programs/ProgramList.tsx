@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProgramsContext } from '@/context/ProgramsContext';
 import ProgramModal from './ProgramModal';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { getAuth } from 'firebase/auth';
 import { Program } from '@/types/program';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 const levelColors: Record<string, string> = {
   Any: 'bg-gray-500',
@@ -12,22 +13,21 @@ const levelColors: Record<string, string> = {
   Advanced: 'bg-red-600',
 };
 
-const ProgramList: React.FC<{ onSelect?: (id: string) => void }> = ({ onSelect }) => {
+const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onSelect }) => {
   const navigate = useNavigate();
   const { programs, create, refresh } = useProgramsContext();
-  const [showModal, setShowModal] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const auth = getAuth();
 
-  // Refresh programs when auth state changes
-  React.useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        refresh();
-      }
-    });
-    return () => unsubscribe();
-  }, [auth, refresh]);
+  useEffect(() => {
+    if (auth.currentUser) {
+      refresh().catch(err => {
+        console.error('Error refreshing programs:', err);
+        setError('Failed to load programs');
+      });
+    }
+  }, [auth.currentUser, refresh]);
 
   const handleAdd = async (data: { name: string; level: string; description: string }) => {
     setError(null);
@@ -129,6 +129,14 @@ const ProgramList: React.FC<{ onSelect?: (id: string) => void }> = ({ onSelect }
         onSave={handleAdd} 
       />
     </div>
+  );
+};
+
+const ProgramList: React.FC<{ onSelect?: (id: string) => void }> = (props) => {
+  return (
+    <ErrorBoundary fallback={<div className="text-white p-4">Error loading programs. Please try again.</div>}>
+      <ProgramListContent {...props} />
+    </ErrorBoundary>
   );
 };
 

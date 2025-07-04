@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import ProgramModal from '@/features/programs/ProgramModal';
 import { v4 as uuidv4 } from 'uuid';
 import LogOptions from './LogOptions';
@@ -13,7 +14,8 @@ import { importExerciseLogs } from '@/utils/importUtils';
 import ExerciseCard from '@/components/ExerciseCard';
 import SideMenu from '@/components/SideMenu';
 import { useNavigate } from 'react-router-dom';
-import { ExerciseSet, ExerciseLog as ExerciseLogType } from '@/types/exercise';
+import { ExerciseLog as ExerciseLogType } from '@/types/exercise';
+import { ExerciseSet } from '@/types/sets';
 import { ExerciseData } from '@/services/exerciseDataService';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
@@ -27,7 +29,9 @@ const convertToExerciseLog = (exercise: ExerciseData): ExerciseLogType => ({
   deviceId: exercise.deviceId
 });
 
-export const ExerciseLog: React.FC = () => {
+interface ExerciseLogProps {}
+
+const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   const navigate = useNavigate();
   const { user } = useSelector((state: RootState) => state.auth);
   
@@ -117,8 +121,7 @@ export const ExerciseLog: React.FC = () => {
       // First, try to get exercises from Firestore
       const { startOfDay, endOfDay } = getDateRange(loadedDate);
       const q = query(
-        collection(db, 'exerciseLogs'),
-        where('userId', '==', userId),
+        collection(db, 'users', userId, 'exercises'),
         where('timestamp', '>=', startOfDay),
         where('timestamp', '<=', endOfDay)
       );
@@ -514,6 +517,14 @@ export const ExerciseLog: React.FC = () => {
         </div>
       )}
     </div>
+  );
+};
+
+const ExerciseLog: React.FC<ExerciseLogProps> = () => {
+  return (
+    <ErrorBoundary fallback={<div className="text-white p-4">Error loading exercises. Please try again.</div>}>
+      <ExerciseLogContent />
+    </ErrorBoundary>
   );
 };
 

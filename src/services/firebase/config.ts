@@ -1,7 +1,7 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
+import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
+import { getAuth, Auth } from 'firebase/auth';
+import { getFirestore, Firestore } from 'firebase/firestore';
+import { getStorage, FirebaseStorage } from 'firebase/storage';
 
 // Enable more detailed logs in development
 if (import.meta.env.DEV) {
@@ -18,55 +18,38 @@ const firebaseConfig = {
   measurementId: "G-B6K0DDSVTH"
 };
 
-// Enable Firestore logging in development
-if (import.meta.env.DEV) {
-  console.log('[Firebase] Enabling detailed logging');
-  window.localStorage.setItem('debug', '*');
-}
-
-// Detailed initialization logs
-console.log('Initializing Firebase with config:', { ...firebaseConfig, apiKey: '[REDACTED]' });
-
 // Initialize Firebase
-let app: ReturnType<typeof initializeApp>;
-let auth: ReturnType<typeof getAuth>;
-let db: ReturnType<typeof getFirestore>;
-let storage: ReturnType<typeof getStorage>;
+let app: FirebaseApp;
+let auth: Auth;
+let db: Firestore;
+let storage: FirebaseStorage;
+let initialized = false;
 
 try {
-  // Check if Firebase is already initialized
-  try {
+  if (!getApps().length) {
     app = initializeApp(firebaseConfig);
-  } catch (error: any) {
-    if (error.code === 'app/duplicate-app') {
-      console.log('Firebase already initialized, getting existing app');
-      app = initializeApp();
-    } else {
-      throw error;
-    }
+    auth = getAuth(app);
+    db = getFirestore(app);
+    storage = getStorage(app);
+    initialized = true;
+    console.log('Firebase app initialized successfully');
+  } else {
+    app = getApps()[0];
+    auth = getAuth(app);
+    db = getFirestore(app);
+    storage = getStorage(app);
+    initialized = true;
+    console.log('Using existing Firebase app');
   }
 
-  console.log('Firebase app initialized successfully');
-  
-  // Initialize services
-  auth = getAuth(app);
-  db = getFirestore(app);
-  storage = getStorage(app);
+  if (import.meta.env.DEV) {
+    console.log('Auth domain configured as:', auth.config.authDomain);
+    console.log('Current origin:', window.location.origin);
+  }
 } catch (error) {
   console.error('Error initializing Firebase:', error);
-  throw error;
+  initialized = false;
 }
 
-// Export Firebase services
-export { auth, db, storage };
-
-// Add initialization status check
-export const isInitialized = () => {
-  return app !== undefined && auth !== undefined;
-};
-
-// Log auth settings
-console.log('Auth domain configured as:', auth.config.authDomain);
-console.log('Current origin:', window.location.origin);
-
-export default app;
+export const isInitialized = () => initialized;
+export { app, auth, db, storage };

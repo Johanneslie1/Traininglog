@@ -3,7 +3,8 @@ import { Routes, Route, Navigate, useParams, useNavigate, useLocation } from 're
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { useProgramsContext } from '@/context/ProgramsContext';
-import { Exercise, ExerciseSet } from '@/types/exercise';
+import { Exercise } from '@/types/exercise';
+import { ExerciseSet } from '@/types/sets';
 import { Program } from '@/types/program';
 
 // Wrapper to fetch program by id and render ProgramDetail
@@ -65,12 +66,12 @@ const ProgramSelectionWrapper: React.FC = () => {
 };
 
 // Lazy load components
-const ExerciseLog = lazy(() => import('@/features/exercises/ExerciseLog'));
 const Login = lazy(() => import('@/features/auth/Login'));
 const Register = lazy(() => import('@/features/auth/Register'));
-const Debug = lazy(() => import('@/features/debug/Debug'));
+const ExerciseLog = lazy(() => import('@/features/exercises/ExerciseLog'));
 const ProgramList = lazy(() => import('@/features/programs/ProgramList'));
 const ProgramDetail = lazy(() => import('@/features/programs/ProgramDetail'));
+const Debug = lazy(() => import('@/features/debug/Debug'));
 
 interface ProtectedRouteProps {
   children: React.ReactNode;

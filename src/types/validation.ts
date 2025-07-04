@@ -1,9 +1,7 @@
 import { z } from 'zod';
-import { DifficultyCategory } from './exercise';
-import type { 
-  Exercise,
-  ExerciseSet as ExerciseSetType,
-} from './exercise';
+import { DifficultyCategory } from './difficulty';
+import type { Exercise } from './exercise';
+import type { ExerciseSet as ExerciseSetType } from './sets';
 
 export const ExerciseMetricsSchema = z.object({
   trackWeight: z.boolean().optional().default(false),
@@ -16,7 +14,7 @@ export const ExerciseMetricsSchema = z.object({
 export const ExerciseSetSchema = z.object({
   reps: z.number(),
   weight: z.number(),
-  difficulty: z.nativeEnum(DifficultyCategory).optional(),
+  difficulty: z.nativeEnum(DifficultyCategory),
   rpe: z.string().optional(),
 }) satisfies z.ZodType<ExerciseSetType>;
 

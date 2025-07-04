@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ExerciseSet } from '@/types/exercise';
+import { ExerciseSet } from '@/types/sets';
 import { ExerciseData } from '@/services/exerciseDataService';
 
 interface ExerciseCardProps {

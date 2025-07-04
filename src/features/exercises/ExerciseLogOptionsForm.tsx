@@ -1,7 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import ExerciseSearch from './ExerciseSearch';
 import { ExerciseSetLogger } from './ExerciseSetLogger';
-import { ExerciseSet, Exercise } from '@/types/exercise';
+import { Exercise } from '@/types/exercise';
+import { ExerciseSet } from '@/types/sets';
 
 export interface ExerciseLogOptionsFormProps {
   onClose: () => void;

@@ -48,34 +48,9 @@ export interface ExerciseFilter {
   searchText?: string;
 }
 
-export enum DifficultyCategory {
-  WARMUP = 'WARMUP',
-  EASY = 'EASY',
-  MODERATE = 'MODERATE',
-  HARD = 'HARD'
-}
 
-/** Maps difficulty categories to RPE ranges */
-export const DIFFICULTY_RPE_MAP: Record<DifficultyCategory, { min: number; max: number }> = {
-  [DifficultyCategory.WARMUP]: { min: 3, max: 4 },
-  [DifficultyCategory.EASY]: { min: 5, max: 6 },
-  [DifficultyCategory.MODERATE]: { min: 7, max: 8 },
-  [DifficultyCategory.HARD]: { min: 9, max: 10 }
-};
 
-/** Represents a set of an exercise with reps and optional weight */
-export interface ExerciseSet {
-  /** Number of repetitions performed */
-  reps: number;
-  /** Weight used in kg (optional for bodyweight exercises) */
-  weight: number;
-  /** Rating of Perceived Exertion (1-10) */
-  rpe?: string;
-  /** Optional comment for this set */
-  comment?: string;
-  /** Difficulty level of the set */
-  difficulty?: DifficultyCategory;
-}
+import { ExerciseSet } from './sets';
 
 /** A logged exercise entry with sets performed */
 export interface ExerciseLog {

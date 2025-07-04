@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Program, ProgramSession } from '@/types/program';
-import { Exercise, ExerciseSet } from '@/types/exercise';
+import { Exercise } from '@/types/exercise';
+import { ExerciseSet } from '@/types/sets';
 import ProgramCard from './ProgramCard';
-import { useProgramsContext } from '@/context/ProgramsContext';
+import { usePrograms } from '@/context/ProgramsContext';
 
 interface ProgramExercisePickerProps {
   onClose: () => void;
@@ -13,11 +14,11 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
   onClose,
   onSelectExercises
 }) => {
-  const { programs, isLoading, error, refresh } = useProgramsContext();
-  const [step, setStep] = useState<'programs' | 'sessions' | 'exercises'>('programs');
-  const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
-  const [expandedSessions, setExpandedSessions] = useState<string[]>([]);
-  const [selectedExercises, setSelectedExercises] = useState<{ sessionId: string; exerciseId: string }[]>([]);
+  const { programs, isLoading, error, refresh } = usePrograms();
+  const [step, setStep] = React.useState<'programs' | 'sessions' | 'exercises'>('programs');
+  const [selectedProgram, setSelectedProgram] = React.useState<Program | null>(null);
+  const [expandedSessions, setExpandedSessions] = React.useState<string[]>([]);
+  const [selectedExercises, setSelectedExercises] = React.useState<{ sessionId: string; exerciseId: string }[]>([]);
 
   const handleProgramSelect = (program: Program) => {
     setSelectedProgram(program);

@@ -16,7 +16,26 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
   const [showSessionModal, setShowSessionModal] = useState(false);
   const [editingSession, setEditingSession] = useState<ProgramSession | null>(null);
   const [expandedSessions, setExpandedSessions] = useState<string[]>([]);
+  const [, setIsLoading] = useState(false);
   const { updateSession } = useProgramsContext();
+
+  React.useEffect(() => {
+    // Set a timeout to show loading state for maximum 2 seconds
+    let timeoutId: NodeJS.Timeout;
+    
+    if (sessions.length === 0) {
+      setIsLoading(true);
+      timeoutId = setTimeout(() => {
+        setIsLoading(false);
+      }, 2000);
+    }
+
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [sessions.length]);
 
   const toggleSession = useCallback((sessionId: string) => {
     setExpandedSessions(prev => 

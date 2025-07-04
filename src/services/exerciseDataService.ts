@@ -1,18 +1,14 @@
 import { db, auth } from '@/services/firebase/config';
 import { collection, query, where, getDocs, addDoc, updateDoc, doc } from 'firebase/firestore';
-import { DifficultyCategory } from '@/types/exercise';
 import { signInAnonymously } from 'firebase/auth';
+import { ExerciseSet } from '@/types/sets';
 
 export interface ExerciseData {
   id?: string;
   exerciseName: string;
   timestamp: Date;
   userId: string;
-  sets: Array<{
-    reps: number;
-    weight: number;
-    difficulty?: DifficultyCategory;
-  }>;
+  sets: ExerciseSet[];
   deviceId?: string;
 }
 

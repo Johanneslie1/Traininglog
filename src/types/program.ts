@@ -1,4 +1,4 @@
-import { ExerciseSet } from './exercise';
+import { ExerciseSet } from './sets';
 
 export interface Program {
   id: string;

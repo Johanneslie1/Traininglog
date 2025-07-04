@@ -1,5 +1,6 @@
 import React from 'react';
-import { ExerciseLog, DifficultyCategory } from '@/types/exercise';
+import { ExerciseLog } from '@/types/exercise';
+import { DifficultyCategory } from '@/types/difficulty';
 
 interface WorkoutSummaryProps {
   exercises: ExerciseLog[];
@@ -108,7 +109,7 @@ export const WorkoutSummary: React.FC<WorkoutSummaryProps> = ({
                       switch (set.difficulty) {
                         case DifficultyCategory.WARMUP: bgColor = 'bg-blue-600'; break;
                         case DifficultyCategory.EASY: bgColor = 'bg-green-600'; break;
-                        case DifficultyCategory.MODERATE: bgColor = 'bg-yellow-600'; break;
+                        case DifficultyCategory.NORMAL: bgColor = 'bg-yellow-600'; break;
                         case DifficultyCategory.HARD: bgColor = 'bg-red-600'; break;
                         default: bgColor = 'bg-gray-700';
                       }

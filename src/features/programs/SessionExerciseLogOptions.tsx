@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { ExerciseSet, Exercise } from '@/types/exercise';
+import { Exercise } from '@/types/exercise';
+import { ExerciseSet } from '@/types/sets';
 import ExerciseSearch from '../exercises/ExerciseSearch';
 import { ExerciseSetLogger } from '../exercises/ExerciseSetLogger';
 

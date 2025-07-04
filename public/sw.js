@@ -1,15 +1,15 @@
 // This is a minimal service worker that handles basic caching
 self.addEventListener('install', (event) => {
-  self.skipWaiting(); // Ensure new service worker activates immediately
+  self.skipWaiting();
   event.waitUntil(
     caches.open('v3').then((cache) => {
       return cache.addAll([
         '/',
         '/index.html',
-        '/manifest.json'
-      ]).catch(error => {
-        console.error('Cache addAll failed:', error);
-        // Continue even if caching fails
+        '/manifest.json',
+        '/offline.html'
+      ]).catch(() => {
+        // Silently fail cache operation in development
         return Promise.resolve();
       });
     })
@@ -17,101 +17,81 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-  // Take control of all pages immediately
-  event.waitUntil(Promise.all([
-    clients.claim(),
-    // Clear all caches
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => caches.delete(cacheName))
-      );
-    })
-  ]));
+  event.waitUntil(
+    Promise.all([
+      clients.claim(),
+      caches.keys().then((cacheNames) => {
+        return Promise.all(
+          cacheNames.filter(name => name !== 'v3')
+            .map((cacheName) => caches.delete(cacheName))
+        );
+      })
+    ])
+  );
 });
 
 self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (event.request.method !== 'GET') {
-    event.respondWith(fetch(event.request));
+    event.respondWith(fetch(event.request).catch(() => new Response('Offline')));
     return;
   }
 
-  // Skip Firebase-related requests
-  if (event.request.url.includes('firestore.googleapis.com') || 
-      event.request.url.includes('firebase')) {
-    event.respondWith(fetch(event.request));
+  // Development mode handling
+  const isDev = event.request.url.includes('localhost') || 
+                event.request.url.includes('127.0.0.1');
+  
+  // Skip caching for development URLs and certain patterns
+  if (isDev || 
+      event.request.url.includes('ws') ||
+      event.request.url.includes('hot-update') ||
+      event.request.url.includes('firebase') ||
+      event.request.url.includes('sockjs-node')) {
+    event.respondWith(
+      fetch(event.request)
+        .catch(() => new Response('Offline'))
+    );
     return;
   }
 
   event.respondWith(
     caches.match(event.request)
       .then((cachedResponse) => {
-        // If we have a cached response, use it but update cache in background
         if (cachedResponse) {
-          // Clone the cached response since we'll use it multiple times
-          const responseToReturn = cachedResponse.clone();
-          
-          // Update cache in background
-          fetch(event.request)
-            .then(response => {
-              if (!response.ok) return;
-              const responseToCache = response.clone();
-              caches.open('v3')
-                .then(cache => cache.put(event.request, responseToCache))
-                .catch(err => console.warn('Background cache update failed:', err));
-            })
-            .catch(err => console.warn('Background fetch failed:', err));
-          
-          return responseToReturn;
+          // Return cached response
+          return cachedResponse;
         }
 
-        // No cache hit, try network
+        // Try network
         return fetch(event.request)
           .then(response => {
             if (!response.ok) {
               throw new Error('Network response was not ok');
             }
             
-            // Clone the response since we'll use it twice
-            const responseToReturn = response.clone();
-            
-            // Cache the response
-            caches.open('v3')
-              .then(cache => cache.put(event.request, response))
-              .catch(err => console.warn('Caching failed:', err));
-            
-            return responseToReturn;
-          })
-          .catch(() => {
-            // For navigation requests, try to return offline.html
-            if (event.request.mode === 'navigate') {
-              return caches.match('/offline.html')
-                .then(response => {
-                  if (response) return response;
-                  return new Response('Offline - Service Unavailable', {
-                    status: 503,
-                    statusText: 'Service Unavailable',
-                    headers: { 'Content-Type': 'text/plain' }
-                  });
+            // Only cache successful responses from production
+            if (!isDev) {
+              const responseToCache = response.clone();
+              caches.open('v3')
+                .then(cache => cache.put(event.request, responseToCache))
+                .catch(() => {
+                  // Silently fail cache operations
                 });
             }
             
-            // For other requests, return a simple offline response
-            return new Response('Offline - Service Unavailable', {
-              status: 503,
-              statusText: 'Service Unavailable',
-              headers: { 'Content-Type': 'text/plain' }
-            });
+            return response;
+          })
+          .catch(() => {
+            // For navigation requests, return offline.html
+            if (event.request.mode === 'navigate') {
+              return caches.match('/offline.html')
+                .then(response => response || new Response('Offline'));
+            }
+            
+            return new Response('Offline');
           });
       })
-      .catch(err => {
-        console.error('Service Worker fetch handler error:', err);
-        return new Response('Service Worker Error', {
-          status: 500,
-          statusText: 'Internal Server Error',
-          headers: { 'Content-Type': 'text/plain' }
-        });
-      }));
+  );
 });
 
 // Handle messages from the client

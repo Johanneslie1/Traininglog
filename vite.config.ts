@@ -7,12 +7,26 @@ import path from 'path';
 export default defineConfig(({ mode }) => {
   // Load env file based on `mode` in the current working directory.
   const env = loadEnv(mode, process.cwd(), '');
+  const isDev = mode === 'development';
   
   return {
     base: '/',
+    server: {
+      port: 3000,
+      strictPort: true,
+      host: true,
+      hmr: {
+        protocol: 'ws',
+        host: 'localhost',
+        port: 3000,
+        timeout: 120000,
+        overlay: true,
+        clientPort: 3000
+      }
+    },
     define: {
-      __APP_URL__: JSON.stringify(env.VITE_APP_URL || 'http://localhost:5173'),
-      __DEV__: mode === 'development'
+      __APP_URL__: JSON.stringify(env.VITE_APP_URL || 'http://localhost:3000'),
+      __DEV__: isDev
     },
     optimizeDeps: {
       include: [
@@ -21,7 +35,6 @@ export default defineConfig(({ mode }) => {
         'react-router-dom',
         '@reduxjs/toolkit',
         'react-redux',
-        'mobile-drag-drop',
         'firebase/app',
         'firebase/auth',
         'firebase/firestore'
@@ -33,34 +46,15 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, './src'),
       },
     },
-    build: {
-      sourcemap: true,
-      rollupOptions: {
-        output: {
-          manualChunks: {
-            'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          },
-        },
-      },
-    },
-    server: {
-      port: 5173,
-      strictPort: false,
-      hmr: true, // Let Vite handle the WebSocket configuration automatically
-      watch: {
-        usePolling: false
-      },
-      middlewareMode: false,
-      cors: true,
-      open: false,
-      host: 'localhost'
-    },
     plugins: [
-      react(),
+      react({
+        // Add fast refresh options
+        fastRefresh: true,
+      }),
       VitePWA({
         registerType: 'prompt',
         devOptions: {
-          enabled: false // Disable service worker in development
+          enabled: isDev
         },
         workbox: {
           cleanupOutdatedCaches: true,
@@ -69,10 +63,10 @@ export default defineConfig(({ mode }) => {
           skipWaiting: true,
           runtimeCaching: [
             {
-              urlPattern: /^https:\/\/traininglog-zied\.vercel\.app\/.*/i,
+              urlPattern: new RegExp('^https://.*\\.firebaseapp\\.com/.*$'),
               handler: 'NetworkFirst',
               options: {
-                cacheName: 'api-cache',
+                cacheName: 'firebase-cache',
                 networkTimeoutSeconds: 10,
                 cacheableResponse: {
                   statuses: [0, 200]
@@ -82,6 +76,17 @@ export default defineConfig(({ mode }) => {
           ]
         }
       })
-    ]
+    ],
+    build: {
+      sourcemap: true,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+            'firebase-vendor': ['firebase/app', 'firebase/auth', 'firebase/firestore']
+          }
+        }
+      }
+    }
   };
 });
