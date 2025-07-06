@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { ProgramsProvider, useProgramsContext } from '@/context/ProgramsContext';
+import { ProgramsProvider, usePrograms } from '@/context/ProgramsContext';
 import ProgramList from './ProgramList';
 import ProgramDetail from './ProgramDetail';
 
 const ProgramsRoot: React.FC = () => {
-  const { programs, update } = useProgramsContext();
+  const { programs, updateProgram: update } = usePrograms();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const selectedProgram = programs.find((p: { id: string }) => p.id === selectedId) || null;

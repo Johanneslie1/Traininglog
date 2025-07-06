@@ -1,145 +1,125 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Program } from '@/types/program';
-import * as programService from '@/services/programService';
+import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import { auth } from '@/services/firebase/config';
+import { Program } from '@/types/program';
+import { onAuthStateChanged, User } from 'firebase/auth';
+import * as programService from '@/services/programService';
 
-interface ProgramsContextValue {
+interface ProgramsContextType {
   programs: Program[];
   isLoading: boolean;
   error: string | null;
-  refresh: () => Promise<void>;
-  create: (program: Program) => Promise<void>;
-  update: (id: string, updated: Program) => Promise<void>;
-  updateSession: (programId: string, sessionId: string, exercises: Array<{ id: string; name: string; sets: number; reps: number; weight?: number; }>) => Promise<void>;
-  remove: (id: string) => Promise<void>;
+  refresh: () => void;
+  addProgram: (program: Omit<Program, 'id' | 'userId'>) => Promise<void>;
+  updateProgram: (id: string, updated: Partial<Program>) => Promise<void>;
+  updateSessionInProgram: (programId: string, sessionId: string, exercises: any[]) => Promise<void>;
+  deleteProgram: (id: string) => Promise<void>;
 }
 
-const ProgramsContext = createContext<ProgramsContextValue | undefined>(undefined);
+// Export type alias for compatibility
+export type ProgramsContextValue = ProgramsContextType;
+
+const ProgramsContext = createContext<ProgramsContextType | undefined>(undefined);
 
 export const ProgramsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [programs, setPrograms] = useState<Program[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<User | null>(auth.currentUser);
 
-  // Track auth state
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      setIsAuthenticated(!!user);
-      if (user) {
-      return () => unsubscribe();
-        refresh();
-      } else {
-        setPrograms([]);
-        setIsLoading(false);
-      }
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
     });
+    return () => unsubscribe();
   }, []);
 
-  const refresh = async () => {
-    if (!isAuthenticated) {
+  const fetchPrograms = useCallback(async () => {
+    if (!user) {
       setPrograms([]);
       setIsLoading(false);
       return;
     }
 
+    setIsLoading(true);
+    setError(null);
+
     try {
-      setIsLoading(true);
-      setError(null);
-      const progs = await programService.getPrograms();
-      console.log('[ProgramsContext] Refreshed programs:', progs);
-      setPrograms(progs);
+      console.log('[ProgramsContext] Fetching programs for user:', user.uid);
+      // Load programs with their sessions
+      const loadedPrograms = await programService.getPrograms();
+      console.log('[ProgramsContext] Fetched programs:', {
+        count: loadedPrograms.length,
+        programs: loadedPrograms.map(p => ({
+          id: p.id,
+          name: p.name,
+          sessionCount: p.sessions?.length || 0
+        }))
+      });
+      setPrograms(loadedPrograms);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
-      if (errorMessage !== 'User must be logged in') {
-        console.error('[ProgramsContext] Error refreshing programs:', err);
-        setError(errorMessage);
-      }
-      setPrograms([]);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch programs';
+      console.error('[ProgramsContext] Error fetching programs:', err);
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user]);
 
-  const create = async (program: Program) => {
+  useEffect(() => {
+    if (user) {
+      console.log('[ProgramsContext] User changed, refreshing programs');
+      fetchPrograms();
+    }
+  }, [fetchPrograms, user]);
+
+  // Add new program
+  const addProgram = async (program: Omit<Program, 'id' | 'userId'>) => {
+    if (!user) throw new Error('User not authenticated');
+    
+    setIsLoading(true);
+    setError(null);
+    
     try {
-      setError(null);
-      await programService.createProgram(program);
-      await refresh();
+      console.log('[ProgramsContext] Creating program:', program);
+      await programService.createProgram({ ...program, userId: user.uid });
+      console.log('[ProgramsContext] Program created successfully');
+      await fetchPrograms(); // Refresh the programs list
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create program';
       console.error('[ProgramsContext] Error creating program:', err);
       setError(errorMessage);
       throw err;
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const update = async (id: string, updated: Program) => {
-    try {
-      setError(null);
-      await programService.replaceProgram(id, updated);
-      await refresh();
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to update program';
-      console.error('[ProgramsContext] Error updating program:', err);
-      setError(errorMessage);
-      throw err;
-    }
+  const updateProgram = async (id: string, updated: Partial<Program>) => {
+    await programService.replaceProgram(id, updated as Program);
+    fetchPrograms();
   };
 
-  const updateSession = async (programId: string, sessionId: string, exercises: Array<{ id: string; name: string; sets: number; reps: number; weight?: number; }>) => {
-    try {
-      setError(null);
-      await programService.updateSession(programId, sessionId, exercises);
-      await refresh();
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to update session';
-      console.error('[ProgramsContext] Error updating session:', err);
-      setError(errorMessage);
-      throw err;
-    }
+  const updateSessionInProgram = async (programId: string, sessionId: string, exercises: any[]) => {
+    await programService.updateSession(programId, sessionId, exercises);
+    fetchPrograms();
   };
 
-  const remove = async (id: string) => {
-    try {
-      setError(null);
-      await programService.deleteProgram(id);
-      await refresh();
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to delete program';
-      console.error('[ProgramsContext] Error deleting program:', err);
-      setError(errorMessage);
-      throw err;
-    }
+  const deleteProgram = async (id: string) => {
+    await programService.deleteProgram(id);
+    fetchPrograms();
   };
 
-  const value = {
-    programs,
-    isLoading,
-    error,
-    refresh,
-    create,
-    update,
-    updateSession,
-    remove,
-  };
-
-  return <ProgramsContext.Provider value={value}>{children}</ProgramsContext.Provider>;
+  return (
+    <ProgramsContext.Provider value={{ programs, isLoading, error, refresh: fetchPrograms, addProgram, updateProgram, updateSessionInProgram, deleteProgram }}>
+      {children}
+    </ProgramsContext.Provider>
+  );
 };
 
-// Custom hook for using programs context
 export const usePrograms = () => {
   const context = useContext(ProgramsContext);
   if (context === undefined) {
     throw new Error('usePrograms must be used within a ProgramsProvider');
-  }
-  return context;
-};
-
-export const useProgramsContext = () => {
-  const context = useContext(ProgramsContext);
-  if (!context) {
-    throw new Error('useProgramsContext must be used within a ProgramsProvider');
   }
   return context;
 };

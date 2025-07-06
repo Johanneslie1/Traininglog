@@ -72,28 +72,47 @@ const SessionModal: React.FC<SessionModalProps> = ({ isOpen, onClose, onSave, in
     e.preventDefault();
     if (!name) return;
     
-    const userId = getCurrentUserId();
-    
-    // Convert ExerciseWithSets to ProgramExercise[] for saving in session
-    const sessionExercises = exercises.map(ex => ({
-      id: (!ex.id || ex.id.startsWith('temp-')) ? crypto.randomUUID() : ex.id,
-      name: ex.name,
-      sets: ex.sets.length > 0 ? ex.sets.length : 3,
-      reps: ex.sets[0]?.reps || 10,
-      weight: ex.sets[0]?.weight || 0,
-      setsData: ex.sets // Preserve full set data
-    }));
-    
-    const sessionId = initialData?.id || crypto.randomUUID();
-    onSave({ 
-      id: sessionId, 
-      name, 
-      exercises: sessionExercises,
-      userId,
-      order: initialData?.order // Preserve order if editing existing session
-    });
-    setName('');
-    setExercises([]);
+    try {
+      const userId = getCurrentUserId();
+      console.log('[SessionModal] Creating/updating session:', {
+        isEdit: !!initialData,
+        name,
+        exerciseCount: exercises.length
+      });
+      
+      // Convert ExerciseWithSets to proper format for saving
+      const sessionExercises = exercises.map(ex => ({
+        id: ex.id || '', // Ensure id is a string, server will replace if needed
+        name: ex.name,
+        sets: ex.sets.length || 3,
+        reps: ex.sets[0]?.reps || 10,
+        weight: ex.sets[0]?.weight || 0,
+        setsData: ex.sets.map(set => ({
+          reps: set.reps || 10,
+          weight: typeof set.weight === 'number' ? set.weight : 0,
+          difficulty: set.difficulty || 'MODERATE'
+        }))
+      }));
+      
+      const session: ProgramSession = {
+        id: initialData?.id || '', // Server will replace this for new sessions
+        name,
+        exercises: sessionExercises,
+        userId,
+        order: initialData?.order ?? 0
+      };
+
+      console.log('[SessionModal] Saving session:', session);
+      onSave(session);
+      
+      // Reset form
+      setName('');
+      setExercises([]);
+      onClose();
+    } catch (error) {
+      console.error('[SessionModal] Error saving session:', error);
+      alert(error instanceof Error ? error.message : 'Failed to save session');
+    }
   };
 
   if (!isOpen) return null;

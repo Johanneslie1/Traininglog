@@ -20,9 +20,13 @@ export default defineConfig(({ mode }) => {
         host: 'localhost',
         port: 3000,
         timeout: 120000,
-        overlay: true,
+        overlay: false, // Disable overlay to prevent some console errors
         clientPort: 3000
-      }
+      },
+      fs: {
+        strict: true
+      },
+      middlewareMode: false
     },
     define: {
       __APP_URL__: JSON.stringify(env.VITE_APP_URL || 'http://localhost:3000'),
@@ -47,21 +51,75 @@ export default defineConfig(({ mode }) => {
       },
     },
     plugins: [
-      react({
-        // Add fast refresh options
-        fastRefresh: true,
-      }),
+      react(),
       VitePWA({
-        registerType: 'prompt',
+        registerType: 'autoUpdate',
+        manifest: {
+          name: "Training Log App",
+          short_name: "TrainingLog",
+          description: "A professional strength training logging application",
+          theme_color: "#23272F",
+          background_color: "#23272F",
+          display: "standalone",
+          start_url: "/",
+          scope: "/",
+          icons: [
+            {
+              src: "/icons/android-chrome-192x192.png",
+              sizes: "192x192",
+              type: "image/png",
+              purpose: "any maskable"
+            },
+            {
+              src: "/icons/android-chrome-512x512.png",
+              sizes: "512x512",
+              type: "image/png",
+              purpose: "any maskable"
+            }
+          ]
+        },
         devOptions: {
-          enabled: isDev
+          enabled: true,
+          type: 'module',
+          navigateFallback: 'index.html'
         },
         workbox: {
           cleanupOutdatedCaches: true,
           sourcemap: true,
           clientsClaim: true,
           skipWaiting: true,
+          navigateFallback: null,
+          globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
           runtimeCaching: [
+            {
+              urlPattern: /^https:\/\/firebasestorage\.googleapis\.com\/.*/i,
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'firebase-storage',
+                expiration: {
+                  maxEntries: 100,
+                  maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+                },
+                cacheableResponse: {
+                  statuses: [0, 200]
+                }
+              }
+            },
+            {
+              urlPattern: /^https:\/\/.*\.firebaseapp\.com\/.*/i,
+              handler: 'NetworkFirst',
+              options: {
+                cacheName: 'firebase-api',
+                networkTimeoutSeconds: 10,
+                cacheableResponse: {
+                  statuses: [0, 200]
+                }
+              }
+            },
+            {
+              urlPattern: /^https:\/\/identitytoolkit\.googleapis\.com\/.*/i,
+              handler: 'NetworkOnly'
+            },
             {
               urlPattern: new RegExp('^https://.*\\.firebaseapp\\.com/.*$'),
               handler: 'NetworkFirst',

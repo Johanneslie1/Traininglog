@@ -1,9 +1,11 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import './services/firebase/config'; // Ensure Firebase is initialized
 import './styles/index.css';
 import './styles/theme.css'; // Import the new theme
-import { isInitialized } from './services/firebase/config';
+import './tests/authDebug'; // Add auth debugging tools for development
+import './tests/permissionTest'; // Add permission testing tools
 
 // Simple service worker registration for PWA
 if ('serviceWorker' in navigator) {
@@ -16,21 +18,9 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// Ensure Firebase is initialized before rendering
-const renderApp = () => {
-  if (!isInitialized()) {
-    console.error('Firebase failed to initialize');
-    // Retry initialization after a short delay
-    setTimeout(renderApp, 1000);
-    return;
-  }
-
-  const root = ReactDOM.createRoot(document.getElementById('root')!);
-  root.render(
-    <React.StrictMode>
-      <App />
-    </React.StrictMode>
-  );
-};
-
-renderApp();
+const root = ReactDOM.createRoot(document.getElementById('root')!);
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);

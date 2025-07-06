@@ -9,7 +9,7 @@ import {
   writeBatch,
   serverTimestamp,
   getDoc,
-  updateDoc,
+
 } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
@@ -99,6 +99,8 @@ export const getPrograms = async (): Promise<Program[]> => {
   try {
     const user = await ensureAuth();
     
+    console.log('[programService] Fetching programs for user:', user.uid);
+    
     // Query programs for current user
     const programsRef = collection(db, PROGRAMS_COLLECTION);
     const q = query(programsRef, where('userId', '==', user.uid));
@@ -114,15 +116,38 @@ export const getPrograms = async (): Promise<Program[]> => {
       programsSnapshot.docs.map(async (programDoc) => {
         try {
           const programData = programDoc.data();
+          console.log(`[programService] Fetching sessions for program: ${programDoc.id}`);
+          
+          // Get sessions subcollection
           const sessionsRef = collection(db, `${PROGRAMS_COLLECTION}/${programDoc.id}/sessions`);
           const sessionsSnapshot = await getDocs(sessionsRef);
           
+          console.log(`[programService] Found ${sessionsSnapshot.size} sessions for program: ${programDoc.id}`);
+          
           const sessions = sessionsSnapshot.docs
-            .map(sessionDoc => ({
-              id: sessionDoc.id,
-              ...sessionDoc.data(),
-              userId: user.uid // Ensure userId is set
-            }))
+            .map(sessionDoc => {
+              const sessionData = sessionDoc.data();
+              console.log(`[programService] Processing session: ${sessionDoc.id}`, sessionData);
+              
+              return {
+                id: sessionDoc.id,
+                name: sessionData.name,
+                exercises: (sessionData.exercises || []).map((ex: any) => ({
+                  id: ex.id || crypto.randomUUID(),
+                  name: ex.name,
+                  sets: ex.sets || 3,
+                  reps: ex.reps || 10,
+                  weight: ex.weight || 0,
+                  setsData: ex.setsData || Array(ex.sets || 3).fill({
+                    reps: ex.reps || 10,
+                    weight: ex.weight || 0,
+                    difficulty: 'MODERATE'
+                  })
+                })),
+                userId: user.uid,
+                order: sessionData.order ?? 0
+              };
+            })
             .sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0));
 
           return {
@@ -138,10 +163,12 @@ export const getPrograms = async (): Promise<Program[]> => {
       })
     );
 
-    return programs.filter((p): p is Program => p !== null);
+    const validPrograms = programs.filter((p): p is Program => p !== null);
+    console.log('[programService] Successfully fetched programs:', validPrograms.length);
+    return validPrograms;
   } catch (err) {
     console.error('[programService] Error fetching programs:', err);
-    return [];
+    throw err;
   }
 };
 
@@ -158,14 +185,18 @@ export const createProgram = async (program: Omit<Program, 'id' | 'createdAt' | 
     if (!user || !user.uid) {
       throw new Error('Invalid user state');
     }
+
     console.log('[programService] Creating program with auth:', {
       userId: user.uid,
       programUserId: program.userId,
       match: user.uid === program.userId
     });
+
+    const batch = writeBatch(db);
+    const programRef = doc(collection(db, PROGRAMS_COLLECTION));
     const timestamp = serverTimestamp();
 
-    const programToCreate = {
+    const programToCreate = removeUndefinedFields({
       ...program,
       createdBy: user.uid,
       userId: user.uid,
@@ -176,11 +207,12 @@ export const createProgram = async (program: Omit<Program, 'id' | 'createdAt' | 
         userId: user.uid,
         createdAt: timestamp
       }))
-    };
+    });
 
-    // Convert timestamps for validation
+    // For validation, convert serverTimestamp to a string
     const programForValidation = {
       ...programToCreate,
+      id: programRef.id, // Add the auto-generated ID
       createdAt: convertTimestampToString(timestamp),
       updatedAt: convertTimestampToString(timestamp),
       sessions: programToCreate.sessions?.map(s => ({
@@ -192,76 +224,22 @@ export const createProgram = async (program: Omit<Program, 'id' | 'createdAt' | 
     // Validate the program
     validateProgram(programForValidation, true);
 
-    // Clean up data
-    const cleanProgram = removeUndefinedFields(programToCreate);
-
     // Verify user ID matches
-    if (cleanProgram.userId !== user.uid) {
+    if (programToCreate.userId !== user.uid) {
       console.error('[programService] User ID mismatch:', {
-        programUserId: cleanProgram.userId,
-        currentUserId: user.uid
+        expected: user.uid,
+        received: programToCreate.userId
       });
-      throw new Error('Program userId must match the current user');
+      throw new Error('User ID mismatch');
     }
 
-    console.log('[programService] Creating program with data:', {
-      collection: PROGRAMS_COLLECTION,
-      userId: user.uid,
-      timestamp: timestamp
-    });
+    // Set the program document
+    batch.set(programRef, programToCreate);
 
-    // Create program document with a new ID
-    const programRef = doc(collection(db, PROGRAMS_COLLECTION));
-    const batch = writeBatch(db);
-
-    // Add program data without sessions
-    const { sessions, ...programData } = cleanProgram;
-    const finalProgramData = {
-      ...programData,
-      id: programRef.id, // Set the ID from the ref
-      userId: user.uid,  // Ensure userId is set
-      createdAt: timestamp,
-      updatedAt: timestamp
-    };
-
-    console.log('[programService] Final program data:', {
-      id: programRef.id,
-      name: finalProgramData.name,
-      userId: finalProgramData.userId,
-      sessionCount: sessions?.length ?? 0
-    });
-    
-    // Set the program document with complete data
-    batch.set(programRef, finalProgramData);
-
-    // Create sessions
-    if (sessions && sessions.length > 0) {
-      sessions.forEach((session, index) => {
-        const sessionRef = doc(collection(programRef, 'sessions'));
-        batch.set(sessionRef, {
-          ...session,
-          id: sessionRef.id,
-          order: session.order ?? index,
-          programId: programRef.id,
-          userId: user.uid,
-          createdAt: timestamp
-        });
-      });
-    } else {
-      // Create initial session if none provided
-      const sessionRef = doc(collection(programRef, 'sessions'));
-      batch.set(sessionRef, {
-        id: sessionRef.id,
-        name: 'Session 1',
-        exercises: [],
-        order: 0,
-        userId: user.uid,
-        createdAt: timestamp
-      });
-    }
-
+    console.log('[programService] Committing program creation batch');
     await batch.commit();
-    console.log('[programService] Program created successfully:', programRef.id);
+    console.log('[programService] Program created successfully with ID:', programRef.id);
+
   } catch (err) {
     console.error('[programService] Error in createProgram:', err);
     throw err;
@@ -350,13 +328,155 @@ export const deleteProgram = async (programId: string): Promise<void> => {
   }
 };
 
+// Delete a session from a program
+export const deleteSession = async (programId: string, sessionId: string): Promise<void> => {
+  try {
+    const user = await ensureAuth();
+    console.log('[programService] Deleting session:', { programId, sessionId });
+
+    // Get program reference and verify ownership
+    const programRef = doc(db, PROGRAMS_COLLECTION, programId);
+    const programDoc = await getDoc(programRef);
+
+    if (!programDoc.exists()) {
+      throw new Error('Program not found');
+    }
+
+    const programData = programDoc.data();
+    if (programData.userId !== user.uid) {
+      throw new Error('You can only delete sessions from your own programs');
+    }
+
+    // Get session reference
+    const sessionRef = doc(collection(programRef, 'sessions'), sessionId);
+    const sessionDoc = await getDoc(sessionRef);
+
+    if (!sessionDoc.exists()) {
+      throw new Error('Session not found');
+    }
+
+    // Start a batch write
+    const batch = writeBatch(db);
+
+    // Delete the session
+    batch.delete(sessionRef);
+
+    // Update program timestamp
+    batch.update(programRef, {
+      updatedAt: serverTimestamp()
+    });
+
+    // Commit the transaction
+    await batch.commit();
+
+    console.log('[programService] Session deleted successfully:', { programId, sessionId });
+  } catch (err) {
+    console.error('[programService] Error deleting session:', err);
+    throw err;
+  }
+};
+
+// Create a new session in a program
+export const createSession = async (programId: string, session: {
+  name: string;
+  exercises: Array<{ id?: string; name: string; sets: number; reps: number; weight?: number; setsData?: any[]; }>;
+  order?: number;
+}): Promise<string> => {
+  try {
+    const user = await ensureAuth();
+    console.log('[programService] Creating new session:', { programId, sessionName: session.name, exerciseCount: session.exercises.length });
+
+    // Get program reference and verify ownership
+    const programRef = doc(db, PROGRAMS_COLLECTION, programId);
+    const programDoc = await getDoc(programRef);
+
+    if (!programDoc.exists()) {
+      throw new Error('Program not found');
+    }
+
+    const programData = programDoc.data();
+    if (programData.userId !== user.uid) {
+      throw new Error('You can only add sessions to your own programs');
+    }
+
+    // Process exercises to ensure correct format
+    const processedExercises = session.exercises.map(exercise => {
+      const exerciseId = (!exercise.id || exercise.id.startsWith('temp-')) 
+        ? crypto.randomUUID() 
+        : exercise.id;
+
+      const setsData = exercise.setsData 
+        ? exercise.setsData.map(set => ({
+            reps: set.reps || exercise.reps || 10,
+            weight: typeof set.weight === 'number' ? set.weight : (exercise.weight || 0),
+            difficulty: set.difficulty || 'MODERATE'
+          }))
+        : Array(exercise.sets || 3).fill({
+            reps: exercise.reps || 10,
+            weight: exercise.weight || 0,
+            difficulty: 'MODERATE'
+          });
+
+      return {
+        id: exerciseId,
+        name: exercise.name,
+        sets: setsData.length,
+        reps: setsData[0]?.reps || exercise.reps || 10,
+        weight: setsData[0]?.weight || exercise.weight || 0,
+        setsData: setsData
+      };
+    });
+
+    // Create new session reference in the sessions subcollection
+    const sessionsColRef = collection(programRef, 'sessions');
+    const sessionRef = doc(sessionsColRef);
+    
+    const sessionData = {
+      id: sessionRef.id,
+      name: session.name,
+      exercises: processedExercises,
+      order: session.order ?? 0,
+      userId: user.uid,
+      programId: programId,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+
+    // Start a batch write
+    const batch = writeBatch(db);
+
+    // Create the session
+    batch.set(sessionRef, sessionData);
+
+    // Update program timestamp
+    batch.update(programRef, {
+      updatedAt: serverTimestamp()
+    });
+
+    // Commit the batch
+    await batch.commit();
+
+    console.log('[programService] Session created successfully:', { 
+      programId, 
+      sessionId: sessionRef.id, 
+      sessionName: session.name,
+      exerciseCount: processedExercises.length 
+    });
+
+    return sessionRef.id;
+  } catch (err) {
+    console.error('[programService] Error creating session:', err);
+    throw err;
+  }
+};
+
 // Update a session's exercises
 export const updateSession = async (programId: string, sessionId: string, exercises: Array<{ id: string; name: string; sets: number; reps: number; weight?: number; setsData?: any[]; }>): Promise<void> => {
   try {
     const user = await ensureAuth();
     console.log('[programService] Updating session exercises:', { programId, sessionId, exerciseCount: exercises.length });
 
-    // First verify the program belongs to the user
+    // Get program reference and verify ownership
     const programRef = doc(db, PROGRAMS_COLLECTION, programId);
     const programDoc = await getDoc(programRef);
 
@@ -369,21 +489,82 @@ export const updateSession = async (programId: string, sessionId: string, exerci
       throw new Error('You can only update your own programs');
     }
 
-    // Get the session reference
-    const sessionRef = doc(collection(programRef, 'sessions'), sessionId);
+    // Get session reference and verify it exists
+    const sessionsColRef = collection(programRef, 'sessions');
+    const sessionRef = doc(sessionsColRef, sessionId);
     const sessionDoc = await getDoc(sessionRef);
 
     if (!sessionDoc.exists()) {
-      throw new Error('Session not found');
+      // If session doesn't exist, create it
+      console.log('[programService] Session not found, creating new session:', sessionId);
     }
 
-    // Update just the exercises array and timestamp
-    await updateDoc(sessionRef, {
-      exercises,
+    // Process exercises to ensure correct format and data integrity
+    const processedExercises = exercises.map(exercise => {
+      // Ensure valid exercise ID
+      const exerciseId = (!exercise.id || exercise.id.startsWith('temp-')) 
+        ? crypto.randomUUID() 
+        : exercise.id;
+
+      // Process sets data
+      const setsData = exercise.setsData 
+        ? exercise.setsData.map(set => ({
+            reps: set.reps || exercise.reps || 10,
+            weight: typeof set.weight === 'number' ? set.weight : (exercise.weight || 0),
+            difficulty: set.difficulty || 'MODERATE'
+          }))
+        : Array(exercise.sets || 3).fill({
+            reps: exercise.reps || 10,
+            weight: exercise.weight || 0,
+            difficulty: 'MODERATE'
+          });
+
+      return {
+        id: exerciseId,
+        name: exercise.name,
+        sets: setsData.length,
+        reps: setsData[0]?.reps || exercise.reps || 10,
+        weight: setsData[0]?.weight || exercise.weight || 0,
+        setsData: setsData
+      };
+    });
+
+    // Start a transaction to ensure data consistency
+    const batch = writeBatch(db);
+
+    // Update or create the session with all data
+    const sessionData = {
+      exercises: processedExercises,
+      updatedAt: serverTimestamp(),
+      userId: user.uid,
+      name: sessionDoc.exists() ? sessionDoc.data().name : 'New Session',
+      order: sessionDoc.exists() ? sessionDoc.data().order : 0,
+      programId: programId  // Add reference to parent program
+    };
+
+    // Use set with merge to handle both create and update
+    batch.set(sessionRef, sessionData, { merge: true });
+
+    // Update program timestamp
+    batch.update(programRef, {
       updatedAt: serverTimestamp()
     });
 
-    console.log('[programService] Session exercises updated successfully:', { programId, sessionId, exercises });
+    // Commit the transaction
+    await batch.commit();
+
+    console.log('[programService] Session updated successfully:', { 
+      programId, 
+      sessionId, 
+      exerciseCount: processedExercises.length,
+      sessionData: sessionData
+    });
+
+    console.log('[programService] Session exercises updated successfully:', { 
+      programId, 
+      sessionId, 
+      exerciseCount: processedExercises.length 
+    });
   } catch (err) {
     console.error('[programService] Error updating session exercises:', err);
     throw err;

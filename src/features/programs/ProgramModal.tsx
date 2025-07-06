@@ -21,15 +21,36 @@ const ProgramModal: React.FC<ProgramModalProps> = ({ isOpen, onClose, onSave }) 
     setIsSubmitting(true);
 
     try {
-      console.log('[ProgramModal] handleSubmit called with:', { name, level, description });
+      // Validate inputs
+      if (!name.trim()) {
+        throw new Error('Program name is required');
+      }
+
+      console.log('[ProgramModal] Submitting program:', {
+        name,
+        level,
+        description,
+        timestamp: new Date().toISOString()
+      });
+
       await onSave({ name, level, description });
+      
+      console.log('[ProgramModal] Program submitted successfully');
+      
+      // Reset form
       setName('');
       setLevel('Any');
       setDescription('');
+      
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create program');
-      console.error('[ProgramModal] Error creating program:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create program';
+      console.error('[ProgramModal] Error submitting program:', {
+        error: err,
+        errorMessage,
+        formData: { name, level, description }
+      });
+      setError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }

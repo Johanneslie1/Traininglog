@@ -18,38 +18,10 @@ const firebaseConfig = {
   measurementId: "G-B6K0DDSVTH"
 };
 
-// Initialize Firebase
-let app: FirebaseApp;
-let auth: Auth;
-let db: Firestore;
-let storage: FirebaseStorage;
-let initialized = false;
+const app: FirebaseApp = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 
-try {
-  if (!getApps().length) {
-    app = initializeApp(firebaseConfig);
-    auth = getAuth(app);
-    db = getFirestore(app);
-    storage = getStorage(app);
-    initialized = true;
-    console.log('Firebase app initialized successfully');
-  } else {
-    app = getApps()[0];
-    auth = getAuth(app);
-    db = getFirestore(app);
-    storage = getStorage(app);
-    initialized = true;
-    console.log('Using existing Firebase app');
-  }
+const auth: Auth = getAuth(app);
+const db: Firestore = getFirestore(app);
+const storage: FirebaseStorage = getStorage(app);
 
-  if (import.meta.env.DEV) {
-    console.log('Auth domain configured as:', auth.config.authDomain);
-    console.log('Current origin:', window.location.origin);
-  }
-} catch (error) {
-  console.error('Error initializing Firebase:', error);
-  initialized = false;
-}
-
-export const isInitialized = () => initialized;
 export { app, auth, db, storage };

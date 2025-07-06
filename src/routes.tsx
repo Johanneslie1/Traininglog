@@ -2,7 +2,7 @@ import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
-import { useProgramsContext } from '@/context/ProgramsContext';
+import { usePrograms } from '@/context/ProgramsContext';
 import { Exercise } from '@/types/exercise';
 import { ExerciseSet } from '@/types/sets';
 import { Program } from '@/types/program';
@@ -10,18 +10,18 @@ import { Program } from '@/types/program';
 // Wrapper to fetch program by id and render ProgramDetail
 const ProgramDetailWrapper: React.FC = () => {
   const { id } = useParams();
-  const { programs, update } = useProgramsContext();
+  const { programs, updateProgram } = usePrograms();
   const navigate = useNavigate();
   const program = programs.find((p: Program) => p.id === id);
   if (!program) return <div className="text-white p-4">Program not found</div>;
-  return <ProgramDetail program={program} onBack={() => navigate('/programs')} onUpdate={updated => update(program.id, updated)} />;
+  return <ProgramDetail program={program} onBack={() => navigate('/programs')} onUpdate={updated => updateProgram(program.id, updated)} />;
 };
 
 // Wrapper for program selection mode
 const ProgramSelectionWrapper: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { programs } = useProgramsContext();
+  const { programs } = usePrograms();
   const state = location.state as { onSelect?: (exercises: { exercise: Exercise; sets: ExerciseSet[] }[]) => void } | null;
 
   if (!programs.length) {

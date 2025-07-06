@@ -13,37 +13,55 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read, write: if isAuthenticated() && isOwner(userId);
+      
+      // Nested exercises collection under users - full CRUD permissions
+      match /exercises/{exerciseId} {
+        allow read, write: if isAuthenticated() && isOwner(userId);
+        allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+        allow delete: if isAuthenticated() && isOwner(userId);
+      }
     }
 
     match /exerciseLogs/{logId} {
-      allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
     match /exercises/{exerciseId} {
-      allow get: if isAuthenticated();
-      allow list: if isAuthenticated();
-      allow write: if false;
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && resource.data.createdBy == request.auth.uid;
     }
 
     match /programs/{programId} {
-      allow get: if isAuthenticated();
-      allow list: if isAuthenticated();
-      allow create: if isAuthenticated() && 
-        request.resource.data.userId == request.auth.uid &&
-        request.resource.data.createdAt is timestamp &&
-        request.resource.data.updatedAt is timestamp;
-      allow update, delete: if isAuthenticated() && 
-        resource.data.userId == request.auth.uid;
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
 
       match /sessions/{sessionId} {
-        allow read: if isAuthenticated();
+        // Allow read if user owns the parent program
+        allow read: if isAuthenticated() && get(/databases/$(database)/documents/programs/$(programId)).data.userId == request.auth.uid;
+        
+        // Allow create with correct ownership
         allow create: if isAuthenticated() && 
-          request.resource.data.userId == request.auth.uid;
-        allow update, delete: if isAuthenticated() && 
+          request.resource.data.userId == request.auth.uid && 
+          get(/databases/$(database)/documents/programs/$(programId)).data.userId == request.auth.uid;
+        
+        // Allow updates when user owns the parent program
+        allow update: if isAuthenticated() && 
+          get(/databases/$(database)/documents/programs/$(programId)).data.userId == request.auth.uid;
+        
+        // Allow delete only if user owns both program and session
+        allow delete: if isAuthenticated() && 
+          resource.data.userId == request.auth.uid && 
           get(/databases/$(database)/documents/programs/$(programId)).data.userId == request.auth.uid;
       }
+    }
+
+    // Temporary test collection for debugging (remove in production)
+    match /test/{testId} {
+      allow read, write: if isAuthenticated();
     }
   }
 }

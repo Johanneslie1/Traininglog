@@ -1,7 +1,5 @@
 import { useState } from 'react';
 import ExerciseSearch from './ExerciseSearch';
-import { db } from '@/services/firebase/config';
-import { collection, addDoc } from 'firebase/firestore';
 import { Exercise } from '@/types/exercise';
 import { ExerciseSet } from '@/types/sets';
 import { useSelector } from 'react-redux';
@@ -10,6 +8,7 @@ import CopyFromPreviousSessionDialog from './CopyFromPreviousSessionDialog';
 import CategoryButton, { Category } from './CategoryButton';
 import ProgramExercisePicker from '@/features/programs/ProgramExercisePicker';
 import { SetEditorDialog } from '@/components/SetEditorDialog';
+import { addExerciseLog } from '@/services/firebase/exerciseLogs';
 
 type ExerciseData = Partial<Exercise & { sets?: ExerciseSet[] }>;
 
@@ -51,21 +50,19 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate }: LogOption
 
   const handleProgramSelected = async (exercises: { exercise: Exercise; sets: ExerciseSet[] }[]) => {
     if (!user?.id) return;
-    
+
     try {
-      // Save each exercise with its sets
       for (const { exercise, sets } of exercises) {
-        await addDoc(collection(db, 'exerciseLogs'), {
-          exerciseName: exercise.name,
-          timestamp: selectedDate || new Date(),
-          userId: user.id,
-          sets: sets,
-          exerciseId: exercise.id,
-          type: exercise.type || 'strength',
-          deviceId: window.navigator.userAgent
-        });
+        await addExerciseLog(
+          {
+            exerciseName: exercise.name,
+            userId: user.id,
+            sets: sets,
+          },
+          selectedDate || new Date()
+        );
       }
-      
+
       setView('main');
       onExerciseAdded?.();
     } catch (error) {
@@ -76,23 +73,21 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate }: LogOption
 
   const handleCopiedExercises = async (exercises: ExerciseData[]) => {
     if (!user?.id) return;
-    
+
     try {
-      // Save each copied exercise
       for (const exercise of exercises) {
         if (!exercise.name) continue;
-        
-        await addDoc(collection(db, 'exerciseLogs'), {
-          exerciseName: exercise.name,
-          timestamp: selectedDate || new Date(),
-          userId: user.id,
-          sets: exercise.sets || [],
-          exerciseId: exercise.id || `copied-${exercise.name.toLowerCase().replace(/\s+/g, '-')}`,
-          type: exercise.type || 'strength',
-          deviceId: window.navigator.userAgent
-        });
+
+        await addExerciseLog(
+          {
+            exerciseName: exercise.name,
+            userId: user.id,
+            sets: exercise.sets || [],
+          },
+          selectedDate || new Date()
+        );
       }
-      
+
       setView('main');
       onExerciseAdded?.();
     } catch (error) {
@@ -158,24 +153,35 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate }: LogOption
         }}
         onSave={async (set) => {
           try {
+            console.log('💾 LogOptions: Starting to save exercise set:', {
+              exercise: selectedExercise,
+              set,
+              user: user?.id,
+              selectedDate
+            });
+
             if (!user?.id) throw new Error('User not authenticated');
-            
-            // Create exercise log entry
-            await addDoc(collection(db, 'exerciseLogs'), {
+
+            const exerciseLogData = {
               exerciseName: selectedExercise.name,
-              timestamp: selectedDate || new Date(),
               userId: user.id,
               sets: [set],
-              exerciseId: selectedExercise.id,
-              type: selectedExercise.type || 'strength',
-              deviceId: window.navigator.userAgent
-            });
+            };
+
+            console.log('💾 LogOptions: Calling addExerciseLog with:', exerciseLogData);
+
+            const docId = await addExerciseLog(
+              exerciseLogData,
+              selectedDate || new Date()
+            );
+
+            console.log('✅ LogOptions: Exercise saved successfully with ID:', docId);
 
             onExerciseAdded?.();
             setSelectedExercise(null);
             setView('main');
           } catch (error) {
-            console.error('Error saving exercise:', error);
+            console.error('❌ LogOptions: Error saving exercise:', error);
             // Here you might want to show an error notification to the user
           }
         }}

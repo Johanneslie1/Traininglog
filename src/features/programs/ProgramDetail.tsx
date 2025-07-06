@@ -2,7 +2,8 @@ import React, { useState, useCallback } from 'react';
 import { Program, ProgramSession } from '@/types/program';
 import SessionModal from './SessionModal';
 import { PencilIcon, TrashIcon, ChevronDownIcon } from '@heroicons/react/outline';
-import { useProgramsContext } from '@/context/ProgramsContext';
+import { usePrograms } from '@/context/ProgramsContext';
+import { createSession, deleteSession } from '@/services/programService';
 
 interface Props {
   program: Program;
@@ -17,7 +18,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
   const [editingSession, setEditingSession] = useState<ProgramSession | null>(null);
   const [expandedSessions, setExpandedSessions] = useState<string[]>([]);
   const [, setIsLoading] = useState(false);
-  const { updateSession } = useProgramsContext();
+  const { updateSessionInProgram: updateSession } = usePrograms();
 
   React.useEffect(() => {
     // Set a timeout to show loading state for maximum 2 seconds
@@ -45,32 +46,95 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
     );
   }, []);
 
-  const handleDeleteSession = useCallback((sessionId: string) => {
+  const handleDeleteSession = useCallback(async (sessionId: string) => {
     if (window.confirm('Are you sure you want to delete this session?')) {
-      const updatedSessions = sessions.filter(s => s.id !== sessionId);
-      onUpdate({ ...program, sessions: updatedSessions });
+      try {
+        console.log('[ProgramDetail] Deleting session:', sessionId);
+        // Delete from Firestore first
+        await deleteSession(program.id, sessionId);
+        console.log('[ProgramDetail] Session deleted from Firestore');
+        
+        // Update local state
+        const updatedSessions = sessions.filter(s => s.id !== sessionId);
+        onUpdate({ ...program, sessions: updatedSessions });
+        console.log('[ProgramDetail] Local state updated after session deletion');
+      } catch (error) {
+        console.error('Error deleting session:', error);
+        alert(error instanceof Error ? error.message : 'Failed to delete session. Please try again.');
+      }
     }
-  }, [onUpdate, program, sessions]);
+  }, [program, sessions, onUpdate]);
 
   const handleSessionSave = useCallback(async (session: ProgramSession) => {
     try {
+      setIsLoading(true);
+      console.log('[ProgramDetail] Starting session save:', { 
+        sessionId: session.id, 
+        sessionName: session.name, 
+        isEdit: !!editingSession,
+        exerciseCount: session.exercises.length 
+      });
+      
       if (editingSession) {
         // Update existing session's exercises
+        console.log('[ProgramDetail] Updating existing session via updateSession service');
         await updateSession(program.id, session.id, session.exercises);
-        const updatedSessions = sessions.map(s => s.id === session.id ? session : s);
+        
+        // Update local state, preserving order
+        const updatedSessions = sessions.map(s => 
+          s.id === session.id 
+            ? { ...session, order: s.order } 
+            : s);
         onUpdate({ ...program, sessions: updatedSessions });
+        console.log('[ProgramDetail] Local state updated for existing session');
       } else {
-        // Add new session
-        const updatedSessions = [...sessions, session];
+        // Add new session - persist to Firestore first
+        console.log('[ProgramDetail] Creating new session via createSession service');
+        const existingOrders = sessions.map(s => s.order ?? 0);
+        const nextOrder = existingOrders.length > 0 ? Math.max(...existingOrders) + 1 : 0;
+        
+        const sessionToCreate = {
+          name: session.name,
+          exercises: session.exercises.map(ex => ({
+            ...ex,
+            id: ex.id || undefined // Let Firestore generate IDs for new exercises
+          })),
+          order: nextOrder
+        };
+        
+        // Create session in Firestore
+        const newSessionId = await createSession(program.id, sessionToCreate);
+        console.log('[ProgramDetail] New session created in Firestore with ID:', newSessionId);
+        
+        // Update local state with the new session including the Firestore-generated ID
+        const newSession = {
+          ...session,
+          id: newSessionId,
+          order: nextOrder
+        };
+        
+        // Add session and sort by order
+        const updatedSessions = [...sessions, newSession]
+          .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+          
         onUpdate({ ...program, sessions: updatedSessions });
+        console.log('[ProgramDetail] Local state updated with new session');
       }
+      
       setShowSessionModal(false);
       setEditingSession(null);
+      
+      // Expand the newly added/edited session
+      if (!expandedSessions.includes(session.id)) {
+        setExpandedSessions(prev => [...prev, session.id]);
+      }
     } catch (error) {
-      console.error('Error saving session:', error);
-      alert('Failed to save session. Please try again.');
+      console.error('[ProgramDetail] Error saving session:', error);
+      alert(error instanceof Error ? error.message : 'Failed to save session. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
-  }, [program, sessions, onUpdate, editingSession, updateSession]);
+  }, [program, sessions, onUpdate, editingSession, updateSession, expandedSessions]);
 
   return (
     <div className="p-6">
