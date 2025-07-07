@@ -12,26 +12,55 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read, write: if isAuthenticated() && isOwner(userId);
+      allow read: if isAuthenticated() && isOwner(userId);
+      allow write: if isAuthenticated() && isOwner(userId);
       
-      // Nested exercises collection under users - full CRUD permissions
+      // Nested exercises collection under users - CRUD permissions
       match /exercises/{exerciseId} {
-        allow read, write: if isAuthenticated() && isOwner(userId);
+        // Allow read if authenticated and owns either parent or document
+        allow read: if isAuthenticated() && (
+          isOwner(userId) || 
+          (resource != null && resource.data.userId == request.auth.uid)
+        );
+        
+        // Allow create if authenticated and document belongs to user
+        allow create: if isAuthenticated() && 
+          request.resource.data.userId == request.auth.uid;
+        
+        // Allow update if authenticated and user owns the document
+        allow update: if isAuthenticated() && 
+          request.resource.data.userId == request.auth.uid &&
+          (resource == null || resource.data.userId == request.auth.uid);
+
+        // Allow delete if authenticated and user owns the document
+        allow delete: if isAuthenticated() &&
+          (resource == null || resource.data.userId == request.auth.uid);
+      }
+
+      // Nested exerciseLogs collection under users
+      match /exerciseLogs/{logId} {
+        allow read: if isAuthenticated() && isOwner(userId);
         allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-        allow delete: if isAuthenticated() && isOwner(userId);
+        allow update: if isAuthenticated() && isOwner(userId) && resource.data.userId == request.auth.uid;
+        allow delete: if isAuthenticated() && isOwner(userId) && resource.data.userId == request.auth.uid;
       }
     }
 
+    // Top-level exerciseLogs collection (if still in use)
     match /exerciseLogs/{logId} {
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      // Allow read if authenticated and owns the document
+      allow read: if isAuthenticated() && (
+        resource == null || 
+        resource.data.userId == request.auth.uid
+      );
+      
+      // Allow create if authenticated and setting correct userId
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
-    }
-
-    match /exercises/{exerciseId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && resource.data.createdBy == request.auth.uid;
+      
+      // Allow update/delete if authenticated and owns the document
+      allow update, delete: if isAuthenticated() && 
+        resource != null && 
+        resource.data.userId == request.auth.uid;
     }
 
     match /programs/{programId} {
