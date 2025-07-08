@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useCollection } from '@/hooks/useCollection';
-import { db } from '@/services/firebase';
+import { db } from '@/services/firebase/config';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import { Exercise } from '@/types/exercise';
 import { CreateExerciseDialog } from '@/components/exercises/CreateExerciseDialog';
 import { useAuth } from '@/hooks/useAuth';
+import { User } from 'firebase/auth';
 
 interface FilterState {
   search: string;
@@ -24,15 +25,15 @@ const ExerciseOverview: React.FC = () => {
   // Fetch exercises
   const exercisesQuery = query(
     collection(db, 'exercises'),
-    ...filters.type === 'custom' ? [where('userId', '==', user?.uid)] : [],
-    ...filters.type === 'default' ? [where('userId', '==', null)] : [],
+    ...(filters.type === 'custom' ? [where('userId', '==', user?.id)] : []),
+    ...(filters.type === 'default' ? [where('userId', '==', null)] : []),
     orderBy('name')
   );
 
   const { documents: exercises, loading, error } = useCollection<Exercise>(exercisesQuery);
 
   // Filter exercises based on search and category
-  const filteredExercises = exercises?.filter(exercise => {
+  const filteredExercises = exercises?.filter((exercise: Exercise) => {
     const matchesSearch = exercise.name.toLowerCase().includes(filters.search.toLowerCase()) ||
       exercise.description?.toLowerCase().includes(filters.search.toLowerCase());
     
@@ -43,7 +44,7 @@ const ExerciseOverview: React.FC = () => {
   });
 
   // Get unique categories
-  const categories = [...new Set(exercises?.map(ex => ex.category) || [])];
+  const categories = [...new Set(exercises?.map((ex: Exercise) => ex.category) || [])];
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -82,20 +83,20 @@ const ExerciseOverview: React.FC = () => {
         <div className="flex flex-wrap gap-2">
           {categories.map(category => (
             <button
-              key={category}
+              key={category as string}
               onClick={() => setFilters(prev => ({
                 ...prev,
-                category: prev.category.includes(category)
+                category: prev.category.includes(category as string)
                   ? prev.category.filter(c => c !== category)
-                  : [...prev.category, category]
+                  : [...prev.category, category as string]
               }))}
               className={`px-3 py-1 rounded-full text-sm ${
-                filters.category.includes(category)
+                filters.category.includes(category as string)
                   ? 'bg-accent-primary text-white'
                   : 'bg-bg-secondary text-text-secondary border border-border'
               }`}
             >
-              {category}
+              {category as string}
             </button>
           ))}
         </div>
@@ -118,7 +119,7 @@ const ExerciseOverview: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredExercises?.map(exercise => (
             <div
-              key={exercise.id}
+              key={exercise.id || ''}
               className="p-4 rounded-lg bg-bg-secondary border border-border hover:border-accent-primary transition-colors"
             >
               <h3 className="text-lg font-semibold text-text-primary mb-2">
