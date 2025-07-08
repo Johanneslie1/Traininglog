@@ -127,6 +127,18 @@ export const deleteExerciseLog = async (log: ExerciseLog): Promise<boolean> => {
   }
 };
 
+// Delete exercise log from local storage
+export const deleteLocalExerciseLog = (exerciseId: string) => {
+  let exerciseLogs = getExerciseLogs();
+  const updatedLogs = exerciseLogs.filter(log => log.id !== exerciseId);
+  localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(updatedLogs));
+};
+
+// Clear all exercise logs from local storage
+export const clearExerciseLogs = () => {
+  localStorage.removeItem(LOGS_STORAGE_KEY);
+};
+
 // Import exercise logs from JSON
 export const importExerciseLogs = (jsonData: string): boolean => {
   try {
