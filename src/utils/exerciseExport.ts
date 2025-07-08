@@ -1,5 +1,4 @@
 import { Exercise } from '@/types/exercise';
-import { ExerciseSet } from '@/types/sets';
 import { Session, DifficultyCategory } from '@/types/session';
 import { saveAs } from 'file-saver';
 
@@ -37,7 +36,7 @@ export const prepareExportData = (
 ): ExportSet[] => {
   const exportSets: ExportSet[] = [];
   
-  session.exercises.forEach((exercise, exerciseIndex) => {
+  session.exercises.forEach((exercise: { exerciseId: string; sets: Array<{ weight?: number; reps?: number; difficulty?: DifficultyCategory }> }) => {
     exercise.sets.forEach((set, setIndex) => {
       exportSets.push({
         setNumber: setIndex + 1,
