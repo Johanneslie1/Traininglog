@@ -1,13 +1,13 @@
 import { auth, db } from '@/services/firebase/config';
 import { doc, deleteDoc, getDoc } from 'firebase/firestore';
 import { v4 as uuidv4 } from 'uuid';
-import { ExerciseLog as ExerciseLogType } from '@/types/exercise';
+import { ExerciseLog } from '@/types/exercise';
 
 // Constants
 const LOGS_STORAGE_KEY = 'exercise_logs';
 
 // Types
-export type ExerciseLog = Omit<ExerciseLogType, 'id'> & {
+export type ExerciseLog = Omit<ExerciseLog, 'id'> & {
   id?: string;
   deviceId?: string;
   userId?: string;
@@ -56,25 +56,25 @@ export const getExerciseLogs = (): ExerciseLog[] => {
 
 // Get exercise logs for a specific date
 export const getExerciseLogsByDate = (date: Date): ExerciseLog[] => {
-  const logs = getExerciseLogs();
+  const exerciseLogs = getExerciseLogs();
   const { startOfDay, endOfDay } = getDateRange(date);
 
-  return logs.filter(log => {
+  return exerciseLogs.filter(log => {
     const logDate = new Date(log.timestamp);
     return logDate >= startOfDay && logDate <= endOfDay;
   });
 };
 
 // Save exercise log to local storage
-export const saveExerciseLog = (log: ExerciseLog): ExerciseLog => {
+export const saveExerciseLog = (exerciseLog: ExerciseLog): ExerciseLog => {
   const logs = getExerciseLogs();
   
   // Create a new log with an ID if it doesn't have one
   const newLog = {
-    ...log,
-    id: log.id || uuidv4(),
-    deviceId: log.deviceId || getDeviceId(),
-    timestamp: log.timestamp || new Date(),
+    ...exerciseLog,
+    id: exerciseLog.id || uuidv4(),
+    deviceId: exerciseLog.deviceId || getDeviceId(),
+    timestamp: exerciseLog.timestamp || new Date(),
     userId: auth.currentUser?.uid || 'anonymous'  // Fallback to anonymous if not authenticated
   };
 
@@ -87,7 +87,7 @@ export const saveExerciseLog = (log: ExerciseLog): ExerciseLog => {
   };
 
   // If the log has an ID, update the existing log instead of adding a new one
-  const existingLogIndex = logs.findIndex(l => l.id === log.id);
+  const existingLogIndex = logs.findIndex(l => l.id === exerciseLog.id);
   let storableLogs;
   
   if (existingLogIndex !== -1) {
