@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Exercise } from '@/types/exercise';
 import type { ExerciseSet } from '@/types/sets';
 import { SetEditorDialog } from '@/components/SetEditorDialog';
@@ -23,7 +23,8 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
   onSave,
   onCancel,
   isEditing = false,
-
+  previousSet: externalPreviousSet,
+  showPreviousSets = true,
   useExerciseId = false
 }) => {
   const [sets, setSets] = useState<ExerciseSet[]>(() => {
@@ -35,6 +36,39 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
   
   const [isAddingSet, setIsAddingSet] = useState(!isEditing);
   const [editingSetIndex, setEditingSetIndex] = useState<number | null>(null);
+
+  // Get the appropriate previous set based on context
+  const getPreviousSet = (currentIndex?: number): ExerciseSet | undefined => {
+    // If we're editing and have a valid index, use the previous set in sequence
+    if (typeof currentIndex === 'number' && currentIndex > 0) {
+      return sets[currentIndex - 1];
+    }
+    
+    // If we're adding a new set, use the last set
+    if (showPreviousSets) {
+      // First try the last set in the current exercise
+      if (sets.length > 0) {
+        return sets[sets.length - 1];
+      }
+      // If no sets in current exercise, use the externally provided previous set
+      return externalPreviousSet;
+    }
+    
+    return undefined;
+  };
+
+  // Debug logging for development
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('ExerciseSetLogger state:', {
+        sets,
+        isEditing,
+        editingSetIndex,
+        externalPreviousSet,
+        showPreviousSets
+      });
+    }
+  }, [sets, isEditing, editingSetIndex, externalPreviousSet, showPreviousSets]);
 
   const handleSetSave = (editedSet: ExerciseSet, index?: number) => {
     if (typeof index === 'number') {
@@ -90,7 +124,6 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
 
 
 
-
   return (
     <div className="flex flex-col h-full bg-[#1a1a1a]">
       <div className="flex-1 p-4">
@@ -99,50 +132,53 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
           <span className="text-gray-400">{sets.length} sets</span>
         </div>
 
-        <div className="space-y-4">
-          {sets.map((set, index) => renderSetSummary(set, index))}
-        </div>
+        {sets.map((set, index) => renderSetSummary(set, index))}
 
-        <button
-          className="w-full mt-4 py-4 flex items-center justify-center bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
-          onClick={() => setIsAddingSet(true)}
-        >
-          <span className="text-xl mr-2">+</span>
-          Add Set
-        </button>
+        {/* Set Editor Dialog */}
+        {(isAddingSet || editingSetIndex !== null) && (
+          <SetEditorDialog
+            onSave={(editedSet) => handleSetSave(editedSet, editingSetIndex ?? undefined)}
+            onClose={() => {
+              setIsAddingSet(false);
+              setEditingSetIndex(null);
+            }}
+            initialSet={editingSetIndex !== null ? sets[editingSetIndex] : undefined}
+            previousSet={getPreviousSet(editingSetIndex ?? undefined)}
+            exerciseName={exercise.name}
+            setNumber={(editingSetIndex !== null ? editingSetIndex : sets.length) + 1}
+            totalSets={editingSetIndex !== null ? sets.length : sets.length + 1}
+            onDelete={editingSetIndex !== null ? () => handleSetDelete(editingSetIndex) : undefined}
+          />
+        )}
+
+        {/* Add Set Button */}
+        {!isAddingSet && editingSetIndex === null && (
+          <button
+            onClick={() => setIsAddingSet(true)}
+            className="w-full py-4 mt-4 rounded-lg bg-white/5 hover:bg-white/10 text-white font-medium transition-colors"
+          >
+            Add Set
+          </button>
+        )}
       </div>
 
-      <div className="p-4 border-t border-[#2a2a2a] bg-[#1a1a1a]">
-        <div className="flex gap-3">
-          <button
-            onClick={onCancel}
-            className="flex-1 py-3 px-4 rounded-lg bg-[#2a2a2a] text-white font-medium hover:bg-[#3a3a3a] transition-colors"
-          >
-            Cancel
-          </button>
+      {/* Bottom Actions */}
+      <div className="p-4 border-t border-white/10">
+        <div className="flex gap-4">
           <button
             onClick={handleSaveAndClose}
-            className="flex-1 py-3 px-4 rounded-lg bg-purple-600 text-white font-medium hover:bg-purple-700 transition-colors"
+            className="flex-1 py-3 rounded-lg bg-[#8B5CF6] text-white font-medium hover:bg-[#7C3AED] transition-colors"
           >
             Save
           </button>
+          <button
+            onClick={onCancel}
+            className="flex-1 py-3 rounded-lg bg-white/5 text-white font-medium hover:bg-white/10 transition-colors"
+          >
+            Cancel
+          </button>
         </div>
       </div>
-
-      {(isAddingSet || editingSetIndex !== null) && (
-        <SetEditorDialog
-          onSave={(set) => handleSetSave(set, editingSetIndex ?? undefined)}
-          onClose={() => {
-            setIsAddingSet(false);
-            setEditingSetIndex(null);
-          }}
-          initialSet={editingSetIndex !== null ? sets[editingSetIndex] : undefined}
-          exerciseName={exercise.name}
-          setNumber={(editingSetIndex !== null ? editingSetIndex : sets.length) + 1}
-          totalSets={sets.length + (isAddingSet ? 1 : 0)}
-          onDelete={editingSetIndex !== null ? () => handleSetDelete(editingSetIndex) : undefined}
-        />
-      )}
     </div>
   );
 };

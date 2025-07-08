@@ -53,13 +53,14 @@ export const SetEditorDialog: React.FC<SetEditorDialogProps> = ({
   const handleCopyPreviousSet = () => {
     if (!previousSet) return;
     try {
+      console.log('Copying set:', previousSet); // Debug log
       setSet({
         reps: previousSet.reps,
         weight: previousSet.weight,
         difficulty: previousSet.difficulty,
         comment: previousSet.comment || ''
       });
-      toast.success('Copied previous set values', {
+      toast.success(`Copied set: ${previousSet.weight}kg × ${previousSet.reps}`, {
         id: 'copy-set-success',
       });
     } catch (error) {
@@ -70,18 +71,39 @@ export const SetEditorDialog: React.FC<SetEditorDialogProps> = ({
 
   // Verify props in development
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('SetEditorDialog props:', { previousSet, setNumber, totalSets });
-    }
-  }, [previousSet, setNumber, totalSets]);
+    console.log('SetEditorDialog mounted with props:', { 
+      previousSet, 
+      setNumber, 
+      totalSets,
+      initialSet 
+    });
+  }, [previousSet, setNumber, totalSets, initialSet]);
 
   return (
     <div className="fixed inset-0 bg-black/95 flex flex-col z-50 max-w-[100vw] overflow-x-hidden">
       {/* Header */}
       <header className="px-4 py-3 border-b border-white/10 shrink-0">
-        <h2 className="text-xl font-bold text-white mb-1 truncate">
-          {exerciseName}
-        </h2>
+        <div className="flex items-center justify-between mb-1">
+          <h2 className="text-xl font-bold text-white truncate flex-1">
+            {exerciseName}
+          </h2>
+          {previousSet && (
+            <button
+              onClick={handleCopyPreviousSet}
+              className="ml-2 w-[44px] h-[44px] rounded-lg bg-white/5 hover:bg-white/10 text-white flex items-center justify-center shrink-0 group relative"
+              aria-label={`Copy values from previous set (${previousSet.weight}kg × ${previousSet.reps})`}
+              title={`Copy previous set: ${previousSet.weight}kg × ${previousSet.reps}`}
+            >
+              <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path d="M7 9a2 2 0 012-2h6a2 2 0 012 2v6a2 2 0 01-2 2H9a2 2 0 01-2-2V9z" />
+                <path d="M5 3a2 2 0 00-2 2v6a2 2 0 002 2V5h8a2 2 0 00-2-2H5z" />
+              </svg>
+              <span className="absolute bottom-full right-0 mb-2 px-2 py-1 text-sm bg-black/90 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                Copy: {previousSet.weight}kg × {previousSet.reps}
+              </span>
+            </button>
+          )}
+        </div>
         <div className="flex justify-between items-center">
           <span className="text-lg text-white/90">
             Set №{setNumber} of {totalSets}
@@ -94,22 +116,6 @@ export const SetEditorDialog: React.FC<SetEditorDialogProps> = ({
 
       {/* Main Content - Scrollable if needed */}
       <main className="flex-1 overflow-y-auto px-4 py-6 space-y-6 max-w-full">
-        {previousSet && (
-          <button
-            onClick={handleCopyPreviousSet}
-            className="w-full flex items-center justify-center gap-2 px-4 py-4 rounded-lg bg-white/5 hover:bg-white/10 text-white font-medium transition-colors mb-4 min-h-[44px]"
-            aria-label="Copy values from previous set"
-          >
-            <svg className="w-5 h-5 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-              <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
-              <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
-            </svg>
-            <span className="truncate">
-              Copy Previous Set ({previousSet.weight}kg × {previousSet.reps})
-            </span>
-          </button>
-        )}
-        
         {/* Weight Input */}
         <div className="space-y-2 max-w-full">
           <label className="text-lg text-white/90">Weight (kg)</label>
