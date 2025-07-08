@@ -72,6 +72,7 @@ const ExerciseLog = lazy(() => import('@/features/exercises/ExerciseLog'));
 const ProgramList = lazy(() => import('@/features/programs/ProgramList'));
 const ProgramDetail = lazy(() => import('@/features/programs/ProgramDetail'));
 const Debug = lazy(() => import('@/features/debug/Debug'));
+const ExerciseOverview = lazy(() => import('@/pages/ExerciseOverview'));
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -144,6 +145,14 @@ const AppRoutes: React.FC = () => {
           element={
             <ProtectedRoute>
               <Debug />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/exercises"
+          element={
+            <ProtectedRoute>
+              <ExerciseOverview />
             </ProtectedRoute>
           }
         />

@@ -10,7 +10,7 @@ import { Providers } from '@/providers';
 import { store } from '@/store/store';
 import Layout from '@/components/layout/Layout';
 import AppRoutes from '@/routes';
-import { TestButton } from '@/components/TestButton';
+
 import 'mobile-drag-drop/default.css';
 import '@/styles/dragAndDrop.css';
 
@@ -126,7 +126,7 @@ const App: React.FC = () => {
       <Layout>
         <AppRoutes />
       </Layout>
-      {import.meta.env.DEV && <TestButton />}
+
     </Providers>
   );
 };
