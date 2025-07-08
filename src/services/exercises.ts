@@ -193,8 +193,7 @@ export const copyExercisesFromProgram = async (programId: string, date: Date): P
     }));
 
     // Save all program exercises
-    type StorageExerciseLog = Omit<ExerciseLog, 'id'> & { id?: string };
-    await Promise.all(exercisesToCopy.map(async (ex: StorageExerciseLog) => {
+    await Promise.all(exercisesToCopy.map(async (ex: ExerciseLog) => {
       try {
         await saveExerciseLog(ex);
       } catch (error) {

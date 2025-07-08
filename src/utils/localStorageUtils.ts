@@ -6,14 +6,6 @@ import { ExerciseLog } from '@/types/exercise';
 // Constants
 const LOGS_STORAGE_KEY = 'exercise_logs';
 
-// Types
-export type ExerciseLog = Omit<ExerciseLog, 'id'> & {
-  id?: string;
-  deviceId?: string;
-  userId?: string;
-  timestamp?: Date | string;
-};
-
 // Helper to get date range
 const getDateRange = (date: Date) => {
   const startOfDay = new Date(date);
@@ -69,7 +61,7 @@ export const getExerciseLogsByDate = (date: Date): ExerciseLog[] => {
 export const saveExerciseLog = (exerciseLog: ExerciseLog): ExerciseLog => {
   const logs = getExerciseLogs();
   
-  // Create a new log with an ID if it doesn't have one
+  // Ensure the log has a unique ID
   const newLog = {
     ...exerciseLog,
     id: exerciseLog.id || uuidv4(),
