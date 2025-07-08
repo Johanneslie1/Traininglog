@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
 import { useCollection } from '@/hooks/useCollection';
 import { db } from '@/services/firebase/config';
-import { collection, query, where, orderBy } from 'firebase/firestore';
-import { Exercise } from '@/types/exercise';
+import { collection, query, where, orderBy, QueryConstraint } from 'firebase/firestore';
+import type { Exercise } from '@/types/exercise';
 import { CreateExerciseDialog } from '@/components/exercises/CreateExerciseDialog';
 import { useAuth } from '@/hooks/useAuth';
-import { User } from 'firebase/auth';
-
 interface FilterState {
   search: string;
   category: string[];
@@ -23,28 +21,40 @@ const ExerciseOverview: React.FC = () => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   // Fetch exercises
+  const queryConstraints: QueryConstraint[] = [];
+
+  if (filters.type === 'custom' && user) {
+    queryConstraints.push(where('userId', '==', user.id));
+  } else if (filters.type === 'default') {
+    queryConstraints.push(where('userId', '==', null));
+  }
+  queryConstraints.push(orderBy('name'));
+
   const exercisesQuery = query(
     collection(db, 'exercises'),
-    ...(filters.type === 'custom' ? [where('userId', '==', user?.id)] : []),
-    ...(filters.type === 'default' ? [where('userId', '==', null)] : []),
-    orderBy('name')
+    ...queryConstraints
   );
 
   const { documents: exercises, loading, error } = useCollection<Exercise>(exercisesQuery);
 
   // Filter exercises based on search and category
+  // Filter exercises based on search and category
   const filteredExercises = exercises?.filter((exercise: Exercise) => {
+    if (!exercise) return false;
+    
     const matchesSearch = exercise.name.toLowerCase().includes(filters.search.toLowerCase()) ||
       exercise.description?.toLowerCase().includes(filters.search.toLowerCase());
     
     const matchesCategory = filters.category.length === 0 || 
-      filters.category.includes(exercise.category);
+      (exercise.category && filters.category.includes(exercise.category));
 
     return matchesSearch && matchesCategory;
   });
 
   // Get unique categories
-  const categories = [...new Set(exercises?.map((ex: Exercise) => ex.category) || [])];
+  const categories = exercises
+    ? [...new Set(exercises.filter((ex: Exercise) => ex && ex.category).map((ex: Exercise) => ex.category))]
+    : [];
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -117,7 +127,7 @@ const ExerciseOverview: React.FC = () => {
 
       {!loading && !error && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredExercises?.map(exercise => (
+          {filteredExercises?.map((exercise: Exercise) => (
             <div
               key={exercise.id || ''}
               className="p-4 rounded-lg bg-bg-secondary border border-border hover:border-accent-primary transition-colors"
