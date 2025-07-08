@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { toast } from 'react-hot-toast';
-import { ExerciseType } from '@/types/exercise';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { Exercise, MuscleGroup } from '@/types/exercise';
+import { addDoc, collection } from 'firebase/firestore';
 import { db } from '@/services/firebase/config';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -38,13 +38,31 @@ export const trainingCategories = [
   'Advanced',
 ] as const;
 
+type BodyPart = typeof bodyParts[number];
+type ExerciseTypeEnum = typeof exerciseTypes[number];
+type TrainingCategory = typeof trainingCategories[number];
+
+interface ExerciseFormData {
+  name: string;
+  bodyParts: BodyPart[];
+  type: ExerciseTypeEnum;
+  trainingCategory: TrainingCategory;
+  description: string;
+}
+
+interface FormErrors {
+  name?: string;
+  bodyParts?: string;
+  description?: string;
+}
+
 export const CreateExerciseDialog: React.FC<CreateExerciseDialogProps> = ({
   onClose,
   onSuccess
 }) => {
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [exercise, setExercise] = useState<Partial<ExerciseType>>({
+  const [exercise, setExercise] = useState<ExerciseFormData>({
     name: '',
     bodyParts: [],
     type: 'Strength',
@@ -52,10 +70,10 @@ export const CreateExerciseDialog: React.FC<CreateExerciseDialogProps> = ({
     description: '',
   });
 
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [errors, setErrors] = useState<FormErrors>({});
 
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
 
     if (!exercise.name?.trim()) {
       newErrors.name = 'Exercise name is required';
@@ -77,22 +95,42 @@ export const CreateExerciseDialog: React.FC<CreateExerciseDialogProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
+    if (!user) {
+      toast.error('You must be logged in to create exercises');
+      return;
+    }
+
     if (!validateForm()) {
       toast.error('Please fill in all required fields');
       return;
     }
 
+    setIsSubmitting(true);
     try {
-      setIsSubmitting(true);
-      const exerciseData = {
-        ...exercise,
-        createdBy: user?.id,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        isCustom: true,
+      const exerciseData: Omit<Exercise, 'id'> = {
+        name: exercise.name.trim(),
+        description: exercise.description.trim(),
+        type: exercise.type === 'Cardio' ? 'cardio' : 
+              exercise.type === 'Flexibility' ? 'flexibility' : 'strength',
+        category: exercise.type === 'Cardio' ? 'cardio' : 
+                 exercise.type === 'Flexibility' ? 'stretching' : 
+                 exercise.bodyParts.length > 1 ? 'compound' : 'isolation',
+        primaryMuscles: exercise.bodyParts.map(p => p.toLowerCase().replace(/\s+/g, '_') as MuscleGroup),
+        secondaryMuscles: [],
+        instructions: [exercise.description],
+        defaultUnit: exercise.type === 'Cardio' ? 'time' : 'kg',
+        metrics: {
+          trackWeight: exercise.type !== 'Cardio',
+          trackReps: exercise.type !== 'Cardio',
+          trackTime: exercise.type === 'Cardio',
+          trackDistance: false,
+          trackRPE: true,
+        },
+        customExercise: true,
+        userId: user.id
       };
 
       const docRef = await addDoc(collection(db, 'exercises'), exerciseData);
@@ -107,159 +145,135 @@ export const CreateExerciseDialog: React.FC<CreateExerciseDialogProps> = ({
     }
   };
 
+  const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value as ExerciseTypeEnum;
+    setExercise(prev => ({ ...prev, type: value }));
+  };
+
+  const handleCategoryChange = (category: TrainingCategory) => {
+    setExercise(prev => ({ ...prev, trainingCategory: category }));
+  };
+
+  const handleBodyPartToggle = (part: BodyPart) => {
+    setExercise(prev => ({
+      ...prev,
+      bodyParts: prev.bodyParts.includes(part)
+        ? prev.bodyParts.filter(p => p !== part)
+        : [...prev.bodyParts, part]
+    }));
+  };
+
   return (
-    <div className="fixed inset-0 bg-black/95 flex items-center justify-center z-50 p-4">
-      <div className="bg-[#1a1a1a] rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-        <header className="px-6 py-4 border-b border-white/10">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-white">Create New Exercise</h2>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-              aria-label="Close"
-            >
-              <svg className="w-5 h-5 text-white" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
-            </button>
-          </div>
-        </header>
-
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* Exercise Name */}
-          <div className="space-y-2">
-            <label className="text-lg text-white/90">
-              Exercise Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={exercise.name}
-              onChange={(e) => setExercise(prev => ({ ...prev, name: e.target.value }))}
-              className="w-full px-4 py-3 rounded-lg bg-[#2a2a2a] text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500"
-              placeholder="e.g., Single-Arm Dumbbell Row"
-            />
-            {errors.name && (
-              <p className="text-sm text-red-500">{errors.name}</p>
-            )}
-          </div>
-
-          {/* Body Parts */}
-          <div className="space-y-2">
-            <label className="text-lg text-white/90">
-              Target Body Parts <span className="text-red-500">*</span>
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {bodyParts.map((part) => (
-                <button
-                  key={part}
-                  type="button"
-                  onClick={() => {
-                    setExercise(prev => ({
-                      ...prev,
-                      bodyParts: prev.bodyParts?.includes(part)
-                        ? prev.bodyParts.filter(p => p !== part)
-                        : [...(prev.bodyParts || []), part]
-                    }));
-                  }}
-                  className={`px-4 py-3 rounded-lg ${
-                    exercise.bodyParts?.includes(part)
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-[#2a2a2a] text-white/70'
-                  } text-sm font-medium transition-colors min-h-[44px]`}
-                >
-                  {part}
-                </button>
-              ))}
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+        <div className="relative transform overflow-hidden rounded-lg bg-[#1a1a1a] px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-white/90">
+                Exercise Name
+              </label>
+              <input
+                type="text"
+                id="name"
+                required
+                className="mt-1 block w-full rounded-md border-gray-600 bg-[#2a2a2a] text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm placeholder-white/40"
+                value={exercise.name}
+                onChange={(e) => setExercise(prev => ({ ...prev, name: e.target.value }))}
+              />
+              {errors.name && <p className="mt-1 text-sm text-red-400">{errors.name}</p>}
             </div>
-            {errors.bodyParts && (
-              <p className="text-sm text-red-500">{errors.bodyParts}</p>
-            )}
-          </div>
 
-          {/* Exercise Type */}
-          <div className="space-y-2">
-            <label className="text-lg text-white/90">Exercise Type</label>
-            <select
-              value={exercise.type}
-              onChange={(e) => setExercise(prev => ({ ...prev, type: e.target.value }))}
-              className="w-full px-4 py-3 rounded-lg bg-[#2a2a2a] text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-            >
-              {exerciseTypes.map((type) => (
-                <option key={type} value={type}>{type}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Training Category */}
-          <div className="space-y-2">
-            <label className="text-lg text-white/90">Training Category</label>
-            <div className="grid grid-cols-3 gap-2">
-              {trainingCategories.map((category) => (
-                <button
-                  key={category}
-                  type="button"
-                  onClick={() => setExercise(prev => ({ ...prev, trainingCategory: category }))}
-                  className={`px-4 py-3 rounded-lg ${
-                    exercise.trainingCategory === category
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-[#2a2a2a] text-white/70'
-                  } text-sm font-medium transition-colors min-h-[44px]`}
-                >
-                  {category}
-                </button>
-              ))}
+            <div>
+              <label className="block text-sm font-medium text-white/90">Body Parts</label>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {bodyParts.map((part) => (
+                  <button
+                    key={part}
+                    type="button"
+                    className={`rounded-full px-3 py-1 text-sm ${
+                      exercise.bodyParts.includes(part)
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-[#2a2a2a] text-white/70 hover:bg-[#3a3a3a]'
+                    }`}
+                    onClick={() => handleBodyPartToggle(part)}
+                  >
+                    {part}
+                  </button>
+                ))}
+              </div>
+              {errors.bodyParts && <p className="mt-1 text-sm text-red-400">{errors.bodyParts}</p>}
             </div>
-          </div>
 
-          {/* Description */}
-          <div className="space-y-2">
-            <label className="text-lg text-white/90">
-              Description <span className="text-red-500">*</span>
-            </label>
-            <textarea
-              value={exercise.description}
-              onChange={(e) => setExercise(prev => ({ ...prev, description: e.target.value }))}
-              className="w-full h-32 px-4 py-3 rounded-lg bg-[#2a2a2a] text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
-              placeholder="Describe the exercise, including proper form and technique..."
-            />
-            {errors.description && (
-              <p className="text-sm text-red-500">{errors.description}</p>
-            )}
-          </div>
-        </form>
+            <div>
+              <label htmlFor="type" className="block text-sm font-medium text-white/90">
+                Exercise Type
+              </label>
+              <select
+                id="type"
+                required
+                className="mt-1 block w-full rounded-md border-gray-600 bg-[#2a2a2a] text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                value={exercise.type}
+                onChange={handleTypeChange}
+              >
+                {exerciseTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-        <footer className="px-6 py-4 border-t border-white/10">
-          <div className="flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-6 py-3 rounded-lg bg-white/10 text-white font-medium min-h-[44px]"
-              disabled={isSubmitting}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              onClick={handleSubmit}
-              className="px-8 py-3 rounded-lg bg-purple-600 text-white font-medium min-h-[44px] relative"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <>
-                  <span className="opacity-0">Save</span>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                  </div>
-                </>
-              ) : (
-                'Save'
-              )}
-            </button>
-          </div>
-        </footer>
+            <div>
+              <label htmlFor="category" className="block text-sm font-medium text-white/90">
+                Training Category
+              </label>
+              <select
+                id="category"
+                required
+                className="mt-1 block w-full rounded-md border-gray-600 bg-[#2a2a2a] text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                value={exercise.trainingCategory}
+                onChange={(e) => handleCategoryChange(e.target.value as TrainingCategory)}
+              >
+                {trainingCategories.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="description" className="block text-sm font-medium text-white/90">
+                Description
+              </label>
+              <textarea
+                id="description"
+                rows={3}
+                className="mt-1 block w-full rounded-md border-gray-600 bg-[#2a2a2a] text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm placeholder-white/40"
+                value={exercise.description}
+                onChange={(e) => setExercise(prev => ({ ...prev, description: e.target.value }))}
+              />
+              {errors.description && <p className="mt-1 text-sm text-red-400">{errors.description}</p>}
+            </div>
+
+            <div className="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="inline-flex w-full justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:col-start-2 sm:text-sm disabled:opacity-50"
+              >
+                {isSubmitting ? 'Creating...' : 'Create Exercise'}
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="mt-3 inline-flex w-full justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:col-start-1 sm:mt-0 sm:text-sm"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
