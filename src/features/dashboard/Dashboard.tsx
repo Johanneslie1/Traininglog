@@ -99,22 +99,34 @@ const Dashboard = () => {
   };
 
 
-  const handleDeleteExercise = async (exerciseId: string) => {
-    if (!exerciseId) {
-      setError('Invalid exercise ID');
+  const handleDeleteExercise = async (exercise: ExerciseLog) => {
+    if (!exercise.id || !user?.id) {
+      const errorMessage = 'Cannot delete exercise: missing user ID or exercise ID';
+      console.error(errorMessage, { userId: user?.id, exerciseId: exercise.id });
+      setError(errorMessage);
       return;
     }
-    if (!user) {
-      setError('User not authenticated');
+
+    if (!window.confirm(`Are you sure you want to delete "${exercise.exerciseName}"?`)) {
       return;
     }
 
     try {
-      await deleteExerciseLog(exerciseId, user.id);
-      setTodaysExercises((prev) => prev.filter((ex) => ex.id !== exerciseId));
+      console.log('🗑️ Attempting to delete exercise:', {
+        exerciseId: exercise.id,
+        userId: user.id
+      });
+
+      await deleteExerciseLog(exercise.id, user.id);
+      console.log('✅ Exercise deleted from Firestore successfully');
+
+      await fetchExercises(selectedDate);
     } catch (error) {
-      console.error('Error deleting exercise:', error);
-      setError('Failed to delete exercise. Please try again.');
+      console.error('❌ Error deleting exercise:', error);
+      const errorMessage =
+        error instanceof Error ? error.message : 'An unknown error occurred';
+      setError(`Failed to delete exercise: ${errorMessage}`);
+      await fetchExercises(selectedDate);
     }
   };
 
@@ -179,7 +191,7 @@ const Dashboard = () => {
               <ExerciseCard
                 key={exercise.id || `${exercise.exerciseName}-${new Date(exercise.timestamp).getTime()}`}
                 exercise={exerciseWithDate}
-                onDelete={() => handleDeleteExercise(exercise.id || '')}
+                onDelete={() => handleDeleteExercise(exerciseWithDate)}
               />
             );
           })
