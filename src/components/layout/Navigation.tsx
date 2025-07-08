@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { CreateExerciseDialog } from '@/components/exercises/CreateExerciseDialog';
 
 interface MenuItem {
   name: string;
@@ -27,6 +28,15 @@ const menuItems: MenuItem[] = [
     )
   },
   {
+    name: 'More',
+    path: '#',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+      </svg>
+    )
+  },
+  {
     name: 'Profile',
     path: '/profile',
     icon: (
@@ -40,40 +50,87 @@ const menuItems: MenuItem[] = [
 const Navigation: React.FC = () => {  
   const navigate = useNavigate();
   const location = useLocation();
+  const [showDrawer, setShowDrawer] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   const handleNavigate = (path: string) => {
+    if (path === '#') {
+      setShowDrawer(true);
+      return;
+    }
     console.log('Navigating to:', path);
     navigate(path);
   };
 
+  const handleCreateExercise = () => {
+    setShowDrawer(false);
+    setShowCreateDialog(true);
+  };
+
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-40 bg-bg-primary border-t border-border backdrop-blur-sm bg-opacity-90">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-around h-16">
-          {menuItems.map((item) => {
-            const isActive = location.pathname === item.path;
-            return (
-              <button
-                key={item.path}
-                onClick={() => handleNavigate(item.path)}
-                className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
-                  isActive ? 'text-accent-primary' : 'text-text-secondary hover:text-text-primary'
-                }`}
-                aria-current={isActive ? 'page' : undefined}
-              >
-                <div className="relative">
-                  {item.icon}
-                  {isActive && (
-                    <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full bg-accent-primary" />
-                  )}
-                </div>
-                <span className="text-xs mt-1">{item.name}</span>
-              </button>
-            );
-          })}
+    <>
+      <nav className="fixed bottom-0 inset-x-0 z-40 bg-bg-primary border-t border-border backdrop-blur-sm bg-opacity-90">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-around h-16">
+            {menuItems.map((item) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <button
+                  key={item.path}
+                  onClick={() => handleNavigate(item.path)}
+                  className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
+                    isActive ? 'text-accent-primary' : 'text-text-secondary hover:text-text-primary'
+                  }`}
+                  aria-current={isActive ? 'page' : undefined}
+                >
+                  <div className="relative">
+                    {item.icon}
+                    {isActive && (
+                      <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full bg-accent-primary" />
+                    )}
+                  </div>
+                  <span className="text-xs mt-1">{item.name}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+
+      {/* Drawer Menu */}
+      {showDrawer && (
+        <div className="fixed inset-0 bg-black/80 z-50" onClick={() => setShowDrawer(false)}>
+          <div 
+            className="absolute bottom-0 inset-x-0 bg-[#1a1a1a] rounded-t-xl py-6 px-4 space-y-2"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="w-12 h-1 bg-white/20 rounded-full mx-auto mb-6" />
+            
+            <button
+              onClick={handleCreateExercise}
+              className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-white/5 text-white"
+            >
+              <svg className="w-6 h-6 mr-3" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 102 0v-5h5a1 1 0 100-2h-5V4a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              Create Exercise
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Create Exercise Dialog */}
+      {showCreateDialog && (
+        <CreateExerciseDialog
+          onClose={() => setShowCreateDialog(false)}
+          onSuccess={(id) => {
+            setShowCreateDialog(false);
+            // Optionally navigate to the exercise or show a success message
+          }}
+        />
+      )}
+    </>
+    </>
   );
 };
 

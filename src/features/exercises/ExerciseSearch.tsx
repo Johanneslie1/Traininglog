@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { allExercises } from '@/data/exercises';
 import { importedExercises } from '@/data/importedExercises';
 import { Category } from './CategoryButton';
+import { CreateExerciseDialog } from '@/components/exercises/CreateExerciseDialog';
 
 // Combine both exercise lists
 const combinedExercises = [...allExercises, ...importedExercises.map(ex => ({
@@ -21,6 +22,7 @@ export const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
   category 
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   const matchesCategory = (exercise: typeof combinedExercises[0], categoryId: string): boolean => {
     const primaryMuscles = Array.isArray(exercise.primaryMuscles) 
@@ -64,6 +66,15 @@ export const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
     return matchesSearch && categoryMatch;
   });
 
+  const handleCreateExercise = () => {
+    setShowCreateDialog(true);
+  };
+
+  const handleExerciseCreated = async (exerciseId: string) => {
+    // TODO: Fetch the newly created exercise from Firebase and select it
+    setShowCreateDialog(false);
+  };
+
   return (
     <div className="fixed inset-0 bg-black flex flex-col">
       {/* Header */}
@@ -93,42 +104,48 @@ export const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
       {/* Exercise List */}
       <div className="flex-1 overflow-y-auto pb-safe">
         <div className="p-4 space-y-2">
-          {filteredExercises.map((exercise, index) => (
-            <button
-              key={`exercise-${exercise.name}-${index}`}
-              onClick={() => onSelectExercise(exercise)}
-              className="w-full text-left p-4 bg-[#1a1a1a] rounded-xl hover:bg-[#222] transition-colors"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-white font-medium">{exercise.name}</div>
-                  <div className="text-sm text-gray-400 mt-1">
-                    {Array.isArray(exercise.primaryMuscles) 
-                      ? exercise.primaryMuscles.join(', ') 
-                      : exercise.primaryMuscles}
-                  </div>
-                </div>
-                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          {filteredExercises.length > 0 ? (
+            filteredExercises.map((exercise, index) => (
+              <button
+                key={`exercise-${exercise.name}-${index}`}
+                onClick={() => onSelectExercise(exercise)}
+                className="w-full text-left p-4 bg-[#1a1a1a] rounded-xl hover:bg-[#222] transition-colors"
+              >
+                <h3 className="text-white font-medium">{exercise.name}</h3>
+                <p className="text-gray-400 text-sm mt-1">
+                  {Array.isArray(exercise.primaryMuscles) 
+                    ? exercise.primaryMuscles.join(', ') 
+                    : exercise.primaryMuscles}
+                </p>
+              </button>
+            ))
+          ) : (
+            <div className="flex flex-col items-center justify-center py-8 px-4 space-y-4">
+              <div className="text-center">
+                <p className="text-white/60 text-lg mb-2">No exercises found</p>
+                <p className="text-white/40">Can't find what you're looking for?</p>
+              </div>
+              <button
+                onClick={handleCreateExercise}
+                className="flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-purple-600 text-white font-medium hover:bg-purple-700 transition-colors min-h-[44px]"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 102 0v-5h5a1 1 0 100-2h-5V4a1 1 0 00-1-1z" clipRule="evenodd" />
                 </svg>
-              </div>
-            </button>
-          ))}
-
-          {filteredExercises.length === 0 && (
-            <div className="p-8 text-center">
-              <div className="inline-flex items-center justify-center w-12 h-12 mb-4 bg-[#1a1a1a] rounded-full">
-                <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-              <div className="text-gray-400">
-                No exercises found. Try adjusting your search.
-              </div>
+                Create New Exercise
+              </button>
             </div>
           )}
         </div>
       </div>
+
+      {/* Create Exercise Dialog */}
+      {showCreateDialog && (
+        <CreateExerciseDialog
+          onClose={() => setShowCreateDialog(false)}
+          onSuccess={handleExerciseCreated}
+        />
+      )}
     </div>
   );
 };
