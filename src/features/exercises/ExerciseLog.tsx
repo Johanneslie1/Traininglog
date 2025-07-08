@@ -9,8 +9,7 @@ import WorkoutSummary from './WorkoutSummary';
 import { db } from '@/services/firebase/config';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { exportExerciseData } from '@/utils/exportUtils';
-import { getExerciseLogsByDate, saveExerciseLog } from '@/utils/localStorageUtils';
-import { deleteLocalExerciseLog } from '@/utils/deleteLocalExerciseLog';
+import { getExerciseLogsByDate, saveExerciseLog, deleteLocalExerciseLog } from '@/utils/localStorageUtils';
 import { deleteExerciseLog, addExerciseLog } from '@/services/firebase/exerciseLogs';
 import { importExerciseLogs } from '@/utils/importUtils';
 import ExerciseCard from '@/components/ExerciseCard';
@@ -24,11 +23,11 @@ import { RootState } from '@/store/store';
 
 // Convert ExerciseData to ExerciseLog format for export
 const convertToExerciseLog = (exercise: ExerciseData): ExerciseLogType => ({
-  id: exercise.id, // ExerciseData now has a guaranteed ID
+  id: exercise.id || uuidv4(), // Ensure ID is always present
   exerciseName: exercise.exerciseName,
   sets: exercise.sets,
-  timestamp: exercise.timestamp,
-  deviceId: exercise.deviceId
+  timestamp: exercise.timestamp instanceof Date ? exercise.timestamp : new Date(exercise.timestamp),
+  deviceId: exercise.deviceId || ''
 });
 
 interface ExerciseLogProps {}
@@ -222,50 +221,43 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
         exerciseId, 
         exerciseName: selectedExercise.exerciseName,
         setCount: sets.length,
-        sets 
       });
 
       const updatedExercise: ExerciseData = {
         ...selectedExercise,
-        id: exerciseId, // Ensure the ID is explicitly passed
+        id: exerciseId || uuidv4(), // Ensure ID is always present
         sets,
         timestamp: selectedDate
       };
 
-      // First, save to Firestore
+      // Save to Firestore
       const firestoreId = await addExerciseLog(
         {
           exerciseName: updatedExercise.exerciseName,
           userId: user.id,
-          sets: sets,
+          sets: sets
         },
         selectedDate,
-        exerciseId // Pass the existing ID if we have one
+        updatedExercise.id // Pass existing ID if we have one
       );
+
       console.log('✅ Exercise saved to Firestore successfully');
 
-      // Then update local storage with the same ID used in Firestore
+      // Save to local storage with the correct ID from Firestore
       await saveExerciseLog({
         ...updatedExercise,
-        id: firestoreId, // Use the ID from Firestore
-        userId: user.id,
+        id: firestoreId,
+        userId: user.id
       });
-      console.log('✅ Exercise saved to local storage:', localStorageResult);
 
-      // Update UI state
-      setExercises(prevExercises => 
-        prevExercises.map(ex => 
-          ex.id === exerciseId ? updatedExercise : ex
-        )
-      );
-
-      // Close the set logger
+      console.log('✅ Exercise saved to local storage');
       handleCloseSetLogger();
+      await loadExercises(selectedDate);
     } catch (error) {
       console.error('❌ Error saving exercise sets:', error);
       alert('Failed to save exercise sets. Please try again.');
     }
-  }, [selectedExercise, user, selectedDate, handleCloseSetLogger]);  const handleDeleteExercise = async (exercise: ExerciseData) => {
+  }, [selectedExercise, user, selectedDate, handleCloseSetLogger, loadExercises]);  const handleDeleteExercise = async (exercise: ExerciseData) => {
     if (!user?.id || !exercise.id) {
       console.error('Cannot delete exercise: missing user ID or exercise ID', { userId: user?.id, exerciseId: exercise.id });
       alert('Cannot delete exercise: missing required information');
