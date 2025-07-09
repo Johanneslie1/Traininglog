@@ -25,8 +25,6 @@ export interface SupersetGroup {
   name?: string;
   exerciseIds: string[];
   order: number;
-  restBetweenSets: number; // in seconds
-  restBetweenExercises: number; // in seconds
 }
 
 export type DifficultyCategory = 'warmUp' | 'easy' | 'moderate' | 'hard' | 'failure' | 'dropSet';

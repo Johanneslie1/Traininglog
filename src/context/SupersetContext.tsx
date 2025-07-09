@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 import { SupersetGroup } from '@/types/session';
 
 export interface SupersetState {
@@ -21,6 +21,8 @@ interface SupersetContextType {
   isExerciseInSuperset: (exerciseId: string) => boolean;
   removeExerciseFromSuperset: (exerciseId: string) => void;
   clearAll: () => void;
+  loadSupersetsForDate: (date: string) => void;
+  saveSupersetsForDate: (date: string) => void;
 }
 
 const SupersetContext = createContext<SupersetContextType | undefined>(undefined);
@@ -37,6 +39,29 @@ interface SupersetProviderProps {
   children: ReactNode;
 }
 
+const STORAGE_KEY = 'superset_data';
+
+// Helper functions for persistence
+const getSupersetStorageKey = (date: string) => `${STORAGE_KEY}_${date}`;
+
+const loadSupersetsFromStorage = (date: string): SupersetGroup[] => {
+  try {
+    const stored = localStorage.getItem(getSupersetStorageKey(date));
+    return stored ? JSON.parse(stored) : [];
+  } catch (error) {
+    console.error('Error loading supersets from storage:', error);
+    return [];
+  }
+};
+
+const saveSupersetsToStorage = (date: string, supersets: SupersetGroup[]) => {
+  try {
+    localStorage.setItem(getSupersetStorageKey(date), JSON.stringify(supersets));
+  } catch (error) {
+    console.error('Error saving supersets to storage:', error);
+  }
+};
+
 export const SupersetProvider: React.FC<SupersetProviderProps> = ({ children }) => {
   const [state, setState] = useState<SupersetState>({
     isCreating: false,
@@ -44,6 +69,30 @@ export const SupersetProvider: React.FC<SupersetProviderProps> = ({ children }) 
     activeSuperset: null,
     supersets: []
   });
+
+  const [currentDate, setCurrentDate] = useState<string>('');
+
+  // Load supersets for a specific date
+  const loadSupersetsForDate = useCallback((date: string) => {
+    const storedSupersets = loadSupersetsFromStorage(date);
+    setState(prev => ({
+      ...prev,
+      supersets: storedSupersets
+    }));
+    setCurrentDate(date);
+  }, []);
+
+  // Save supersets for current date
+  const saveSupersetsForDate = useCallback((date: string) => {
+    saveSupersetsToStorage(date, state.supersets);
+  }, [state.supersets]);
+
+  // Auto-save when supersets change
+  useEffect(() => {
+    if (currentDate) {
+      saveSupersetsToStorage(currentDate, state.supersets);
+    }
+  }, [state.supersets, currentDate]);
 
   const startCreating = useCallback(() => {
     setState(prev => ({
@@ -79,9 +128,7 @@ export const SupersetProvider: React.FC<SupersetProviderProps> = ({ children }) 
       id: crypto.randomUUID(),
       name: name || `Superset ${state.supersets.length + 1}`,
       exerciseIds: state.selectedExercises,
-      order: state.supersets.length,
-      restBetweenSets: 120, // 2 minutes default
-      restBetweenExercises: 30 // 30 seconds default
+      order: state.supersets.length
     };
 
     setState(prev => ({
@@ -156,7 +203,9 @@ export const SupersetProvider: React.FC<SupersetProviderProps> = ({ children }) 
     getSupersetByExercise,
     isExerciseInSuperset,
     removeExerciseFromSuperset,
-    clearAll
+    clearAll,
+    loadSupersetsForDate,
+    saveSupersetsForDate
   };
 
   return (

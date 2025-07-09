@@ -82,7 +82,6 @@ const SupersetWorkoutDisplay: React.FC<SupersetWorkoutDisplayProps> = ({
                   </span>
                 </div>
                 <div className="flex items-center gap-4 text-sm text-gray-400">
-                  <span>Rest: {group.superset.restBetweenExercises}s</span>
                   <svg className="w-4 h-4 text-[#2196F3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.1a3 3 0 004.24-4.24l-1.1-1.102z" />
                   </svg>
@@ -104,30 +103,8 @@ const SupersetWorkoutDisplay: React.FC<SupersetWorkoutDisplayProps> = ({
                       onDelete={() => onDeleteExercise(exercise)}
                       showActions={true}
                     />
-                    
-                    {/* Rest time indicator */}
-                    {exerciseIndex < group.exercises.length - 1 && (
-                      <div className="flex items-center justify-center py-2">
-                        <div className="flex items-center gap-2 text-xs text-gray-400">
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          <span>{group.superset?.restBetweenExercises || 60}s rest</span>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 ))}
-              </div>
-              
-              {/* Superset completion indicator */}
-              <div className="mt-4 pt-3 border-t border-[#2196F3]/30">
-                <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span>Rest {group.superset.restBetweenSets}s before next superset round</span>
-                </div>
               </div>
             </div>
           ) : (

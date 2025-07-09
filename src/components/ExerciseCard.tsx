@@ -33,7 +33,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
   const [showMenu, setShowMenu] = useState(false);
   const [showDetails, setShowDetails] = useState(true); // Add toggle state
   const menuRef = useRef<HTMLDivElement>(null);
-  const { state, toggleExerciseSelection, getSupersetByExercise, isExerciseInSuperset } = useSupersets();
+  const { state, toggleExerciseSelection, getSupersetByExercise, isExerciseInSuperset, startCreating } = useSupersets();
   
   const superset = getSupersetByExercise(exercise.id || '');
   const isInSuperset = isExerciseInSuperset(exercise.id || '');
@@ -133,6 +133,24 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
                 )}
               </svg>
             </button>
+            
+            {/* Superset button */}
+            {!state.isCreating && (
+              <button
+                onClick={() => state.isCreating ? handleSupersetToggle() : startCreating()}
+                className={`p-2 rounded-lg transition-colors ${
+                  isInSuperset 
+                    ? 'bg-[#8B5CF6] text-white' 
+                    : 'hover:bg-white/10 text-gray-400 hover:text-white'
+                }`}
+                aria-label={isInSuperset ? "In superset" : "Create superset"}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.1a3 3 0 004.24-4.24l-1.1-1.102z" />
+                </svg>
+              </button>
+            )}
+            
             {/* Superset toggle during creation */}
             {state.isCreating && (
               <button

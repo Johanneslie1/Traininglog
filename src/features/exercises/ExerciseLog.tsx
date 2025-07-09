@@ -37,7 +37,7 @@ interface ExerciseLogProps {}
 const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   const navigate = useNavigate();
   const { user } = useSelector((state: RootState) => state.auth);
-  const { removeExerciseFromSuperset } = useSupersets();
+  const { removeExerciseFromSuperset, loadSupersetsForDate } = useSupersets();
   
   // Date utility functions
   const normalizeDate = useCallback((date: Date): Date => {
@@ -119,6 +119,10 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     const loadedDate = normalizeDate(date);
     let currentLoadedDate = loadedDate;
     setLoading(true);
+
+    // Load supersets for this date
+    const dateString = loadedDate.toISOString().split('T')[0];
+    loadSupersetsForDate(dateString);
 
     try {
       // First, get all local exercises

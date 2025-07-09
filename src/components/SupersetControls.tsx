@@ -130,10 +130,6 @@ const SupersetControls: React.FC<SupersetControlsProps> = ({ className = '' }) =
               <div className="text-sm text-gray-400">
                 {superset.exerciseIds.length} exercises grouped
               </div>
-              <div className="mt-2 text-xs text-gray-500">
-                Rest between exercises: {superset.restBetweenExercises}s • 
-                Rest between sets: {superset.restBetweenSets}s
-              </div>
             </div>
           ))}
         </div>
