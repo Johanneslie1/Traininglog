@@ -1,26 +1,26 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
-import ProgramModal from '@/features/programs/ProgramModal';
+import { ErrorBoundary } from '../../components/ErrorBoundary';
+import ProgramModal from '../../features/programs/ProgramModal';
 import { v4 as uuidv4 } from 'uuid';
 import LogOptions from './LogOptions';
 import { Calendar } from './Calendar';
 import { ExerciseSetLogger } from './ExerciseSetLogger';
 import WorkoutSummary from './WorkoutSummary';
-import { db } from '@/services/firebase/config';
+import { db } from '../../services/firebase/config';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { exportExerciseData } from '@/utils/exportUtils';
-import { getExerciseLogsByDate, saveExerciseLog, deleteLocalExerciseLog } from '@/utils/localStorageUtils';
-import { deleteExerciseLog, addExerciseLog } from '@/services/firebase/exerciseLogs';
-import { importExerciseLogs } from '@/utils/importUtils';
-import SideMenu from '@/components/SideMenu';
-import DraggableExerciseDisplay from '@/components/DraggableExerciseDisplay';
-import { SupersetProvider, useSupersets } from '@/context/SupersetContext';
+import { exportExerciseData } from '../../utils/exportUtils';
+import { getExerciseLogsByDate, saveExerciseLog, deleteLocalExerciseLog } from '../../utils/localStorageUtils';
+import { deleteExerciseLog, addExerciseLog } from '../../services/firebase/exerciseLogs';
+import { importExerciseLogs } from '../../utils/importUtils';
+import SideMenu from '../../components/SideMenu';
+import DraggableExerciseDisplay from '../../components/DraggableExerciseDisplay';
+import { SupersetProvider, useSupersets } from '../../context/SupersetContext';
 import { useNavigate } from 'react-router-dom';
-import { ExerciseLog as ExerciseLogType } from '@/types/exercise';
-import { ExerciseSet } from '@/types/sets';
-import { ExerciseData } from '@/services/exerciseDataService';
+import { ExerciseLog as ExerciseLogType } from '../../types/exercise';
+import { ExerciseSet } from '../../types/sets';
+import { ExerciseData } from '../../services/exerciseDataService';
 import { useSelector } from 'react-redux';
-import { RootState } from '@/store/store';
+import { RootState } from '../../store/store';
 
 // Convert ExerciseData to ExerciseLog format for export
 const convertToExerciseLog = (exercise: ExerciseData): ExerciseLogType => ({
