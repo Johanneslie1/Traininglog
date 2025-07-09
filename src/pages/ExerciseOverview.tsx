@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCollection } from '@/hooks/useCollection';
 import { db } from '@/services/firebase/config';
 import { collection, query, where, orderBy, QueryConstraint } from 'firebase/firestore';
 import type { Exercise } from '@/types/exercise';
 import { CreateExerciseDialog } from '@/components/exercises/CreateExerciseDialog';
 import { useAuth } from '@/hooks/useAuth';
+import { useLocation } from 'react-router-dom';
 interface FilterState {
   search: string;
   category: string[];
@@ -19,6 +20,16 @@ const ExerciseOverview: React.FC = () => {
     type: 'all'
   });
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+
+  // Get URL search params to check if we should show create dialog
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  
+  useEffect(() => {
+    if (searchParams.get('showCreate') === 'true') {
+      setShowCreateDialog(true);
+    }
+  }, [searchParams]);
 
   // Fetch exercises
   const queryConstraints: QueryConstraint[] = [];

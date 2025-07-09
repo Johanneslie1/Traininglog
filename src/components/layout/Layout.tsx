@@ -27,9 +27,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   // Navigation handlers
   const handleNavigate = (path: string) => {
-    console.log('Navigating to:', path);
-    navigate(path);
     setShowMenu(false);
+    navigate(path);
   };
 
   return (
@@ -62,6 +61,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         onShowWorkoutSummary={handleShowWorkoutSummary}
         onNavigateToday={() => handleNavigate('/')}
         onNavigatePrograms={() => handleNavigate('/programs')}
+        onNavigateExercises={() => handleNavigate('/exercises?showCreate=true')}
       />
     </div>
   );

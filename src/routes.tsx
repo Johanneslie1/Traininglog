@@ -117,6 +117,14 @@ const AppRoutes: React.FC = () => {
           }
         />
         <Route
+          path="/exercises"
+          element={
+            <ProtectedRoute>
+              <ExerciseOverview />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/programs"
           element={
             <ProtectedRoute>

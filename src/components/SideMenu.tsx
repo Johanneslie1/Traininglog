@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Settings from './Settings';
+import SupersetGuide from './SupersetGuide';
 
 interface SideMenuProps {
   isOpen: boolean;
@@ -9,6 +10,7 @@ interface SideMenuProps {
   onShowWorkoutSummary: () => void;
   onNavigateToday: () => void;
   onNavigatePrograms: () => void;
+  onNavigateExercises: () => void;
 }
 
 const SideMenu: React.FC<SideMenuProps> = ({
@@ -18,9 +20,11 @@ const SideMenu: React.FC<SideMenuProps> = ({
   onExport,
   onShowWorkoutSummary,
   onNavigateToday,
-  onNavigatePrograms
+  onNavigatePrograms,
+  onNavigateExercises
 }) => {
   const [showSettings, setShowSettings] = useState(false);
+  const [showSupersetGuide, setShowSupersetGuide] = useState(false);
 
   if (!isOpen) return null;
 
@@ -58,12 +62,18 @@ const SideMenu: React.FC<SideMenuProps> = ({
               </svg>
               Today
             </button>
-            <button onClick={onNavigatePrograms} className="w-full flex items-center gap-3 px-4 py-3 text-text-primary hover:bg-blue-700 rounded-lg transition-colors">
+            <button onClick={onNavigatePrograms} className="w-full flex items-center gap-3 px-4 py-3 text-[#F2F3F7] hover:bg-[#2D3440] rounded-lg transition-colors">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2a4 4 0 014-4h6" />
                 <circle cx="9" cy="7" r="4" />
               </svg>
               Programs
+            </button>
+            <button onClick={onNavigateExercises} className="w-full flex items-center gap-3 px-4 py-3 text-[#F2F3F7] hover:bg-[#2D3440] rounded-lg transition-colors">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+              Exercise Database
             </button>
           </div>
 
@@ -109,6 +119,26 @@ const SideMenu: React.FC<SideMenuProps> = ({
               </svg>
               Settings
             </button>
+
+            <button
+              onClick={() => setShowSupersetGuide(true)}
+              className="w-full flex items-center gap-3 px-4 py-3 text-text-primary hover:bg-bg-secondary rounded-lg transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Superset Guide
+            </button>
+
+            <button
+              onClick={() => setShowSupersetGuide(true)}
+              className="w-full flex items-center gap-3 px-4 py-3 text-text-primary hover:bg-bg-secondary rounded-lg transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Superset Guide
+            </button>
           </div>
         </div>
       </div>
@@ -117,6 +147,18 @@ const SideMenu: React.FC<SideMenuProps> = ({
       <Settings
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
+      />
+
+      {/* Superset Guide Modal */}
+      <SupersetGuide
+        isOpen={showSupersetGuide}
+        onClose={() => setShowSupersetGuide(false)}
+      />
+
+      {/* Superset Guide Modal */}
+      <SupersetGuide
+        isOpen={showSupersetGuide}
+        onClose={() => setShowSupersetGuide(false)}
       />
     </>
   );

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ExerciseSet } from '@/types/sets';
 import { ExerciseData } from '@/services/exerciseDataService';
+import { useSupersets } from '@/context/SupersetContext';
 
 interface ExerciseCardProps {
   exercise: ExerciseData;
@@ -29,6 +30,11 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const { state, toggleExerciseSelection, getSupersetByExercise, isExerciseInSuperset } = useSupersets();
+  
+  const superset = getSupersetByExercise(exercise.id || '');
+  const isInSuperset = isExerciseInSuperset(exercise.id || '');
+  const isSelected = state.selectedExercises.includes(exercise.id || '');
   
   // Close menu when clicking outside
   useEffect(() => {
@@ -47,12 +53,68 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
     };
   }, [showMenu]);
 
+  const handleSupersetToggle = () => {
+    if (exercise.id) {
+      toggleExerciseSelection(exercise.id);
+    }
+  };
+
+  const cardClassName = `bg-[#1a1a1a] rounded-lg p-4 border transition-all duration-200 ${
+    isInSuperset 
+      ? 'border-[#2196F3] bg-[#2196F3]/5' 
+      : isSelected 
+      ? 'border-[#8B5CF6] bg-[#8B5CF6]/5' 
+      : 'border-white/10'
+  }`;
+
   return (
-    <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/10">
+    <div className={cardClassName}>
+      {/* Superset Label */}
+      {superset && (
+        <div className="flex items-center gap-2 mb-2">
+          <div className="px-2 py-1 bg-[#2196F3] text-white text-xs rounded-full font-medium">
+            {superset.name}
+          </div>
+          <svg className="w-4 h-4 text-[#2196F3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.1a3 3 0 004.24-4.24l-1.1-1.102z" />
+          </svg>
+        </div>
+      )}
+
+      {/* Selection indicator during superset creation */}
+      {state.isCreating && (
+        <div className="flex items-center gap-2 mb-2">
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={handleSupersetToggle}
+            className="w-4 h-4 text-[#8B5CF6] bg-gray-100 border-gray-300 rounded focus:ring-[#8B5CF6] focus:ring-2"
+          />
+          <span className="text-sm text-gray-400">Select for superset</span>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-medium text-white">{exercise.exerciseName}</h3>
         {showActions && (
           <div className="flex gap-2">
+            {/* Superset toggle during creation */}
+            {state.isCreating && (
+              <button
+                onClick={handleSupersetToggle}
+                className={`p-2 rounded-lg transition-colors ${
+                  isSelected 
+                    ? 'bg-[#8B5CF6] text-white' 
+                    : 'hover:bg-white/10 text-gray-400 hover:text-white'
+                }`}
+                aria-label="Toggle superset selection"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.1a3 3 0 004.24-4.24l-1.1-1.102z" />
+                </svg>
+              </button>
+            )}
+            
             {onEdit && (
               <button 
                 onClick={onEdit}
@@ -78,6 +140,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
           </div>
         )}
       </div>
+      
       <div className="mt-4 space-y-2">
         {exercise.sets.map((set: ExerciseSet, index: number) => (
           <div key={index} className="flex items-center justify-between text-sm">

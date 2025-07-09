@@ -6,6 +6,7 @@ export interface Session {
   completed: boolean;
   exercises: {
     exerciseId: string;
+    supersetId?: string; // Add superset support
     sets: Array<{
       weight?: number;
       reps?: number;
@@ -16,6 +17,16 @@ export interface Session {
       notes?: string;
     }>;
   }[];
+  supersets?: SupersetGroup[]; // Add superset metadata
+}
+
+export interface SupersetGroup {
+  id: string;
+  name?: string;
+  exerciseIds: string[];
+  order: number;
+  restBetweenSets: number; // in seconds
+  restBetweenExercises: number; // in seconds
 }
 
 export type DifficultyCategory = 'warmUp' | 'easy' | 'moderate' | 'hard' | 'failure' | 'dropSet';

@@ -12,8 +12,10 @@ import { exportExerciseData } from '@/utils/exportUtils';
 import { getExerciseLogsByDate, saveExerciseLog, deleteLocalExerciseLog } from '@/utils/localStorageUtils';
 import { deleteExerciseLog, addExerciseLog } from '@/services/firebase/exerciseLogs';
 import { importExerciseLogs } from '@/utils/importUtils';
-import ExerciseCard from '@/components/ExerciseCard';
 import SideMenu from '@/components/SideMenu';
+import SupersetControls from '@/components/SupersetControls';
+import SupersetWorkoutDisplay from '@/components/SupersetWorkoutDisplay';
+import { SupersetProvider, useSupersets } from '@/context/SupersetContext';
 import { useNavigate } from 'react-router-dom';
 import { ExerciseLog as ExerciseLogType } from '@/types/exercise';
 import { ExerciseSet } from '@/types/sets';
@@ -35,6 +37,7 @@ interface ExerciseLogProps {}
 const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   const navigate = useNavigate();
   const { user } = useSelector((state: RootState) => state.auth);
+  const { removeExerciseFromSuperset } = useSupersets();
   
   // Date utility functions
   const normalizeDate = useCallback((date: Date): Date => {
@@ -299,6 +302,9 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
         // Don't throw here, as Firestore is our source of truth
       }
 
+      // Remove exercise from any superset it might be in
+      removeExerciseFromSuperset(exercise.id);
+
       // Update UI immediately by removing the exercise from state
       setExercises(prevExercises => prevExercises.filter(ex => ex.id !== exercise.id));
     } catch (error) {
@@ -442,15 +448,15 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                {exercises.map((exercise) => (
-                  <ExerciseCard
-                    key={exercise.id}
-                    exercise={exercise}
-                    onEdit={() => handleEditExercise(exercise)}
-                    onDelete={() => handleDeleteExercise(exercise)}
-                    showActions={true}
-                  />
-                ))}
+                {/* Superset Controls */}
+                <SupersetControls />
+                
+                {/* Exercise Display with Superset Support */}
+                <SupersetWorkoutDisplay
+                  exercises={exercises}
+                  onEditExercise={handleEditExercise}
+                  onDeleteExercise={handleDeleteExercise}
+                />
               </div>
             )}
           </div>
@@ -498,6 +504,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
         onShowWorkoutSummary={() => updateUiState('showWorkoutSummary', true)}
         onNavigateToday={() => setSelectedDate(new Date())}
         onNavigatePrograms={() => { navigate('/programs'); }}
+        onNavigateExercises={() => { navigate('/exercises'); }}
       />
 
       {/* Log Options Modal */}
@@ -593,7 +600,9 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
 const ExerciseLog: React.FC<ExerciseLogProps> = () => {
   return (
     <ErrorBoundary fallback={<div className="text-white p-4">Error loading exercises. Please try again.</div>}>
-      <ExerciseLogContent />
+      <SupersetProvider>
+        <ExerciseLogContent />
+      </SupersetProvider>
     </ErrorBoundary>
   );
 };

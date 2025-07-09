@@ -10,6 +10,7 @@ export interface ExerciseData {
   userId: string;
   sets: ExerciseSet[];
   deviceId?: string;
+  supersetId?: string; // Add superset support
 }
 
 export class ExerciseDataService {
