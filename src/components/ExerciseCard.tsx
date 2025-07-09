@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ExerciseSet } from '@/types/sets';
-import { ExerciseData } from '@/services/exerciseDataService';
-import { useSupersets } from '@/context/SupersetContext';
+import { ExerciseSet } from '../types/sets';
+import { ExerciseData } from '../services/exerciseDataService';
+import { useSupersets } from '../context/SupersetContext';
 
 interface ExerciseCardProps {
   exercise: ExerciseData;
@@ -74,12 +74,12 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
     setShowDetails(!showDetails);
   };
 
-  const cardClassName = `bg-[#1a1a1a] rounded-lg p-4 border-2 transition-all duration-200 shadow-lg ${
+  const cardClassName = `bg-[#1a1a1a] rounded-lg p-4 transition-all duration-200 shadow-lg ${
     isInSuperset 
-      ? 'border-[#2196F3] bg-[#2196F3]/10 shadow-[#2196F3]/20' 
+      ? 'bg-[#2196F3]/10 shadow-[#2196F3]/20' 
       : isSelected 
-      ? 'border-[#8B5CF6] bg-[#8B5CF6]/10 shadow-[#8B5CF6]/20' 
-      : 'border-white/20 hover:border-white/30'
+      ? 'border-2 border-[#8B5CF6] bg-[#8B5CF6]/10 shadow-[#8B5CF6]/20' 
+      : 'border-0 hover:border-white/30'
   }`;
 
   return (

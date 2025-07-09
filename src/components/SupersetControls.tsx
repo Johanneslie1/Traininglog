@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useSupersets } from '@/context/SupersetContext';
+import { useSupersets } from '../context/SupersetContext';
 
 interface SupersetControlsProps {
   className?: string;

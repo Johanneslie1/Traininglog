@@ -21,6 +21,7 @@ import { ExerciseSet } from '../../types/sets';
 import { ExerciseData } from '../../services/exerciseDataService';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
+import SupersetControls from '../../components/SupersetControls';
 
 // Convert ExerciseData to ExerciseLog format for export
 const convertToExerciseLog = (exercise: ExerciseData): ExerciseLogType => ({
@@ -495,7 +496,10 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                {/* Replace SupersetWorkoutDisplay with DraggableExerciseDisplay */}
+                {/* SupersetControls added for superset management */}
+                <SupersetControls className="mb-4" />
+                
+                {/* Exercise display with drag and drop */}
                 <DraggableExerciseDisplay
                   exercises={exercises}
                   onEditExercise={handleEditExercise}
