@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
-import { SupersetGroup } from '@/types/session';
+import { SupersetGroup } from '../types/session';
 
 export interface SupersetState {
   isCreating: boolean;
@@ -24,6 +24,7 @@ interface SupersetContextType {
   loadSupersetsForDate: (date: string) => void;
   saveSupersetsForDate: (date: string) => void;
   updateExerciseOrder: (exerciseIds: string[]) => void;
+  renameSuperset: (supersetId: string, newName: string) => void;
 }
 
 const SupersetContext = createContext<SupersetContextType | undefined>(undefined);
@@ -225,6 +226,17 @@ export const SupersetProvider: React.FC<SupersetProviderProps> = ({ children }) 
     }));
   }, []);
 
+  const renameSuperset = useCallback((supersetId: string, newName: string) => {
+    setState(prev => ({
+      ...prev,
+      supersets: prev.supersets.map(superset => 
+        superset.id === supersetId 
+          ? { ...superset, name: newName } 
+          : superset
+      )
+    }));
+  }, []);
+
   const clearAll = useCallback(() => {
     setState({
       isCreating: false,
@@ -250,7 +262,8 @@ export const SupersetProvider: React.FC<SupersetProviderProps> = ({ children }) 
     clearAll,
     loadSupersetsForDate,
     saveSupersetsForDate,
-    updateExerciseOrder
+    updateExerciseOrder,
+    renameSuperset
   };
 
   return (

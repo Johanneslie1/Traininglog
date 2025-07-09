@@ -7,6 +7,7 @@
    - Create supersets within program exercises or daily log exercises
    - Superset creation button moved to exercise action buttons (alongside hide/edit/delete)
    - Proper selection UI for grouping exercises
+   - Floating controls and modal for superset naming
 
 2. **Persistent Storage**: ✅
    - Supersets are saved to localStorage with date-based keys
@@ -19,6 +20,7 @@
    - Clean, space-efficient superset display
    - Visual connection lines between superset exercises
    - Exercise numbering with intuitive hierarchy (1, 2, 3 for individual exercises; 4a, 4b for superset groups)
+   - SupersetActionsButton for renaming and breaking supersets
 
 4. **Drag-and-Drop Reordering**: ✅
    - Smooth drag-and-drop reordering of both individual exercises and superset groups
@@ -40,6 +42,7 @@
   - Removed rest timer properties from superset creation
   - Auto-save functionality when supersets change
   - Added exercise order tracking and persistence
+  - Added `renameSuperset` function for superset management
 
 #### Components:
 - `src/components/ExerciseCard.tsx`:
@@ -59,6 +62,23 @@
   - Visual enhancements for drag interactions
   - Automatic exercise numbering updates
   - Smooth, intuitive drag experience
+  - Integrated SupersetActionsButton for superset management
+
+- `src/components/FloatingSupersetControls.tsx` (New!):
+  - Floating UI for superset creation workflow
+  - Improved user experience with real-time feedback
+  - Simple, intuitive interface for creating supersets
+
+- `src/components/SupersetNameModal.tsx` (New!):
+  - Modal dialog for naming supersets
+  - Focus trapping and keyboard navigation
+  - Clean, minimal interface
+
+- `src/components/SupersetActionsButton.tsx` (New!):
+  - Dropdown menu for managing existing supersets
+  - Rename functionality with inline editing
+  - Break superset option
+  - Accessible interface with keyboard support
 
 - `src/components/SupersetWorkoutDisplay.tsx`:
   - Replaced with DraggableExerciseDisplay
@@ -117,6 +137,7 @@
 - Monitor user feedback for any additional superset features
 - Consider adding superset templates for common exercise combinations
 - Potential future: Cloud sync for superset data across devices
+- User customization of superset appearance (colors, styles)
 
 ### Build Status: ✅ PASSING
 All changes compile successfully and maintain existing functionality.
@@ -147,4 +168,10 @@ All changes compile successfully and maintain existing functionality.
    - Proper state management across sessions
    - Improved exercise organization with numbering
 
-The superset functionality is now fully operational with proper persistence, clean UI, intuitive drag-and-drop reordering, and an enhanced user experience as requested.
+6. **Added Superset Management**:
+   - SupersetActionsButton for direct interaction with supersets
+   - Rename functionality with inline editing
+   - Break superset option with confirmation
+   - Visual indicators for current superset name
+
+The superset functionality is now fully operational with proper persistence, clean UI, intuitive drag-and-drop reordering, and an enhanced user experience as requested. The addition of the SupersetActionsButton provides a seamless way for users to manage their supersets directly from the interface.

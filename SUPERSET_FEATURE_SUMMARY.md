@@ -19,7 +19,7 @@
 ### 3. Superset Context & State Management
 - **SupersetContext** (`src/context/SupersetContext.tsx`):
   - Complete state management for superset creation, editing, and deletion
-  - Functions: `createSuperset`, `breakSuperset`, `toggleExerciseSelection`
+  - Functions: `createSuperset`, `breakSuperset`, `toggleExerciseSelection`, `renameSuperset`
   - Automatic cleanup when exercises are deleted from supersets
   - Validation to prevent supersets with fewer than 2 exercises
   - Added exercise order tracking and persistence with `updateExerciseOrder`
@@ -41,6 +41,7 @@
 - ✅ Automatic exercise numbering updates
 - ✅ Visually enhanced superset grouping
 - ✅ Connection lines between exercises in supersets
+- ✅ Integrated SupersetActionsButton for managing supersets
 
 #### **SupersetControls** (`src/components/SupersetControls.tsx`)
 - ✅ UI for creating new supersets from selected exercises
@@ -48,6 +49,24 @@
 - ✅ Break superset functionality
 - ✅ Clear selection and cancel operations
 - ✅ Removed rest timer displays
+
+#### **SupersetNameModal** (`src/components/SupersetNameModal.tsx`)
+- ✅ Modal dialog for naming supersets during creation
+- ✅ Smooth animations and keyboard shortcuts
+- ✅ Focus trap for accessibility
+- ✅ Simple, clean interface with validation
+
+#### **FloatingSupersetControls** (`src/components/FloatingSupersetControls.tsx`)
+- ✅ Floating UI for superset creation flow
+- ✅ Selection count and feedback
+- ✅ Naming field integration
+- ✅ Cancel and save functionality
+
+#### **SupersetActionsButton** (`src/components/SupersetActionsButton.tsx`)
+- ✅ Dropdown menu for superset management
+- ✅ Rename functionality with inline editing
+- ✅ Break superset option
+- ✅ Visual indicators showing current superset name
 
 #### **SupersetGuide** (`src/components/SupersetGuide.tsx`)
 - ✅ User education modal explaining superset concepts
@@ -62,6 +81,7 @@
 - ✅ Added reordering functionality with persistence
 - ✅ Cleanup of superset data when exercises are deleted
 - ✅ Proper error handling and state synchronization
+- ✅ Integration of FloatingSupersetControls
 
 #### **SideMenu** (`src/components/SideMenu.tsx`)
 - ✅ Added "Superset Guide" menu item
@@ -88,13 +108,17 @@
 5. **User Education**: Built-in guide explaining superset concepts and best practices
 6. **Cleanup**: Automatic handling of edge cases (exercise deletion, superset breaking)
 7. **Exercise Numbering**: Automatic numbering that updates with reordering
+8. **Superset Management**: Rename and break supersets directly from the interface
 
 ## 🔧 Technical Architecture
 
 ```
 SupersetProvider (Context)
 ├── DraggableExerciseDisplay (Rendering & Reordering)
+│   └── SupersetActionsButton (Management)
 ├── ExerciseCard (Selection & Indicators)
+├── FloatingSupersetControls (Creation Flow)
+├── SupersetNameModal (Naming)
 └── SupersetGuide (Education)
 ```
 
@@ -107,6 +131,7 @@ SupersetProvider (Context)
 5. Data persists to Firebase and local storage
 6. UI renders grouped exercises with visual indicators and numbering
 7. Exercise numbers automatically update after reordering
+8. Superset management (rename, break) handled through SupersetActionsButton
 
 ## 🎨 User Experience
 
@@ -117,6 +142,7 @@ SupersetProvider (Context)
 - **Educational**: Built-in guide accessible from the side menu
 - **Responsive**: Works on mobile and desktop devices
 - **Persistent**: All changes save automatically and restore on return
+- **Seamless Editing**: Rename supersets directly from the interface
 
 ## 🚀 Production Ready
 

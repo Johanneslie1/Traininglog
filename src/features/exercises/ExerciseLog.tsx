@@ -1,4 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { SupersetProvider, useSupersets } from '../../context/SupersetContext';
+import { useNavigate } from 'react-router-dom';
+import { ExerciseLog as ExerciseLogType } from '../../types/exercise';
+import { ExerciseSet } from '../../types/sets';
+import { ExerciseData } from '../../services/exerciseDataService';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store/store';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
 import ProgramModal from '../../features/programs/ProgramModal';
 import { v4 as uuidv4 } from 'uuid';
@@ -14,14 +21,7 @@ import { deleteExerciseLog, addExerciseLog } from '../../services/firebase/exerc
 import { importExerciseLogs } from '../../utils/importUtils';
 import SideMenu from '../../components/SideMenu';
 import DraggableExerciseDisplay from '../../components/DraggableExerciseDisplay';
-import { SupersetProvider, useSupersets } from '../../context/SupersetContext';
-import { useNavigate } from 'react-router-dom';
-import { ExerciseLog as ExerciseLogType } from '../../types/exercise';
-import { ExerciseSet } from '../../types/sets';
-import { ExerciseData } from '../../services/exerciseDataService';
-import { useSelector } from 'react-redux';
-import { RootState } from '../../store/store';
-import SupersetControls from '../../components/SupersetControls';
+import FloatingSupersetControls from '../../components/FloatingSupersetControls';
 
 // Convert ExerciseData to ExerciseLog format for export
 const convertToExerciseLog = (exercise: ExerciseData): ExerciseLogType => ({
@@ -324,6 +324,8 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
       await loadExercises(selectedDate);
     }
   };
+  
+  // No longer need event listener since we use the floating controls component
 
   const handleEditExercise = (exercise: ExerciseData) => {
     setSelectedExercise(exercise);
@@ -496,9 +498,6 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                {/* SupersetControls added for superset management */}
-                <SupersetControls className="mb-4" />
-                
                 {/* Exercise display with drag and drop */}
                 <DraggableExerciseDisplay
                   exercises={exercises}
@@ -545,6 +544,9 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
       )}
 
       {/* Side Menu */}
+      {/* Floating Superset Controls */}
+      <FloatingSupersetControls />
+
       <SideMenu
         isOpen={uiState.showMenu}
         onClose={() => updateUiState('showMenu', false)}

@@ -136,39 +136,49 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
               </svg>
             </button>
             
-            {/* Superset button */}
-            {!state.isCreating && (
-              <button
-                onClick={() => state.isCreating ? handleSupersetToggle() : startCreating()}
-                className={`p-2 rounded-lg transition-colors ${
-                  isInSuperset 
-                    ? 'bg-[#8B5CF6] text-white' 
+            {/* Unified superset button with different states */}
+            <button
+              onClick={() => {
+                if (isInSuperset) return; // Already in a superset
+                
+                if (!state.isCreating) {
+                  // Start superset creation mode
+                  startCreating();
+                  
+                  // Auto-select this exercise
+                  if (exercise.id) {
+                    setTimeout(() => {
+                      toggleExerciseSelection(exercise.id || '');
+                    }, 50);
+                  }
+                } else {
+                  // In creation mode - toggle selection
+                  handleSupersetToggle();
+                }
+              }}
+              className={`p-2 rounded-lg transition-colors ${
+                isInSuperset 
+                  ? 'bg-[#2196F3] text-white' // Blue for existing superset
+                  : isSelected
+                    ? 'bg-[#8B5CF6] text-white' // Purple for selected
                     : 'hover:bg-white/10 text-gray-400 hover:text-white'
-                }`}
-                aria-label={isInSuperset ? "In superset" : "Create superset"}
-              >
+              }`}
+              aria-label={isInSuperset ? "In superset" : isSelected ? "Selected for superset" : "Add to superset"}
+            >
+              {isInSuperset ? (
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.1a3 3 0 004.24-4.24l-1.1-1.102z" />
                 </svg>
-              </button>
-            )}
-            
-            {/* Superset toggle during creation */}
-            {state.isCreating && (
-              <button
-                onClick={handleSupersetToggle}
-                className={`p-2 rounded-lg transition-colors ${
-                  isSelected 
-                    ? 'bg-[#8B5CF6] text-white' 
-                    : 'hover:bg-white/10 text-gray-400 hover:text-white'
-                }`}
-                aria-label="Toggle superset selection"
-              >
+              ) : isSelected ? (
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.1a3 3 0 004.24-4.24l-1.1-1.102z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-              </button>
-            )}
+              ) : (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+              )}
+            </button>
             
             {onEdit && (
               <button 
