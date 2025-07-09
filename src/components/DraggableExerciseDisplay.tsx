@@ -132,39 +132,35 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
                     </div>
                     
                     {group.superset ? (
-                      // Superset group with enhanced visual styling
-                      <div className="relative bg-gradient-to-r from-[#2196F3]/20 to-[#2196F3]/15 border-3 border-[#2196F3] rounded-xl p-6 shadow-lg shadow-[#2196F3]/25 mb-8">
-                        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-[#2196F3] to-[#1976D2] rounded-t-xl"></div>
-                        <div className="absolute -top-3 left-4 px-3 py-1 bg-[#2196F3] text-white text-xs rounded-full font-medium">
-                          SUPERSET
-                        </div>
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-4 h-4 bg-[#2196F3] rounded-full animate-pulse"></div>
-                            <h3 className="text-lg font-semibold text-white">{group.superset.name}</h3>
-                            <span className="text-sm px-2 py-1 bg-[#2196F3]/20 text-[#2196F3] rounded-full">
-                              {group.exercises.length} exercises
-                            </span>
+                      // More integrated superset styling
+                      <div className="relative bg-[#1a1a1a] border-l-4 border-[#2196F3] rounded-lg p-3 shadow-md mb-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-[#2196F3] rounded-full"></div>
+                            <h3 className="text-sm font-medium text-white flex items-center">
+                              <span className="text-[#2196F3]">Superset:</span>
+                              <span className="ml-1">{group.superset.name}</span>
+                              <span className="ml-2 text-xs text-[#2196F3]/70">
+                                ({group.exercises.length})
+                              </span>
+                            </h3>
                           </div>
                           {group.exercises[0]?.id && (
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center">
                               <SupersetActionsButton exerciseId={group.exercises[0].id} />
                             </div>
                           )}
                         </div>
                         
-                        <div className="space-y-6">
+                        <div className="space-y-3">
                           {group.exercises.map((exercise, exerciseIndex) => (
                             <div key={exercise.id || exerciseIndex} className="relative">
-                              {/* Enhanced connection line for superset flow */}
+                              {/* Simpler connection line */}
                               {exerciseIndex < group.exercises.length - 1 && (
-                                <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 flex flex-col items-center">
-                                  <div className="w-1 h-6 bg-gradient-to-b from-[#2196F3] to-[#1976D2]"></div>
-                                  <div className="w-3 h-3 bg-[#2196F3] rounded-full"></div>
-                                </div>
+                                <div className="absolute -bottom-2 left-4 h-3 w-0.5 bg-[#2196F3]/40"></div>
                               )}
                               
-                              <div className="transform transition-all duration-200 hover:scale-[1.01] border border-[#2196F3]/30 rounded-xl p-1">
+                              <div className="transition-all duration-200 hover:bg-black/20 rounded-lg">
                                 <ExerciseCard
                                   exercise={exercise}
                                   exerciseNumber={groupIndex + 1}
@@ -179,8 +175,8 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
                         </div>
                       </div>
                     ) : (
-                      // Individual exercise with enhanced styling
-                      <div className="border-2 border-white/20 rounded-xl shadow-md mb-6">
+                      // Individual exercise with simpler styling
+                      <div className="border-l-4 border-white/20 rounded-lg shadow-sm mb-4">
                         <ExerciseCard
                           exercise={group.exercises[0]}
                           exerciseNumber={groupIndex + 1}

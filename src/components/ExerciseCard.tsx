@@ -35,9 +35,8 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
   const [showMenu, setShowMenu] = useState(false);
   const [showDetails, setShowDetails] = useState(true); // Add toggle state
   const menuRef = useRef<HTMLDivElement>(null);
-  const { state, toggleExerciseSelection, getSupersetByExercise, isExerciseInSuperset, startCreating } = useSupersets();
+  const { state, toggleExerciseSelection, isExerciseInSuperset, startCreating } = useSupersets();
   
-  const superset = getSupersetByExercise(exercise.id || '');
   const isInSuperset = isExerciseInSuperset(exercise.id || '');
   const isSelected = state.selectedExercises.includes(exercise.id || '');
   
@@ -74,27 +73,17 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
     setShowDetails(!showDetails);
   };
 
-  const cardClassName = `bg-[#1a1a1a] rounded-lg p-4 transition-all duration-200 shadow-lg ${
+  const cardClassName = `bg-[#1a1a1a] rounded-lg p-3 transition-all duration-200 ${
     isInSuperset 
-      ? 'bg-[#2196F3]/10 shadow-[#2196F3]/20' 
+      ? 'bg-[#2196F3]/5' 
       : isSelected 
-      ? 'border-2 border-[#8B5CF6] bg-[#8B5CF6]/10 shadow-[#8B5CF6]/20' 
-      : 'border-0 hover:border-white/30'
+      ? 'bg-[#8B5CF6]/10 border-l-2 border-[#8B5CF6]' 
+      : 'hover:bg-black/20'
   }`;
 
   return (
     <div className={cardClassName}>
-      {/* Superset Label */}
-      {superset && (
-        <div className="flex items-center gap-2 mb-2">
-          <div className="px-2 py-1 bg-[#2196F3] text-white text-xs rounded-full font-medium">
-            {superset.name}
-          </div>
-          <svg className="w-4 h-4 text-[#2196F3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.1a3 3 0 004.24-4.24l-1.1-1.102z" />
-          </svg>
-        </div>
-      )}
+      {/* Removed standalone superset label - now handled in DraggableExerciseDisplay */}
 
       {/* Selection indicator during superset creation */}
       {state.isCreating && (
@@ -110,14 +99,14 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
       )}
 
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          {/* Exercise number with optional sub-number */}
+        <div className="flex items-center gap-2">
+          {/* Compact exercise number with optional sub-number */}
           {exerciseNumber && (
-            <div className="flex items-center justify-center min-w-8 h-8 bg-[#8B5CF6] text-white text-sm font-bold rounded-full px-2">
+            <div className="flex items-center justify-center min-w-6 h-6 bg-[#8B5CF6] text-white text-xs font-bold rounded-full px-1.5">
               {exerciseNumber}{subNumber ? String.fromCharCode(96 + subNumber) : ''}
             </div>
           )}
-          <h3 className="text-lg font-medium text-white">{exercise.exerciseName}</h3>
+          <h3 className="text-base font-medium text-white">{exercise.exerciseName}</h3>
         </div>
         {showActions && (
           <div className="flex gap-2">
@@ -206,23 +195,19 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
         )}
       </div>
       
-      <div className="mt-4">
+      <div className="mt-3">
         {showDetails ? (
-          // Detailed view - show all sets horizontally
+          // Detailed view - show all sets horizontally with color coding
           <div className="text-sm">
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center">
               {exercise.sets.map((set: ExerciseSet, index: number) => (
-                <div key={index} className="flex items-center gap-1">
-                  <span className="text-white font-medium">{set.weight}kg</span>
-                  <span className="text-gray-400">{set.reps}REP</span>
-                  {set.difficulty && (
-                    <span 
-                      className="text-xs px-1.5 py-0.5 rounded text-white font-medium ml-1" 
-                      style={{ backgroundColor: getDifficultyColor(set.difficulty) }}
-                    >
-                      {set.difficulty.charAt(0)}
-                    </span>
-                  )}
+                <div key={index} className="flex items-center" style={{ marginRight: index === exercise.sets.length - 1 ? 0 : 8 }}>
+                  <span 
+                    className="font-medium whitespace-nowrap"
+                    style={{ color: getDifficultyColor(set.difficulty) }}
+                  >
+                    {set.weight}kg {set.reps}r
+                  </span>
                   {index < exercise.sets.length - 1 && (
                     <span className="text-gray-500 mx-1">|</span>
                   )}
