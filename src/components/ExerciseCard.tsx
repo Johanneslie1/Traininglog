@@ -9,6 +9,7 @@ interface ExerciseCardProps {
   onDelete?: () => void;
   showActions?: boolean;
   exerciseNumber?: number; // Add exercise number prop
+  subNumber?: number; // Add sub-number for exercises within a superset
 }
 
 const getDifficultyColor = (difficulty?: string): string => {
@@ -28,7 +29,8 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
   onEdit,
   onDelete,
   showActions = true,
-  exerciseNumber
+  exerciseNumber,
+  subNumber
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showDetails, setShowDetails] = useState(true); // Add toggle state
@@ -72,12 +74,12 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
     setShowDetails(!showDetails);
   };
 
-  const cardClassName = `bg-[#1a1a1a] rounded-lg p-4 border transition-all duration-200 ${
+  const cardClassName = `bg-[#1a1a1a] rounded-lg p-4 border-2 transition-all duration-200 shadow-lg ${
     isInSuperset 
-      ? 'border-[#2196F3] bg-[#2196F3]/5' 
+      ? 'border-[#2196F3] bg-[#2196F3]/10 shadow-[#2196F3]/20' 
       : isSelected 
-      ? 'border-[#8B5CF6] bg-[#8B5CF6]/5' 
-      : 'border-white/10'
+      ? 'border-[#8B5CF6] bg-[#8B5CF6]/10 shadow-[#8B5CF6]/20' 
+      : 'border-white/20 hover:border-white/30'
   }`;
 
   return (
@@ -109,10 +111,10 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          {/* Exercise number */}
+          {/* Exercise number with optional sub-number */}
           {exerciseNumber && (
-            <div className="flex items-center justify-center w-8 h-8 bg-[#8B5CF6] text-white text-sm font-bold rounded-full">
-              {exerciseNumber}
+            <div className="flex items-center justify-center min-w-8 h-8 bg-[#8B5CF6] text-white text-sm font-bold rounded-full px-2">
+              {exerciseNumber}{subNumber ? String.fromCharCode(96 + subNumber) : ''}
             </div>
           )}
           <h3 className="text-lg font-medium text-white">{exercise.exerciseName}</h3>

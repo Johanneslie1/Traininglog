@@ -1,108 +1,188 @@
-# Exercise Numbering and Toggle Features Implementation
+# Exercise Numbering, Toggle, and Drag-and-Drop Features
 
 ## ✅ Features Implemented
 
 ### 1. Exercise Session Numbering
-- **Location**: `ExerciseCard.tsx` and `SupersetWorkoutDisplay.tsx`
+- **Location**: `ExerciseCard.tsx`, `DraggableExerciseDisplay.tsx`
 - **Functionality**: 
   - Each exercise displays its position number in the workout session
   - First exercise added = 1, incrementing by 1 for each subsequent exercise
   - Numbers appear in a purple circular badge next to the exercise name
-  - Position numbers automatically update when exercises are reordered
-  - Works correctly with both individual exercises and superset groupings
+  - Hierarchical numbering for supersets (e.g., 4a, 4b for exercises in a superset)
+  - Numbers update automatically after drag-and-drop reordering
 
-### 2. Toggle Set Details & Summary View
+### 2. Set Details Toggle
 - **Location**: `ExerciseCard.tsx`
 - **Functionality**:
-  - **Toggle Button**: Chevron up/down icon in the exercise card header
-  - **Expanded View (Default)**: Shows detailed set information with weight, reps, and difficulty
-  - **Collapsed View**: Shows compact summary:
-    - Number of sets performed
-    - Total volume calculated as sum of (weight × reps) for all sets
-    - Format: "X sets" and "XXXkg total volume"
+  - Toggle button in the exercise card header
+  - Expands/collapses detailed set information
+  - Expanded view: Shows all sets with weights, reps, and difficulty
+  - Collapsed view: Shows only set count and total volume
+  - Remembers state during the session
 
-## 🔧 Technical Implementation
+### 3. Compact Set Display
+- **Location**: `ExerciseCard.tsx`
+- **Functionality**:
+  - Sets displayed horizontally in a row (replaces vertical list)
+  - Format: "10kg 8REP | 12kg 8REP | 14kg 6REP"
+  - Difficulty indicators shown as colored letter badges
+  - Saves vertical space for better workout overview
 
-### Modified Components:
+### 4. Drag-and-Drop Reordering
+- **Location**: `DraggableExerciseDisplay.tsx`, `ExerciseLog.tsx`
+- **Library**: react-beautiful-dnd
+- **Functionality**:
+  - Intuitive drag handles for each exercise/superset group
+  - Visual feedback during dragging (scaling, shadows)
+  - Entire supersets can be moved as a unit
+  - Individual exercises remain individual
+  - Order persists across app refreshes via localStorage
 
-#### `ExerciseCard.tsx`
-- Added `exerciseNumber` prop to display exercise position
-- Added `showDetails` state for toggle functionality
-- Added `calculateTotalVolume()` helper function
-- Added `toggleDetails()` function for state management
-- Updated UI to show exercise number in circular badge
-- Added toggle button with chevron icons
-- Conditional rendering for detailed vs summary view
+## 🧩 Technical Implementation
 
-#### `SupersetWorkoutDisplay.tsx`
-- Modified `groupedExercises` to track `originalIndices` for exercise numbering
-- Updated exercise processing to maintain original array indices
-- Pass `exerciseNumber` prop to ExerciseCard components
-- Ensures correct numbering for both superset and individual exercises
+### Exercise Numbering with Superset Hierarchy
 
-### UI/UX Improvements:
-- **Exercise Numbers**: Purple circular badges with white text
-- **Toggle Button**: Intuitive chevron up/down icons
-- **Summary View**: Clean layout showing key metrics
-- **Responsive Design**: Works on mobile and desktop
-- **Consistent Styling**: Matches existing app design language
+```tsx
+// In ExerciseCard.tsx
+interface ExerciseCardProps {
+  // ...existing props
+  exerciseNumber?: number; 
+  subNumber?: number;      // For exercises within supersets
+}
 
-## 🎯 User Experience
-
-### Exercise Numbering:
-- Users can easily see the order in which exercises were added
-- Helps with workout planning and tracking progression
-- Visual reference for exercise sequence in programs
-
-### Toggle Functionality:
-- **Expanded View**: Full detail for active workout logging
-- **Collapsed View**: Quick overview for completed exercises
-- **Quick Toggle**: Single click to switch between views
-- **Memory**: Each exercise maintains its own toggle state
-
-## 📊 Data Flow
-
-```
-Exercise Array → SupersetWorkoutDisplay → ExerciseCard
-     ↓                    ↓                    ↓
-  Index + 1    →    exerciseNumber prop  →  Display badge
-     ↓                    ↓                    ↓
-  Exercise sets  →   Volume calculation   →   Toggle view
+// Number display with optional sub-number
+{exerciseNumber && (
+  <div className="flex items-center justify-center min-w-8 h-8 bg-[#8B5CF6] text-white text-sm font-bold rounded-full px-2">
+    {exerciseNumber}{subNumber ? String.fromCharCode(96 + subNumber) : ''}
+  </div>
+)}
 ```
 
-## 🔧 Technical Details
+### Toggle Implementation
 
-### Volume Calculation:
-```javascript
-const calculateTotalVolume = () => {
-  return exercise.sets.reduce((total, set) => total + (set.weight * set.reps), 0);
+```tsx
+// In ExerciseCard.tsx
+const [showDetails, setShowDetails] = useState(true);
+
+const toggleDetails = () => {
+  setShowDetails(!showDetails);
+};
+
+// Toggle button in header
+<button
+  onClick={toggleDetails}
+  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+  aria-label={showDetails ? "Hide details" : "Show details"}
+>
+  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    {showDetails ? (
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+    ) : (
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+    )}
+  </svg>
+</button>
+```
+
+### Drag-and-Drop Implementation
+
+```tsx
+// In DraggableExerciseDisplay.tsx
+import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
+
+// Handle drag end event
+const handleDragEnd = (result: DropResult) => {
+  if (!result.destination) return;
+  
+  const items = Array.from(exercises);
+  const [reorderedItem] = items.splice(result.source.index, 1);
+  items.splice(result.destination.index, 0, reorderedItem);
+  
+  onReorderExercises(items);
+  updateExerciseOrder(items.map(ex => ex.id || '').filter(id => id !== ''));
+};
+
+// In ExerciseLog.tsx - Order persistence
+const handleReorderExercises = useCallback((reorderedExercises: ExerciseData[]) => {
+  setExercises(reorderedExercises);
+  
+  // Save order with timestamp adjustments for persistence
+  const dateString = selectedDate.toISOString().split('T')[0];
+  const baseTime = new Date(selectedDate);
+  baseTime.setHours(12, 0, 0, 0);
+  
+  reorderedExercises.forEach((exercise, index) => {
+    if (!exercise.id || !user?.id) return;
+    
+    const newTimestamp = new Date(baseTime);
+    newTimestamp.setMilliseconds(index * 100);
+    
+    saveExerciseLog({
+      ...exercise,
+      timestamp: newTimestamp,
+      userId: user.id
+    });
+  });
+  
+  saveSupersetsForDate(dateString);
+}, [selectedDate, user, saveSupersetsForDate]);
+```
+
+### Storage Implementation
+
+```tsx
+// In SupersetContext.tsx
+const EXERCISE_ORDER_KEY = 'exercise_order';
+const getExerciseOrderKey = (date: string) => `${EXERCISE_ORDER_KEY}_${date}`;
+
+const saveExerciseOrderToStorage = (date: string, exerciseIds: string[]) => {
+  try {
+    localStorage.setItem(getExerciseOrderKey(date), JSON.stringify(exerciseIds));
+  } catch (error) {
+    console.error('Error saving exercise order to storage:', error);
+  }
+};
+
+const loadExerciseOrderFromStorage = (date: string): string[] => {
+  try {
+    const stored = localStorage.getItem(getExerciseOrderKey(date));
+    return stored ? JSON.parse(stored) : [];
+  } catch (error) {
+    console.error('Error loading exercise order from storage:', error);
+    return [];
+  }
 };
 ```
 
-### Exercise Numbering:
-- Uses array index + 1 for sequential numbering
-- Maintains original indices through superset grouping
-- Automatically updates when exercises are reordered
+## 🎨 UI/UX Improvements
 
-## 🚀 Production Ready
+1. **Information Hierarchy**:
+   - Exercise numbers provide clear visual progression
+   - Toggle controls let users see only the information they need
+   - Compact set layout reduces vertical scrolling
 
-- ✅ Build passes without errors
-- ✅ TypeScript type safety maintained
-- ✅ Responsive design
-- ✅ Accessible UI components
-- ✅ Performance optimized
-- ✅ Backwards compatible
+2. **Visual Feedback**:
+   - Drag handles with hover states indicate draggability
+   - Scale and shadow effects during dragging
+   - Automatic number updates reinforce the new order
 
-## 📋 Usage Examples
+3. **Organizational Workflow**:
+   - Intuitive drag-and-drop for quick reorganization
+   - Persistent order saves user preferences
+   - Consistent numbering helps with workout tracking
 
-### Exercise Numbers:
-- First exercise: Shows "1" in purple badge
-- Second exercise: Shows "2" in purple badge
-- Works in both individual and superset contexts
+## 🔍 Accessibility Considerations
 
-### Toggle Summary:
-- Expanded: Shows each set individually
-- Collapsed: Shows "4 sets" and "2400kg total volume"
-- Toggle persists until user changes it
+- Drag handles are keyboard accessible
+- Toggle buttons have proper ARIA labels
+- Visual indicators have sufficient color contrast
+- Touch targets sized appropriately for mobile use
 
-Both features enhance the workout logging experience by providing better organization and flexible viewing options.
+## 🚀 Future Enhancements
+
+- Ability to save exercise order templates
+- Section headers between exercise groups
+- Smart grouping suggestions for supersets
+- Collapsible exercise groups
+
+These features significantly enhance the workout logging experience by providing better organization, cleaner information display, and intuitive reordering capabilities that persist across sessions.

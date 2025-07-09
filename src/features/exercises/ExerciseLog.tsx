@@ -13,8 +13,7 @@ import { getExerciseLogsByDate, saveExerciseLog, deleteLocalExerciseLog } from '
 import { deleteExerciseLog, addExerciseLog } from '@/services/firebase/exerciseLogs';
 import { importExerciseLogs } from '@/utils/importUtils';
 import SideMenu from '@/components/SideMenu';
-import SupersetControls from '@/components/SupersetControls';
-import SupersetWorkoutDisplay from '@/components/SupersetWorkoutDisplay';
+import DraggableExerciseDisplay from '@/components/DraggableExerciseDisplay';
 import { SupersetProvider, useSupersets } from '@/context/SupersetContext';
 import { useNavigate } from 'react-router-dom';
 import { ExerciseLog as ExerciseLogType } from '@/types/exercise';
@@ -37,7 +36,7 @@ interface ExerciseLogProps {}
 const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   const navigate = useNavigate();
   const { user } = useSelector((state: RootState) => state.auth);
-  const { removeExerciseFromSuperset, loadSupersetsForDate } = useSupersets();
+  const { removeExerciseFromSuperset, loadSupersetsForDate, saveSupersetsForDate } = useSupersets();
   
   // Date utility functions
   const normalizeDate = useCallback((date: Date): Date => {
@@ -181,7 +180,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
         setLoading(false);
       }
     }
-  }, [user, areDatesEqual, normalizeDate, getDateRange, convertToExerciseData]);
+  }, [user, areDatesEqual, normalizeDate, getDateRange, convertToExerciseData, loadSupersetsForDate]);
   // Always ensure selectedDate is valid
   useEffect(() => {
     if (!selectedDate) {
@@ -264,7 +263,9 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
       console.error('❌ Error saving exercise sets:', error);
       alert('Failed to save exercise sets. Please try again.');
     }
-  }, [selectedExercise, user, selectedDate, handleCloseSetLogger, loadExercises]);  const handleDeleteExercise = async (exercise: ExerciseData) => {
+  }, [selectedExercise, user, selectedDate, handleCloseSetLogger, loadExercises]);
+
+  const handleDeleteExercise = async (exercise: ExerciseData) => {
     if (!user?.id || !exercise.id) {
       console.error('Cannot delete exercise: missing user ID or exercise ID', { userId: user?.id, exerciseId: exercise.id });
       alert('Cannot delete exercise: missing required information');
@@ -327,6 +328,47 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     setSelectedExercise(exercise);
     updateUiState('showSetLogger', true);
   };
+
+  // Handle exercise reordering with persistence
+  const handleReorderExercises = useCallback((reorderedExercises: ExerciseData[]) => {
+    // Update the UI immediately
+    setExercises(reorderedExercises);
+    
+    // Save the new order to localStorage by updating timestamps
+    // This creates a subtle time difference between exercises to maintain order
+    const dateString = selectedDate.toISOString().split('T')[0];
+    
+    // Create a base timestamp for the selected date
+    const baseTime = new Date(selectedDate);
+    baseTime.setHours(12, 0, 0, 0); // Noon on the selected date
+    
+    // Save each exercise with an incremented timestamp to preserve order
+    reorderedExercises.forEach((exercise, index) => {
+      if (!exercise.id || !user?.id) return;
+      
+      // Create a new timestamp with a small increment to maintain order
+      const newTimestamp = new Date(baseTime);
+      newTimestamp.setMilliseconds(index * 100); // 100ms increments
+      
+      const updatedExercise = {
+        ...exercise,
+        timestamp: newTimestamp,
+        userId: user.id,
+        id: exercise.id // Ensure ID is present and not undefined
+      };
+      
+      // Update in local storage
+      saveExerciseLog(updatedExercise as any); // Use type assertion to fix build issue
+      
+      // Update in Firestore if needed (can be done in a batch later)
+      // For now, we're using local storage as the primary persistence mechanism for ordering
+    });
+    
+    // Save superset order if any exercises are in supersets
+    saveSupersetsForDate(dateString);
+    
+    console.log('✅ Exercise order saved');
+  }, [selectedDate, user, saveSupersetsForDate]);
 
   const formatDate = useCallback((date: Date | null) => {
     if (!date) return '';
@@ -435,7 +477,8 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
             >
               {uiState.showCalendar ? 'Hide Calendar' : 'Show Calendar'}
             </button>
-          </div>          <div className="flex-grow">
+          </div>
+          <div className="flex-grow">
             {loading ? (
               <div className="flex justify-center items-center h-32">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#8B5CF6]"></div>
@@ -452,14 +495,12 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                {/* Superset Controls */}
-                <SupersetControls />
-                
-                {/* Exercise Display with Superset Support */}
-                <SupersetWorkoutDisplay
+                {/* Replace SupersetWorkoutDisplay with DraggableExerciseDisplay */}
+                <DraggableExerciseDisplay
                   exercises={exercises}
                   onEditExercise={handleEditExercise}
                   onDeleteExercise={handleDeleteExercise}
+                  onReorderExercises={handleReorderExercises}
                 />
               </div>
             )}
