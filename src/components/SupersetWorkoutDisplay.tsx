@@ -22,20 +22,28 @@ const SupersetWorkoutDisplay: React.FC<SupersetWorkoutDisplayProps> = ({
     const groups: {
       superset: SupersetGroup | null;
       exercises: ExerciseData[];
+      originalIndices: number[]; // Track original indices for numbering
     }[] = [];
     
     const processedExerciseIds = new Set<string>();
     
     // Process supersets first
     state.supersets.forEach(superset => {
-      const supersetExercises = exercises.filter(ex => 
-        ex.id && superset.exerciseIds.includes(ex.id)
-      );
+      const supersetExercises: ExerciseData[] = [];
+      const supersetIndices: number[] = [];
+      
+      exercises.forEach((ex, index) => {
+        if (ex.id && superset.exerciseIds.includes(ex.id)) {
+          supersetExercises.push(ex);
+          supersetIndices.push(index);
+        }
+      });
       
       if (supersetExercises.length > 0) {
         groups.push({
           superset,
-          exercises: supersetExercises
+          exercises: supersetExercises,
+          originalIndices: supersetIndices
         });
         
         supersetExercises.forEach(ex => {
@@ -45,15 +53,14 @@ const SupersetWorkoutDisplay: React.FC<SupersetWorkoutDisplayProps> = ({
     });
     
     // Add individual exercises
-    const individualExercises = exercises.filter(ex => 
-      ex.id && !processedExerciseIds.has(ex.id)
-    );
-    
-    individualExercises.forEach(ex => {
-      groups.push({
-        superset: null,
-        exercises: [ex]
-      });
+    exercises.forEach((ex, index) => {
+      if (ex.id && !processedExerciseIds.has(ex.id)) {
+        groups.push({
+          superset: null,
+          exercises: [ex],
+          originalIndices: [index]
+        });
+      }
     });
     
     return groups;
@@ -92,6 +99,7 @@ const SupersetWorkoutDisplay: React.FC<SupersetWorkoutDisplayProps> = ({
                     
                     <ExerciseCard
                       exercise={exercise}
+                      exerciseNumber={group.originalIndices[exerciseIndex] + 1}
                       onEdit={() => onEditExercise(exercise)}
                       onDelete={() => onDeleteExercise(exercise)}
                       showActions={true}
@@ -126,6 +134,7 @@ const SupersetWorkoutDisplay: React.FC<SupersetWorkoutDisplayProps> = ({
             // Individual exercise
             <ExerciseCard
               exercise={group.exercises[0]}
+              exerciseNumber={group.originalIndices[0] + 1}
               onEdit={() => onEditExercise(group.exercises[0])}
               onDelete={() => onDeleteExercise(group.exercises[0])}
               showActions={true}

@@ -8,6 +8,7 @@ interface ExerciseCardProps {
   onEdit?: () => void;
   onDelete?: () => void;
   showActions?: boolean;
+  exerciseNumber?: number; // Add exercise number prop
 }
 
 const getDifficultyColor = (difficulty?: string): string => {
@@ -26,9 +27,11 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
   exercise,
   onEdit,
   onDelete,
-  showActions = true
+  showActions = true,
+  exerciseNumber
 }) => {
   const [showMenu, setShowMenu] = useState(false);
+  const [showDetails, setShowDetails] = useState(true); // Add toggle state
   const menuRef = useRef<HTMLDivElement>(null);
   const { state, toggleExerciseSelection, getSupersetByExercise, isExerciseInSuperset } = useSupersets();
   
@@ -57,6 +60,16 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
     if (exercise.id) {
       toggleExerciseSelection(exercise.id);
     }
+  };
+
+  // Calculate total volume for the exercise
+  const calculateTotalVolume = () => {
+    return exercise.sets.reduce((total, set) => total + (set.weight * set.reps), 0);
+  };
+
+  // Toggle details display
+  const toggleDetails = () => {
+    setShowDetails(!showDetails);
   };
 
   const cardClassName = `bg-[#1a1a1a] rounded-lg p-4 border transition-all duration-200 ${
@@ -95,9 +108,31 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
       )}
 
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium text-white">{exercise.exerciseName}</h3>
+        <div className="flex items-center gap-3">
+          {/* Exercise number */}
+          {exerciseNumber && (
+            <div className="flex items-center justify-center w-8 h-8 bg-[#8B5CF6] text-white text-sm font-bold rounded-full">
+              {exerciseNumber}
+            </div>
+          )}
+          <h3 className="text-lg font-medium text-white">{exercise.exerciseName}</h3>
+        </div>
         {showActions && (
           <div className="flex gap-2">
+            {/* Toggle details button */}
+            <button
+              onClick={toggleDetails}
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              aria-label={showDetails ? "Hide details" : "Show details"}
+            >
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {showDetails ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                )}
+              </svg>
+            </button>
             {/* Superset toggle during creation */}
             {state.isCreating && (
               <button
@@ -141,18 +176,43 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
         )}
       </div>
       
-      <div className="mt-4 space-y-2">
-        {exercise.sets.map((set: ExerciseSet, index: number) => (
-          <div key={index} className="flex items-center justify-between text-sm">
-            <span className="text-gray-400">Set {index + 1}</span>
-            <span className="text-white">{set.weight}kg × {set.reps}</span>
-            {set.difficulty && (
-              <span className="text-xs px-2 py-1 rounded-full" style={{ backgroundColor: getDifficultyColor(set.difficulty) }}>
-                {set.difficulty}
-              </span>
-            )}
+      <div className="mt-4">
+        {showDetails ? (
+          // Detailed view - show all sets horizontally
+          <div className="text-sm">
+            <div className="flex flex-wrap items-center gap-2">
+              {exercise.sets.map((set: ExerciseSet, index: number) => (
+                <div key={index} className="flex items-center gap-1">
+                  <span className="text-white font-medium">{set.weight}kg</span>
+                  <span className="text-gray-400">{set.reps}REP</span>
+                  {set.difficulty && (
+                    <span 
+                      className="text-xs px-1.5 py-0.5 rounded text-white font-medium ml-1" 
+                      style={{ backgroundColor: getDifficultyColor(set.difficulty) }}
+                    >
+                      {set.difficulty.charAt(0)}
+                    </span>
+                  )}
+                  {index < exercise.sets.length - 1 && (
+                    <span className="text-gray-500 mx-1">|</span>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-        ))}
+        ) : (
+          // Summary view - show total sets and volume
+          <div className="text-sm text-gray-300">
+            <div className="flex items-center justify-between">
+              <span className="text-gray-400">Sets</span>
+              <span className="text-white">{exercise.sets.length}</span>
+            </div>
+            <div className="flex items-center justify-between mt-1">
+              <span className="text-gray-400">Total Volume</span>
+              <span className="text-white">{calculateTotalVolume()}kg</span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
