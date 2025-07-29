@@ -1,18 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store/store';
-import { ExerciseDataService, ExerciseData } from '@/services/exerciseDataService';
 
 interface CalendarProps {
   onClose: () => void;
-  onSelectExercises: (exercises: ExerciseData[]) => void;
+  onSelectExercises: (exercises: never[]) => void; // Keep for compatibility but won't be used
   onDateSelect?: (date: Date) => void;
   selectedDate: Date;
-}
-
-interface User {
-  id: string;
-  email: string | null;
 }
 
 // Utility functions
@@ -24,35 +16,26 @@ const normalizeDate = (date: Date): Date => {
 
 export const Calendar: React.FC<CalendarProps> = ({ 
   onClose, 
-  onSelectExercises, 
   onDateSelect,
   selectedDate
 }) => {
   const [currentDate, setCurrentDate] = useState<Date>(() => normalizeDate(selectedDate));
   const [isLoading, setIsLoading] = useState(false);
-  const { user } = useSelector((state: RootState) => state.auth) as { user: User | null };
 
   const handleDateSelect = useCallback(async (date: Date) => {
-    if (!date || !user) return;
+    if (!date) return;
     
     const newDate = normalizeDate(date);
     
-    // Notify parent component about the date change
+    // Only notify parent component about the date change
+    // Let the parent handle exercise loading to avoid race conditions
     if (onDateSelect) {
+      setIsLoading(true);
       onDateSelect(newDate);
+      // Small delay to show loading state, then reset
+      setTimeout(() => setIsLoading(false), 300);
     }
-
-    setIsLoading(true);
-    try {
-      const exercises = await ExerciseDataService.getExercisesByDate(newDate, user.id);
-      onSelectExercises(exercises);
-    } catch (error) {
-      console.error('Error fetching exercises:', error);
-      onSelectExercises([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user, onDateSelect, onSelectExercises]);
+  }, [onDateSelect]);
 
   // Update current month view when selected date changes
   useEffect(() => {

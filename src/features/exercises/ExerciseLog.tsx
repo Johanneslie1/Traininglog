@@ -115,9 +115,10 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
       return;
     }
 
-    // Normalize the target date and set loading state
+    // Normalize the target date
     const loadedDate = normalizeDate(date);
-    let currentLoadedDate = loadedDate;
+    
+    // Set loading state
     setLoading(true);
 
     // Load supersets for this date
@@ -153,35 +154,28 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
       const uniqueLocalExercises = allLocalExercises
         .filter(exercise => !exercise.id || !firebaseExercises.some(fEx => fEx.id === exercise.id));
 
-      // If we're still loading the same date, update the exercises
-      if (areDatesEqual(currentLoadedDate, loadedDate)) {
-        // Combine Firestore and unique local exercises
-        const allExercises = [...firebaseExercises, ...uniqueLocalExercises];
+      // Combine Firestore and unique local exercises
+      const allExercises = [...firebaseExercises, ...uniqueLocalExercises];
 
-        // Sort by timestamp to maintain consistent order
-        allExercises.sort((a, b) => {
-          if (a.timestamp instanceof Date && b.timestamp instanceof Date) {
-            return a.timestamp.getTime() - b.timestamp.getTime();
-          }
-          return 0;
-        });
+      // Sort by timestamp to maintain consistent order
+      allExercises.sort((a, b) => {
+        if (a.timestamp instanceof Date && b.timestamp instanceof Date) {
+          return a.timestamp.getTime() - b.timestamp.getTime();
+        }
+        return 0;
+      });
 
-        setExercises(allExercises);
-      }
+      setExercises(allExercises);
     } catch (error) {
       console.error('Error fetching exercises:', error);
       // On Firestore error, fall back to local data
-      if (areDatesEqual(currentLoadedDate, loadedDate)) {
-        const localExercises = getExerciseLogsByDate(loadedDate)
-          .map(exercise => convertToExerciseData(exercise, userId));
-        setExercises(localExercises);
-      }
+      const localExercises = getExerciseLogsByDate(loadedDate)
+        .map(exercise => convertToExerciseData(exercise, userId));
+      setExercises(localExercises);
     } finally {
-      if (areDatesEqual(currentLoadedDate, loadedDate)) {
-        setLoading(false);
-      }
+      setLoading(false);
     }
-  }, [user, areDatesEqual, normalizeDate, getDateRange, convertToExerciseData, loadSupersetsForDate]);
+  }, [user?.id, areDatesEqual, normalizeDate, getDateRange, convertToExerciseData, loadSupersetsForDate]);
   // Always ensure selectedDate is valid
   useEffect(() => {
     if (!selectedDate) {
@@ -194,7 +188,11 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     const normalized = normalizeDate(date);
     if (!normalized) return;
     
+    // Set loading state immediately to prevent flickering
+    setLoading(true);
     setSelectedDate(normalized);
+    
+    // Load exercises for the new date
     await loadExercises(normalized);
     toggleCalendar(false);
   }, [normalizeDate, loadExercises, toggleCalendar]);
@@ -206,9 +204,10 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     }
   }, [user?.id, loadExercises, selectedDate]);
 
-  // Handle exercise select from calendar
-  const handleExerciseSelect = useCallback((selectedExercises: ExerciseData[]) => {
-    setExercises(selectedExercises);
+  // Handle exercise select from calendar - now unused but kept for compatibility
+  const handleExerciseSelect = useCallback((_selectedExercises: ExerciseData[]) => {
+    // No longer set exercises here to avoid race condition
+    // The loadExercises function will handle data loading
     toggleCalendar(false);
   }, [toggleCalendar]);
 
@@ -411,7 +410,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
       setExercises([]);
       setLoading(false);
     }
-  }, [selectedDate, user, loadExercises]);
+  }, [selectedDate, user?.id]);
 
   // Clear selected exercise when changing dates
   useEffect(() => {
@@ -556,6 +555,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
         onNavigateToday={() => setSelectedDate(new Date())}
         onNavigatePrograms={() => { navigate('/programs'); }}
         onNavigateExercises={() => { navigate('/exercises'); }}
+        onNavigateDashboard={() => { navigate('/dashboard'); }}
       />
 
       {/* Log Options Modal */}

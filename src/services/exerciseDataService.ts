@@ -38,26 +38,28 @@ export class ExerciseDataService {
       // Ensure we have authentication
       const userId = await this.ensureAuth();
 
-      // Save to Firebase if user is online
+      // Save to Firebase if user is online - use the same collection structure as ExerciseLog.tsx
       if (navigator.onLine) {
         const exerciseData = {
-          ...exercise,
+          exerciseName: exercise.exerciseName,
+          sets: exercise.sets,
           timestamp: exercise.timestamp,
-          userId // Use the authenticated user's ID
+          userId: exercise.userId || userId,
+          deviceId: exercise.deviceId || window.navigator.userAgent
         };
 
-        const exercisesRef = collection(db, 'exerciseLogs');
         if (exercise.id) {
-          const docRef = doc(db, 'exerciseLogs', exercise.id);
+          const docRef = doc(db, 'users', userId, 'exercises', exercise.id);
           await updateDoc(docRef, exerciseData);
         } else {
+          const exercisesRef = collection(db, 'users', userId, 'exercises');
           await addDoc(exercisesRef, exerciseData);
         }
       }
 
       // Always save to localStorage as backup
       const existingData = this.getLocalExercises();
-      const updatedData = [...existingData.filter(e => e.id !== exercise.id), { ...exercise, userId }];
+      const updatedData = [...existingData.filter(e => e.id !== exercise.id), { ...exercise, userId: exercise.userId || userId }];
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updatedData));
 
     } catch (error) {
@@ -73,22 +75,27 @@ export class ExerciseDataService {
     try {
       const dateRange = this.getDateRange(date);
 
-      // Try Firebase first if online
+      // Try Firebase first if online - use the same collection structure as ExerciseLog.tsx
       if (navigator.onLine) {
-        const exercisesRef = collection(db, 'exerciseLogs');
+        const exercisesRef = collection(db, 'users', userId, 'exercises');
         const q = query(
           exercisesRef,
-          where('userId', '==', userId),
           where('timestamp', '>=', dateRange.startOfDay),
           where('timestamp', '<=', dateRange.endOfDay)
         );
 
         const snapshot = await getDocs(q);
-        const firebaseExercises = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          timestamp: doc.data().timestamp.toDate()
-        } as ExerciseData));
+        const firebaseExercises = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            exerciseName: data.exerciseName,
+            sets: data.sets,
+            timestamp: data.timestamp.toDate(),
+            userId: data.userId,
+            deviceId: data.deviceId
+          } as ExerciseData;
+        });
 
         // Save Firebase exercises to localStorage
         firebaseExercises.forEach(exercise => {

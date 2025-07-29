@@ -42,71 +42,52 @@ export const addExerciseLog = async (
 
     console.log('📝 Prepared exercise data:', exerciseData);
 
-    // Initialize docId to a new ID if none provided
-    let docId = existingId || doc(collection(db, 'users', logData.userId, 'exercises')).id;
     let docRef;
+    let docId;
 
-    // If we have an existing ID, check both locations
+    // Simplified ID management - always use the new subcollection structure
     if (existingId) {
-      const oldRef = doc(db, 'exerciseLogs', existingId);
-      const newRef = doc(db, 'users', logData.userId, 'exercises', existingId);
+      // Update existing document
+      docRef = doc(db, 'users', logData.userId, 'exercises', existingId);
+      docId = existingId;
+      console.log('📝 Updating existing document:', docId);
       
-      const [oldDoc, newDoc] = await Promise.all([
-        getDoc(oldRef),
-        getDoc(newRef)
-      ]);
-
-      if (oldDoc.exists()) {
-        // Update in old location
-        await deleteDoc(oldRef);
-        console.log('✅ Deleted from old location:', existingId);
-      }
-
-      if (newDoc.exists()) {
-        // Update in new location
-        docRef = newRef;
-        console.log('📝 Updating existing document in new location');
-      } else {
-        // Create in new location
-        docRef = doc(collection(db, 'users', logData.userId, 'exercises'));
-        docId = docRef.id;
-        console.log('📝 Creating new document in new location');
+      // Clean up any old location document if it exists
+      try {
+        const oldRef = doc(db, 'exerciseLogs', existingId);
+        const oldDoc = await getDoc(oldRef);
+        if (oldDoc.exists()) {
+          await deleteDoc(oldRef);
+          console.log('✅ Cleaned up old location document:', existingId);
+        }
+      } catch (error) {
+        console.warn('⚠️ Could not clean up old location:', error);
       }
     } else {
-      // Create new document in new location
+      // Create new document
       docRef = doc(collection(db, 'users', logData.userId, 'exercises'));
       docId = docRef.id;
-      console.log('📝 Creating new document in new location');
+      console.log('📝 Creating new document with ID:', docId);
     }
 
-    // Log the exact path and data being written
-    console.log('📝 Attempting to write to path:', docRef.path, 'with data:', exerciseData);
-
-    // Save or update the document
-    try {
-      await setDoc(docRef, exerciseData);
-      console.log('✅ Exercise saved successfully with ID:', docId);
-      return docId;
-    } catch (error) {
-      // More detailed error logging
-      const firebaseError = error as { code?: string; message?: string };
-      console.error('❌ Error adding exercise log:', {
-        error,
-        code: firebaseError.code,
-        message: firebaseError.message,
-        path: docRef.path,
-        userId: logData.userId,
-        auth: 'Check if user is authenticated'
-      });
-      
-      if (firebaseError.code === 'permission-denied') {
-        throw new Error(`Permission denied. Attempted to write to ${docRef.path}. Please check authentication and ownership.`);
-      }
-      throw new Error('Failed to add exercise log: ' + (firebaseError.message || 'Unknown error'));
-    }
+    // Save the document
+    await setDoc(docRef, exerciseData);
+    console.log('✅ Exercise saved successfully with ID:', docId);
+    return docId;
+    
   } catch (error) {
-    console.error('❌ Error in addExerciseLog:', error);
-    throw error instanceof Error ? error : new Error('Failed to add exercise log');
+    const firebaseError = error as { code?: string; message?: string };
+    console.error('❌ Error adding exercise log:', {
+      error,
+      code: firebaseError.code,
+      message: firebaseError.message,
+      userId: logData.userId
+    });
+    
+    if (firebaseError.code === 'permission-denied') {
+      throw new Error('Permission denied. Please check your authentication.');
+    }
+    throw new Error('Failed to add exercise log: ' + (firebaseError.message || 'Unknown error'));
   }
 };
 

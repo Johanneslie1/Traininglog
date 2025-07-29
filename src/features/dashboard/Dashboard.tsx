@@ -1,55 +1,94 @@
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { deleteExerciseLog, getExerciseLogs } from '@/services/firebase/exerciseLogs';
+import { getExerciseLogsByDate } from '@/utils/localStorageUtils';
 import ExerciseCard from '@/components/ExerciseCard';
 import { ExerciseLog } from '@/types/exercise';
+import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const user = useSelector((state: RootState) => state.auth.user);
   const [todaysExercises, setTodaysExercises] = useState<ExerciseLog[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Move fetchExercises to component scope so it can be reused
-  const fetchExercises = async (date: Date = selectedDate) => {
+  // Date utility functions (same as ExerciseLog)
+  const normalizeDate = useCallback((date: Date): Date => {
+    const normalized = new Date(date);
+    normalized.setHours(0, 0, 0, 0);
+    return normalized;
+  }, []);
+
+  const getDateRange = useCallback((date: Date): { startOfDay: Date; endOfDay: Date } => {
+    const startOfDay = normalizeDate(date);
+    const endOfDay = new Date(startOfDay);
+    endOfDay.setHours(23, 59, 59, 999);
+    return { startOfDay, endOfDay };
+  }, [normalizeDate]);
+
+  // Unified data fetching that combines Firebase and localStorage (same strategy as ExerciseLog)
+  const fetchExercises = useCallback(async (date: Date) => {
     setIsLoading(true);
     setError(null);
 
-    if (!user) {
+    if (!user?.id) {
       setTodaysExercises([]);
       setIsLoading(false);
       return;
     }
 
-    try {
-      const startOfDay = new Date(date);
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(date);
-      endOfDay.setHours(23, 59, 59, 999);
+    const loadedDate = normalizeDate(date);
 
-      // Use the centralized getExerciseLogs function
-      const exercises = await getExerciseLogs(user.id, startOfDay, endOfDay);
+    try {
+      // Get local exercises first
+      const localExercises = getExerciseLogsByDate(loadedDate);
       
-      setTodaysExercises(exercises);
+      // Get Firebase exercises
+      const { startOfDay, endOfDay } = getDateRange(loadedDate);
+      const firebaseExercises = await getExerciseLogs(user.id, startOfDay, endOfDay);
+      
+      // Filter local exercises to only include those not in Firebase
+      const uniqueLocalExercises = localExercises.filter(localEx => 
+        !localEx.id || !firebaseExercises.some(fbEx => fbEx.id === localEx.id)
+      );
+      
+      // Combine and sort exercises
+      const allExercises = [...firebaseExercises, ...uniqueLocalExercises];
+      allExercises.sort((a, b) => {
+        const aTime = a.timestamp instanceof Date ? a.timestamp.getTime() : new Date(a.timestamp).getTime();
+        const bTime = b.timestamp instanceof Date ? b.timestamp.getTime() : new Date(b.timestamp).getTime();
+        return aTime - bTime;
+      });
+      
+      setTodaysExercises(allExercises);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
       console.error('Error fetching exercises:', err);
+      // Fallback to local storage on error
+      const localExercises = getExerciseLogsByDate(loadedDate);
+      setTodaysExercises(localExercises);
+      setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user?.id, normalizeDate, getDateRange]);
 
+  // Load exercises when user or selectedDate changes
   useEffect(() => {
-    if (user) {
-      fetchExercises();
+    if (user?.id) {
+      fetchExercises(selectedDate);
+    } else {
+      setTodaysExercises([]);
+      setIsLoading(false);
     }
-  }, [selectedDate, user]);
+  }, [user?.id, selectedDate]);
 
-  const handleDateChange = (newDate: Date) => {
-    setSelectedDate(newDate);
-  };
+  const handleDateChange = useCallback((newDate: Date) => {
+    const normalized = normalizeDate(newDate);
+    setSelectedDate(normalized);
+  }, [normalizeDate]);
 
 
   const formatDate = (date: Date): string => {
@@ -109,21 +148,49 @@ const Dashboard = () => {
           </button>
         </div>
       )}
-      {/* Date and controls header */}
+      {/* Header with navigation */}
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">{formatDate(selectedDate)}</h1>
-          <small className="text-gray-400">v0.0.2 - Test Update</small>
-        </div>
-        <div className="flex gap-4">
-          <button className="p-2" onClick={() => handleDateChange(new Date(selectedDate.getTime() - 86400000))}>
-            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 002 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z" />
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={() => navigate('/')}
+            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            aria-label="Back to Exercise Log"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <button className="p-2">
-            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
+          <div>
+            <h1 className="text-2xl font-bold">Dashboard - {formatDate(selectedDate)}</h1>
+            <small className="text-gray-400">Exercise Summary</small>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <button 
+            className="p-2 hover:bg-white/10 rounded-lg transition-colors" 
+            onClick={() => handleDateChange(new Date(selectedDate.getTime() - 86400000))}
+            aria-label="Previous day"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <button 
+            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            onClick={() => handleDateChange(new Date())}
+            aria-label="Today"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </button>
+          <button 
+            className="p-2 hover:bg-white/10 rounded-lg transition-colors" 
+            onClick={() => handleDateChange(new Date(selectedDate.getTime() + 86400000))}
+            aria-label="Next day"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
         </div>
@@ -133,9 +200,12 @@ const Dashboard = () => {
       <div className="space-y-4">
         {todaysExercises.length === 0 ? (
           <div className="text-center py-8 text-gray-400">
-            <p>No exercises logged today</p>
-            <button className="mt-4 bg-green-600 text-white px-6 py-3 rounded-lg">
-              Add Exercise
+            <p>No exercises logged for this date</p>
+            <button 
+              onClick={() => navigate('/')}
+              className="mt-4 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors"
+            >
+              Go to Exercise Log
             </button>
           </div>
         ) : (
@@ -161,8 +231,9 @@ const Dashboard = () => {
 
       {/* Floating action button */}
       <button
-        className="fixed right-6 bottom-6 w-16 h-16 bg-green-600 rounded-full flex items-center justify-center text-white shadow-lg hover:bg-green-700"
-        onClick={() => console.log('Add new exercise')}
+        className="fixed right-6 bottom-6 w-16 h-16 bg-green-600 rounded-full flex items-center justify-center text-white shadow-lg hover:bg-green-700 transition-colors"
+        onClick={() => navigate('/')}
+        aria-label="Go to Exercise Log"
       >
         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
