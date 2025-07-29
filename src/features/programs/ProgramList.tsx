@@ -5,6 +5,7 @@ import ProgramModal from './ProgramModal';
 import { getAuth } from 'firebase/auth';
 import { Program } from '@/types/program';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { TrashIcon } from '@heroicons/react/outline';
 
 const levelColors: Record<string, string> = {
   Any: 'bg-gray-500',
@@ -15,9 +16,10 @@ const levelColors: Record<string, string> = {
 
 const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onSelect }) => {
   const navigate = useNavigate();
-  const { programs, addProgram: create, refresh } = usePrograms();
+  const { programs, addProgram: create, refresh, deleteProgram } = usePrograms();
   const [showModal, setShowModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deletingProgramId, setDeletingProgramId] = useState<string | null>(null);
   const auth = getAuth();
 
   useEffect(() => {
@@ -80,6 +82,29 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
     }
   };
 
+  const handleDeleteProgram = async (programId: string, programName: string, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent card click navigation
+    
+    if (window.confirm(`Are you sure you want to delete the program "${programName}"? This action cannot be undone.`)) {
+      setDeletingProgramId(programId);
+      setError(null);
+      
+      try {
+        console.log('[ProgramList] Deleting program:', programId);
+        await deleteProgram(programId);
+        console.log('[ProgramList] Program deleted successfully');
+        // Refresh the programs list
+        await refresh();
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to delete program';
+        console.error('[ProgramList] Error deleting program:', err);
+        setError(errorMessage);
+      } finally {
+        setDeletingProgramId(null);
+      }
+    }
+  };
+
   return (
     <div className="relative min-h-screen pb-20">
       <h2 className="text-xl font-bold mb-4">Programs</h2>
@@ -97,12 +122,28 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
           {programs.map((program: Program) => (
             <div
               key={program.id}
-              className="relative bg-[#23272F] rounded-xl p-4 flex flex-col items-start justify-between min-h-[120px] shadow-md cursor-pointer overflow-hidden"
+              className="relative bg-[#23272F] rounded-xl p-4 flex flex-col items-start justify-between min-h-[120px] shadow-md cursor-pointer overflow-hidden group"
               onClick={() => (onSelect ? onSelect(program.id) : navigate(`/programs/${program.id}`))}
             >
               <div className="absolute right-3 top-3 opacity-20 text-5xl pointer-events-none select-none">
                 <span role="img" aria-label="kettlebell">🏋️‍♂️</span>
               </div>
+              
+              {/* Delete button */}
+              <button
+                onClick={(e) => handleDeleteProgram(program.id, program.name, e)}
+                disabled={deletingProgramId === program.id}
+                className="absolute top-2 left-2 p-1.5 bg-red-600/80 hover:bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 z-20 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Delete program"
+                aria-label={`Delete program ${program.name}`}
+              >
+                {deletingProgramId === program.id ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <TrashIcon className="w-4 h-4" />
+                )}
+              </button>
+
               <div className="font-semibold text-lg text-white mb-1 z-10">{program.name}</div>
               <div className="flex items-center gap-2 z-10">
                 <span className={`px-2 py-0.5 rounded text-xs text-white ${levelColors[program.level.charAt(0).toUpperCase() + program.level.slice(1)] || 'bg-gray-700'}`}>

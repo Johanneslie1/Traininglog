@@ -18,7 +18,8 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
   const [editingSession, setEditingSession] = useState<ProgramSession | null>(null);
   const [expandedSessions, setExpandedSessions] = useState<string[]>([]);
   const [, setIsLoading] = useState(false);
-  const { updateSessionInProgram: updateSession } = usePrograms();
+  const [isDeletingProgram, setIsDeletingProgram] = useState(false);
+  const { updateSessionInProgram: updateSession, deleteProgram } = usePrograms();
 
   React.useEffect(() => {
     // Set a timeout to show loading state for maximum 2 seconds
@@ -136,6 +137,25 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
     }
   }, [program, sessions, onUpdate, editingSession, updateSession, expandedSessions]);
 
+  const handleDeleteProgram = async () => {
+    if (window.confirm(`Are you sure you want to delete the program "${program.name}"? This will delete all sessions and exercises. This action cannot be undone.`)) {
+      setIsDeletingProgram(true);
+      
+      try {
+        console.log('[ProgramDetail] Deleting program:', program.id);
+        await deleteProgram(program.id);
+        console.log('[ProgramDetail] Program deleted successfully');
+        // Navigate back to programs list after successful deletion
+        onBack();
+      } catch (error) {
+        console.error('[ProgramDetail] Error deleting program:', error);
+        alert(error instanceof Error ? error.message : 'Failed to delete program. Please try again.');
+      } finally {
+        setIsDeletingProgram(false);
+      }
+    }
+  };
+
   return (
     <div className="p-6">
       <div className="mb-6 flex items-center justify-between">
@@ -143,14 +163,31 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
           <h1 className="text-2xl font-bold text-white">{program.name}</h1>
           <p className="text-gray-400 mt-1">{program.description}</p>
         </div>
-        <button
-          onClick={onBack}
-          className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-        >
-          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+        <div className="flex items-center gap-2">
+          {!selectionMode && (
+            <button
+              onClick={handleDeleteProgram}
+              disabled={isDeletingProgram}
+              className="p-2 hover:bg-red-600/20 rounded-lg transition-colors text-red-400 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Delete program"
+              aria-label={`Delete program ${program.name}`}
+            >
+              {isDeletingProgram ? (
+                <div className="w-6 h-6 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <TrashIcon className="w-6 h-6" />
+              )}
+            </button>
+          )}
+          <button
+            onClick={onBack}
+            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+          >
+            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       <div className="space-y-4">
