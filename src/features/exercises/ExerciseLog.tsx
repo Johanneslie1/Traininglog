@@ -20,17 +20,9 @@ import { getExerciseLogsByDate, saveExerciseLog, deleteLocalExerciseLog } from '
 import { deleteExerciseLog, addExerciseLog } from '../../services/firebase/exerciseLogs';
 import { importExerciseLogs } from '../../utils/importUtils';
 import SideMenu from '../../components/SideMenu';
+import ExportModal from '../../components/ExportModal';
 import DraggableExerciseDisplay from '../../components/DraggableExerciseDisplay';
 import FloatingSupersetControls from '../../components/FloatingSupersetControls';
-
-// Convert ExerciseData to ExerciseLog format for export
-const convertToExerciseLog = (exercise: ExerciseData): ExerciseLogType => ({
-  id: exercise.id || uuidv4(), // Ensure ID is always present
-  exerciseName: exercise.exerciseName,
-  sets: exercise.sets,
-  timestamp: exercise.timestamp instanceof Date ? exercise.timestamp : new Date(exercise.timestamp),
-  deviceId: exercise.deviceId || ''
-});
 
 interface ExerciseLogProps {}
 
@@ -65,6 +57,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     showCalendar: boolean;
     showSetLogger: boolean;
     showImportModal: boolean;
+    showExportModal: boolean;
     showWorkoutSummary: boolean;
     showMenu: boolean;
     showProgramModal: boolean;
@@ -76,6 +69,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     showCalendar: false,
     showSetLogger: false,
     showImportModal: false,
+    showExportModal: false,
     showWorkoutSummary: false,
     showMenu: false,
     showProgramModal: false,
@@ -324,6 +318,19 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     }
   };
   
+  // Handle export with date range
+  const handleExport = useCallback(async (startDate?: Date, endDate?: Date, format: 'csv' | 'json' | 'both' = 'both') => {
+    try {
+      // Pass undefined to let the export function get all exercises from Firestore and filter by date range
+      // This ensures we export from all dates, not just the currently selected date on the dashboard
+      // Fixes issue where only exercises from the selected date were exported instead of the full range
+      await exportExerciseData(undefined, startDate, endDate, format);
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Export failed. Please try again.');
+    }
+  }, []);
+  
   // No longer need event listener since we use the floating controls component
 
   const handleEditExercise = (exercise: ExerciseData) => {
@@ -542,6 +549,13 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
         />
       )}
 
+      {/* Export Modal */}
+      <ExportModal
+        isOpen={uiState.showExportModal}
+        onClose={() => updateUiState('showExportModal', false)}
+        onExport={handleExport}
+      />
+
       {/* Side Menu */}
       {/* Floating Superset Controls */}
       <FloatingSupersetControls />
@@ -550,7 +564,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
         isOpen={uiState.showMenu}
         onClose={() => updateUiState('showMenu', false)}
         onImport={() => updateUiState('showImportModal', true)}
-        onExport={() => exportExerciseData(exercises.map(convertToExerciseLog))}
+        onExport={() => updateUiState('showExportModal', true)}
         onShowWorkoutSummary={() => updateUiState('showWorkoutSummary', true)}
         onNavigateToday={() => setSelectedDate(new Date())}
         onNavigatePrograms={() => { navigate('/programs'); }}

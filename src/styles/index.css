@@ -41,3 +41,44 @@
     @apply visible;
   }
 }
+
+/* Custom Date Picker Styles */
+@layer utilities {
+  .date-picker-dark {
+    color-scheme: dark;
+  }
+  
+  .date-picker-dark::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    opacity: 0.7;
+    cursor: pointer;
+    transform: scale(1.2);
+    transition: opacity 0.2s ease;
+  }
+  
+  .date-picker-dark::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+  }
+  
+  .date-picker-dark::-webkit-datetime-edit {
+    color: #ffffff;
+  }
+  
+  .date-picker-dark::-webkit-datetime-edit-fields-wrapper {
+    color: #ffffff;
+  }
+  
+  .date-picker-dark::-webkit-datetime-edit-text {
+    color: #a3a3a3;
+  }
+  
+  .date-picker-dark::-webkit-datetime-edit-month-field,
+  .date-picker-dark::-webkit-datetime-edit-day-field,
+  .date-picker-dark::-webkit-datetime-edit-year-field {
+    color: #ffffff;
+  }
+  
+  .date-picker-dark:focus::-webkit-datetime-edit {
+    color: #ffffff;
+  }
+}
