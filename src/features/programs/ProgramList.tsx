@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePrograms } from '@/context/ProgramsContext';
 import ProgramModal from './ProgramModal';
@@ -28,16 +28,7 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
   const [deletingProgramId, setDeletingProgramId] = useState<string | null>(null);
   const auth = getAuth();
 
-  useEffect(() => {
-    if (auth.currentUser) {
-      try {
-        refresh();
-      } catch (error) {
-        console.error('Error refreshing programs:', error);
-        setError('Failed to load programs');
-      }
-    }
-  }, [auth.currentUser, refresh]);
+  // No need for useEffect to refresh - ProgramsContext handles this automatically
 
   const handleAdd = async (data: { name: string; level: string; description: string }) => {
     setError(null);

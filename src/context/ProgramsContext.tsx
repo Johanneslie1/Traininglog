@@ -22,30 +22,34 @@ const ProgramsContext = createContext<ProgramsContextType | undefined>(undefined
 
 export const ProgramsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [programs, setPrograms] = useState<Program[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(auth.currentUser);
+  const [fetchingRef, setFetchingRef] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
+      console.log('[ProgramsContext] Auth state changed:', user?.uid || 'no user');
       setUser(user);
     });
     return () => unsubscribe();
   }, []);
 
-  const fetchPrograms = useCallback(async () => {
+  const fetchPrograms = useCallback(async (force = false) => {
     if (!user) {
+      console.log('[ProgramsContext] No user, clearing programs');
       setPrograms([]);
       setIsLoading(false);
       return;
     }
 
-    // Prevent duplicate fetches
-    if (isLoading) {
+    // Prevent duplicate fetches unless forced
+    if (fetchingRef && !force) {
       console.log('[ProgramsContext] Already loading, skipping duplicate fetch');
       return;
     }
 
+    setFetchingRef(true);
     setIsLoading(true);
     setError(null);
 
@@ -68,13 +72,19 @@ export const ProgramsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setError(errorMessage);
     } finally {
       setIsLoading(false);
+      setFetchingRef(false);
     }
-  }, [user, isLoading]);
+  }, [user, fetchingRef]);
 
   useEffect(() => {
     if (user) {
-      console.log('[ProgramsContext] User changed, refreshing programs');
-      fetchPrograms();
+      console.log('[ProgramsContext] User authenticated, fetching programs');
+      fetchPrograms(true); // Force fetch on user change
+    } else {
+      console.log('[ProgramsContext] No user, clearing programs');
+      setPrograms([]);
+      setIsLoading(false);
+      setFetchingRef(false);
     }
   }, [user]); // Remove fetchPrograms from dependencies to prevent infinite loops
 
@@ -94,7 +104,7 @@ export const ProgramsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       await programService.createProgram({ ...program, userId: user.uid });
       console.log('[ProgramsContext] Program created successfully');
-      await fetchPrograms(); // Refresh the programs list
+      await fetchPrograms(true); // Force refresh after creating
     } catch (err) {
       let errorMessage = 'Failed to create program';
       
@@ -118,21 +128,21 @@ export const ProgramsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const updateProgram = async (id: string, updated: Partial<Program>) => {
     await programService.replaceProgram(id, updated as Program);
-    fetchPrograms();
+    fetchPrograms(true);
   };
 
   const updateSessionInProgram = async (programId: string, sessionId: string, exercises: any[]) => {
     await programService.updateSession(programId, sessionId, exercises);
-    fetchPrograms();
+    fetchPrograms(true);
   };
 
   const deleteProgram = async (id: string) => {
     await programService.deleteProgram(id);
-    fetchPrograms();
+    fetchPrograms(true);
   };
 
   return (
-    <ProgramsContext.Provider value={{ programs, isLoading, error, refresh: fetchPrograms, addProgram, updateProgram, updateSessionInProgram, deleteProgram }}>
+    <ProgramsContext.Provider value={{ programs, isLoading, error, refresh: () => fetchPrograms(true), addProgram, updateProgram, updateSessionInProgram, deleteProgram }}>
       {children}
     </ProgramsContext.Provider>
   );
