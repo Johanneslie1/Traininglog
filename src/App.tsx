@@ -6,6 +6,7 @@ import { db } from '@/services/firebase/config';
 import { setUser, setLoading } from '@/features/auth/authSlice';
 import { polyfill } from 'mobile-drag-drop';
 import { UpdateNotification } from '@/components/common/UpdateNotification';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Providers } from '@/providers';
 import { store } from '@/store/store';
 import Layout from '@/components/layout/Layout';
@@ -121,13 +122,25 @@ const App: React.FC = () => {
   }
 
   return (
-    <Providers>
-      <UpdateNotification />
-      <Layout>
-        <AppRoutes />
-      </Layout>
-
-    </Providers>
+    <ErrorBoundary fallback={
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[#1a1a1a] text-white p-4">
+        <h1 className="text-2xl font-bold mb-4">Something went wrong</h1>
+        <p className="text-gray-400 mb-4">Please refresh the page or try again later.</p>
+        <button 
+          onClick={() => window.location.reload()} 
+          className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+        >
+          Refresh Page
+        </button>
+      </div>
+    }>
+      <Providers>
+        <UpdateNotification />
+        <Layout>
+          <AppRoutes />
+        </Layout>
+      </Providers>
+    </ErrorBoundary>
   );
 };
 

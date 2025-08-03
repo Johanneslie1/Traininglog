@@ -7,6 +7,16 @@ import { Exercise } from '@/types/exercise';
 import { ExerciseSet } from '@/types/sets';
 import { Program } from '@/types/program';
 
+// Lazy load components
+const Login = lazy(() => import('@/features/auth/Login'));
+const Register = lazy(() => import('@/features/auth/Register'));
+const ExerciseLog = lazy(() => import('@/features/exercises/ExerciseLog'));
+const Dashboard = lazy(() => import('@/features/dashboard/Dashboard'));
+const ProgramList = lazy(() => import('@/features/programs/ProgramList'));
+const ProgramDetail = lazy(() => import('@/features/programs/ProgramDetail'));
+const Debug = lazy(() => import('@/features/debug/Debug'));
+const ExerciseOverview = lazy(() => import('@/pages/ExerciseOverview'));
+
 // Wrapper to fetch program by id and render ProgramDetail
 const ProgramDetailWrapper: React.FC = () => {
   const { id } = useParams();
@@ -64,16 +74,6 @@ const ProgramSelectionWrapper: React.FC = () => {
     />
   );
 };
-
-// Lazy load components
-const Login = lazy(() => import('@/features/auth/Login'));
-const Register = lazy(() => import('@/features/auth/Register'));
-const ExerciseLog = lazy(() => import('@/features/exercises/ExerciseLog'));
-const Dashboard = lazy(() => import('@/features/dashboard/Dashboard'));
-const ProgramList = lazy(() => import('@/features/programs/ProgramList'));
-const ProgramDetail = lazy(() => import('@/features/programs/ProgramDetail'));
-const Debug = lazy(() => import('@/features/debug/Debug'));
-const ExerciseOverview = lazy(() => import('@/pages/ExerciseOverview'));
 
 interface ProtectedRouteProps {
   children: React.ReactNode;

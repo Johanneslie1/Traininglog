@@ -55,6 +55,14 @@ class ProgramValidationError extends Error {
 }
 
 function validateProgram(program: Partial<Program>, isNew: boolean = false): void {
+  console.log('[programService] Validating program:', {
+    name: program.name,
+    level: program.level,
+    userId: program.userId,
+    sessionCount: program.sessions?.length || 0,
+    isNew
+  });
+
   if (!program.name?.trim()) {
     throw new ProgramValidationError('Program name is required');
   }
@@ -80,19 +88,24 @@ function validateProgram(program: Partial<Program>, isNew: boolean = false): voi
       if (!Array.isArray(session.exercises)) {
         throw new ProgramValidationError(`Session ${index + 1} must have an exercises array`);
       }
+      // Add more lenient validation for exercises
       session.exercises.forEach((exercise, exIndex) => {
         if (!exercise.name?.trim()) {
           throw new ProgramValidationError(`Exercise ${exIndex + 1} in session ${index + 1} must have a name`);
         }
-        if (typeof exercise.sets !== 'number' || exercise.sets < 1) {
-          throw new ProgramValidationError(`Exercise ${exIndex + 1} in session ${index + 1} must have valid sets`);
+        if (typeof exercise.sets !== 'number' || exercise.sets < 0) {
+          console.warn(`[programService] Exercise ${exercise.name} has invalid sets value:`, exercise.sets, 'defaulting to 1');
+          exercise.sets = exercise.setsData?.length || 1;
         }
         if (typeof exercise.reps !== 'number' || exercise.reps < 0) {
-          throw new ProgramValidationError(`Exercise ${exIndex + 1} in session ${index + 1} must have valid reps`);
+          console.warn(`[programService] Exercise ${exercise.name} has invalid reps value:`, exercise.reps, 'defaulting to 0');
+          exercise.reps = exercise.setsData?.[0]?.reps || 0;
         }
       });
     });
   }
+
+  console.log('[programService] Program validation passed');
 }
 
 export const getPrograms = async (): Promise<Program[]> => {
@@ -186,62 +199,102 @@ export const createProgram = async (program: Omit<Program, 'id' | 'createdAt' | 
       throw new Error('Invalid user state');
     }
 
-    console.log('[programService] Creating program with auth:', {
+    console.log('[programService] Creating program with sessions:', {
       userId: user.uid,
       programUserId: program.userId,
-      match: user.uid === program.userId
+      sessionCount: program.sessions?.length || 0,
+      sessions: program.sessions?.map(s => ({ id: s.id, name: s.name, exerciseCount: s.exercises.length }))
     });
+
+    // Validate user ID immediately
+    if (program.userId !== user.uid) {
+      console.error('[programService] User ID mismatch before processing:', {
+        expected: user.uid,
+        received: program.userId
+      });
+      throw new Error('User ID mismatch');
+    }
 
     const batch = writeBatch(db);
     const programRef = doc(collection(db, PROGRAMS_COLLECTION));
     const timestamp = serverTimestamp();
 
+    // Separate sessions from program data
+    const { sessions, ...programData } = program;
+
     const programToCreate = removeUndefinedFields({
-      ...program,
+      ...programData,
       createdBy: user.uid,
       userId: user.uid,
       createdAt: timestamp,
-      updatedAt: timestamp,
-      sessions: program.sessions?.map(session => ({
-        ...session,
-        userId: user.uid,
-        createdAt: timestamp
-      }))
+      updatedAt: timestamp
     });
 
     // For validation, convert serverTimestamp to a string
     const programForValidation = {
       ...programToCreate,
-      id: programRef.id, // Add the auto-generated ID
+      id: programRef.id,
       createdAt: convertTimestampToString(timestamp),
       updatedAt: convertTimestampToString(timestamp),
-      sessions: programToCreate.sessions?.map(s => ({
-        ...s,
-        createdAt: convertTimestampToString(timestamp)
-      }))
+      sessions: sessions || []
     };
+
+    console.log('[programService] About to validate program:', {
+      name: programForValidation.name,
+      level: programForValidation.level,
+      userId: programForValidation.userId,
+      sessionCount: programForValidation.sessions.length
+    });
 
     // Validate the program
     validateProgram(programForValidation, true);
 
-    // Verify user ID matches
-    if (programToCreate.userId !== user.uid) {
-      console.error('[programService] User ID mismatch:', {
-        expected: user.uid,
-        received: programToCreate.userId
-      });
-      throw new Error('User ID mismatch');
-    }
-
-    // Set the program document
+    // Set the program document (without sessions)
+    console.log('[programService] Adding program document to batch');
     batch.set(programRef, programToCreate);
 
-    console.log('[programService] Committing program creation batch');
+    // Add sessions as subcollection
+    if (sessions && sessions.length > 0) {
+      console.log('[programService] Adding', sessions.length, 'sessions to subcollection');
+      sessions.forEach((session, index) => {
+        const sessionRef = doc(collection(programRef, 'sessions'));
+        
+        // Ensure session has required fields
+        const sessionData = removeUndefinedFields({
+          ...session,
+          id: sessionRef.id,
+          userId: user.uid,
+          programId: programRef.id,
+          order: session.order ?? index,
+          createdAt: timestamp,
+          // Ensure exercises array exists
+          exercises: session.exercises || []
+        });
+        
+        console.log('[programService] Adding session to batch:', {
+          name: sessionData.name, 
+          exerciseCount: sessionData.exercises?.length || 0,
+          userId: sessionData.userId,
+          programId: sessionData.programId
+        });
+        
+        batch.set(sessionRef, sessionData);
+      });
+    }
+
+    console.log('[programService] Committing program creation batch with', sessions?.length || 0, 'sessions');
     await batch.commit();
     console.log('[programService] Program created successfully with ID:', programRef.id);
 
   } catch (err) {
     console.error('[programService] Error in createProgram:', err);
+    if (err instanceof Error) {
+      console.error('[programService] Error details:', {
+        name: err.name,
+        message: err.message,
+        stack: err.stack
+      });
+    }
     throw err;
   }
 };

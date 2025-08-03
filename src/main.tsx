@@ -7,6 +7,17 @@ import './styles/theme.css'; // Import the new theme
 import './tests/authDebug'; // Add auth debugging tools for development
 import './tests/permissionTest'; // Add permission testing tools
 
+// Suppress react-beautiful-dnd defaultProps warning in development
+if (import.meta.env.DEV) {
+  const originalConsoleWarn = console.warn;
+  console.warn = (...args) => {
+    if (typeof args[0] === 'string' && args[0].includes('Support for defaultProps will be removed')) {
+      return; // Suppress this specific warning
+    }
+    originalConsoleWarn.apply(console, args);
+  };
+}
+
 // Simple service worker registration for PWA
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

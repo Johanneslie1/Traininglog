@@ -1,7 +1,9 @@
 import React, { useState, useCallback } from 'react';
 import { Program, ProgramSession } from '@/types/program';
 import SessionModal from './SessionModal';
-import { PencilIcon, TrashIcon, ChevronDownIcon } from '@heroicons/react/outline';
+import SessionBuilder from './SessionBuilder';
+import ProgramBuilder from './ProgramBuilder';
+import { PencilIcon, TrashIcon, ChevronDownIcon, CogIcon } from '@heroicons/react/outline';
 import { usePrograms } from '@/context/ProgramsContext';
 import { createSession, deleteSession } from '@/services/programService';
 
@@ -15,11 +17,13 @@ interface Props {
 const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMode = false }) => {
   const sessions: ProgramSession[] = program.sessions ?? [];
   const [showSessionModal, setShowSessionModal] = useState(false);
+  const [showSessionBuilder, setShowSessionBuilder] = useState(false);
+  const [showProgramEditor, setShowProgramEditor] = useState(false);
   const [editingSession, setEditingSession] = useState<ProgramSession | null>(null);
   const [expandedSessions, setExpandedSessions] = useState<string[]>([]);
   const [, setIsLoading] = useState(false);
   const [isDeletingProgram, setIsDeletingProgram] = useState(false);
-  const { updateSessionInProgram: updateSession, deleteProgram } = usePrograms();
+  const { updateSessionInProgram: updateSession, deleteProgram, updateProgram } = usePrograms();
 
   React.useEffect(() => {
     // Set a timeout to show loading state for maximum 2 seconds
@@ -156,6 +160,98 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
     }
   };
 
+  const handleProgramEdit = () => {
+    setShowProgramEditor(true);
+  };
+
+  const handleProgramUpdate = async (updatedProgram: Omit<Program, 'id' | 'userId'>) => {
+    try {
+      const programToUpdate: Program = {
+        ...program,
+        ...updatedProgram,
+        updatedAt: new Date().toISOString()
+      };
+      
+      await updateProgram(program.id, programToUpdate);
+      onUpdate(programToUpdate);
+      setShowProgramEditor(false);
+    } catch (error) {
+      console.error('[ProgramDetail] Error updating program:', error);
+      alert(error instanceof Error ? error.message : 'Failed to update program. Please try again.');
+    }
+  };
+
+  const handleSessionEdit = (session: ProgramSession) => {
+    setEditingSession(session);
+    setShowSessionBuilder(true);
+  };
+
+  const handleSessionBuilderSave = async (sessionData: Omit<ProgramSession, 'userId'>) => {
+    try {
+      setIsLoading(true);
+      
+      if (editingSession) {
+        // Update existing session
+        const updatedSession = {
+          ...sessionData,
+          id: editingSession.id,
+          userId: editingSession.userId
+        };
+        
+        await updateSession(program.id, editingSession.id, updatedSession.exercises);
+        
+        // Update local state
+        const updatedSessions = sessions.map(s => 
+          s.id === editingSession.id ? updatedSession : s
+        );
+        onUpdate({ ...program, sessions: updatedSessions });
+      } else {
+        // Create new session - use the existing logic from handleSaveSession
+        const user = await import('firebase/auth').then(auth => auth.getAuth().currentUser);
+        if (!user) throw new Error('User must be logged in');
+        
+        const session = {
+          ...sessionData,
+          userId: user.uid
+        };
+        
+        const nextOrder = Math.max(...sessions.map(s => s.order ?? 0), 0) + 1;
+        const sessionToCreate = {
+          ...session,
+          exercises: session.exercises.map(ex => ({
+            ...ex,
+            id: ex.id || undefined
+          })),
+          order: nextOrder
+        };
+        
+        const newSessionId = await createSession(program.id, sessionToCreate);
+        const newSession = {
+          ...session,
+          id: newSessionId,
+          order: nextOrder
+        };
+        
+        const updatedSessions = [...sessions, newSession]
+          .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+          
+        onUpdate({ ...program, sessions: updatedSessions });
+        
+        if (!expandedSessions.includes(newSession.id)) {
+          setExpandedSessions(prev => [...prev, newSession.id]);
+        }
+      }
+      
+      setShowSessionBuilder(false);
+      setEditingSession(null);
+    } catch (error) {
+      console.error('[ProgramDetail] Error saving session:', error);
+      alert(error instanceof Error ? error.message : 'Failed to save session. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="p-6">
       <div className="mb-6 flex items-center justify-between">
@@ -165,19 +261,29 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
         </div>
         <div className="flex items-center gap-2">
           {!selectionMode && (
-            <button
-              onClick={handleDeleteProgram}
-              disabled={isDeletingProgram}
-              className="p-2 hover:bg-red-600/20 rounded-lg transition-colors text-red-400 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Delete program"
-              aria-label={`Delete program ${program.name}`}
-            >
-              {isDeletingProgram ? (
-                <div className="w-6 h-6 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <TrashIcon className="w-6 h-6" />
-              )}
-            </button>
+            <>
+              <button
+                onClick={handleProgramEdit}
+                className="p-2 hover:bg-blue-600/20 rounded-lg transition-colors text-blue-400 hover:text-blue-300"
+                title="Edit program"
+                aria-label={`Edit program ${program.name}`}
+              >
+                <CogIcon className="w-6 h-6" />
+              </button>
+              <button
+                onClick={handleDeleteProgram}
+                disabled={isDeletingProgram}
+                className="p-2 hover:bg-red-600/20 rounded-lg transition-colors text-red-400 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Delete program"
+                aria-label={`Delete program ${program.name}`}
+              >
+                {isDeletingProgram ? (
+                  <div className="w-6 h-6 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <TrashIcon className="w-6 h-6" />
+                )}
+              </button>
+            </>
           )}
           <button
             onClick={onBack}
@@ -209,7 +315,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                   {!selectionMode && (
                     <>
                       <button
-                        onClick={() => setEditingSession(session)}
+                        onClick={() => handleSessionEdit(session)}
                         className="p-2 hover:bg-black/20 rounded-lg transition-colors text-blue-400 hover:text-blue-300"
                         title="Edit session"
                       >
@@ -267,7 +373,10 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
         
         {!selectionMode && (
           <button 
-            onClick={() => setShowSessionModal(true)} 
+            onClick={() => {
+              setEditingSession(null);
+              setShowSessionBuilder(true);
+            }} 
             className="mt-4 w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -278,13 +387,35 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
         )}
       </div>
 
+      {/* Program Editor Modal */}
+      {showProgramEditor && (
+        <ProgramBuilder
+          onClose={() => setShowProgramEditor(false)}
+          onSave={handleProgramUpdate}
+          initialProgram={program}
+        />
+      )}
+
+      {/* Session Builder Modal */}
+      {showSessionBuilder && (
+        <SessionBuilder
+          onClose={() => {
+            setShowSessionBuilder(false);
+            setEditingSession(null);
+          }}
+          onSave={handleSessionBuilderSave}
+          initialSession={editingSession || undefined}
+        />
+      )}
+
+      {/* Legacy Session Modal - Keep for backward compatibility if needed */}
       <SessionModal 
         isOpen={showSessionModal} 
         onClose={() => setShowSessionModal(false)} 
         onSave={handleSessionSave}
       />
 
-      {editingSession && (
+      {editingSession && showSessionModal && (
         <SessionModal 
           isOpen={true}
           onClose={() => setEditingSession(null)}

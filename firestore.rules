@@ -76,22 +76,24 @@ service cloud.firestore {
       allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
 
       match /sessions/{sessionId} {
-        // Allow read if user owns the parent program
-        allow read: if isAuthenticated() && get(/databases/$(database)/documents/programs/$(programId)).data.userId == request.auth.uid;
+        // Allow read if user owns the session or the parent program exists and user owns it
+        allow read: if isAuthenticated() && (
+          (resource != null && resource.data.userId == request.auth.uid) ||
+          (exists(/databases/$(database)/documents/programs/$(programId)) && 
+           get(/databases/$(database)/documents/programs/$(programId)).data.userId == request.auth.uid)
+        );
         
-        // Allow create with correct ownership
+        // Allow create with correct ownership - simplified check
         allow create: if isAuthenticated() && 
-          request.resource.data.userId == request.auth.uid && 
-          get(/databases/$(database)/documents/programs/$(programId)).data.userId == request.auth.uid;
+          request.resource.data.userId == request.auth.uid;
         
-        // Allow updates when user owns the parent program
+        // Allow updates when user owns the session
         allow update: if isAuthenticated() && 
-          get(/databases/$(database)/documents/programs/$(programId)).data.userId == request.auth.uid;
+          resource.data.userId == request.auth.uid;
         
-        // Allow delete only if user owns both program and session
+        // Allow delete if user owns the session
         allow delete: if isAuthenticated() && 
-          resource.data.userId == request.auth.uid && 
-          get(/databases/$(database)/documents/programs/$(programId)).data.userId == request.auth.uid;
+          resource.data.userId == request.auth.uid;
       }
     }
 

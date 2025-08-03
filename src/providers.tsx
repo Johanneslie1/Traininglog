@@ -12,7 +12,12 @@ interface ProvidersProps {
 export const Providers: React.FC<ProvidersProps> = ({ children }) => {
   return (
     <Provider store={store}>
-      <HashRouter>
+      <HashRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true
+        }}
+      >
         <ProgramsProvider>
           {children}
           <Toaster 

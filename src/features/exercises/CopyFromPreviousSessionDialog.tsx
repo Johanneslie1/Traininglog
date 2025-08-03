@@ -1,11 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '@/services/firebase/config';
 import { ExerciseData } from '@/services/exerciseDataService';
-import { startOfDay, endOfDay } from '@/utils/dateUtils';
-import { SearchIcon } from '@heroicons/react/solid';
-import { XIcon } from '@heroicons/react/solid';
-import { CheckIcon } from '@heroicons/react/solid';
+import { getExerciseLogsByDate } from '@/utils/localStorageUtils';
+import { getExercisesByDateRange } from '@/services/firebase/queries';
+import { SearchIcon, XIcon, CheckIcon } from '@heroicons/react/solid';
 
 interface Props {
   isOpen: boolean;
@@ -30,36 +27,101 @@ const CopyFromPreviousSessionDialog: React.FC<Props> = ({
   const [copySuccess, setCopySuccess] = useState(false);
 
   useEffect(() => {
-    if (selectedDate && userId) {
+    const fetchExercises = async () => {
+      if (!selectedDate || !userId) {
+        setPreviousExercises([]);
+        setSelectedExercises(new Set());
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       setCopySuccess(false);
-      const start = startOfDay(new Date(selectedDate));
-      const end = endOfDay(new Date(selectedDate));
+      
+      try {
+        // Convert string date to Date object
+        const dateObj = new Date(selectedDate);
+        const start = new Date(dateObj);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(dateObj);
+        end.setHours(23, 59, 59, 999);
 
-      const exercisesQuery = query(
-        collection(db, 'exerciseLogs'),
-        where('userId', '==', userId),
-        where('timestamp', '>=', start),
-        where('timestamp', '<=', end)
-      );
+        console.log('📅 CopyFromPreviousSessionDialog: Fetching exercises for:', {
+          date: selectedDate,
+          start: start.toISOString(),
+          end: end.toISOString(),
+          userId
+        });
 
-      getDocs(exercisesQuery)
-        .then((snapshot) => {
-          const exercises = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          } as ExerciseData));
-          setPreviousExercises(exercises);
+        // Get exercises from both sources
+        const [firebaseExercises, localExercises] = await Promise.all([
+          getExercisesByDateRange(userId, start, end),
+          getExerciseLogsByDate(dateObj)
+        ]);
+
+        console.log('📦 Found exercises from both sources:', {
+          firebase: firebaseExercises.length,
+          local: localExercises.length,
+          date: dateObj.toLocaleDateString()
+        });
+
+        // Convert Firebase exercises to ExerciseData
+        const firebaseData = firebaseExercises.map(exercise => ({
+          id: exercise.id,
+          exerciseName: exercise.exerciseName,
+          sets: exercise.sets,
+          timestamp: exercise.timestamp,
+          userId: userId,
+          deviceId: exercise.deviceId || ''
+        }));
+
+        // Convert local exercises to ExerciseData, excluding those already in Firebase
+        const localData = localExercises
+          .filter(local => !firebaseData.some(fb => fb.id === local.id))
+          .map(exercise => ({
+            id: exercise.id,
+            exerciseName: exercise.exerciseName,
+            sets: exercise.sets,
+            timestamp: new Date(exercise.timestamp),
+            userId: userId,
+            deviceId: exercise.deviceId || ''
+          }));
+
+        // Combine and sort by timestamp
+        const allExercises = [...firebaseData, ...localData].sort((a, b) => 
+          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        );
+
+        setPreviousExercises(allExercises);
+        setSelectedExercises(new Set());
+
+        console.log('✅ Total exercises available:', allExercises.length);
+      } catch (error) {
+        console.error('❌ Error fetching exercises:', error);
+        // Fallback to local storage on error
+        try {
+          const localExercises = getExerciseLogsByDate(new Date(selectedDate));
+          setPreviousExercises(localExercises.map(ex => ({
+            id: ex.id,
+            exerciseName: ex.exerciseName,
+            sets: ex.sets,
+            timestamp: new Date(ex.timestamp),
+            userId: userId,
+            deviceId: ex.deviceId || ''
+          })));
           setSelectedExercises(new Set());
-        })
-        .catch(error => {
-          console.error('Error fetching exercises:', error);
-        })
-        .finally(() => setLoading(false));
-    } else {
-      setPreviousExercises([]);
-      setSelectedExercises(new Set());
-    }
+          console.log('⚠️ Fallback to local storage successful');
+        } catch (fallbackError) {
+          console.error('❌ Fallback to local storage failed:', fallbackError);
+          setPreviousExercises([]);
+          setSelectedExercises(new Set());
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchExercises();
   }, [selectedDate, userId]);
 
   const handleToggleExercise = (id: string | undefined) => {

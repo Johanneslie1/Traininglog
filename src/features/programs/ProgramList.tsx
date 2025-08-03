@@ -2,10 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePrograms } from '@/context/ProgramsContext';
 import ProgramModal from './ProgramModal';
+import ProgramBuilder from './ProgramBuilder';
+import TemplateManager from './TemplateManager';
 import { getAuth } from 'firebase/auth';
 import { Program } from '@/types/program';
+import { Exercise } from '@/types/exercise';
+import { ExerciseSet } from '@/types/sets';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { TrashIcon } from '@heroicons/react/outline';
+import { TrashIcon, CollectionIcon, PlusIcon } from '@heroicons/react/outline';
 
 const levelColors: Record<string, string> = {
   Any: 'bg-gray-500',
@@ -18,6 +22,8 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
   const navigate = useNavigate();
   const { programs, addProgram: create, refresh, deleteProgram } = usePrograms();
   const [showModal, setShowModal] = useState(false);
+  const [showProgramBuilder, setShowProgramBuilder] = useState(false);
+  const [showTemplateManager, setShowTemplateManager] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deletingProgramId, setDeletingProgramId] = useState<string | null>(null);
   const auth = getAuth();
@@ -82,6 +88,37 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
     }
   };
 
+  const handleProgramBuilderSave = async (program: Omit<Program, 'id' | 'userId'>) => {
+    try {
+      console.log('[ProgramList] Creating program from builder:', program);
+      await create(program);
+      setShowProgramBuilder(false);
+      await refresh();
+      
+      // Navigate to the newly created program
+      const createdProgram = programs.find(p => 
+        p.name === program.name && 
+        p.userId === auth.currentUser?.uid &&
+        p.createdBy === auth.currentUser?.uid
+      );
+      if (createdProgram) {
+        navigate(`/programs/${createdProgram.id}`);
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create program';
+      console.error('Error creating program from builder:', err);
+      setError(errorMessage);
+    }
+  };
+
+  const handleUseTemplate = (exercises: { exercise: Exercise; sets: ExerciseSet[] }[]) => {
+    setShowTemplateManager(false);
+    // For now, we'll close the template manager and let user use the program builder
+    // In a full implementation, you could pre-populate the program builder with template data
+    setShowProgramBuilder(true);
+    console.log('Using template with exercises:', exercises);
+  };
+
   const handleDeleteProgram = async (programId: string, programName: string, event: React.MouseEvent) => {
     event.stopPropagation(); // Prevent card click navigation
     
@@ -107,7 +144,26 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
 
   return (
     <div className="relative min-h-screen pb-20">
-      <h2 className="text-xl font-bold mb-4">Programs</h2>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xl font-bold">Programs</h2>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowTemplateManager(true)}
+            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
+          >
+            <CollectionIcon className="w-4 h-4" />
+            Templates
+          </button>
+          <button
+            onClick={() => setShowProgramBuilder(true)}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+          >
+            <PlusIcon className="w-4 h-4" />
+            Builder
+          </button>
+        </div>
+      </div>
+      
       {error && (
         <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
           {error}
@@ -177,6 +233,20 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
         }} 
         onSave={handleAdd} 
       />
+      
+      {showProgramBuilder && (
+        <ProgramBuilder
+          onClose={() => setShowProgramBuilder(false)}
+          onSave={handleProgramBuilderSave}
+        />
+      )}
+      
+      {showTemplateManager && (
+        <TemplateManager
+          onClose={() => setShowTemplateManager(false)}
+          onUseTemplate={handleUseTemplate}
+        />
+      )}
     </div>
   );
 };

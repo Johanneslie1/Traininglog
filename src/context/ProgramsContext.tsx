@@ -40,6 +40,12 @@ export const ProgramsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return;
     }
 
+    // Prevent duplicate fetches
+    if (isLoading) {
+      console.log('[ProgramsContext] Already loading, skipping duplicate fetch');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
@@ -63,14 +69,14 @@ export const ProgramsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user, isLoading]);
 
   useEffect(() => {
     if (user) {
       console.log('[ProgramsContext] User changed, refreshing programs');
       fetchPrograms();
     }
-  }, [fetchPrograms, user]);
+  }, [user]); // Remove fetchPrograms from dependencies to prevent infinite loops
 
   // Add new program
   const addProgram = async (program: Omit<Program, 'id' | 'userId'>) => {
@@ -80,15 +86,31 @@ export const ProgramsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setError(null);
     
     try {
-      console.log('[ProgramsContext] Creating program:', program);
+      console.log('[ProgramsContext] Creating program:', {
+        name: program.name,
+        sessionCount: program.sessions?.length || 0,
+        userId: user.uid
+      });
+      
       await programService.createProgram({ ...program, userId: user.uid });
       console.log('[ProgramsContext] Program created successfully');
       await fetchPrograms(); // Refresh the programs list
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create program';
+      let errorMessage = 'Failed to create program';
+      
+      if (err instanceof Error) {
+        if (err.message.includes('Missing or insufficient permissions')) {
+          errorMessage = 'Permission denied. Please check your authentication and try again.';
+        } else if (err.message.includes('Network')) {
+          errorMessage = 'Network error. Please check your connection and try again.';
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      
       console.error('[ProgramsContext] Error creating program:', err);
       setError(errorMessage);
-      throw err;
+      throw new Error(errorMessage);
     } finally {
       setIsLoading(false);
     }
