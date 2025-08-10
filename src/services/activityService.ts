@@ -21,22 +21,115 @@ class ActivityService {
    * Get all activities of a specific type
    */
   getActivitiesByType(activityType: ActivityType): Omit<ActivityExercise, 'id'>[] {
-    // First try to get from new exercise databases
+    // Pull from new JSON exercise databases first
     const newExercises = getExercisesByActivityType(activityType);
     if (newExercises.length > 0) {
-      // Convert Exercise to ActivityExercise format
-      return newExercises.map(exercise => ({
-        ...exercise,
-        activityType: exercise.activityType || activityType,
-        isDefault: exercise.isDefault || true,
-        equipment: exercise.equipment || [],
-        instructions: exercise.instructions || [],
-        tips: exercise.tips || [],
-        metrics: exercise.metrics || {}
-      }));
+      return newExercises.map(ex => {
+        const m: any = ex.metrics || {};
+        const base = {
+          name: ex.name,
+          description: ex.description || '',
+          activityType: (ex.activityType || activityType) as ActivityType,
+          category: ex.category || 'general',
+          createdBy: ex.createdBy || 'system',
+          isDefault: ex.isDefault !== undefined ? ex.isDefault : true,
+          userId: undefined as string | undefined
+        };
+
+        switch (base.activityType) {
+          case ActivityType.ENDURANCE:
+            return {
+              ...base,
+              enduranceType: 'other',
+              environment: (ex as any).environment || 'both',
+              intensity: 'moderate',
+              equipment: ex.equipment || [],
+              metrics: {
+                trackDistance: !!m.trackDistance,
+                trackDuration: !!m.trackTime || !!m.trackDuration,
+                trackPace: !!m.trackPace,
+                trackHeartRate: !!m.trackHeartRate,
+                trackCalories: !!m.trackCalories,
+                trackElevation: !!m.trackElevation
+              }
+            } as any;
+          case ActivityType.SPORT:
+            return {
+              ...base,
+              sportType: (ex as any).sportType || 'general',
+              position: undefined,
+              skillLevel: 'intermediate',
+              teamBased: (ex as any).teamBased || false,
+              equipment: ex.equipment || [],
+              primarySkills: (ex as any).skills || [],
+              metrics: {
+                trackDuration: !!m.trackDuration || !!m.trackTime,
+                trackScore: !!m.trackScore,
+                trackIntensity: !!m.trackIntensity || !!m.trackRPE,
+                trackOpponent: !!m.trackOpponent,
+                trackPerformance: !!m.trackPerformance
+              }
+            } as any;
+          case ActivityType.STRETCHING:
+            return {
+              ...base,
+              stretchType: 'static',
+              targetMuscles: ex.primaryMuscles || [],
+              bodyRegion: ['full_body'],
+              difficulty: (ex as any).difficulty || 'beginner',
+              instructions: ex.instructions || [],
+              metrics: {
+                trackDuration: true,
+                trackHoldTime: true,
+                trackIntensity: !!ex.metrics?.trackRPE,
+                trackFlexibility: true
+              }
+            } as any;
+          case ActivityType.OTHER:
+            return {
+              ...base,
+              customCategory: base.category,
+              customFields: [],
+              instructions: ex.instructions || [],
+              metrics: Object.keys(ex.metrics || {}).reduce((acc: any, k) => { acc[k] = true; return acc; }, {})
+            } as any;
+          case ActivityType.SPEED_AGILITY:
+            return {
+              ...base,
+              drillType: (ex as any).drillType || 'agility',
+              equipment: ex.equipment || [],
+              difficulty: (ex as any).difficulty || 'beginner',
+              setup: (ex as any).setup || [],
+              instructions: ex.instructions || [],
+              metrics: {
+                trackTime: !!m.trackTime,
+                trackDistance: !!m.trackDistance,
+                trackReps: !!m.trackReps,
+                trackHeight: !!m.trackHeight,
+                trackRPE: !!m.trackRPE
+              }
+            } as any;
+          case ActivityType.RESISTANCE:
+          default:
+            return {
+              ...base,
+              primaryMuscles: ex.primaryMuscles || [],
+              secondaryMuscles: ex.secondaryMuscles || [],
+              equipment: ex.equipment || [],
+              instructions: ex.instructions || [],
+              tips: ex.tips || [],
+              defaultUnit: (ex as any).defaultUnit || 'kg',
+              metrics: {
+                trackWeight: !!m.trackWeight,
+                trackReps: !!m.trackReps,
+                trackRPE: !!m.trackRPE
+              }
+            } as any;
+        }
+      });
     }
-    
-    // Fallback to old database for resistance exercises
+
+    // Fallback to legacy hardcoded database
     return getActivitiesByType(activityType);
   }
 

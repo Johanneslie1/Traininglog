@@ -13,21 +13,24 @@ import { allExercises } from '../data/exercises';
 
 // Convert JSON exercise to internal Exercise type
 function convertToExercise(jsonExercise: any): Exercise {
+  // Normalize activity type casing (JSON may use uppercase enum-like strings)
+  const rawActivityType: string = (jsonExercise.activityType || jsonExercise.type || '').toString();
+  const normalizedActivityType = rawActivityType.toLowerCase(); // Match ActivityType enum values
+
   return {
     id: jsonExercise.id,
     name: jsonExercise.name,
     category: jsonExercise.category,
     description: jsonExercise.description || '',
-    type: jsonExercise.type,
-    activityType: jsonExercise.activityType,
+    type: jsonExercise.type || normalizedActivityType,
+    activityType: normalizedActivityType as ActivityType,
     difficulty: jsonExercise.difficulty || 'intermediate',
     equipment: jsonExercise.equipment || [],
     instructions: jsonExercise.instructions || [],
     tips: jsonExercise.tips || [],
     tags: jsonExercise.tags || [],
-    isDefault: jsonExercise.isDefault || true,
+    isDefault: jsonExercise.isDefault !== undefined ? jsonExercise.isDefault : true,
     createdBy: 'system',
-    
     // Activity-specific fields
     primaryMuscles: jsonExercise.primaryMuscles || [],
     secondaryMuscles: jsonExercise.secondaryMuscles || [],
@@ -35,31 +38,30 @@ function convertToExercise(jsonExercise: any): Exercise {
     primaryMetrics: jsonExercise.primaryMetrics || [],
     optionalMetrics: jsonExercise.optionalMetrics || [],
     skills: jsonExercise.skills || [],
-    
     // Metrics
     defaultUnit: jsonExercise.defaultUnit || 'time',
     metrics: jsonExercise.metrics || {},
-    
     // Sport-specific
     teamBased: jsonExercise.teamBased || false,
     sportType: jsonExercise.sportType,
-    
     // Speed & Agility specific
     drillType: jsonExercise.drillType,
     space: jsonExercise.space,
-    
     // Environment and setup
     environment: jsonExercise.environment,
     setup: jsonExercise.setup || [],
-    
     // Metadata
-    userId: undefined // System exercises don't have user ID
+    userId: undefined
   };
 }
 
 // Load and convert all exercise databases
+let cachedExercises: Record<ActivityType, Exercise[]> | null = null;
+
 export function loadExerciseDatabases(): Record<ActivityType, Exercise[]> {
-  const loadedExercises: Record<ActivityType, Exercise[]> = {
+  if (cachedExercises) return cachedExercises;
+
+  const loaded: Record<ActivityType, Exercise[]> = {
     [ActivityType.RESISTANCE]: [],
     [ActivityType.ENDURANCE]: [],
     [ActivityType.SPORT]: [],
@@ -68,53 +70,36 @@ export function loadExerciseDatabases(): Record<ActivityType, Exercise[]> {
     [ActivityType.OTHER]: []
   };
 
-  // Convert JSON arrays to Exercise objects
   try {
-    // Load resistance exercises from your existing system
     if (Array.isArray(allExercises)) {
-      loadedExercises[ActivityType.RESISTANCE] = allExercises.map(ex => ({
+      loaded[ActivityType.RESISTANCE] = allExercises.map(ex => ({
         ...ex,
         id: `resistance-${ex.name.replace(/\s+/g, '-').toLowerCase()}`,
         activityType: ActivityType.RESISTANCE,
         createdBy: 'system'
       }));
-      console.log(`Loaded ${allExercises.length} resistance exercises from existing system`);
     }
-
-    // Load endurance exercises
     if (Array.isArray(enduranceExercises)) {
-      loadedExercises[ActivityType.ENDURANCE] = enduranceExercises.map(convertToExercise);
-      console.log(`Loaded ${enduranceExercises.length} endurance exercises`);
+      loaded[ActivityType.ENDURANCE] = enduranceExercises.map(convertToExercise);
     }
-
-    // Load sports exercises
     if (Array.isArray(sportsExercises)) {
-      loadedExercises[ActivityType.SPORT] = sportsExercises.map(convertToExercise);
-      console.log(`Loaded ${sportsExercises.length} sports exercises`);
+      loaded[ActivityType.SPORT] = sportsExercises.map(convertToExercise);
     }
-
-    // Load flexibility exercises
     if (Array.isArray(flexibilityExercises)) {
-      loadedExercises[ActivityType.STRETCHING] = flexibilityExercises.map(convertToExercise);
-      console.log(`Loaded ${flexibilityExercises.length} flexibility exercises`);
+      loaded[ActivityType.STRETCHING] = flexibilityExercises.map(convertToExercise);
     }
-
-    // Load speed & agility exercises
     if (Array.isArray(speedAgilityExercises)) {
-      loadedExercises[ActivityType.SPEED_AGILITY] = speedAgilityExercises.map(convertToExercise);
-      console.log(`Loaded ${speedAgilityExercises.length} speed & agility exercises`);
+      loaded[ActivityType.SPEED_AGILITY] = speedAgilityExercises.map(convertToExercise);
     }
-
-    // Load other activities
     if (Array.isArray(otherActivitiesExercises)) {
-      loadedExercises[ActivityType.OTHER] = otherActivitiesExercises.map(convertToExercise);
-      console.log(`Loaded ${otherActivitiesExercises.length} other activities`);
+      loaded[ActivityType.OTHER] = otherActivitiesExercises.map(convertToExercise);
     }
-  } catch (error) {
-    console.error('Error loading exercise databases:', error);
+  } catch (err) {
+    console.error('Error loading exercise databases:', err);
   }
 
-  return loadedExercises;
+  cachedExercises = loaded;
+  return loaded;
 }
 
 // Get exercises by activity type
