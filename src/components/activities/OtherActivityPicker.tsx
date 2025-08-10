@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ActivityType, OtherActivity } from '@/types/activityTypes';
-import { activityService } from '@/services/activityService';
+import { getExercisesByActivityType } from '@/services/exerciseDatabaseService';
 import { otherTemplate } from '@/config/defaultTemplates';
 import UniversalActivityLogger from './UniversalActivityLogger';
 
@@ -19,13 +19,22 @@ const OtherActivityPicker: React.FC<OtherActivityPickerProps> = ({
 }) => {
   const [activities, setActivities] = useState<OtherActivity[]>([]);
   const [selectedActivity, setSelectedActivity] = useState<OtherActivity | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [view, setView] = useState<'list' | 'logging'>('list');
 
   useEffect(() => {
-    const otherActivities = activityService.getActivitiesByType(ActivityType.OTHER);
-    setActivities(otherActivities.map((activity, index) => ({
-      ...activity,
-      id: `other-${index}`
+    const exercises = getExercisesByActivityType(ActivityType.OTHER);
+    setActivities(exercises.map((ex, index) => ({
+      id: ex.id || `other-${index}`,
+      name: ex.name,
+      description: ex.description,
+      activityType: ActivityType.OTHER,
+      category: ex.category || 'general',
+      isDefault: ex.isDefault ?? true,
+      customCategory: ex.category || 'general',
+      customFields: [],
+      metrics: Object.keys(ex.metrics || {}).reduce((acc: any, k) => { acc[k] = true; return acc; }, {})
     })) as OtherActivity[]);
   }, []);
 
@@ -33,6 +42,13 @@ const OtherActivityPicker: React.FC<OtherActivityPickerProps> = ({
     setSelectedActivity(activity);
     setView('logging');
   };
+
+  const categories = ['All', ...Array.from(new Set(activities.flatMap(a => a.category ? [a.category] : [])))];
+  const filteredActivities = activities.filter(activity => {
+    const matchesSearch = activity.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory === '' || selectedCategory === 'All' || activity.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
 
   if (view === 'logging' && selectedActivity) {
     return (
@@ -66,10 +82,34 @@ const OtherActivityPicker: React.FC<OtherActivityPickerProps> = ({
           </div>
         </div>
 
+        {/* Search & Filter */}
+        <div className="p-6 border-b border-white/10">
+          <div className="flex gap-4 mb-4">
+            <div className="flex-1">
+              <input
+                type="text"
+                placeholder="Search other activities..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="w-full p-3 bg-[#2a2a2a] border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+              />
+            </div>
+            <select
+              value={selectedCategory}
+              onChange={e => setSelectedCategory(e.target.value)}
+              className="p-3 bg-[#2a2a2a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-blue-500"
+            >
+              {categories.map(category => (
+                <option key={category} value={category === 'All' ? '' : category}>{category}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         {/* Activities List */}
         <div className="flex-1 overflow-y-auto p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {activities.map((activity) => (
+            {filteredActivities.map((activity) => (
               <div
                 key={activity.id}
                 onClick={() => handleActivitySelect(activity)}
@@ -87,7 +127,7 @@ const OtherActivityPicker: React.FC<OtherActivityPickerProps> = ({
             ))}
           </div>
 
-          {activities.length === 0 && (
+          {filteredActivities.length === 0 && (
             <div className="text-center py-8">
               <p className="text-gray-400">No other activities available.</p>
             </div>

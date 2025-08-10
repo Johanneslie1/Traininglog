@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ActivityType, SportActivity } from '@/types/activityTypes';
-import { activityService } from '@/services/activityService';
+import { getExercisesByActivityType } from '@/services/exerciseDatabaseService';
 import { teamSportsTemplate } from '@/config/defaultTemplates';
 import UniversalActivityLogger from './UniversalActivityLogger';
 import { UnifiedExerciseData } from '@/utils/unifiedExerciseUtils';
@@ -57,11 +57,30 @@ const SportActivityPicker: React.FC<SportActivityPickerProps> = ({
   }, [editingExercise]);
 
   const loadSportActivities = () => {
-    const sportActivities = activityService.getActivitiesByType(ActivityType.SPORT);
-    setSports(sportActivities.map((activity, index) => ({
-      ...activity,
-      id: `sport-${index}`
-    })) as SportActivity[]);
+    const exercises = getExercisesByActivityType(ActivityType.SPORT);
+    const mapped = exercises.map((ex, index) => {
+      const m: any = ex.metrics || {};
+      return {
+      id: ex.id || `sport-${index}`,
+      name: ex.name,
+      description: ex.description,
+      activityType: ActivityType.SPORT,
+      category: ex.category || 'general',
+      isDefault: ex.isDefault ?? true,
+      sportType: (ex as any).sportType || 'general',
+      skillLevel: 'intermediate',
+      teamBased: (ex as any).teamBased || false,
+      equipment: ex.equipment || [],
+      primarySkills: (ex as any).skills || [],
+      metrics: {
+        trackDuration: !!m.trackDuration || !!m.trackTime,
+        trackScore: !!m.trackScore,
+        trackIntensity: !!m.trackIntensity || !!m.trackRPE,
+        trackPerformance: !!m.trackPerformance
+      }
+      } as SportActivity;
+    });
+    setSports(mapped);
   };
 
   const handleSportSelect = (sport: SportActivity) => {

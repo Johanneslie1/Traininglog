@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ActivityType } from '@/types/activityTypes';
 import ResistanceActivityPicker from './ResistanceActivityPicker';
 import SportActivityPicker from './SportActivityPicker';
-// import StretchingActivityPicker from './StretchingActivityPicker';
+import StretchingActivityPicker from './StretchingActivityPicker';
 import EnduranceActivityPicker from './EnduranceActivityPicker';
 import OtherActivityPicker from './OtherActivityPicker';
 import SpeedAgilityActivityPicker from './SpeedAgilityActivityPicker';
+import { getExercisesByActivityType } from '@/services/exerciseDatabaseService';
 
 interface MultiActivityLoggerProps {
   onClose: () => void;
@@ -27,7 +28,7 @@ const MultiActivityLogger: React.FC<MultiActivityLoggerProps> = ({
       description: 'Weight lifting, strength training',
       icon: '🏋️‍♂️',
       color: 'from-blue-500 to-blue-700',
-      examples: 'Squats, Deadlifts, Bench Press'
+      fallback: 'Squats, Deadlifts, Bench Press'
     },
     {
       type: ActivityType.SPORT,
@@ -35,7 +36,7 @@ const MultiActivityLogger: React.FC<MultiActivityLoggerProps> = ({
       description: 'Team sports, individual competitions',
       icon: '⚽',
       color: 'from-green-500 to-green-700',
-      examples: 'Football, Basketball, Tennis'
+      fallback: 'Football, Basketball, Tennis'
     },
     {
       type: ActivityType.STRETCHING,
@@ -43,7 +44,7 @@ const MultiActivityLogger: React.FC<MultiActivityLoggerProps> = ({
       description: 'Static stretches, yoga, mobility',
       icon: '🧘‍♀️',
       color: 'from-purple-500 to-purple-700',
-      examples: 'Yoga, Static Stretches, PNF'
+      fallback: 'Yoga, Static Stretches, PNF'
     },
     {
       type: ActivityType.ENDURANCE,
@@ -51,7 +52,7 @@ const MultiActivityLogger: React.FC<MultiActivityLoggerProps> = ({
       description: 'Cardio, running, cycling',
       icon: '🏃‍♂️',
       color: 'from-red-500 to-red-700',
-      examples: 'Running, Cycling, Swimming'
+      fallback: 'Running, Cycling, Swimming'
     },
     {
       type: ActivityType.SPEED_AGILITY,
@@ -59,7 +60,7 @@ const MultiActivityLogger: React.FC<MultiActivityLoggerProps> = ({
       description: 'Sprint training, agility drills',
       icon: '⚡',
       color: 'from-yellow-500 to-orange-700',
-      examples: 'Sprints, Cone Drills, Ladder Drills'
+      fallback: 'Sprints, Cone Drills, Ladder Drills'
     },
     {
       type: ActivityType.OTHER,
@@ -67,9 +68,43 @@ const MultiActivityLogger: React.FC<MultiActivityLoggerProps> = ({
       description: 'Custom activities, therapy, wellness',
       icon: '🎯',
       color: 'from-gray-500 to-gray-700',
-      examples: 'Meditation, Physiotherapy, Dance'
+      fallback: 'Meditation, Physiotherapy, Dance'
     }
-  ];
+  ] as const;
+
+  // Dynamic exercise previews state
+  type PreviewMap = Partial<Record<ActivityType, { status: 'loading' | 'ready' | 'empty' | 'error'; names: string[] }>>;
+  const [previews, setPreviews] = useState<PreviewMap>({});
+
+  useEffect(() => {
+    // Load previews once on mount
+    let isCancelled = false;
+    const loadAll = () => {
+      const next: PreviewMap = {};
+      activityTypes.forEach(cfg => {
+        try {
+          const exs = getExercisesByActivityType(cfg.type) || [];
+          if (exs.length === 0) {
+            next[cfg.type] = { status: 'empty', names: [] };
+          } else {
+            const names = exs.slice(0, 3).map(e => e.name).filter(Boolean);
+            next[cfg.type] = { status: 'ready', names };
+          }
+        } catch (e) {
+          next[cfg.type] = { status: 'error', names: [] };
+        }
+      });
+      if (!isCancelled) setPreviews(next);
+    };
+    // Initialize as loading
+    const initial: PreviewMap = {};
+    activityTypes.forEach(cfg => { initial[cfg.type] = { status: 'loading', names: [] }; });
+    setPreviews(initial);
+    // Slight timeout to allow UI paint (optional)
+    setTimeout(loadAll, 0);
+    return () => { isCancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleActivityTypeSelect = (activityType: ActivityType) => {
     setSelectedActivityType(activityType);
@@ -128,8 +163,15 @@ const MultiActivityLogger: React.FC<MultiActivityLoggerProps> = ({
                       <p className="text-sm text-gray-400 mt-1">
                         {activity.description}
                       </p>
-                      <p className="text-xs text-gray-500 mt-2">
-                        {activity.examples}
+                      <p className="text-xs text-gray-500 mt-2 min-h-[1.25rem]">
+                        {(() => {
+                          const preview = previews[activity.type];
+                          if (!preview || preview.status === 'loading') return 'Loading…';
+                          if (preview.status === 'error') return activity.fallback;
+                          if (preview.status === 'empty') return activity.fallback;
+                          if (preview.names.length === 0) return activity.fallback;
+                          return preview.names.join(', ');
+                        })()}
                       </p>
                     </div>
                   </div>
@@ -171,20 +213,12 @@ const MultiActivityLogger: React.FC<MultiActivityLoggerProps> = ({
       );
     case ActivityType.STRETCHING:
       return (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50">
-          <div className="bg-[#1a1a1a] rounded-xl p-6">
-            <div className="text-white text-center">
-              <h3 className="text-xl font-bold mb-2">Stretching & Flexibility</h3>
-              <p className="text-gray-400 mb-4">Coming soon! Use the new JSON database for stretching exercises.</p>
-              <button 
-                onClick={handleBack}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                Go Back
-              </button>
-            </div>
-          </div>
-        </div>
+        <StretchingActivityPicker
+          onClose={onClose}
+          onBack={handleBack}
+          onActivityLogged={handleActivityLogged}
+          selectedDate={selectedDate}
+        />
       );
     case ActivityType.ENDURANCE:
       return (
@@ -198,7 +232,9 @@ const MultiActivityLogger: React.FC<MultiActivityLoggerProps> = ({
     case ActivityType.SPEED_AGILITY:
       return (
         <SpeedAgilityActivityPicker
-          selectedDate={selectedDate || new Date()}
+          onClose={onClose}
+          onBack={handleBack}
+          selectedDate={selectedDate}
           onActivityLogged={handleActivityLogged}
         />
       );
