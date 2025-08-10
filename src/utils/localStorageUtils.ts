@@ -134,6 +134,17 @@ export const deleteLocalExerciseLog = (exerciseId: string) => {
   localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(updatedLogs));
 };
 
+// Save all exercise logs to local storage (bulk save)
+export const saveAllExerciseLogs = (logs: ExerciseLog[]): void => {
+  try {
+    localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(logs));
+    console.log(`✅ Saved ${logs.length} exercise logs to local storage`);
+  } catch (error) {
+    console.error('❌ Error saving exercise logs to local storage:', error);
+    throw error;
+  }
+};
+
 // Clear all exercise logs from local storage
 export const clearExerciseLogs = () => {
   localStorage.removeItem(LOGS_STORAGE_KEY);

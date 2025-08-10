@@ -1,0 +1,595 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "lastUpdated": "2025-08-08",
+    "description": "Comprehensive speed and agility exercises database",
+    "totalExercises": 30
+  },
+  "categories": {
+    "sprint": {
+      "name": "Sprint Training",
+      "description": "Linear speed and acceleration drills",
+      "icon": "🏃‍♂️"
+    },
+    "agilityLadder": {
+      "name": "Agility Ladder", 
+      "description": "Ladder-based footwork and coordination drills",
+      "icon": "🪜"
+    },
+    "coneWork": {
+      "name": "Cone Drills",
+      "description": "Cone-based agility and change of direction",
+      "icon": "🚧"
+    },
+    "reactionTime": {
+      "name": "Reaction Training",
+      "description": "Drills to improve reaction time and response",
+      "icon": "⚡"
+    },
+    "changeDirection": {
+      "name": "Change of Direction",
+      "description": "Multi-directional movement patterns",
+      "icon": "🔄"
+    },
+    "plyometric": {
+      "name": "Plyometric Drills",
+      "description": "Explosive jumping and bounding exercises",
+      "icon": "🦘"
+    }
+  },
+  "exercises": [
+    {
+      "id": "sprint_20m",
+      "name": "20-Meter Sprint",
+      "category": "sprint",
+      "description": "Short distance linear acceleration sprint",
+      "difficulty": "beginner",
+      "equipment": ["cones", "stopwatch"],
+      "space": "20m straight line",
+      "primaryMetrics": ["time", "reps"],
+      "optionalMetrics": ["rest_time", "rpe"],
+      "instructions": [
+        "Set up start and finish lines 20m apart",
+        "Start in athletic stance",
+        "Sprint at maximum effort",
+        "Decelerate safely past finish line"
+      ],
+      "tips": [
+        "Focus on arm drive and leg turnover",
+        "Keep head up and body forward lean",
+        "Take full rest between repetitions"
+      ],
+      "tags": ["acceleration", "speed", "power"]
+    },
+    {
+      "id": "sprint_40m",
+      "name": "40-Meter Sprint",
+      "category": "sprint",
+      "description": "Medium distance sprint for top speed development",
+      "difficulty": "intermediate",
+      "equipment": ["cones", "stopwatch"],
+      "space": "40m straight line",
+      "primaryMetrics": ["time", "reps"],
+      "optionalMetrics": ["split_times", "rest_time"],
+      "instructions": [
+        "Mark 20m and 40m distances",
+        "Start from standing or 3-point stance",
+        "Build to maximum speed by 20m",
+        "Maintain speed through 40m"
+      ],
+      "tips": [
+        "Focus on smooth acceleration",
+        "Maintain form at top speed",
+        "Use longer rest periods for quality"
+      ],
+      "tags": ["top_speed", "acceleration", "anaerobic"]
+    },
+    {
+      "id": "sprint_flying_20",
+      "name": "Flying 20-Meter Sprint",
+      "category": "sprint",
+      "description": "Sprint with 20m build-up for top speed work",
+      "difficulty": "advanced",
+      "equipment": ["cones", "stopwatch"],
+      "space": "40m total (20m build + 20m timed)",
+      "primaryMetrics": ["time", "reps"],
+      "optionalMetrics": ["build_up_quality"],
+      "instructions": [
+        "Set up 20m build-up zone and 20m timing zone",
+        "Gradually accelerate through build-up",
+        "Hit maximum speed at timing start",
+        "Maintain speed through timing zone"
+      ],
+      "tips": [
+        "Don't sprint in build-up zone",
+        "Focus on rhythm and relaxation",
+        "Longer recovery between reps"
+      ],
+      "tags": ["top_speed", "speed_endurance", "technique"]
+    },
+    {
+      "id": "resisted_sprint",
+      "name": "Resisted Sprint",
+      "category": "sprint",
+      "description": "Sprint with resistance for power development",
+      "difficulty": "intermediate",
+      "equipment": ["resistance_band", "harness", "cones"],
+      "space": "20-30m straight line",
+      "primaryMetrics": ["distance", "reps"],
+      "optionalMetrics": ["resistance_level", "time"],
+      "instructions": [
+        "Attach resistance band or use sled",
+        "Start in athletic stance",
+        "Drive powerfully against resistance",
+        "Focus on powerful ground contact"
+      ],
+      "tips": [
+        "Don't over-resist - should still look like sprinting",
+        "Drive knees up and pump arms",
+        "Maintain forward body lean"
+      ],
+      "tags": ["power", "acceleration", "strength"]
+    },
+    {
+      "id": "ladder_in_in_out_out",
+      "name": "Ladder: In-In-Out-Out",
+      "category": "agilityLadder",
+      "description": "Basic ladder footwork pattern",
+      "difficulty": "beginner",
+      "equipment": ["agility_ladder"],
+      "space": "Standard agility ladder",
+      "primaryMetrics": ["reps", "time"],
+      "optionalMetrics": ["sets", "accuracy"],
+      "instructions": [
+        "Start at one end of ladder",
+        "Step both feet into first square",
+        "Step both feet outside ladder",
+        "Continue pattern through ladder"
+      ],
+      "tips": [
+        "Stay on balls of feet",
+        "Keep knees bent and ready",
+        "Focus on quick, light steps"
+      ],
+      "tags": ["footwork", "coordination", "warm_up"]
+    },
+    {
+      "id": "ladder_lateral_shuffle",
+      "name": "Ladder: Lateral Shuffle",
+      "category": "agilityLadder",
+      "description": "Side-to-side movement through ladder",
+      "difficulty": "beginner",
+      "equipment": ["agility_ladder"],
+      "space": "Standard agility ladder",
+      "primaryMetrics": ["reps", "time"],
+      "optionalMetrics": ["direction"],
+      "instructions": [
+        "Stand sideways to ladder",
+        "Step into each square with both feet",
+        "Maintain athletic stance throughout",
+        "Repeat going opposite direction"
+      ],
+      "tips": [
+        "Don't cross feet",
+        "Keep hips low and chest up",
+        "Quick, choppy steps"
+      ],
+      "tags": ["lateral_movement", "footwork", "stability"]
+    },
+    {
+      "id": "ladder_ickey_shuffle",
+      "name": "Ladder: Ickey Shuffle",
+      "category": "agilityLadder",
+      "description": "Complex in-out lateral pattern",
+      "difficulty": "advanced",
+      "equipment": ["agility_ladder"],
+      "space": "Standard agility ladder",
+      "primaryMetrics": ["reps", "time"],
+      "optionalMetrics": ["accuracy", "fluidity"],
+      "instructions": [
+        "Start outside ladder",
+        "Step in with inside foot",
+        "Follow with outside foot",
+        "Step out with inside foot, continue pattern"
+      ],
+      "tips": [
+        "Start slow and build speed",
+        "Focus on rhythm",
+        "Keep eyes up, not on feet"
+      ],
+      "tags": ["complex_footwork", "coordination", "advanced"]
+    },
+    {
+      "id": "ladder_two_feet_each",
+      "name": "Ladder: Two Feet Each Square",
+      "category": "agilityLadder",
+      "description": "Both feet in every square",
+      "difficulty": "beginner",
+      "equipment": ["agility_ladder"],
+      "space": "Standard agility ladder",
+      "primaryMetrics": ["time", "accuracy"],
+      "optionalMetrics": ["sets"],
+      "instructions": [
+        "Face forward at start of ladder",
+        "Place both feet in first square",
+        "Quick step to next square",
+        "Continue through entire ladder"
+      ],
+      "tips": [
+        "Land on balls of feet",
+        "Pump arms for momentum",
+        "Keep steps quick and light"
+      ],
+      "tags": ["basic_footwork", "speed", "coordination"]
+    },
+    {
+      "id": "cone_5_10_5",
+      "name": "5-10-5 Shuttle",
+      "category": "coneWork",
+      "description": "Classic agility test with direction changes",
+      "difficulty": "intermediate",
+      "equipment": ["3_cones", "stopwatch"],
+      "space": "10 yards total (5 yards each direction)",
+      "primaryMetrics": ["time", "reps"],
+      "optionalMetrics": ["technique_score"],
+      "instructions": [
+        "Start at middle cone",
+        "Sprint 5 yards to right cone",
+        "Touch cone and sprint 10 yards to left",
+        "Touch cone and sprint 5 yards back to start"
+      ],
+      "tips": [
+        "Stay low through direction changes",
+        "Touch cones with outside hand",
+        "Drive hard out of cuts"
+      ],
+      "tags": ["change_of_direction", "agility_test", "sport_specific"]
+    },
+    {
+      "id": "cone_l_drill",
+      "name": "L-Drill (3-Cone)",
+      "category": "coneWork",
+      "description": "L-shaped agility pattern",
+      "difficulty": "intermediate",
+      "equipment": ["3_cones", "stopwatch"],
+      "space": "5x5 yard L-shape",
+      "primaryMetrics": ["time", "reps"],
+      "optionalMetrics": ["technique_score"],
+      "instructions": [
+        "Start at cone 1",
+        "Sprint to cone 2 (5 yards)",
+        "Shuffle to cone 3 (5 yards)",
+        "Backpedal to cone 2, then sprint to cone 1"
+      ],
+      "tips": [
+        "Stay low in athletic position",
+        "Don't cross feet during shuffle",
+        "Control backpedal technique"
+      ],
+      "tags": ["multi_directional", "sport_specific", "technique"]
+    },
+    {
+      "id": "cone_t_drill",
+      "name": "T-Drill",
+      "category": "coneWork",
+      "description": "T-shaped agility pattern",
+      "difficulty": "intermediate",
+      "equipment": ["4_cones", "stopwatch"],
+      "space": "T-shape: 10 yards forward, 5 yards each side",
+      "primaryMetrics": ["time", "reps"],
+      "optionalMetrics": ["direction_times"],
+      "instructions": [
+        "Start at base of T",
+        "Sprint forward 10 yards to top",
+        "Shuffle left 5 yards, then right 10 yards",
+        "Shuffle back to center, backpedal to start"
+      ],
+      "tips": [
+        "Touch each cone with outside hand",
+        "Maintain low center of gravity",
+        "Quick feet during shuffles"
+      ],
+      "tags": ["multi_directional", "shuffling", "backpedaling"]
+    },
+    {
+      "id": "cone_box_drill",
+      "name": "Box Drill",
+      "category": "coneWork",
+      "description": "Square pattern with different movement types",
+      "difficulty": "beginner",
+      "equipment": ["4_cones"],
+      "space": "5x5 yard square",
+      "primaryMetrics": ["time", "reps"],
+      "optionalMetrics": ["movement_quality"],
+      "instructions": [
+        "Set up 4 cones in square",
+        "Sprint forward to cone 2",
+        "Shuffle left to cone 3",
+        "Backpedal to cone 4",
+        "Shuffle right back to start"
+      ],
+      "tips": [
+        "Face same direction throughout",
+        "Quick transitions between movements",
+        "Maintain athletic posture"
+      ],
+      "tags": ["fundamental_movements", "direction_changes", "basic"]
+    },
+    {
+      "id": "reaction_ball_drop",
+      "name": "Reaction Ball Drop",
+      "category": "reactionTime",
+      "description": "Visual reaction training with ball catch",
+      "difficulty": "beginner",
+      "equipment": ["tennis_ball"],
+      "space": "Small area, wall optional",
+      "primaryMetrics": ["catches", "reps"],
+      "optionalMetrics": ["miss_rate", "drop_height"],
+      "instructions": [
+        "Hold ball at shoulder height",
+        "Drop ball and try to catch before second bounce",
+        "Vary drop position and timing",
+        "Use both hands alternately"
+      ],
+      "tips": [
+        "Keep eyes on ball at all times",
+        "Stay in athletic ready position",
+        "Quick first step toward ball"
+      ],
+      "tags": ["hand_eye_coordination", "reaction", "tracking"]
+    },
+    {
+      "id": "reaction_partner_mirror",
+      "name": "Partner Mirror Drill",
+      "category": "reactionTime",
+      "description": "React to partner's movements",
+      "difficulty": "intermediate",
+      "equipment": [],
+      "space": "5x5 yard area",
+      "primaryMetrics": ["duration", "accuracy"],
+      "optionalMetrics": ["reaction_delay"],
+      "instructions": [
+        "Face partner in athletic stance",
+        "Mirror partner's lateral movements",
+        "React as quickly as possible",
+        "Switch roles every 30 seconds"
+      ],
+      "tips": [
+        "Keep eyes on partner's hips",
+        "Stay in low athletic position",
+        "Quick, short steps"
+      ],
+      "tags": ["reaction", "mirroring", "partner_drill"]
+    },
+    {
+      "id": "reaction_light_drill",
+      "name": "Light Reaction Drill",
+      "category": "reactionTime",
+      "description": "React to visual light stimulus",
+      "difficulty": "intermediate",
+      "equipment": ["reaction_lights", "cones"],
+      "space": "Varies with light setup",
+      "primaryMetrics": ["reaction_time", "reps"],
+      "optionalMetrics": ["accuracy", "fatigue_effect"],
+      "instructions": [
+        "Set up lights at different stations",
+        "Start in center ready position",
+        "Sprint to whichever light turns on",
+        "Return to center and repeat"
+      ],
+      "tips": [
+        "Stay alert and ready",
+        "First step should be explosive",
+        "Decelerate safely at each station"
+      ],
+      "tags": ["technology", "stimulus_response", "cognitive"]
+    },
+    {
+      "id": "direction_figure_8",
+      "name": "Figure-8 Drill",
+      "category": "changeDirection",
+      "description": "Curved running pattern around two cones",
+      "difficulty": "beginner",
+      "equipment": ["2_cones"],
+      "space": "Two cones 5 yards apart",
+      "primaryMetrics": ["time", "reps"],
+      "optionalMetrics": ["tightness_of_turns"],
+      "instructions": [
+        "Place two cones 5 yards apart",
+        "Run figure-8 pattern around cones",
+        "Stay low through turns",
+        "Complete multiple circuits"
+      ],
+      "tips": [
+        "Lean into turns",
+        "Keep inside foot planted",
+        "Maintain speed through curves"
+      ],
+      "tags": ["curved_running", "body_lean", "continuous"]
+    },
+    {
+      "id": "direction_zigzag",
+      "name": "Zigzag Cone Drill",
+      "category": "changeDirection",
+      "description": "Sharp angle cuts between cones",
+      "difficulty": "intermediate",
+      "equipment": ["5_cones"],
+      "space": "30 yards long, cones staggered",
+      "primaryMetrics": ["time", "reps"],
+      "optionalMetrics": ["cut_sharpness"],
+      "instructions": [
+        "Set up 5 cones in staggered line",
+        "Sprint and cut around each cone",
+        "Change direction at each cone",
+        "Maintain speed between cuts"
+      ],
+      "tips": [
+        "Plant outside foot to cut",
+        "Drop center of gravity before cuts",
+        "Drive hard out of each cut"
+      ],
+      "tags": ["sharp_cuts", "multi_directional", "deceleration"]
+    },
+    {
+      "id": "direction_w_drill",
+      "name": "W-Drill",
+      "category": "changeDirection",
+      "description": "W-shaped cutting pattern",
+      "difficulty": "intermediate",
+      "equipment": ["5_cones"],
+      "space": "W-shape pattern, 5 yards between cones",
+      "primaryMetrics": ["time", "reps"],
+      "optionalMetrics": ["technique_score"],
+      "instructions": [
+        "Set up 5 cones in W pattern",
+        "Sprint to first cone and cut",
+        "Continue through W pattern",
+        "Focus on sharp direction changes"
+      ],
+      "tips": [
+        "Stay low through all cuts",
+        "Use arms to help change direction",
+        "Accelerate out of each cut"
+      ],
+      "tags": ["pattern_running", "multiple_cuts", "complex"]
+    },
+    {
+      "id": "plyo_single_leg_bounds",
+      "name": "Single Leg Bounds",
+      "category": "plyometric",
+      "description": "Alternating single leg jumping for distance",
+      "difficulty": "intermediate",
+      "equipment": ["cones"],
+      "space": "20-30 yard straight line",
+      "primaryMetrics": ["distance", "reps"],
+      "optionalMetrics": ["height", "landing_quality"],
+      "instructions": [
+        "Start on one leg",
+        "Bound forward landing on opposite leg",
+        "Continue alternating legs",
+        "Focus on distance and height"
+      ],
+      "tips": [
+        "Drive knee up on takeoff",
+        "Land softly on ball of foot",
+        "Use arms for momentum"
+      ],
+      "tags": ["horizontal_power", "single_leg", "explosive"]
+    },
+    {
+      "id": "plyo_double_leg_hops",
+      "name": "Double Leg Hops",
+      "category": "plyometric",
+      "description": "Two-footed consecutive jumps",
+      "difficulty": "beginner",
+      "equipment": ["cones"],
+      "space": "10-15 yard line",
+      "primaryMetrics": ["distance", "reps"],
+      "optionalMetrics": ["height", "ground_contact_time"],
+      "instructions": [
+        "Start with feet together",
+        "Jump forward with both feet",
+        "Land and immediately jump again",
+        "Focus on quick ground contact"
+      ],
+      "tips": [
+        "Keep knees bent for landing",
+        "Minimize ground contact time",
+        "Stay on balls of feet"
+      ],
+      "tags": ["bilateral_power", "reactive", "basic_plyometric"]
+    },
+    {
+      "id": "plyo_lateral_bounds",
+      "name": "Lateral Bounds",
+      "category": "plyometric",
+      "description": "Side-to-side single leg jumps",
+      "difficulty": "intermediate",
+      "equipment": ["line_or_cones"],
+      "space": "10 yards wide area",
+      "primaryMetrics": ["distance", "reps"],
+      "optionalMetrics": ["height", "stability"],
+      "instructions": [
+        "Start on one leg",
+        "Bound laterally to opposite leg",
+        "Stick landing and pause briefly",
+        "Bound back to starting leg"
+      ],
+      "tips": [
+        "Drive off outside leg",
+        "Land on outside leg",
+        "Control lateral momentum"
+      ],
+      "tags": ["lateral_power", "stabilization", "single_leg"]
+    },
+    {
+      "id": "plyo_depth_jumps",
+      "name": "Depth Jumps",
+      "category": "plyometric",
+      "description": "Drop from height and immediate jump",
+      "difficulty": "advanced",
+      "equipment": ["box", "mat"],
+      "space": "Safe landing area",
+      "primaryMetrics": ["height", "reps"],
+      "optionalMetrics": ["contact_time", "landing_quality"],
+      "instructions": [
+        "Step off box (don't jump)",
+        "Land on both feet",
+        "Immediately jump as high as possible",
+        "Focus on minimal ground contact"
+      ],
+      "tips": [
+        "Start with low box (12-18 inches)",
+        "Land softly and react quickly",
+        "Quality over quantity"
+      ],
+      "tags": ["reactive_power", "eccentric", "advanced"]
+    },
+    {
+      "id": "plyo_box_jumps",
+      "name": "Box Jumps",
+      "category": "plyometric",
+      "description": "Jumping up onto elevated surface",
+      "difficulty": "intermediate",
+      "equipment": ["box", "mat"],
+      "space": "Safe jumping area",
+      "primaryMetrics": ["height", "reps"],
+      "optionalMetrics": ["takeoff_technique", "landing_control"],
+      "instructions": [
+        "Start arms length from box",
+        "Swing arms and jump onto box",
+        "Land softly with bent knees",
+        "Step down (don't jump down)"
+      ],
+      "tips": [
+        "Focus on landing technique",
+        "Start with lower box height",
+        "Full hip extension at takeoff"
+      ],
+      "tags": ["vertical_power", "landing_mechanics", "popular"]
+    },
+    {
+      "id": "agility_hexagon",
+      "name": "Hexagon Drill",
+      "category": "changeDirection",
+      "description": "Six-sided agility pattern",
+      "difficulty": "advanced",
+      "equipment": ["tape", "6_cones"],
+      "space": "Hexagon with 2-foot sides",
+      "primaryMetrics": ["time", "reps"],
+      "optionalMetrics": ["accuracy", "consistency"],
+      "instructions": [
+        "Stand in center of hexagon",
+        "Jump forward over line and back to center",
+        "Continue clockwise to each side",
+        "Complete full circuit"
+      ],
+      "tips": [
+        "Stay facing same direction",
+        "Quick, light jumps",
+        "Land in center each time"
+      ],
+      "tags": ["multi_directional", "cognitive", "complex"]
+    }
+  ]
+}

@@ -3,6 +3,7 @@ import { ExerciseLog } from '@/types/exercise';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '@/services/firebase/config';
 import { auth } from '@/services/firebase/config';
+import { ActivityLog } from '@/types/activityTypes';
 
 // Get all exercise logs from Firestore for the current user
 const getAllExerciseLogsFromFirestore = async (): Promise<ExerciseLog[]> => {
@@ -21,20 +22,164 @@ const getAllExerciseLogsFromFirestore = async (): Promise<ExerciseLog[]> => {
     const exercises: ExerciseLog[] = [];
     querySnapshot.forEach((doc) => {
       const data = doc.data();
+      
+      // Handle different timestamp formats
+      let timestamp: Date;
+      if (data.timestamp && typeof data.timestamp.toDate === 'function') {
+        // Firestore Timestamp
+        timestamp = data.timestamp.toDate();
+      } else if (data.timestamp instanceof Date) {
+        // Already a Date object
+        timestamp = data.timestamp;
+      } else if (typeof data.timestamp === 'string') {
+        // String timestamp
+        timestamp = new Date(data.timestamp);
+      } else {
+        // Fallback to current date
+        console.warn('Invalid timestamp format, using current date:', data.timestamp);
+        timestamp = new Date();
+      }
+      
       exercises.push({
         id: doc.id,
         exerciseName: data.exerciseName,
         sets: data.sets,
-        timestamp: data.timestamp.toDate(),
+        timestamp: timestamp,
         deviceId: data.deviceId || '',
         userId: data.userId
       });
     });
 
-    console.log(`✅ Retrieved ${exercises.length} exercises from Firestore for export`);
+    console.log(`✅ Retrieved ${exercises.length} resistance exercises from Firestore for export`);
     return exercises;
   } catch (error) {
     console.error('❌ Error fetching exercises from Firestore, falling back to localStorage:', error);
+    return getExerciseLogs();
+  }
+};
+
+// Get all activity logs from localStorage 
+const getAllActivityLogsFromStorage = (): ActivityLog[] => {
+  try {
+    const logs: ActivityLog[] = JSON.parse(localStorage.getItem('activity-logs') || '[]');
+    return logs.map(log => ({
+      ...log,
+      timestamp: new Date(log.timestamp)
+    }));
+  } catch (error) {
+    console.error('Error fetching activity logs from localStorage:', error);
+    return [];
+  }
+};
+
+// Get all exercises including both resistance and activities
+const getAllExercisesForExport = async (): Promise<ExerciseLog[]> => {
+  const user = auth.currentUser;
+  if (!user) {
+    console.warn('No authenticated user, using localStorage data');
+    return getExerciseLogs();
+  }
+
+  try {
+    // Get resistance exercises from Firestore
+    const resistanceExercises = await getAllExerciseLogsFromFirestore();
+    
+    // Get activity logs from localStorage
+    const activityLogs = getAllActivityLogsFromStorage();
+    
+    // Convert activity logs to ExerciseLog format for export
+    const convertedActivityLogs: ExerciseLog[] = activityLogs.map(log => {
+      // Convert activity sessions to exercise sets format
+      let sets: any[] = [];
+      
+      if (log.activityType === 'sport') {
+        const sportLog = log as any;
+        sets = sportLog.sessions?.map((session: any, index: number) => ({
+          setNumber: index + 1,
+          activityType: 'sport',
+          duration: session.duration,
+          distance: session.distance,
+          calories: session.calories,
+          intensity: session.intensity,
+          score: session.score,
+          opponent: session.opponent,
+          performance: session.performance,
+          skills: session.skills,
+          notes: session.notes
+        })) || [];
+      } else if (log.activityType === 'endurance') {
+        const enduranceLog = log as any;
+        sets = enduranceLog.sessions?.map((session: any, index: number) => ({
+          setNumber: index + 1,
+          activityType: 'endurance',
+          duration: session.duration,
+          distance: session.distance,
+          pace: session.pace,
+          averageHeartRate: session.averageHeartRate || session.averageHR,
+          maxHeartRate: session.maxHeartRate || session.maxHR,
+          calories: session.calories,
+          elevation: session.elevation,
+          rpe: session.rpe,
+          hrZone1: session.hrZone1,
+          hrZone2: session.hrZone2,
+          hrZone3: session.hrZone3,
+          notes: session.notes
+        })) || [];
+      } else if (log.activityType === 'stretching') {
+        const stretchingLog = log as any;
+        // Handle both 'stretches' and 'sessions' for backward compatibility
+        const dataArray = stretchingLog.stretches || stretchingLog.sessions || [];
+        sets = dataArray.map((stretch: any, index: number) => ({
+          setNumber: index + 1,
+          activityType: 'stretching',
+          duration: stretch.duration,
+          holdTime: stretch.holdTime,
+          intensity: stretch.intensity,
+          flexibility: stretch.flexibility,
+          bodyPart: stretch.bodyPart,
+          stretchType: stretch.stretchType,
+          notes: stretch.notes
+        })) || [];
+      } else if (log.activityType === 'other') {
+        const otherLog = log as any;
+        const dataArray = otherLog.customData || otherLog.sessions || [];
+        sets = dataArray.map((session: any, index: number) => ({
+          setNumber: index + 1,
+          activityType: 'other',
+          duration: session.duration,
+          calories: session.calories,
+          heartRate: session.heartRate,
+          intensity: session.intensity,
+          notes: session.notes,
+          // Include any custom values
+          ...(session.customValues && session.customValues),
+          // Include any additional fields
+          ...Object.keys(session).reduce((acc, key) => {
+            if (!['sessionNumber', 'duration', 'calories', 'heartRate', 'intensity', 'notes', 'customValues'].includes(key)) {
+              acc[key] = session[key];
+            }
+            return acc;
+          }, {} as any)
+        })) || [];
+      }
+      
+      return {
+        id: log.id,
+        exerciseName: log.activityName,
+        sets: sets,
+        timestamp: log.timestamp,
+        deviceId: 'activity-logger',
+        userId: log.userId,
+        activityType: log.activityType
+      } as ExerciseLog & { activityType?: string };
+    });
+
+    const allExercises = [...resistanceExercises, ...convertedActivityLogs];
+    console.log(`📊 Total exercises for export: ${allExercises.length} (${resistanceExercises.length} resistance + ${convertedActivityLogs.length} activities)`);
+    
+    return allExercises;
+  } catch (error) {
+    console.error('Error getting all exercises for export:', error);
     return getExerciseLogs();
   }
 };
@@ -111,30 +256,136 @@ export const exerciseDataToCsv = (exercises: ExerciseLog[], startDate?: Date, en
   
   if (filteredExercises.length === 0) return '';
 
-  // Enhanced CSV Header with both difficulty text and RPE
-  const headers = ['Date', 'Exercise', 'Set', 'Weight (kg)', 'Reps', 'Difficulty', 'RPE Score', 'Notes'];
+  // Check if we have different activity types to determine appropriate headers
+  const hasResistance = filteredExercises.some(ex => (ex as any).activityType === 'resistance' || !(ex as any).activityType);
+  const hasSport = filteredExercises.some(ex => (ex as any).activityType === 'sport');
+  const hasEndurance = filteredExercises.some(ex => (ex as any).activityType === 'endurance');
+  const hasStretching = filteredExercises.some(ex => (ex as any).activityType === 'stretching');
+  const hasOther = filteredExercises.some(ex => (ex as any).activityType === 'other');
+
+  // Create dynamic headers based on activity types present
+  let headers = ['Date', 'Exercise', 'Activity Type', 'Set'];
+  
+  // Add activity-specific columns
+  if (hasResistance) {
+    headers.push('Weight (kg)', 'Reps');
+  }
+  if (hasSport) {
+    headers.push('Duration (min)', 'Distance (m)', 'Calories', 'Score', 'Opponent', 'Performance');
+  }
+  if (hasEndurance) {
+    headers.push('Duration (min)', 'Distance (m)', 'Pace', 'Avg HR', 'Max HR', 'Calories', 'Elevation', 'RPE', 'Zone 1', 'Zone 2', 'Zone 3');
+  }
+  if (hasStretching) {
+    headers.push('Duration (min)', 'Hold Time (s)', 'Body Part', 'Stretch Type', 'Flexibility');
+  }
+  if (hasOther) {
+    headers.push('Duration (min)', 'Calories', 'Heart Rate');
+  }
+  
+  // Common columns for all activities
+  headers.push('Intensity', 'Difficulty', 'RPE Score', 'Notes');
+  
   const rows = [headers.join(',')];
 
-  // Add data rows with enhanced difficulty and RPE information
-  console.log(`📝 Processing ${filteredExercises.length} exercises for CSV export`);
+  console.log(`📝 Processing ${filteredExercises.length} exercises for CSV export with activity types:`, {
+    hasResistance, hasSport, hasEndurance, hasStretching, hasOther
+  });
   
   filteredExercises.forEach((exercise) => {
     const exerciseDate = new Date(exercise.timestamp);
+    const activityType = (exercise as any).activityType || 'resistance';
     
     exercise.sets.forEach((set, setIndex) => {
       const difficultyText = getDifficultyText(set.difficulty);
       const rpeScore = translateDifficultyToRPE(set.difficulty);
       
-      const row = [
+      // Start with common fields
+      let row = [
         `"${exerciseDate.toLocaleDateString()}"`,
-        `"${exercise.exerciseName}"`, // Quote exercise name to handle commas
-        setIndex + 1,
-        set.weight || 0,
-        set.reps || 0,
-        `"${difficultyText}"`,
-        rpeScore,
-        `"${(set as any).notes || ''}"`
+        `"${exercise.exerciseName}"`,
+        activityType,
+        setIndex + 1
       ];
+      
+      // Add activity-specific fields
+      if (hasResistance) {
+        if (activityType === 'resistance') {
+          row.push(String(set.weight || 0), String(set.reps || 0));
+        } else {
+          row.push('', ''); // Empty for non-resistance activities
+        }
+      }
+      
+      if (hasSport) {
+        if (activityType === 'sport') {
+          row.push(
+            String(set.duration || ''),
+            String((set as any).distance || ''),
+            String((set as any).calories || ''),
+            String((set as any).score || ''),
+            `"${(set as any).opponent || ''}"`,
+            String((set as any).performance || '')
+          );
+        } else {
+          row.push('', '', '', '', '', ''); // Empty for non-sport activities
+        }
+      }
+      
+      if (hasEndurance) {
+        if (activityType === 'endurance') {
+          row.push(
+            String(set.duration || ''),
+            String((set as any).distance || ''),
+            String((set as any).pace || ''),
+            String((set as any).averageHeartRate || ''),
+            String((set as any).maxHeartRate || ''),
+            String((set as any).calories || ''),
+            String((set as any).elevation || ''),
+            String((set as any).rpe || ''),
+            String((set as any).hrZone1 || ''),
+            String((set as any).hrZone2 || ''),
+            String((set as any).hrZone3 || '')
+          );
+        } else {
+          row.push('', '', '', '', '', '', '', '', '', '', ''); // Empty for non-endurance activities
+        }
+      }
+      
+      if (hasStretching) {
+        if (activityType === 'stretching') {
+          row.push(
+            String(set.duration || ''),
+            String((set as any).holdTime || ''),
+            `"${(set as any).bodyPart || ''}"`,
+            `"${(set as any).stretchType || ''}"`,
+            String((set as any).flexibility || '')
+          );
+        } else {
+          row.push('', '', '', '', ''); // Empty for non-stretching activities
+        }
+      }
+      
+      if (hasOther) {
+        if (activityType === 'other') {
+          row.push(
+            String(set.duration || ''),
+            String((set as any).calories || ''),
+            String((set as any).heartRate || '')
+          );
+        } else {
+          row.push('', '', ''); // Empty for non-other activities
+        }
+      }
+      
+      // Add common ending fields
+      row.push(
+        String(set.intensity || ''),
+        `"${difficultyText}"`,
+        String(rpeScore),
+        `"${(set as any).notes || ''}"`
+      );
+      
       rows.push(row.join(','));
     });
   });
@@ -153,13 +404,13 @@ export const downloadCsv = (content: string, fileName: string) => {
 };
 
 export const exportExerciseData = async (exercises?: ExerciseLog[], startDate?: Date, endDate?: Date, format: 'csv' | 'json' | 'both' = 'both') => {
-  // If exercises are provided, use them; otherwise get all logs from Firestore or localStorage
+  // If exercises are provided, use them; otherwise get all logs including activities
   let data: ExerciseLog[];
   if (exercises) {
     data = exercises;
   } else {
-    console.log('🔍 Getting all exercises for export...');
-    data = await getAllExerciseLogsFromFirestore();
+    console.log('🔍 Getting all exercises (including activities) for export...');
+    data = await getAllExercisesForExport();
     console.log(`📊 Retrieved ${data.length} total exercises for potential export`);
   }
   

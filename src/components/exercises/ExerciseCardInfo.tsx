@@ -26,7 +26,7 @@ const ExerciseCardInfo: React.FC<ExerciseCardInfoProps> = ({
       {!compact && (
         <div className="mt-2 text-sm">
           <span className="text-gray-500">
-            {exercise.primaryMuscles.join(', ')}
+            {exercise.primaryMuscles?.join(', ') || 'No muscles specified'}
           </span>
         </div>
       )}

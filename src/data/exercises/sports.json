@@ -1,0 +1,71 @@
+[
+  {
+    "id": "sport-1",
+    "name": "Basketball",
+    "description": "Team sport involving shooting a ball through hoops",
+    "type": "teamSports",
+    "activityType": "SPORT",
+    "category": "team_sports",
+    "difficulty": "intermediate",
+    "primaryMuscles": ["quadriceps", "calves"],
+    "secondaryMuscles": ["core", "shoulders"],
+    "equipment": ["basketball", "basketball_shoes"],
+    "environment": "court",
+    "teamBased": true,
+    "sportType": "team",
+    "instructions": ["Warm up with dribbling", "Practice shooting", "Focus on teamwork"],
+    "tips": ["Practice ball handling", "Work on vertical jump"],
+    "defaultUnit": "time",
+    "metrics": {
+      "trackTime": true,
+      "trackRPE": true
+    },
+    "isDefault": true
+  },
+  {
+    "id": "sport-2",
+    "name": "Tennis",
+    "description": "Racquet sport played on a court",
+    "type": "teamSports",
+    "activityType": "SPORT",
+    "category": "racquet_sports",
+    "difficulty": "intermediate",
+    "primaryMuscles": ["shoulders", "core"],
+    "secondaryMuscles": ["quadriceps", "calves"],
+    "equipment": ["tennis_racquet", "tennis_balls", "tennis_shoes"],
+    "environment": "court",
+    "teamBased": false,
+    "sportType": "individual",
+    "instructions": ["Warm up with light rallying", "Practice serves", "Focus on footwork"],
+    "tips": ["Work on proper grip", "Practice footwork patterns"],
+    "defaultUnit": "time",
+    "metrics": {
+      "trackTime": true,
+      "trackRPE": true
+    },
+    "isDefault": true
+  },
+  {
+    "id": "sport-3",
+    "name": "Soccer",
+    "description": "Team sport played with feet using a ball",
+    "type": "teamSports",
+    "activityType": "SPORT",
+    "category": "team_sports",
+    "difficulty": "intermediate",
+    "primaryMuscles": ["quadriceps", "hamstrings", "calves"],
+    "secondaryMuscles": ["glutes", "core"],
+    "equipment": ["soccer_ball", "soccer_cleats", "shin_guards"],
+    "environment": "field",
+    "teamBased": true,
+    "sportType": "team",
+    "instructions": ["Warm up with light jogging", "Practice ball control", "Focus on passing"],
+    "tips": ["Work on first touch", "Practice with both feet"],
+    "defaultUnit": "time",
+    "metrics": {
+      "trackTime": true,
+      "trackRPE": true
+    },
+    "isDefault": true
+  }
+]

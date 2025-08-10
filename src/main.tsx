@@ -11,7 +11,10 @@ import './tests/permissionTest'; // Add permission testing tools
 if (import.meta.env.DEV) {
   const originalConsoleWarn = console.warn;
   console.warn = (...args) => {
-    if (typeof args[0] === 'string' && args[0].includes('Support for defaultProps will be removed')) {
+    if (typeof args[0] === 'string' && 
+        (args[0].includes('Support for defaultProps will be removed') ||
+         args[0].includes('Connect(Droppable): Support for defaultProps') ||
+         args[0].includes('defaultProps will be removed from memo components'))) {
       return; // Suppress this specific warning
     }
     originalConsoleWarn.apply(console, args);

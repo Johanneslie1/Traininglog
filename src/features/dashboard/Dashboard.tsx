@@ -1,16 +1,14 @@
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { useEffect, useState, useCallback } from 'react';
-import { deleteExerciseLog, getExerciseLogs } from '@/services/firebase/exerciseLogs';
-import { getExerciseLogsByDate } from '@/utils/localStorageUtils';
+import { getAllExercisesByDate, UnifiedExerciseData, deleteExercise } from '@/utils/unifiedExerciseUtils';
 import ExerciseCard from '@/components/ExerciseCard';
-import { ExerciseLog } from '@/types/exercise';
 import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const user = useSelector((state: RootState) => state.auth.user);
-  const [todaysExercises, setTodaysExercises] = useState<ExerciseLog[]>([]);
+  const [todaysExercises, setTodaysExercises] = useState<UnifiedExerciseData[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -22,14 +20,7 @@ const Dashboard = () => {
     return normalized;
   }, []);
 
-  const getDateRange = useCallback((date: Date): { startOfDay: Date; endOfDay: Date } => {
-    const startOfDay = normalizeDate(date);
-    const endOfDay = new Date(startOfDay);
-    endOfDay.setHours(23, 59, 59, 999);
-    return { startOfDay, endOfDay };
-  }, [normalizeDate]);
-
-  // Unified data fetching that combines Firebase and localStorage (same strategy as ExerciseLog)
+  // Unified data fetching that combines resistance exercises and activity logs
   const fetchExercises = useCallback(async (date: Date) => {
     setIsLoading(true);
     setError(null);
@@ -43,37 +34,28 @@ const Dashboard = () => {
     const loadedDate = normalizeDate(date);
 
     try {
-      // Get local exercises first
-      const localExercises = getExerciseLogsByDate(loadedDate);
+      // Get all exercises (resistance + activities) for the date
+      const allExercises = await getAllExercisesByDate(loadedDate, user.id);
       
-      // Get Firebase exercises
-      const { startOfDay, endOfDay } = getDateRange(loadedDate);
-      const firebaseExercises = await getExerciseLogs(user.id, startOfDay, endOfDay);
-      
-      // Filter local exercises to only include those not in Firebase
-      const uniqueLocalExercises = localExercises.filter(localEx => 
-        !localEx.id || !firebaseExercises.some(fbEx => fbEx.id === localEx.id)
-      );
-      
-      // Combine and sort exercises
-      const allExercises = [...firebaseExercises, ...uniqueLocalExercises];
-      allExercises.sort((a, b) => {
-        const aTime = a.timestamp instanceof Date ? a.timestamp.getTime() : new Date(a.timestamp).getTime();
-        const bTime = b.timestamp instanceof Date ? b.timestamp.getTime() : new Date(b.timestamp).getTime();
-        return aTime - bTime;
+      console.log('📊 Dashboard loaded exercises:', {
+        date: loadedDate,
+        totalCount: allExercises.length,
+        byType: allExercises.reduce((acc, ex) => {
+          acc[ex.activityType || 'resistance'] = (acc[ex.activityType || 'resistance'] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>),
+        exercises: allExercises
       });
-      
+
       setTodaysExercises(allExercises);
-    } catch (err) {
-      console.error('Error fetching exercises:', err);
-      // Fallback to local storage on error
-      const localExercises = getExerciseLogsByDate(loadedDate);
-      setTodaysExercises(localExercises);
-      setError(err instanceof Error ? err.message : 'An error occurred');
+    } catch (error) {
+      console.error('Error fetching exercises:', error);
+      setError('Failed to load exercises');
+      setTodaysExercises([]);
     } finally {
       setIsLoading(false);
     }
-  }, [user?.id, normalizeDate, getDateRange]);
+  }, [normalizeDate, user?.id]);
 
   // Load exercises when user or selectedDate changes
   useEffect(() => {
@@ -99,7 +81,7 @@ const Dashboard = () => {
   };
 
 
-  const handleDeleteExercise = async (exercise: ExerciseLog) => {
+  const handleDeleteExercise = async (exercise: UnifiedExerciseData) => {
     if (!exercise.id || !user?.id) {
       const errorMessage = 'Cannot delete exercise: missing user ID or exercise ID';
       console.error(errorMessage, { userId: user?.id, exerciseId: exercise.id });
@@ -114,11 +96,20 @@ const Dashboard = () => {
     try {
       console.log('🗑️ Attempting to delete exercise:', {
         exerciseId: exercise.id,
-        userId: user.id
+        userId: user.id,
+        activityType: exercise.activityType
       });
 
-      await deleteExerciseLog(exercise.id, user.id);
-      console.log('✅ Exercise deleted from Firestore successfully');
+      if (exercise.activityType && exercise.activityType !== 'resistance') {
+        // Delete activity log
+        const { deleteActivityLog } = await import('@/utils/unifiedExerciseUtils');
+        await deleteActivityLog(exercise.id, user.id);
+        console.log('✅ Activity log deleted successfully');
+      } else {
+        // Delete traditional exercise log
+        await deleteExercise(exercise, user.id);
+        console.log('✅ Exercise deleted from Firestore successfully');
+      }
 
       await fetchExercises(selectedDate);
     } catch (error) {

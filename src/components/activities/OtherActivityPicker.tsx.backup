@@ -1,0 +1,275 @@
+import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
+import { ActivityType, OtherActivity } from '@/types/activityTypes';
+import { activityService } from '@/services/activityService';
+import { otherTemplate } from '@/config/defaultTemplates';
+import UniversalActivityLogger from './UniversalActivityLogger';
+
+interface OtherActivityPickerProps {
+  onClose: () => void;
+  onBack: () => void;
+  onActivityLogged: () => void;
+  selectedDate?: Date;
+}
+
+const OtherActivityPicker: React.FC<OtherActivityPickerProps> = ({
+  onClose,
+  onBack,
+  onActivityLogged,
+  selectedDate = new Date()
+}) => {
+  const user = useSelector((state: RootState) => state.auth.user);
+  const [activities, setActivities] = useState<OtherActivity[]>([]);
+  const [selectedActivity, setSelectedActivity] = useState<OtherActivity | null>(null);
+  const [view, setView] = useState<'list' | 'logging'>('list');
+
+  useEffect(() => {
+    const otherActivities = activityService.getActivitiesByType(ActivityType.OTHER);
+    setActivities(otherActivities.map((activity, index) => ({
+      ...activity,
+      id: `other-${index}`
+    })) as OtherActivity[]);
+  }, []);
+
+  const handleActivitySelect = (activity: OtherActivity) => {
+    setSelectedActivity(activity);
+    setView('logging');
+  };
+
+  if (view === 'logging' && selectedActivity) {
+    return (
+      <UniversalActivityLogger
+        template={otherTemplate}
+        activityName={selectedActivity.name}
+        onClose={onClose}
+        onBack={() => setView('list')}
+        onActivityLogged={onActivityLogged}
+        selectedDate={selectedDate}
+      />
+    );
+  }
+
+  const renderCustomField = (field: any) => {
+    const value = currentSession[field.fieldId] || '';
+    
+    switch (field.type) {
+      case 'number':
+        return (
+          <input
+            type="number"
+            value={value}
+            onChange={(e) => setCurrentSession(prev => ({ 
+              ...prev, 
+              [field.fieldId]: Number(e.target.value) 
+            }))}
+            className="w-full p-3 bg-[#2a2a2a] border border-white/10 rounded-lg text-white"
+            min={field.validation?.min}
+            max={field.validation?.max}
+            required={field.required}
+          />
+        );
+      
+      case 'duration':
+        return (
+          <input
+            type="number"
+            value={value}
+            onChange={(e) => setCurrentSession(prev => ({ 
+              ...prev, 
+              [field.fieldId]: Number(e.target.value) 
+            }))}
+            className="w-full p-3 bg-[#2a2a2a] border border-white/10 rounded-lg text-white"
+            placeholder={`Enter ${field.unit || 'duration'}`}
+            required={field.required}
+          />
+        );
+      
+      case 'select':
+        return (
+          <select
+            value={value}
+            onChange={(e) => setCurrentSession(prev => ({ 
+              ...prev, 
+              [field.fieldId]: e.target.value 
+            }))}
+            className="w-full p-3 bg-[#2a2a2a] border border-white/10 rounded-lg text-white"
+            required={field.required}
+          >
+            {field.options?.map((option: string) => (
+              <option key={option} value={option}>
+                {option.replace('_', ' ')}
+              </option>
+            ))}
+          </select>
+        );
+      
+      case 'boolean':
+        return (
+          <label className="flex items-center">
+            <input
+              type="checkbox"
+              checked={value}
+              onChange={(e) => setCurrentSession(prev => ({ 
+                ...prev, 
+                [field.fieldId]: e.target.checked 
+              }))}
+              className="mr-2"
+            />
+            <span className="text-white">Yes</span>
+          </label>
+        );
+      
+      default:
+        return (
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => setCurrentSession(prev => ({ 
+              ...prev, 
+              [field.fieldId]: e.target.value 
+            }))}
+            className="w-full p-3 bg-[#2a2a2a] border border-white/10 rounded-lg text-white"
+            placeholder={field.placeholder}
+            required={field.required}
+          />
+        );
+    }
+  };
+
+  if (view === 'logging' && selectedActivity) {
+    return (
+      <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50">
+        <div className="bg-[#1a1a1a] rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+          <div className="p-6 border-b border-white/10">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-white">{selectedActivity.name}</h2>
+                <p className="text-gray-400 text-sm">{selectedActivity.description}</p>
+              </div>
+              <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-6">
+            <h3 className="text-lg font-medium text-white mb-4">Log Session #{sessions.length + 1}</h3>
+            
+            <div className="space-y-4 mb-6">
+              {selectedActivity.customFields.map((field) => (
+                <div key={field.fieldId}>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    {field.label} {field.required && <span className="text-red-400">*</span>}
+                    {field.unit && <span className="text-gray-500"> ({field.unit})</span>}
+                  </label>
+                  {renderCustomField(field)}
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={() => {
+                setSessions(prev => [...prev, { ...currentSession }]);
+                // Reset form
+                const resetSession: { [key: string]: any } = {};
+                selectedActivity.customFields.forEach(field => {
+                  switch (field.type) {
+                    case 'number':
+                      resetSession[field.fieldId] = 0;
+                      break;
+                    case 'boolean':
+                      resetSession[field.fieldId] = false;
+                      break;
+                    default:
+                      resetSession[field.fieldId] = '';
+                  }
+                });
+                setCurrentSession(resetSession);
+              }}
+              className="w-full py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg mb-4"
+            >
+              Add Session
+            </button>
+
+            {sessions.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-white font-medium">Completed Sessions</h3>
+                {sessions.map((session, index) => (
+                  <div key={index} className="p-3 bg-[#2a2a2a] rounded-lg">
+                    <div className="text-white font-medium mb-1">Session {index + 1}</div>
+                    <div className="text-sm text-gray-400 space-y-1">
+                      {Object.entries(session).map(([key, value]) => {
+                        const field = selectedActivity.customFields.find(f => f.fieldId === key);
+                        return (
+                          <div key={key}>
+                                                        {field?.label}: {typeof value === 'boolean' ? (value ? 'Yes' : 'No') : String(value)}
+                            {field?.unit && ` ${field.unit}`}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="p-6 border-t border-white/10">
+            <div className="flex gap-3">
+              <button onClick={onBack} className="flex-1 py-3 bg-gray-600 text-white rounded-lg">
+                Back
+              </button>
+              <button
+                onClick={handleSaveActivity}
+                disabled={sessions.length === 0 || loading}
+                className="flex-1 py-3 bg-green-600 disabled:bg-gray-600 text-white rounded-lg"
+              >
+                {loading ? 'Saving...' : `Save (${sessions.length} sessions)`}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50">
+      <div className="bg-[#1a1a1a] rounded-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+        <div className="p-6 border-b border-white/10">
+          <h2 className="text-2xl font-bold text-white">Other Activities</h2>
+          <p className="text-gray-400">Track custom activities, therapy, wellness, and more</p>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {activities.map((activity) => (
+              <button
+                key={activity.id}
+                onClick={() => handleActivitySelect(activity)}
+                className="p-4 bg-[#2a2a2a] hover:bg-[#3a3a3a] rounded-lg text-left transition-colors"
+              >
+                <h3 className="text-white font-medium mb-2">{activity.name}</h3>
+                <p className="text-gray-400 text-sm mb-2">{activity.description}</p>
+                <div className="text-xs text-gray-500">
+                  {activity.customCategory} • {activity.customFields.length} custom fields
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="p-6 border-t border-white/10">
+          <button onClick={onBack} className="px-6 py-2 bg-gray-600 text-white rounded-lg">
+            ← Back to Activity Types
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default OtherActivityPicker;

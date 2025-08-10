@@ -1,0 +1,640 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "lastUpdated": "2025-08-08",
+    "description": "Comprehensive other activities database",
+    "totalExercises": 35
+  },
+  "categories": {
+    "outdoor": {
+      "name": "Outdoor Activities",
+      "description": "Nature-based recreational activities",
+      "icon": "🏔️"
+    },
+    "climbing": {
+      "name": "Climbing",
+      "description": "Rock climbing and bouldering activities",
+      "icon": "🧗"
+    },
+    "winter": {
+      "name": "Winter Activities", 
+      "description": "Snow and ice recreational activities",
+      "icon": "❄️"
+    },
+    "water": {
+      "name": "Water Activities",
+      "description": "Water-based recreational sports",
+      "icon": "🌊"
+    },
+    "adventure": {
+      "name": "Adventure Sports",
+      "description": "High-adventure and extreme activities",
+      "icon": "🪂"
+    },
+    "lifestyle": {
+      "name": "Lifestyle Activities",
+      "description": "Daily life and recreational movement",
+      "icon": "🚶"
+    }
+  },
+  "exercises": [
+    {
+      "id": "hiking_trail",
+      "name": "Trail Hiking",
+      "category": "outdoor",
+      "description": "Hiking on natural trails with varying terrain",
+      "difficulty": "intermediate",
+      "equipment": ["hiking_boots", "backpack", "water", "map"],
+      "environment": "outdoor_trails",
+      "primaryMetrics": ["duration", "distance", "elevation"],
+      "optionalMetrics": ["pace", "rpe", "calories", "weather"],
+      "instructions": [
+        "Choose trail appropriate for fitness level",
+        "Check weather and trail conditions",
+        "Bring adequate water and nutrition",
+        "Inform someone of your hiking plan"
+      ],
+      "tips": [
+        "Start early to avoid heat/crowds",
+        "Use trekking poles on steep terrain",
+        "Pack layers for changing conditions"
+      ],
+      "tags": ["cardio", "nature", "adventure", "endurance"]
+    },
+    {
+      "id": "mountain_hiking",
+      "name": "Mountain Hiking",
+      "category": "outdoor",
+      "description": "Challenging hikes with significant elevation gain",
+      "difficulty": "advanced",
+      "equipment": ["hiking_boots", "backpack", "water", "navigation", "emergency_gear"],
+      "environment": "mountains",
+      "primaryMetrics": ["duration", "distance", "elevation"],
+      "optionalMetrics": ["summit_reached", "weather_conditions", "rpe"],
+      "instructions": [
+        "Plan route carefully with escape routes",
+        "Start very early for safety",
+        "Monitor weather conditions constantly",
+        "Turn back if conditions deteriorate"
+      ],
+      "tips": [
+        "Acclimatize for high altitude",
+        "Carry emergency shelter and communication",
+        "Know your limits and respect the mountain"
+      ],
+      "tags": ["challenging", "altitude", "endurance", "adventure"]
+    },
+    {
+      "id": "nature_walk",
+      "name": "Nature Walking",
+      "category": "outdoor",
+      "description": "Leisurely walking in natural settings",
+      "difficulty": "beginner",
+      "equipment": ["comfortable_shoes", "water"],
+      "environment": "parks_trails",
+      "primaryMetrics": ["duration", "distance"],
+      "optionalMetrics": ["wildlife_spotted", "photos_taken", "rpe"],
+      "instructions": [
+        "Choose safe, well-marked trails",
+        "Walk at comfortable, conversational pace",
+        "Take time to observe nature",
+        "Stay on designated paths"
+      ],
+      "tips": [
+        "Bring camera for wildlife/scenery",
+        "Walk with friends for safety and enjoyment",
+        "Learn about local flora and fauna"
+      ],
+      "tags": ["relaxing", "accessible", "mindfulness", "social"]
+    },
+    {
+      "id": "backpacking",
+      "name": "Backpacking",
+      "category": "outdoor",
+      "description": "Multi-day hiking with overnight camping",
+      "difficulty": "advanced",
+      "equipment": ["backpack", "tent", "sleeping_gear", "cooking_gear", "navigation"],
+      "environment": "wilderness",
+      "primaryMetrics": ["days", "distance", "elevation"],
+      "optionalMetrics": ["pack_weight", "campsites", "weather"],
+      "instructions": [
+        "Plan route with water sources and campsites",
+        "Pack efficiently to minimize weight",
+        "Follow Leave No Trace principles",
+        "Inform others of detailed itinerary"
+      ],
+      "tips": [
+        "Test all gear before trip",
+        "Practice setting up camp in daylight",
+        "Bring water purification method"
+      ],
+      "tags": ["multi_day", "camping", "self_sufficiency", "endurance"]
+    },
+    {
+      "id": "rock_climbing_outdoor",
+      "name": "Outdoor Rock Climbing",
+      "category": "climbing",
+      "description": "Traditional or sport climbing on natural rock",
+      "difficulty": "advanced",
+      "equipment": ["climbing_shoes", "harness", "helmet", "rope", "protection"],
+      "environment": "rock_formations",
+      "primaryMetrics": ["routes_climbed", "difficulty_grade"],
+      "optionalMetrics": ["falls", "style", "protection_placed"],
+      "instructions": [
+        "Inspect route and rock quality",
+        "Establish clear communication with belayer",
+        "Place protection frequently on trad routes",
+        "Practice rescue techniques"
+      ],
+      "tips": [
+        "Start with easier grades outdoors",
+        "Weather and rock conditions matter",
+        "Climb with experienced partners"
+      ],
+      "tags": ["technical", "strength", "problem_solving", "outdoor"]
+    },
+    {
+      "id": "bouldering_outdoor",
+      "name": "Outdoor Bouldering",
+      "category": "climbing",
+      "description": "Short, powerful climbing problems without ropes",
+      "difficulty": "intermediate",
+      "equipment": ["climbing_shoes", "chalk", "crash_pads"],
+      "environment": "boulder_fields",
+      "primaryMetrics": ["problems_completed", "difficulty_grade"],
+      "optionalMetrics": ["attempts", "style", "new_problems"],
+      "instructions": [
+        "Set up crash pads for safe landing",
+        "Have spotter for difficult moves",
+        "Warm up on easier problems",
+        "Respect rock and environment"
+      ],
+      "tips": [
+        "Focus on footwork and balance",
+        "Take rest between attempts",
+        "Study problem before attempting"
+      ],
+      "tags": ["power", "technique", "problem_solving", "social"]
+    },
+    {
+      "id": "indoor_climbing",
+      "name": "Indoor Rock Climbing",
+      "category": "climbing",
+      "description": "Climbing on artificial walls with set routes",
+      "difficulty": "beginner",
+      "equipment": ["climbing_shoes", "harness", "chalk"],
+      "environment": "climbing_gym",
+      "primaryMetrics": ["routes_climbed", "difficulty_grade"],
+      "optionalMetrics": ["attempts", "style", "time_climbing"],
+      "instructions": [
+        "Learn proper belay techniques",
+        "Start with easier graded routes",
+        "Focus on technique over strength",
+        "Rest between climbing sessions"
+      ],
+      "tips": [
+        "Use legs more than arms",
+        "Plan moves before starting",
+        "Climb regularly to improve"
+      ],
+      "tags": ["technical", "strength", "indoor", "progressive"]
+    },
+    {
+      "id": "via_ferrata",
+      "name": "Via Ferrata",
+      "category": "climbing",
+      "description": "Protected climbing routes with fixed cables and rungs",
+      "difficulty": "intermediate",
+      "equipment": ["via_ferrata_set", "helmet", "gloves"],
+      "environment": "mountain_routes",
+      "primaryMetrics": ["route_length", "difficulty_grade"],
+      "optionalMetrics": ["exposure_level", "weather", "time_taken"],
+      "instructions": [
+        "Learn proper via ferrata technique",
+        "Always stay clipped to cables",
+        "Move one carabiner at a time",
+        "Check weather conditions"
+      ],
+      "tips": [
+        "Don't rush, enjoy the exposure",
+        "Wear gloves to protect hands",
+        "Start with easier routes"
+      ],
+      "tags": ["assisted_climbing", "exposure", "adventure", "accessible"]
+    },
+    {
+      "id": "cross_country_skiing",
+      "name": "Cross-Country Skiing",
+      "category": "winter",
+      "description": "Nordic skiing across flat and rolling terrain",
+      "difficulty": "intermediate",
+      "equipment": ["xc_skis", "poles", "boots", "warm_clothing"],
+      "environment": "snow_trails",
+      "primaryMetrics": ["duration", "distance"],
+      "optionalMetrics": ["technique_style", "elevation", "snow_conditions"],
+      "instructions": [
+        "Learn basic diagonal stride technique",
+        "Dress in layers for temperature regulation",
+        "Wax skis for snow conditions",
+        "Stay on marked trails"
+      ],
+      "tips": [
+        "Focus on rhythm and gliding",
+        "Use poles for propulsion",
+        "Carry emergency gear in backcountry"
+      ],
+      "tags": ["full_body", "endurance", "technique", "seasonal"]
+    },
+    {
+      "id": "snowshoeing",
+      "name": "Snowshoeing",
+      "category": "winter",
+      "description": "Walking on snow with specialized footwear",
+      "difficulty": "beginner",
+      "equipment": ["snowshoes", "poles", "warm_clothing", "gaiters"],
+      "environment": "snowy_terrain",
+      "primaryMetrics": ["duration", "distance"],
+      "optionalMetrics": ["elevation", "snow_depth", "temperature"],
+      "instructions": [
+        "Adjust snowshoe bindings properly",
+        "Use wider stance than normal walking",
+        "Bring layers and extra clothing",
+        "Check avalanche conditions if applicable"
+      ],
+      "tips": [
+        "Lift feet higher than normal",
+        "Use poles for balance and propulsion",
+        "Start with shorter distances"
+      ],
+      "tags": ["accessible", "winter_cardio", "nature", "low_impact"]
+    },
+    {
+      "id": "sledding",
+      "name": "Sledding/Tobogganing",
+      "category": "winter",
+      "description": "Recreational sliding down snow-covered hills",
+      "difficulty": "beginner",
+      "equipment": ["sled", "warm_clothing", "helmet"],
+      "environment": "snowy_hills",
+      "primaryMetrics": ["runs", "duration"],
+      "optionalMetrics": ["hill_height", "speed", "style"],
+      "instructions": [
+        "Choose safe hill away from obstacles",
+        "Check for other sledders",
+        "Start with smaller hills",
+        "Wear appropriate winter gear"
+      ],
+      "tips": [
+        "Sit up straight for better control",
+        "Use feet as brakes if needed",
+        "Take breaks to warm up"
+      ],
+      "tags": ["fun", "family", "seasonal", "recreational"]
+    },
+    {
+      "id": "ice_fishing",
+      "name": "Ice Fishing",
+      "category": "winter",
+      "description": "Fishing through holes in frozen water bodies",
+      "difficulty": "beginner",
+      "equipment": ["ice_auger", "fishing_gear", "shelter", "warm_clothing"],
+      "environment": "frozen_lakes",
+      "primaryMetrics": ["duration", "fish_caught"],
+      "optionalMetrics": ["hole_depth", "temperature", "species"],
+      "instructions": [
+        "Check ice thickness for safety (minimum 4 inches)",
+        "Drill hole with auger",
+        "Set up shelter if available",
+        "Use appropriate bait for target species"
+      ],
+      "tips": [
+        "Dress in layers and stay dry",
+        "Bring portable heater for comfort",
+        "Keep moving to stay warm"
+      ],
+      "tags": ["patience", "outdoor_skill", "seasonal", "relaxing"]
+    },
+    {
+      "id": "kayaking_recreational",
+      "name": "Recreational Kayaking",
+      "category": "water",
+      "description": "Peaceful paddling on calm water bodies",
+      "difficulty": "beginner",
+      "equipment": ["kayak", "paddle", "pfd", "spray_skirt"],
+      "environment": "lakes_calm_rivers",
+      "primaryMetrics": ["duration", "distance"],
+      "optionalMetrics": ["wildlife_spotted", "photos_taken", "weather"],
+      "instructions": [
+        "Always wear personal flotation device",
+        "Learn basic paddle strokes",
+        "Check weather and water conditions",
+        "Inform others of your paddling plan"
+      ],
+      "tips": [
+        "Keep paddle close to kayak",
+        "Use torso rotation for power",
+        "Practice wet exit if using spray skirt"
+      ],
+      "tags": ["peaceful", "upper_body", "nature", "skill"]
+    },
+    {
+      "id": "whitewater_kayaking",
+      "name": "Whitewater Kayaking",
+      "category": "water",
+      "description": "Kayaking on rivers with rapids and currents",
+      "difficulty": "advanced",
+      "equipment": ["whitewater_kayak", "helmet", "pfd", "spray_skirt", "paddle"],
+      "environment": "rivers_rapids",
+      "primaryMetrics": ["river_miles", "rapid_class"],
+      "optionalMetrics": ["rolls_performed", "swims", "portages"],
+      "instructions": [
+        "Learn proper safety techniques first",
+        "Always paddle with experienced group",
+        "Scout difficult rapids",
+        "Know how to perform eskimo roll"
+      ],
+      "tips": [
+        "Read water patterns carefully",
+        "Have solid rescue skills",
+        "Start with easier rapids"
+      ],
+      "tags": ["adrenaline", "technical", "teamwork", "adventure"]
+    },
+    {
+      "id": "stand_up_paddleboard",
+      "name": "Stand-Up Paddleboarding (SUP)",
+      "category": "water",
+      "description": "Standing paddling on large board",
+      "difficulty": "beginner",
+      "equipment": ["sup_board", "paddle", "pfd", "leash"],
+      "environment": "calm_water",
+      "primaryMetrics": ["duration", "distance"],
+      "optionalMetrics": ["falls", "balance_time", "technique"],
+      "instructions": [
+        "Start on knees, then stand up",
+        "Keep slight bend in knees",
+        "Look at horizon, not down at board",
+        "Paddle on alternating sides"
+      ],
+      "tips": [
+        "Engage core for stability",
+        "Fall away from board if losing balance",
+        "Start in calm, shallow water"
+      ],
+      "tags": ["balance", "core", "peaceful", "accessible"]
+    },
+    {
+      "id": "canoeing",
+      "name": "Canoeing",
+      "category": "water",
+      "description": "Paddling in open-top boat with single-blade paddle",
+      "difficulty": "beginner",
+      "equipment": ["canoe", "paddle", "pfd"],
+      "environment": "lakes_rivers",
+      "primaryMetrics": ["duration", "distance"],
+      "optionalMetrics": ["portages", "wildlife", "weather"],
+      "instructions": [
+        "Learn basic paddle strokes (J-stroke, draw)",
+        "Coordinate with partner if tandem",
+        "Keep low center of gravity",
+        "Plan route with rest stops"
+      ],
+      "tips": [
+        "Stern paddler steers",
+        "Switch sides to maintain direction",
+        "Pack gear in waterproof bags"
+      ],
+      "tags": ["teamwork", "skill", "touring", "camping"]
+    },
+    {
+      "id": "paragliding",
+      "name": "Paragliding",
+      "category": "adventure",
+      "description": "Free flight with inflatable wing",
+      "difficulty": "advanced",
+      "equipment": ["paraglider", "harness", "helmet", "reserve_chute"],
+      "environment": "mountains_thermals",
+      "primaryMetrics": ["flight_time", "altitude_gained"],
+      "optionalMetrics": ["distance", "landing_accuracy", "thermal_hits"],
+      "instructions": [
+        "Complete certified training course",
+        "Check weather conditions thoroughly",
+        "Inspect equipment before each flight",
+        "Choose appropriate launch site"
+      ],
+      "tips": [
+        "Never fly alone as beginner",
+        "Respect airspace restrictions",
+        "Practice ground handling regularly"
+      ],
+      "tags": ["extreme", "technical", "freedom", "weather_dependent"]
+    },
+    {
+      "id": "hang_gliding",
+      "name": "Hang Gliding",
+      "category": "adventure",
+      "description": "Free flight with rigid wing aircraft",
+      "difficulty": "advanced",
+      "equipment": ["hang_glider", "harness", "helmet", "instruments"],
+      "environment": "mountain_launches",
+      "primaryMetrics": ["flight_time", "distance"],
+      "optionalMetrics": ["altitude", "landing_score", "thermal_climbs"],
+      "instructions": [
+        "Complete extensive training program",
+        "Understand meteorology thoroughly",
+        "Practice on training hills first",
+        "Always have radio communication"
+      ],
+      "tips": [
+        "Physical fitness important for launch",
+        "Learn to read thermal conditions",
+        "Respect your skill level limits"
+      ],
+      "tags": ["extreme", "technical", "physical", "precision"]
+    },
+    {
+      "id": "mountain_biking",
+      "name": "Mountain Biking",
+      "category": "outdoor",
+      "description": "Off-road cycling on trails and rough terrain",
+      "difficulty": "intermediate",
+      "equipment": ["mountain_bike", "helmet", "gloves", "protective_gear"],
+      "environment": "trails_singletrack",
+      "primaryMetrics": ["duration", "distance", "elevation"],
+      "optionalMetrics": ["technical_features", "crashes", "trail_difficulty"],
+      "instructions": [
+        "Start with easier trail ratings",
+        "Learn basic bike handling skills",
+        "Ride within your ability level",
+        "Yield trail to hikers and horses"
+      ],
+      "tips": [
+        "Look ahead, not at immediate obstacles",
+        "Use momentum to clear obstacles",
+        "Practice braking and cornering"
+      ],
+      "tags": ["technical", "adrenaline", "skill", "nature"]
+    },
+    {
+      "id": "geocaching",
+      "name": "Geocaching",
+      "category": "outdoor",
+      "description": "GPS-based treasure hunting activity",
+      "difficulty": "beginner",
+      "equipment": ["gps_device", "comfortable_shoes", "pen"],
+      "environment": "varies",
+      "primaryMetrics": ["caches_found", "duration"],
+      "optionalMetrics": ["difficulty_rating", "terrain_rating", "distance_hiked"],
+      "instructions": [
+        "Download geocaching app",
+        "Start with easier difficulty/terrain ratings",
+        "Bring writing instrument for log",
+        "Replace cache exactly where found"
+      ],
+      "tips": [
+        "Be discreet around muggles (non-cachers)",
+        "Bring small items for trading",
+        "Check cache hints if stuck"
+      ],
+      "tags": ["puzzle_solving", "exploration", "technology", "family"]
+    },
+    {
+      "id": "metal_detecting",
+      "name": "Metal Detecting",
+      "category": "outdoor",
+      "description": "Searching for buried metal objects",
+      "difficulty": "beginner",
+      "equipment": ["metal_detector", "digging_tools", "finds_pouch"],
+      "environment": "beaches_parks_fields",
+      "primaryMetrics": ["duration", "finds"],
+      "optionalMetrics": ["depth_reached", "area_covered", "valuable_finds"],
+      "instructions": [
+        "Get permission to detect on private land",
+        "Learn detector settings and sounds",
+        "Fill in all holes completely",
+        "Research local laws and regulations"
+      ],
+      "tips": [
+        "Start with public beaches and parks",
+        "Bring trash bag for junk finds",
+        "Join local detecting club for tips"
+      ],
+      "tags": ["treasure_hunting", "patience", "outdoor", "hobby"]
+    },
+    {
+      "id": "photography_walk",
+      "name": "Photography Walking",
+      "category": "lifestyle",
+      "description": "Walking with focus on capturing photographs",
+      "difficulty": "beginner",
+      "equipment": ["camera", "comfortable_shoes"],
+      "environment": "urban_nature",
+      "primaryMetrics": ["duration", "photos_taken"],
+      "optionalMetrics": ["distance_walked", "subjects_photographed", "quality_shots"],
+      "instructions": [
+        "Choose interesting location or theme",
+        "Walk slowly and observe surroundings",
+        "Experiment with different angles",
+        "Respect privacy and property"
+      ],
+      "tips": [
+        "Golden hour provides best lighting",
+        "Look for interesting patterns and textures",
+        "Don't just shoot, spend time observing"
+      ],
+      "tags": ["creative", "mindful", "artistic", "accessible"]
+    },
+    {
+      "id": "bird_watching",
+      "name": "Bird Watching",
+      "category": "lifestyle",
+      "description": "Observing and identifying birds in natural habitats",
+      "difficulty": "beginner",
+      "equipment": ["binoculars", "field_guide", "notebook"],
+      "environment": "parks_wetlands_forests",
+      "primaryMetrics": ["duration", "species_spotted"],
+      "optionalMetrics": ["new_species", "photos_taken", "distance_walked"],
+      "instructions": [
+        "Start early morning for best activity",
+        "Move slowly and quietly",
+        "Learn common local species first",
+        "Record sightings in journal"
+      ],
+      "tips": [
+        "Listen for bird calls and songs",
+        "Look for movement in peripheral vision",
+        "Patience is key to good sightings"
+      ],
+      "tags": ["nature", "patience", "learning", "peaceful"]
+    },
+    {
+      "id": "gardening",
+      "name": "Gardening",
+      "category": "lifestyle",
+      "description": "Physical activity through garden maintenance and cultivation",
+      "difficulty": "beginner",
+      "equipment": ["tools", "gloves", "kneepads"],
+      "environment": "garden_yard",
+      "primaryMetrics": ["duration", "areas_worked"],
+      "optionalMetrics": ["plants_planted", "weeds_removed", "harvest"],
+      "instructions": [
+        "Use proper lifting techniques",
+        "Take breaks and stretch regularly",
+        "Vary activities to use different muscles",
+        "Stay hydrated in hot weather"
+      ],
+      "tips": [
+        "Kneel or sit instead of bending over",
+        "Use long-handled tools when possible",
+        "Work during cooler parts of day"
+      ],
+      "tags": ["productive", "therapeutic", "strength", "outdoor"]
+    },
+    {
+      "id": "dancing_social",
+      "name": "Social Dancing",
+      "category": "lifestyle",
+      "description": "Partner or group dancing for recreation and exercise",
+      "difficulty": "beginner",
+      "equipment": ["comfortable_shoes", "appropriate_clothing"],
+      "environment": "studio_social_venue",
+      "primaryMetrics": ["duration", "dances_completed"],
+      "optionalMetrics": ["styles_practiced", "partners", "difficulty_level"],
+      "instructions": [
+        "Start with basic steps and timing",
+        "Focus on leading/following clearly",
+        "Be respectful of partners",
+        "Practice regularly to improve"
+      ],
+      "tips": [
+        "Listen to music and feel the rhythm",
+        "Communicate through gentle pressure",
+        "Enjoy the social aspect"
+      ],
+      "tags": ["social", "cardio", "coordination", "cultural"]
+    },
+    {
+      "id": "urban_exploration",
+      "name": "Urban Exploration",
+      "category": "lifestyle",
+      "description": "Walking exploration of urban environments and architecture",
+      "difficulty": "beginner",
+      "equipment": ["comfortable_shoes", "camera", "map"],
+      "environment": "city_urban",
+      "primaryMetrics": ["duration", "distance"],
+      "optionalMetrics": ["landmarks_visited", "photos_taken", "new_areas"],
+      "instructions": [
+        "Plan safe route through interesting areas",
+        "Stay aware of surroundings",
+        "Respect private property",
+        "Use public transportation when available"
+      ],
+      "tips": [
+        "Look up as well as around",
+        "Take time to read historical markers",
+        "Discover local cafes and shops"
+      ],
+      "tags": ["exploration", "cultural", "urban", "discovery"]
+    }
+  ]
+}

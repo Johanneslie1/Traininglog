@@ -1,0 +1,476 @@
+[
+  {
+    "id": "bench-press-1",
+    "name": "Bench Press",
+    "category": "compound",
+    "description": "A compound chest exercise performed on a flat bench.",
+    "type": "strength",
+    "activityType": "resistance",
+    "difficulty": "intermediate",
+    "equipment": ["barbell", "bench"],
+    "instructions": [
+      "Lie on bench",
+      "Grip barbell slightly wider than shoulder width",
+      "Lower bar to mid-chest",
+      "Press back up to starting position"
+    ],
+    "tips": [
+      "Keep feet flat on floor",
+      "Maintain tight core",
+      "Control the descent"
+    ],
+    "primaryMuscles": ["chest"],
+    "secondaryMuscles": ["shoulders", "triceps"],
+    "defaultUnit": "kg",
+    "metrics": {
+      "trackWeight": true,
+      "trackReps": true,
+      "trackRPE": true
+    },
+    "isDefault": true
+  },
+  {
+    "id": "squat-1",
+    "name": "Barbell Back Squat",
+    "category": "compound",
+    "description": "A fundamental compound exercise for lower body strength.",
+    "type": "strength",
+    "activityType": "resistance",
+    "difficulty": "intermediate",
+    "equipment": ["barbell", "rack"],
+    "instructions": [
+      "Position bar on upper back",
+      "Feet shoulder-width apart",
+      "Break at hips and knees",
+      "Lower until thighs parallel",
+      "Drive through heels to stand"
+    ],
+    "tips": [
+      "Keep chest up",
+      "Maintain neutral spine",
+      "Knees track over toes"
+    ],
+    "primaryMuscles": ["quadriceps", "glutes", "hamstrings"],
+    "secondaryMuscles": ["core", "lower_back", "calves"],
+    "defaultUnit": "kg",
+    "metrics": {
+      "trackWeight": true,
+      "trackReps": true,
+      "trackRPE": true
+    },
+    "isDefault": true
+  },
+  {
+    "id": "deadlift-1",
+    "name": "Conventional Deadlift",
+    "category": "compound",
+    "description": "A compound exercise that targets multiple muscle groups.",
+    "type": "strength",
+    "activityType": "resistance",
+    "difficulty": "intermediate",
+    "equipment": ["barbell"],
+    "instructions": [
+      "Stand with feet hip-width apart, barbell over midfoot",
+      "Hinge at the hips to grip the bar outside your legs",
+      "Keep your chest up and back straight",
+      "Drive through your heels and extend your hips and knees",
+      "Return the weight to the ground with control"
+    ],
+    "tips": [
+      "Keep the bar close to your body",
+      "Engage your lats",
+      "Think about pushing the floor away"
+    ],
+    "primaryMuscles": ["lower_back", "glutes", "hamstrings"],
+    "secondaryMuscles": ["traps", "forearms", "core", "quadriceps"],
+    "defaultUnit": "kg",
+    "metrics": {
+      "trackWeight": true,
+      "trackReps": true,
+      "trackRPE": true
+    },
+    "isDefault": true
+  },
+  {
+    "id": "pull-up-1",
+    "name": "Pull-Ups",
+    "category": "compound",
+    "description": "A bodyweight exercise that targets the back and biceps.",
+    "type": "bodyweight",
+    "activityType": "resistance",
+    "difficulty": "intermediate",
+    "equipment": ["pull-up-bar"],
+    "instructions": [
+      "Hang from a pull-up bar with hands slightly wider than shoulder-width",
+      "Engage your core and squeeze your shoulder blades together",
+      "Pull yourself up until your chin is over the bar",
+      "Lower yourself back down with control"
+    ],
+    "tips": [
+      "Avoid swinging or using momentum",
+      "Focus on pulling with your back muscles",
+      "Keep your core engaged throughout"
+    ],
+    "primaryMuscles": ["back", "lats"],
+    "secondaryMuscles": ["biceps"],
+    "defaultUnit": "reps",
+    "metrics": {
+      "trackReps": true,
+      "trackRPE": true
+    },
+    "isDefault": true
+  },
+  {
+    "id": "overhead-press-1",
+    "name": "Overhead Press",
+    "category": "compound",
+    "description": "A compound exercise that targets the shoulders and triceps.",
+    "type": "strength",
+    "activityType": "resistance",
+    "difficulty": "intermediate",
+    "equipment": ["barbell"],
+    "instructions": [
+      "Stand with feet shoulder-width apart",
+      "Grip the barbell with hands slightly wider than shoulder-width",
+      "Press the barbell overhead",
+      "Lower the barbell back to shoulder level"
+    ],
+    "tips": [
+      "Keep core tight",
+      "Don't arch your back excessively",
+      "Press in a straight line"
+    ],
+    "primaryMuscles": ["shoulders"],
+    "secondaryMuscles": ["triceps"],
+    "defaultUnit": "kg",
+    "metrics": {
+      "trackWeight": true,
+      "trackReps": true,
+      "trackRPE": true
+    },
+    "isDefault": true
+  },
+  {
+    "id": "barbell-row-1",
+    "name": "Barbell Row",
+    "category": "compound",
+    "description": "A compound exercise that targets the back muscles using a barbell.",
+    "type": "strength",
+    "activityType": "resistance",
+    "difficulty": "intermediate",
+    "equipment": ["barbell"],
+    "instructions": [
+      "Stand with feet shoulder-width apart",
+      "Bend at the hips and knees, keeping the back straight",
+      "Grip the barbell with an overhand grip",
+      "Pull the barbell towards your lower rib cage",
+      "Lower the barbell back to the starting position"
+    ],
+    "tips": [
+      "Keep your back straight",
+      "Pull with your elbows",
+      "Squeeze your shoulder blades together"
+    ],
+    "primaryMuscles": ["back"],
+    "secondaryMuscles": ["biceps"],
+    "defaultUnit": "kg",
+    "metrics": {
+      "trackWeight": true,
+      "trackReps": true,
+      "trackRPE": true
+    },
+    "isDefault": true
+  },
+  {
+    "id": "dumbbell-press-1",
+    "name": "Dumbbell Press",
+    "category": "compound",
+    "description": "A compound chest exercise using dumbbells on a flat bench.",
+    "type": "strength",
+    "activityType": "resistance",
+    "difficulty": "intermediate",
+    "equipment": ["dumbbells", "bench"],
+    "instructions": [
+      "Lie on bench with dumbbells in hand",
+      "Press dumbbells above chest",
+      "Lower dumbbells to chest level",
+      "Press back up to starting position"
+    ],
+    "tips": [
+      "Keep wrists straight",
+      "Control the descent",
+      "Full range of motion"
+    ],
+    "primaryMuscles": ["chest"],
+    "secondaryMuscles": ["shoulders", "triceps"],
+    "defaultUnit": "kg",
+    "metrics": {
+      "trackWeight": true,
+      "trackReps": true,
+      "trackRPE": true
+    },
+    "isDefault": true
+  },
+  {
+    "id": "push-ups-1",
+    "name": "Push-Ups",
+    "category": "compound",
+    "description": "A bodyweight exercise that works the chest, shoulders, and triceps.",
+    "type": "bodyweight",
+    "activityType": "resistance",
+    "difficulty": "beginner",
+    "equipment": ["bodyweight"],
+    "instructions": [
+      "Get into a plank position",
+      "Lower body until chest nearly touches the floor",
+      "Push body back up to starting position"
+    ],
+    "tips": [
+      "Keep body in straight line",
+      "Don't let hips sag",
+      "Full range of motion"
+    ],
+    "primaryMuscles": ["chest"],
+    "secondaryMuscles": ["shoulders", "triceps"],
+    "defaultUnit": "reps",
+    "metrics": {
+      "trackReps": true,
+      "trackRPE": true
+    },
+    "isDefault": true
+  },
+  {
+    "id": "lat-pulldown-1",
+    "name": "Lat Pulldown",
+    "category": "compound",
+    "description": "A machine-based exercise that targets the latissimus dorsi muscles.",
+    "type": "strength",
+    "activityType": "resistance",
+    "difficulty": "beginner",
+    "equipment": ["cable"],
+    "instructions": [
+      "Sit at the lat pulldown machine and adjust the knee pad",
+      "Grab the bar with a wide grip",
+      "Pull the bar down to your chest",
+      "Slowly return the bar to the starting position"
+    ],
+    "tips": [
+      "Keep chest up",
+      "Squeeze shoulder blades",
+      "Control the weight"
+    ],
+    "primaryMuscles": ["back", "lats"],
+    "secondaryMuscles": ["biceps"],
+    "defaultUnit": "kg",
+    "metrics": {
+      "trackWeight": true,
+      "trackReps": true,
+      "trackRPE": true
+    },
+    "isDefault": true
+  },
+  {
+    "id": "bicep-curls-1",
+    "name": "Bicep Curls",
+    "category": "isolation",
+    "description": "An isolation exercise that targets the biceps.",
+    "type": "strength",
+    "activityType": "resistance",
+    "difficulty": "beginner",
+    "equipment": ["dumbbells"],
+    "instructions": [
+      "Stand with feet hip-width apart, dumbbells at your sides",
+      "Curl the dumbbells towards your shoulders",
+      "Lower the dumbbells back to the starting position"
+    ],
+    "tips": [
+      "Keep elbows stable",
+      "Control the movement",
+      "Don't swing the weights"
+    ],
+    "primaryMuscles": ["biceps"],
+    "secondaryMuscles": [],
+    "defaultUnit": "kg",
+    "metrics": {
+      "trackWeight": true,
+      "trackReps": true,
+      "trackRPE": true
+    },
+    "isDefault": true
+  },
+  {
+    "id": "tricep-dips-1",
+    "name": "Tricep Dips",
+    "category": "compound",
+    "description": "A bodyweight exercise that targets the triceps.",
+    "type": "bodyweight",
+    "activityType": "resistance",
+    "difficulty": "intermediate",
+    "equipment": ["bodyweight", "bench"],
+    "instructions": [
+      "Sit on the edge of a bench with hands gripping the edge",
+      "Slide your body off the bench",
+      "Lower your body by bending your elbows",
+      "Push back up to the starting position"
+    ],
+    "tips": [
+      "Keep elbows close to body",
+      "Don't go too low",
+      "Use legs for assistance if needed"
+    ],
+    "primaryMuscles": ["triceps"],
+    "secondaryMuscles": ["shoulders", "chest"],
+    "defaultUnit": "reps",
+    "metrics": {
+      "trackReps": true,
+      "trackRPE": true
+    },
+    "isDefault": true
+  },
+  {
+    "id": "leg-press-1",
+    "name": "Leg Press",
+    "category": "compound",
+    "description": "A machine-based exercise that targets the quadriceps, hamstrings, and glutes.",
+    "type": "strength",
+    "activityType": "resistance",
+    "difficulty": "beginner",
+    "equipment": ["machine"],
+    "instructions": [
+      "Sit on the leg press machine and adjust the seat",
+      "Place your feet on the platform shoulder-width apart",
+      "Push the platform away by extending your legs",
+      "Slowly return to the starting position"
+    ],
+    "tips": [
+      "Keep knees aligned with toes",
+      "Full range of motion",
+      "Control the descent"
+    ],
+    "primaryMuscles": ["quadriceps", "glutes"],
+    "secondaryMuscles": ["hamstrings"],
+    "defaultUnit": "kg",
+    "metrics": {
+      "trackWeight": true,
+      "trackReps": true,
+      "trackRPE": true
+    },
+    "isDefault": true
+  },
+  {
+    "id": "lunges-1",
+    "name": "Walking Lunges",
+    "category": "compound",
+    "description": "A dynamic exercise that targets the quadriceps, hamstrings, and glutes.",
+    "type": "strength",
+    "activityType": "resistance",
+    "difficulty": "intermediate",
+    "equipment": ["dumbbells"],
+    "instructions": [
+      "Stand upright, feet together",
+      "Step forward with one leg, lowering your hips",
+      "Push through the front heel to return to standing",
+      "Repeat on the other side"
+    ],
+    "tips": [
+      "Keep torso upright",
+      "Step far enough forward",
+      "Control the movement"
+    ],
+    "primaryMuscles": ["quadriceps", "glutes"],
+    "secondaryMuscles": ["hamstrings", "core"],
+    "defaultUnit": "kg",
+    "metrics": {
+      "trackWeight": true,
+      "trackReps": true,
+      "trackRPE": true
+    },
+    "isDefault": true
+  },
+  {
+    "id": "calf-raises-1",
+    "name": "Calf Raises",
+    "category": "isolation",
+    "description": "An exercise that targets the calf muscles.",
+    "type": "strength",
+    "activityType": "resistance",
+    "difficulty": "beginner",
+    "equipment": ["bodyweight", "dumbbells"],
+    "instructions": [
+      "Stand with feet hip-width apart",
+      "Raise your heels off the ground",
+      "Lower your heels back to the ground"
+    ],
+    "tips": [
+      "Full range of motion",
+      "Control the movement",
+      "Pause at the top"
+    ],
+    "primaryMuscles": ["calves"],
+    "secondaryMuscles": [],
+    "defaultUnit": "kg",
+    "metrics": {
+      "trackWeight": true,
+      "trackReps": true,
+      "trackRPE": true
+    },
+    "isDefault": true
+  },
+  {
+    "id": "lateral-raises-1",
+    "name": "Lateral Raises",
+    "category": "isolation",
+    "description": "An isolation exercise that targets the lateral deltoids.",
+    "type": "strength",
+    "activityType": "resistance",
+    "difficulty": "beginner",
+    "equipment": ["dumbbells"],
+    "instructions": [
+      "Stand with feet hip-width apart, dumbbells at your sides",
+      "Raise the dumbbells out to the sides",
+      "Lower the dumbbells back to the starting position"
+    ],
+    "tips": [
+      "Keep elbows slightly bent",
+      "Control the movement",
+      "Don't raise above shoulder height"
+    ],
+    "primaryMuscles": ["shoulders"],
+    "secondaryMuscles": [],
+    "defaultUnit": "kg",
+    "metrics": {
+      "trackWeight": true,
+      "trackReps": true,
+      "trackRPE": true
+    },
+    "isDefault": true
+  },
+  {
+    "id": "plank-1",
+    "name": "Plank",
+    "category": "isolation",
+    "description": "A core stability exercise that targets the entire core.",
+    "type": "bodyweight",
+    "activityType": "resistance",
+    "difficulty": "beginner",
+    "equipment": ["bodyweight"],
+    "instructions": [
+      "Get into a forearm plank position",
+      "Keep your body in a straight line from head to heels",
+      "Hold the position, engaging your core"
+    ],
+    "tips": [
+      "Don't let hips sag",
+      "Breathe normally",
+      "Keep shoulders over elbows"
+    ],
+    "primaryMuscles": ["core"],
+    "secondaryMuscles": [],
+    "defaultUnit": "time",
+    "metrics": {
+      "trackTime": true,
+      "trackRPE": true
+    },
+    "isDefault": true
+  }
+]

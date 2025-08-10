@@ -54,8 +54,8 @@ export const searchExercises = async (filters: ExerciseFilter): Promise<Exercise
         const searchableText = [
           ex.name,
           ex.description,
-          ...ex.primaryMuscles,
-          ...ex.secondaryMuscles,
+          ...(ex.primaryMuscles || []),
+          ...(ex.secondaryMuscles || []),
           ...(ex.equipment || [])
         ].map(text => text.toLowerCase()).join(' ');
         
@@ -76,8 +76,8 @@ export const searchExercises = async (filters: ExerciseFilter): Promise<Exercise
     // Apply muscle group filter with both primary and secondary muscles
     if (filters.muscles?.length) {
       filtered = filtered.filter(ex => 
-        ex.primaryMuscles.some(m => filters.muscles!.includes(m)) ||
-        ex.secondaryMuscles.some(m => filters.muscles!.includes(m))
+        (ex.primaryMuscles || []).some(m => filters.muscles!.includes(m)) ||
+        (ex.secondaryMuscles || []).some(m => filters.muscles!.includes(m))
       );
     }
 

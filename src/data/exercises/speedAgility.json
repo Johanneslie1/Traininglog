@@ -1,0 +1,104 @@
+[
+  {
+    "id": "sprint_20m",
+    "name": "20-Meter Sprint",
+    "description": "Short distance linear acceleration sprint",
+    "type": "speedAgility",
+    "activityType": "SPEED_AGILITY",
+    "category": "sprint",
+    "difficulty": "beginner",
+    "primaryMuscles": ["quadriceps", "hamstrings", "calves"],
+    "secondaryMuscles": ["glutes", "core"],
+    "equipment": ["cones", "stopwatch"],
+    "environment": "track_or_field",
+    "space": "20m straight line",
+    "drillType": "speed",
+    "instructions": [
+      "Set up start and finish lines 20m apart",
+      "Start in athletic stance",
+      "Sprint at maximum effort",
+      "Decelerate safely past finish line"
+    ],
+    "tips": [
+      "Focus on arm drive and leg turnover",
+      "Keep head up and body forward lean",
+      "Take full rest between repetitions"
+    ],
+    "defaultUnit": "time",
+    "metrics": {
+      "trackTime": true,
+      "trackReps": true,
+      "trackRPE": true
+    },
+    "tags": ["acceleration", "speed", "power"],
+    "isDefault": true
+  },
+  {
+    "id": "ladder_in_in_out_out",
+    "name": "Ladder: In-In-Out-Out",
+    "description": "Basic ladder footwork pattern",
+    "type": "speedAgility",
+    "activityType": "SPEED_AGILITY",
+    "category": "agilityLadder",
+    "difficulty": "beginner",
+    "primaryMuscles": ["quadriceps", "calves"],
+    "secondaryMuscles": ["core"],
+    "equipment": ["agility_ladder"],
+    "environment": "flat_surface",
+    "space": "Standard agility ladder",
+    "drillType": "agility",
+    "instructions": [
+      "Start at one end of ladder",
+      "Step both feet into first square",
+      "Step both feet outside ladder",
+      "Continue pattern through ladder"
+    ],
+    "tips": [
+      "Stay on balls of feet",
+      "Keep knees bent and ready",
+      "Focus on quick, light steps"
+    ],
+    "defaultUnit": "time",
+    "metrics": {
+      "trackTime": true,
+      "trackReps": true,
+      "trackRPE": true
+    },
+    "tags": ["footwork", "coordination", "warm_up"],
+    "isDefault": true
+  },
+  {
+    "id": "cone_5_10_5",
+    "name": "5-10-5 Shuttle",
+    "description": "Classic agility test with direction changes",
+    "type": "speedAgility",
+    "activityType": "SPEED_AGILITY",
+    "category": "coneWork",
+    "difficulty": "intermediate",
+    "primaryMuscles": ["quadriceps", "hamstrings"],
+    "secondaryMuscles": ["calves", "core"],
+    "equipment": ["cones", "stopwatch"],
+    "environment": "open_space",
+    "space": "10 yards total (5 yards each direction)",
+    "drillType": "agility",
+    "instructions": [
+      "Start at middle cone",
+      "Sprint 5 yards to right cone",
+      "Touch cone and sprint 10 yards to left",
+      "Touch cone and sprint 5 yards back to start"
+    ],
+    "tips": [
+      "Stay low through direction changes",
+      "Touch cones with outside hand",
+      "Drive hard out of cuts"
+    ],
+    "defaultUnit": "time",
+    "metrics": {
+      "trackTime": true,
+      "trackReps": true,
+      "trackRPE": true
+    },
+    "tags": ["change_of_direction", "agility_test", "sport_specific"],
+    "isDefault": true
+  }
+]

@@ -1,0 +1,66 @@
+[
+  {
+    "id": "other-1",
+    "name": "Meditation",
+    "description": "Mindfulness practice for mental wellness",
+    "type": "other",
+    "activityType": "OTHER",
+    "category": "wellness",
+    "difficulty": "beginner",
+    "primaryMuscles": [],
+    "secondaryMuscles": [],
+    "equipment": [],
+    "environment": "quiet_space",
+    "instructions": ["Find comfortable seated position", "Close eyes and focus on breathing", "Let thoughts pass without judgment"],
+    "tips": ["Start with short sessions", "Use guided meditation apps", "Practice consistently"],
+    "defaultUnit": "time",
+    "metrics": {
+      "trackTime": true,
+      "trackRPE": true
+    },
+    "isDefault": true
+  },
+  {
+    "id": "other-2",
+    "name": "Walking",
+    "description": "Low-intensity movement for general health",
+    "type": "other",
+    "activityType": "OTHER",
+    "category": "general_movement",
+    "difficulty": "beginner",
+    "primaryMuscles": ["quadriceps", "calves"],
+    "secondaryMuscles": ["hamstrings", "glutes"],
+    "equipment": ["walking_shoes"],
+    "environment": "any",
+    "instructions": ["Start at comfortable pace", "Maintain good posture", "Enjoy the movement"],
+    "tips": ["Wear comfortable shoes", "Stay hydrated", "Listen to music or podcasts"],
+    "defaultUnit": "time",
+    "metrics": {
+      "trackTime": true,
+      "trackDistance": true,
+      "trackRPE": true
+    },
+    "isDefault": true
+  },
+  {
+    "id": "other-3",
+    "name": "Foam Rolling",
+    "description": "Self-myofascial release for recovery",
+    "type": "other",
+    "activityType": "OTHER",
+    "category": "recovery",
+    "difficulty": "beginner",
+    "primaryMuscles": [],
+    "secondaryMuscles": [],
+    "equipment": ["foam_roller"],
+    "environment": "any",
+    "instructions": ["Apply moderate pressure", "Roll slowly over target areas", "Breathe deeply"],
+    "tips": ["Don't roll over joints", "Start gentle", "Focus on tight areas"],
+    "defaultUnit": "time",
+    "metrics": {
+      "trackTime": true,
+      "trackRPE": true
+    },
+    "isDefault": true
+  }
+]

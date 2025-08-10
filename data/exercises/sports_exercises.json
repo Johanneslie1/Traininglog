@@ -1,0 +1,522 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "lastUpdated": "2025-08-08",
+    "description": "Comprehensive sports activities database",
+    "totalExercises": 35
+  },
+  "categories": {
+    "ballSports": {
+      "name": "Ball Sports",
+      "description": "Sports involving balls or spherical objects",
+      "icon": "⚽"
+    },
+    "racquetSports": {
+      "name": "Racquet Sports", 
+      "description": "Sports played with racquets or paddles",
+      "icon": "🎾"
+    },
+    "teamSports": {
+      "name": "Team Sports",
+      "description": "Organized team-based sporting activities",
+      "icon": "🏈"
+    },
+    "waterSports": {
+      "name": "Water Sports",
+      "description": "Sports activities in or on water",
+      "icon": "🏄"
+    },
+    "winterSports": {
+      "name": "Winter Sports",
+      "description": "Snow and ice-based sporting activities",
+      "icon": "⛷️"
+    },
+    "combatSports": {
+      "name": "Combat Sports",
+      "description": "Martial arts and combat training",
+      "icon": "🥊"
+    }
+  },
+  "exercises": [
+    {
+      "id": "football_soccer",
+      "name": "Football (Soccer)",
+      "category": "ballSports",
+      "description": "Association football training and matches",
+      "difficulty": "intermediate",
+      "equipment": ["football", "cleats", "shin_guards"],
+      "teamBased": true,
+      "primaryMetrics": ["duration", "intensity"],
+      "optionalMetrics": ["distance", "sprints", "averageHR", "rpe"],
+      "skills": ["dribbling", "passing", "shooting", "defending", "positioning"],
+      "instructions": [
+        "Warm up with light jogging and ball touches",
+        "Practice basic skills: passing, dribbling, shooting",
+        "Engage in small-sided games or drills",
+        "Cool down with light jogging and stretching"
+      ],
+      "tips": [
+        "Focus on first touch and ball control",
+        "Keep head up when dribbling",
+        "Communicate with teammates constantly"
+      ],
+      "tags": ["cardio", "agility", "teamwork", "skill"]
+    },
+    {
+      "id": "basketball",
+      "name": "Basketball",
+      "category": "ballSports",
+      "description": "Basketball training, drills, and games",
+      "difficulty": "intermediate",
+      "equipment": ["basketball", "basketball_shoes", "court"],
+      "teamBased": true,
+      "primaryMetrics": ["duration", "intensity"],
+      "optionalMetrics": ["points_scored", "rebounds", "assists", "rpe"],
+      "skills": ["shooting", "dribbling", "passing", "rebounding", "defense"],
+      "instructions": [
+        "Warm up with light dribbling and shooting",
+        "Practice fundamental skills",
+        "Engage in scrimmage or structured drills",
+        "Cool down with shooting and stretching"
+      ],
+      "tips": [
+        "Follow through on shots with wrist snap",
+        "Keep dribble below waist level",
+        "Use proper footwork for defense"
+      ],
+      "tags": ["jumping", "hand_eye_coordination", "explosive", "teamwork"]
+    },
+    {
+      "id": "volleyball",
+      "name": "Volleyball",
+      "category": "ballSports",
+      "description": "Volleyball training and competitive play",
+      "difficulty": "intermediate",
+      "equipment": ["volleyball", "volleyball_shoes", "net"],
+      "teamBased": true,
+      "primaryMetrics": ["duration", "intensity"],
+      "optionalMetrics": ["sets_won", "spikes", "blocks", "rpe"],
+      "skills": ["serving", "passing", "setting", "spiking", "blocking"],
+      "instructions": [
+        "Warm up with arm swings and light passing",
+        "Practice serving and basic skills",
+        "Play games or run specific drills",
+        "Cool down with stretching, especially shoulders"
+      ],
+      "tips": [
+        "Contact ball with flat hand for serves",
+        "Get under the ball for passes",
+        "Approach spike with proper footwork"
+      ],
+      "tags": ["jumping", "reaction_time", "teamwork", "coordination"]
+    },
+    {
+      "id": "tennis",
+      "name": "Tennis",
+      "category": "racquetSports",
+      "description": "Tennis practice, drills, and matches",
+      "difficulty": "intermediate",
+      "equipment": ["tennis_racquet", "tennis_balls", "tennis_shoes", "court"],
+      "teamBased": false,
+      "primaryMetrics": ["duration", "intensity"],
+      "optionalMetrics": ["games_won", "winners", "errors", "rpe"],
+      "skills": ["forehand", "backhand", "serve", "volley", "footwork"],
+      "instructions": [
+        "Warm up with light rallying",
+        "Practice strokes and footwork",
+        "Play points or matches",
+        "Cool down with easy hitting and stretching"
+      ],
+      "tips": [
+        "Turn shoulders for proper preparation",
+        "Follow through across body",
+        "Stay on balls of feet for quick movement"
+      ],
+      "tags": ["agility", "hand_eye_coordination", "strategy", "endurance"]
+    },
+    {
+      "id": "badminton",
+      "name": "Badminton",
+      "category": "racquetSports",
+      "description": "Badminton training and competitive play",
+      "difficulty": "beginner",
+      "equipment": ["badminton_racquet", "shuttlecocks", "court"],
+      "teamBased": false,
+      "primaryMetrics": ["duration", "intensity"],
+      "optionalMetrics": ["games_won", "smashes", "rpe"],
+      "skills": ["clear", "drop", "smash", "serve", "net_play"],
+      "instructions": [
+        "Warm up with light hitting",
+        "Practice basic strokes and footwork",
+        "Play games focusing on placement",
+        "Cool down with easy rallies"
+      ],
+      "tips": [
+        "Use wrist snap for power shots",
+        "Move quickly to base position after each shot",
+        "Vary shot placement to move opponent"
+      ],
+      "tags": ["reaction_time", "agility", "precision", "indoor"]
+    },
+    {
+      "id": "table_tennis",
+      "name": "Table Tennis",
+      "category": "racquetSports",
+      "description": "Table tennis practice and matches",
+      "difficulty": "beginner",
+      "equipment": ["ping_pong_paddle", "ping_pong_balls", "table"],
+      "teamBased": false,
+      "primaryMetrics": ["duration", "intensity"],
+      "optionalMetrics": ["games_won", "rallies", "rpe"],
+      "skills": ["forehand", "backhand", "serve", "spin", "placement"],
+      "instructions": [
+        "Warm up with basic hitting",
+        "Practice different strokes and spins",
+        "Play games focusing on consistency",
+        "Work on specific techniques"
+      ],
+      "tips": [
+        "Keep paddle angle consistent",
+        "Use legs for power, not just arm",
+        "Watch the ball contact the paddle"
+      ],
+      "tags": ["reaction_time", "hand_eye_coordination", "indoor", "precision"]
+    },
+    {
+      "id": "american_football",
+      "name": "American Football",
+      "category": "teamSports",
+      "description": "American football training and games",
+      "difficulty": "advanced",
+      "equipment": ["football", "helmet", "pads", "cleats"],
+      "teamBased": true,
+      "primaryMetrics": ["duration", "intensity"],
+      "optionalMetrics": ["yards", "tackles", "completions", "rpe"],
+      "skills": ["throwing", "catching", "running", "blocking", "tackling"],
+      "instructions": [
+        "Warm up thoroughly with dynamic movements",
+        "Practice position-specific skills",
+        "Run plays and drills",
+        "Cool down and review performance"
+      ],
+      "tips": [
+        "Keep head up when running",
+        "Use proper tackling technique",
+        "Communicate play calls clearly"
+      ],
+      "tags": ["contact", "explosive", "strategy", "strength"]
+    },
+    {
+      "id": "rugby",
+      "name": "Rugby",
+      "category": "teamSports",
+      "description": "Rugby training and matches",
+      "difficulty": "advanced",
+      "equipment": ["rugby_ball", "cleats", "mouthguard"],
+      "teamBased": true,
+      "primaryMetrics": ["duration", "intensity"],
+      "optionalMetrics": ["tries", "tackles", "rucks", "rpe"],
+      "skills": ["passing", "rucking", "tackling", "kicking", "lineouts"],
+      "instructions": [
+        "Warm up with light contact drills",
+        "Practice handling and passing",
+        "Work on set pieces and contact",
+        "Cool down with light activity"
+      ],
+      "tips": [
+        "Pass before contact in tackles",
+        "Drive with shoulder in tackles",
+        "Stay low in rucks and scrums"
+      ],
+      "tags": ["contact", "endurance", "teamwork", "toughness"]
+    },
+    {
+      "id": "ice_hockey",
+      "name": "Ice Hockey",
+      "category": "teamSports",
+      "description": "Ice hockey training and games",
+      "difficulty": "advanced",
+      "equipment": ["skates", "hockey_stick", "puck", "helmet", "pads"],
+      "teamBased": true,
+      "primaryMetrics": ["duration", "intensity"],
+      "optionalMetrics": ["goals", "assists", "shots", "rpe"],
+      "skills": ["skating", "stickhandling", "shooting", "passing", "checking"],
+      "instructions": [
+        "Warm up with skating drills",
+        "Practice stickhandling and shooting",
+        "Work on game situations",
+        "Cool down with easy skating"
+      ],
+      "tips": [
+        "Keep head up while skating",
+        "Follow through toward target when shooting",
+        "Bend knees for better balance"
+      ],
+      "tags": ["skating", "coordination", "speed", "ice"]
+    },
+    {
+      "id": "baseball",
+      "name": "Baseball",
+      "category": "ballSports",
+      "description": "Baseball practice and games",
+      "difficulty": "intermediate",
+      "equipment": ["baseball", "bat", "glove", "cleats"],
+      "teamBased": true,
+      "primaryMetrics": ["duration", "intensity"],
+      "optionalMetrics": ["hits", "runs", "fielding_chances", "rpe"],
+      "skills": ["hitting", "fielding", "throwing", "base_running", "pitching"],
+      "instructions": [
+        "Warm up with light throwing",
+        "Practice hitting in batting cages",
+        "Work on fielding drills",
+        "Cool down with easy throwing"
+      ],
+      "tips": [
+        "Keep eye on ball through contact",
+        "Step toward target when throwing",
+        "Get in front of ground balls"
+      ],
+      "tags": ["hand_eye_coordination", "reaction_time", "strategy", "patience"]
+    },
+    {
+      "id": "swimming_competitive",
+      "name": "Competitive Swimming",
+      "category": "waterSports",
+      "description": "Competitive swimming training and meets",
+      "difficulty": "advanced",
+      "equipment": ["pool", "goggles", "swimsuit", "swim_cap"],
+      "teamBased": false,
+      "primaryMetrics": ["duration", "distance"],
+      "optionalMetrics": ["stroke_count", "split_times", "rpe"],
+      "skills": ["freestyle", "backstroke", "breaststroke", "butterfly", "starts", "turns"],
+      "instructions": [
+        "Warm up with easy swimming and drills",
+        "Work on stroke technique",
+        "Practice race pace sets",
+        "Cool down with easy swimming"
+      ],
+      "tips": [
+        "Focus on distance per stroke",
+        "Practice underwater dolphin kicks",
+        "Maintain streamline position off walls"
+      ],
+      "tags": ["technique", "endurance", "full_body", "pool"]
+    },
+    {
+      "id": "water_polo",
+      "name": "Water Polo",
+      "category": "waterSports",
+      "description": "Water polo training and matches",
+      "difficulty": "advanced",
+      "equipment": ["pool", "water_polo_ball", "goals", "caps"],
+      "teamBased": true,
+      "primaryMetrics": ["duration", "intensity"],
+      "optionalMetrics": ["goals", "assists", "steals", "rpe"],
+      "skills": ["treading_water", "passing", "shooting", "defending", "swimming"],
+      "instructions": [
+        "Warm up with swimming and treading",
+        "Practice ball handling skills",
+        "Work on game situations",
+        "Cool down with easy swimming"
+      ],
+      "tips": [
+        "Use eggbeater kick for treading",
+        "Keep ball dry when possible",
+        "Communicate constantly with team"
+      ],
+      "tags": ["treading_water", "strength", "teamwork", "pool"]
+    },
+    {
+      "id": "surfing",
+      "name": "Surfing",
+      "category": "waterSports",
+      "description": "Surfing practice and wave riding",
+      "difficulty": "intermediate",
+      "equipment": ["surfboard", "wetsuit", "leash", "wax"],
+      "teamBased": false,
+      "primaryMetrics": ["duration", "waves_caught"],
+      "optionalMetrics": ["wave_height", "ride_time", "rpe"],
+      "skills": ["paddling", "pop_up", "balance", "wave_reading", "turning"],
+      "instructions": [
+        "Warm up with paddling and stretching",
+        "Practice pop-ups on beach if needed",
+        "Start on smaller waves",
+        "Cool down and clean equipment"
+      ],
+      "tips": [
+        "Paddle through waves, not over them",
+        "Look where you want to go",
+        "Stay relaxed and bent at knees"
+      ],
+      "tags": ["balance", "core_strength", "ocean", "nature"]
+    },
+    {
+      "id": "skiing_alpine",
+      "name": "Alpine Skiing",
+      "category": "winterSports",
+      "description": "Downhill skiing on groomed slopes",
+      "difficulty": "intermediate",
+      "equipment": ["skis", "boots", "bindings", "poles", "helmet"],
+      "teamBased": false,
+      "primaryMetrics": ["duration", "runs"],
+      "optionalMetrics": ["vertical_feet", "max_speed", "rpe"],
+      "skills": ["turning", "edge_control", "balance", "stopping", "jumping"],
+      "instructions": [
+        "Warm up with easy runs",
+        "Practice fundamental techniques",
+        "Progress to more challenging terrain",
+        "Cool down with easy skiing"
+      ],
+      "tips": [
+        "Keep weight forward and centered",
+        "Initiate turns with edge pressure",
+        "Look ahead, not down at skis"
+      ],
+      "tags": ["balance", "coordination", "mountain", "seasonal"]
+    },
+    {
+      "id": "snowboarding",
+      "name": "Snowboarding",
+      "category": "winterSports",
+      "description": "Snowboarding on slopes and terrain parks",
+      "difficulty": "intermediate",
+      "equipment": ["snowboard", "boots", "bindings", "helmet"],
+      "teamBased": false,
+      "primaryMetrics": ["duration", "runs"],
+      "optionalMetrics": ["vertical_feet", "tricks_landed", "rpe"],
+      "skills": ["linking_turns", "edge_control", "balance", "jumping", "tricks"],
+      "instructions": [
+        "Warm up with easy runs",
+        "Practice basic turns and stopping",
+        "Progress to steeper terrain",
+        "Work on freestyle elements if desired"
+      ],
+      "tips": [
+        "Keep knees bent and flexible",
+        "Look in direction of travel",
+        "Practice falling safely"
+      ],
+      "tags": ["balance", "core_strength", "mountain", "seasonal"]
+    },
+    {
+      "id": "ice_skating",
+      "name": "Ice Skating",
+      "category": "winterSports",
+      "description": "Recreational and figure ice skating",
+      "difficulty": "beginner",
+      "equipment": ["ice_skates", "warm_clothing"],
+      "teamBased": false,
+      "primaryMetrics": ["duration"],
+      "optionalMetrics": ["laps", "elements_practiced", "rpe"],
+      "skills": ["forward_skating", "backward_skating", "turns", "stops", "jumps"],
+      "instructions": [
+        "Warm up with easy forward skating",
+        "Practice basic skills and movements",
+        "Work on balance and confidence",
+        "Cool down with easy skating"
+      ],
+      "tips": [
+        "Keep ankles straight and firm",
+        "Bend knees for better balance",
+        "Use toe pick carefully"
+      ],
+      "tags": ["balance", "grace", "indoor", "technique"]
+    },
+    {
+      "id": "boxing",
+      "name": "Boxing",
+      "category": "combatSports",
+      "description": "Boxing training and sparring",
+      "difficulty": "intermediate",
+      "equipment": ["boxing_gloves", "hand_wraps", "heavy_bag", "mouthguard"],
+      "teamBased": false,
+      "primaryMetrics": ["duration", "rounds"],
+      "optionalMetrics": ["punches_thrown", "rpe"],
+      "skills": ["jab", "cross", "hook", "uppercut", "footwork", "defense"],
+      "instructions": [
+        "Warm up with shadowboxing",
+        "Work on technique with bags or pads",
+        "Practice combinations and movement",
+        "Cool down with light activity"
+      ],
+      "tips": [
+        "Keep hands up for defense",
+        "Turn hips with power punches",
+        "Stay relaxed between combinations"
+      ],
+      "tags": ["cardio", "strength", "coordination", "self_defense"]
+    },
+    {
+      "id": "martial_arts",
+      "name": "Martial Arts",
+      "category": "combatSports",
+      "description": "Traditional martial arts training",
+      "difficulty": "intermediate",
+      "equipment": ["gi", "belt", "protective_gear"],
+      "teamBased": false,
+      "primaryMetrics": ["duration", "intensity"],
+      "optionalMetrics": ["techniques_practiced", "sparring_rounds", "rpe"],
+      "skills": ["kicks", "punches", "blocks", "grappling", "forms", "self_defense"],
+      "instructions": [
+        "Warm up with basic movements",
+        "Practice fundamental techniques",
+        "Work on forms or sparring",
+        "Cool down with meditation or stretching"
+      ],
+      "tips": [
+        "Focus on proper form over speed",
+        "Breathe correctly with movements",
+        "Respect training partners and instructors"
+      ],
+      "tags": ["discipline", "flexibility", "self_defense", "tradition"]
+    },
+    {
+      "id": "wrestling",
+      "name": "Wrestling",
+      "category": "combatSports",
+      "description": "Wrestling training and practice matches",
+      "difficulty": "advanced",
+      "equipment": ["wrestling_shoes", "headgear", "singlet"],
+      "teamBased": false,
+      "primaryMetrics": ["duration", "intensity"],
+      "optionalMetrics": ["takedowns", "escapes", "rpe"],
+      "skills": ["takedowns", "escapes", "reversals", "pins", "conditioning"],
+      "instructions": [
+        "Warm up thoroughly with dynamic movements",
+        "Practice technique drills",
+        "Engage in live wrestling",
+        "Cool down with stretching"
+      ],
+      "tips": [
+        "Keep center of gravity low",
+        "Use legs for power in takedowns",
+        "Stay aggressive but controlled"
+      ],
+      "tags": ["strength", "conditioning", "mental_toughness", "grappling"]
+    },
+    {
+      "id": "golf",
+      "name": "Golf",
+      "category": "ballSports",
+      "description": "Golf practice and rounds",
+      "difficulty": "intermediate",
+      "equipment": ["golf_clubs", "golf_balls", "tees", "golf_shoes"],
+      "teamBased": false,
+      "primaryMetrics": ["duration", "holes_played"],
+      "optionalMetrics": ["score", "fairways_hit", "putts", "rpe"],
+      "skills": ["driving", "iron_play", "chipping", "putting", "course_management"],
+      "instructions": [
+        "Warm up at driving range",
+        "Practice short game on practice green",
+        "Play round focusing on course management",
+        "Cool down with putting practice"
+      ],
+      "tips": [
+        "Keep head still during swing",
+        "Follow through toward target",
+        "Take time to read putts carefully"
+      ],
+      "tags": ["precision", "mental_game", "outdoor", "strategy"]
+    }
+  ]
+}

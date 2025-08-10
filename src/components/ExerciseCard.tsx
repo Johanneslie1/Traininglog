@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ExerciseSet } from '../types/sets';
-import { ExerciseData } from '../services/exerciseDataService';
+import { UnifiedExerciseData } from '../utils/unifiedExerciseUtils';
 import { useSupersets } from '../context/SupersetContext';
 
 interface ExerciseCardProps {
-  exercise: ExerciseData;
+  exercise: UnifiedExerciseData;
   onEdit?: () => void;
   onDelete?: () => void;
   showActions?: boolean;
@@ -33,7 +33,6 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
   subNumber
 }) => {
   const [showMenu, setShowMenu] = useState(false);
-  const [showDetails, setShowDetails] = useState(true); // Add toggle state
   const menuRef = useRef<HTMLDivElement>(null);
   const { state, toggleExerciseSelection, isExerciseInSuperset, startCreating } = useSupersets();
   
@@ -66,11 +65,6 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
   // Calculate total volume for the exercise
   const calculateTotalVolume = () => {
     return exercise.sets.reduce((total, set) => total + (set.weight * set.reps), 0);
-  };
-
-  // Toggle details display
-  const toggleDetails = () => {
-    setShowDetails(!showDetails);
   };
 
   const cardClassName = `bg-[#1a1a1a] rounded-lg p-3 transition-all duration-200 ${
@@ -110,21 +104,6 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
         </div>
         {showActions && (
           <div className="flex gap-2">
-            {/* Toggle details button */}
-            <button
-              onClick={toggleDetails}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-              aria-label={showDetails ? "Hide details" : "Show details"}
-            >
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                {showDetails ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                )}
-              </svg>
-            </button>
-            
             {/* Unified superset button with different states */}
             <button
               onClick={() => {
@@ -196,37 +175,259 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
       </div>
       
       <div className="mt-3">
-        {showDetails ? (
-          // Detailed view - show all sets horizontally with color coding
-          <div className="text-sm">
-            <div className="flex flex-wrap items-center">
-              {exercise.sets.map((set: ExerciseSet, index: number) => (
-                <div key={index} className="flex items-center" style={{ marginRight: index === exercise.sets.length - 1 ? 0 : 8 }}>
-                  <span 
-                    className="font-medium whitespace-nowrap"
-                    style={{ color: getDifficultyColor(set.difficulty) }}
-                  >
-                    {set.weight}kg {set.reps}r
-                  </span>
-                  {index < exercise.sets.length - 1 && (
-                    <span className="text-gray-500 mx-1">|</span>
+        {/* Check activity type first to determine display format */}
+        {exercise.activityType && exercise.activityType !== 'resistance' ? (
+          // Non-resistance activity - clean format like in screenshot
+          <div className="text-sm text-gray-300">
+            {/* Activity type badge */}
+            <div className="flex items-center gap-2 mb-2">
+              <span className="px-2 py-1 bg-blue-600/20 text-blue-300 text-xs rounded-full">
+                {exercise.activityType.charAt(0).toUpperCase() + exercise.activityType.slice(1)} Activity
+              </span>
+            </div>
+            
+            {/* Display key metrics in the clean format */}
+            {exercise.sets && exercise.sets.length > 0 && (() => {
+              const set = exercise.sets[0] as any; // Use first set for display
+              
+              // Helper function to check if a value exists and is not empty
+              const hasValue = (value: any): boolean => {
+                return value !== null && 
+                       value !== undefined && 
+                       value !== '' && 
+                       !(typeof value === 'string' && value.trim() === '') &&
+                       !(typeof value === 'number' && isNaN(value));
+                // Note: We don't exclude zero values as they might be legitimate (e.g., 0 calories)
+              };
+
+              return (
+                <div className="space-y-1">
+                  {hasValue(set.duration) && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">Duration:</span>
+                      <span className="text-white">{set.duration} min</span>
+                    </div>
+                  )}
+                  
+                  {hasValue(set.distance) && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">Distance:</span>
+                      <span className="text-white">{set.distance} m</span>
+                    </div>
+                  )}
+                  
+                  {hasValue(set.calories) && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">Calories:</span>
+                      <span className="text-white">{set.calories} kcal</span>
+                    </div>
+                  )}
+                  
+                  {hasValue(set.heartRate) && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">Heart Rate:</span>
+                      <span className="text-white">{set.heartRate} bpm</span>
+                    </div>
+                  )}
+                  
+                  {hasValue(set.intensity) && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">Intensity:</span>
+                      <span className="text-white">{set.intensity}/10</span>
+                    </div>
+                  )}
+                  
+                  {hasValue(set.score) && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">Score:</span>
+                      <span className="text-white">{set.score}</span>
+                    </div>
+                  )}
+                  
+                  {hasValue(set.opponent) && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">Opponent:</span>
+                      <span className="text-white">{set.opponent}</span>
+                    </div>
+                  )}
+                  
+                  {hasValue(set.pace) && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">Pace:</span>
+                      <span className="text-white">{set.pace}</span>
+                    </div>
+                  )}
+                  
+                  {hasValue(set.holdTime) && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">Hold Time:</span>
+                      <span className="text-white">{set.holdTime}s</span>
+                    </div>
+                  )}
+                  
+                  {hasValue(set.rpe) && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">RPE:</span>
+                      <span className="text-white">{set.rpe}/10</span>
+                    </div>
+                  )}
+                  
+                  {hasValue(set.restTime) && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">Rest Time:</span>
+                      <span className="text-white">{set.restTime}s</span>
+                    </div>
+                  )}
+                  
+                  {hasValue(set.stretchType) && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">Stretch Type:</span>
+                      <span className="text-white capitalize">{set.stretchType}</span>
+                    </div>
+                  )}
+                  
+                  {hasValue(set.bodyPart) && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">Body Part:</span>
+                      <span className="text-white">{set.bodyPart}</span>
+                    </div>
+                  )}
+                  
+                  {hasValue(set.flexibility) && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">Flexibility:</span>
+                      <span className="text-white">{set.flexibility}/10</span>
+                    </div>
+                  )}
+                  
+                  {hasValue(set.averageHeartRate) && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">Avg HR:</span>
+                      <span className="text-white">{set.averageHeartRate} bpm</span>
+                    </div>
+                  )}
+                  
+                  {hasValue(set.maxHeartRate) && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">Max HR:</span>
+                      <span className="text-white">{set.maxHeartRate} bpm</span>
+                    </div>
+                  )}
+                  
+                  {hasValue(set.elevation) && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">Elevation:</span>
+                      <span className="text-white">{set.elevation} m</span>
+                    </div>
+                  )}
+                  
+                  {hasValue(set.performance) && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">Performance:</span>
+                      <span className="text-white">{set.performance}/10</span>
+                    </div>
+                  )}
+                  
+                  {hasValue(set.hrZone1) && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">Zone 1:</span>
+                      <span className="text-white">{set.hrZone1} min</span>
+                    </div>
+                  )}
+                  
+                  {hasValue(set.hrZone2) && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">Zone 2:</span>
+                      <span className="text-white">{set.hrZone2} min</span>
+                    </div>
+                  )}
+                  
+                  {hasValue(set.hrZone3) && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">Zone 3:</span>
+                      <span className="text-white">{set.hrZone3} min</span>
+                    </div>
+                  )}
+                  
+                  {hasValue(set.notes) && (
+                    <div className="mt-2 pt-2 border-t border-white/10">
+                      <span className="text-gray-400 text-xs">Notes: </span>
+                      <span className="text-white text-xs">{set.notes}</span>
+                    </div>
                   )}
                 </div>
-              ))}
-            </div>
+              );
+            })()}
           </div>
         ) : (
-          // Summary view - show total sets and volume
-          <div className="text-sm text-gray-300">
-            <div className="flex items-center justify-between">
-              <span className="text-gray-400">Sets</span>
-              <span className="text-white">{exercise.sets.length}</span>
+          // Resistance exercise - show traditional sets display with additional fields
+          'sets' in exercise && exercise.sets ? (
+            <div className="text-sm">
+              <div className="flex flex-wrap items-center mb-2">
+                {exercise.sets.map((set: ExerciseSet, index: number) => (
+                  <div key={index} className="flex items-center" style={{ marginRight: index === exercise.sets.length - 1 ? 0 : 8 }}>
+                    <span 
+                      className="font-medium whitespace-nowrap"
+                      style={{ color: getDifficultyColor(set.difficulty) }}
+                    >
+                      {set.weight}kg {set.reps}r
+                    </span>
+                    {index < exercise.sets.length - 1 && (
+                      <span className="text-gray-500 mx-1">|</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Show additional resistance exercise data if available */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400">Total Volume</span>
+                  <span className="text-white">{calculateTotalVolume()}kg</span>
+                </div>
+                
+                {/* Check for additional logged fields in resistance sets */}
+                {(() => {
+                  const hasValue = (value: any): boolean => {
+                    return value !== null && 
+                           value !== undefined && 
+                           value !== '' && 
+                           !(typeof value === 'string' && value.trim() === '') &&
+                           !(typeof value === 'number' && isNaN(value));
+                  };
+
+                  const additionalFields: Array<{ label: string; value: string }> = [];
+                  
+                  // Check if any set has additional data
+                  exercise.sets.forEach((set: any) => {
+                    if (hasValue(set.rpe)) additionalFields.push({ label: 'RPE', value: `${set.rpe}/10` });
+                    if (hasValue(set.restTime)) additionalFields.push({ label: 'Rest Time', value: `${set.restTime}s` });
+                    if (hasValue(set.notes)) additionalFields.push({ label: 'Notes', value: set.notes });
+                  });
+
+                  // Remove duplicates and return unique fields
+                  const uniqueFields = additionalFields.filter((field, index, self) => 
+                    index === self.findIndex(f => f.label === field.label)
+                  );
+
+                  return uniqueFields.map((field, index) => (
+                    <div key={index} className="flex items-center justify-between">
+                      <span className="text-gray-400">{field.label}</span>
+                      <span className="text-white">{field.value}</span>
+                    </div>
+                  ));
+                })()}
+              </div>
             </div>
-            <div className="flex items-center justify-between mt-1">
-              <span className="text-gray-400">Total Volume</span>
-              <span className="text-white">{calculateTotalVolume()}kg</span>
+          ) : (
+            // Fallback for other exercise types
+            <div className="text-sm text-gray-300">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-400">Type</span>
+                <span className="text-white capitalize">{exercise.activityType || 'Exercise'}</span>
+              </div>
             </div>
-          </div>
+          )
         )}
       </div>
     </div>

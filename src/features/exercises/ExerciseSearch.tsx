@@ -97,7 +97,7 @@ export const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
       ...allExercises.map(ex => ({
         ...ex,
         id: `default-${ex.name.replace(/\s+/g, '-').toLowerCase()}`,
-        primaryMuscles: ex.primaryMuscles.map(normalizeMuscle),
+        primaryMuscles: (ex.primaryMuscles || []).map(normalizeMuscle),
         secondaryMuscles: [],
         customExercise: false
       })),
@@ -126,9 +126,10 @@ export const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
 
   // Filter exercises based on search term and category
   const filteredExercises = combinedExercises.filter(exercise => {
+    const primaryMuscles = exercise.primaryMuscles || [];
     const matchesSearch = searchTerm === '' || 
       exercise.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      exercise.primaryMuscles.some(m => 
+      primaryMuscles.some(m => 
         m.toLowerCase().includes(searchTerm.toLowerCase())
       );
 
@@ -136,19 +137,19 @@ export const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
 
     switch (category.id) {
       case 'chest':
-        return matchesSearch && exercise.primaryMuscles.includes('chest');
+        return matchesSearch && primaryMuscles.includes('chest');
       case 'back':
-        return matchesSearch && exercise.primaryMuscles.some(m => ['back', 'lats', 'traps'].includes(m));
+        return matchesSearch && primaryMuscles.some(m => ['back', 'lats', 'traps'].includes(m));
       case 'legs':
-        return matchesSearch && exercise.primaryMuscles.some(m => ['quadriceps', 'hamstrings', 'calves', 'glutes'].includes(m));
+        return matchesSearch && primaryMuscles.some(m => ['quadriceps', 'hamstrings', 'calves', 'glutes'].includes(m));
       case 'shoulders':
-        return matchesSearch && exercise.primaryMuscles.includes('shoulders');
+        return matchesSearch && primaryMuscles.includes('shoulders');
       case 'arms':
-        return matchesSearch && exercise.primaryMuscles.some(m => ['biceps', 'triceps', 'forearms'].includes(m));
+        return matchesSearch && primaryMuscles.some(m => ['biceps', 'triceps', 'forearms'].includes(m));
       case 'core':
-        return matchesSearch && exercise.primaryMuscles.includes('core');
+        return matchesSearch && primaryMuscles.includes('core');
       case 'fullBody':
-        return matchesSearch && (exercise.category === 'compound' || exercise.primaryMuscles.length > 2);
+        return matchesSearch && (exercise.category === 'compound' || primaryMuscles.length > 2);
       case 'cardio':
         return matchesSearch && exercise.type === 'cardio';
       case 'stretching':
@@ -235,7 +236,7 @@ export const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
               >
                 <h3 className="text-white font-medium">{exercise.name}</h3>
                 <p className="text-gray-400 text-sm mt-1">
-                  {exercise.primaryMuscles.join(', ')}
+                  {(exercise.primaryMuscles || []).join(', ') || 'No muscles specified'}
                 </p>
               </button>
             ))

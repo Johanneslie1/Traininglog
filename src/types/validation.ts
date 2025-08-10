@@ -15,7 +15,7 @@ export const ExerciseSetSchema = z.object({
   reps: z.number(),
   weight: z.number(),
   difficulty: z.nativeEnum(DifficultyCategory),
-  rpe: z.string().optional(),
+  rpe: z.number().optional(),
 }) satisfies z.ZodType<ExerciseSetType>;
 
 const exerciseTypeEnum = z.enum(['strength', 'cardio', 'flexibility', 'bodyweight'] as const);

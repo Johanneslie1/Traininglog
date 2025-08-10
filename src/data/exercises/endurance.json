@@ -1,0 +1,68 @@
+[
+  {
+    "id": "endurance-1",
+    "name": "Running",
+    "description": "Cardiovascular exercise involving continuous forward motion",
+    "type": "endurance",
+    "activityType": "ENDURANCE",
+    "category": "running",
+    "difficulty": "beginner",
+    "primaryMuscles": ["quadriceps", "hamstrings", "calves"],
+    "secondaryMuscles": ["glutes", "core"],
+    "equipment": ["running_shoes"],
+    "environment": "outdoor",
+    "instructions": ["Start with light jogging", "Maintain steady pace", "Focus on breathing"],
+    "tips": ["Start slow and build endurance", "Proper footwear is essential"],
+    "defaultUnit": "time",
+    "metrics": {
+      "trackTime": true,
+      "trackDistance": true,
+      "trackRPE": true
+    },
+    "isDefault": true
+  },
+  {
+    "id": "endurance-2",
+    "name": "Cycling",
+    "description": "Low-impact cardiovascular exercise using a bicycle",
+    "type": "endurance",
+    "activityType": "ENDURANCE",
+    "category": "cycling",
+    "difficulty": "beginner",
+    "primaryMuscles": ["quadriceps", "hamstrings"],
+    "secondaryMuscles": ["calves", "glutes", "core"],
+    "equipment": ["bicycle", "helmet"],
+    "environment": "outdoor",
+    "instructions": ["Adjust seat height", "Start with comfortable pace", "Maintain proper posture"],
+    "tips": ["Wear a helmet", "Start with shorter distances"],
+    "defaultUnit": "time",
+    "metrics": {
+      "trackTime": true,
+      "trackDistance": true,
+      "trackRPE": true
+    },
+    "isDefault": true
+  },
+  {
+    "id": "endurance-3",
+    "name": "Swimming",
+    "description": "Full-body cardiovascular exercise in water",
+    "type": "endurance",
+    "activityType": "ENDURANCE",
+    "category": "swimming",
+    "difficulty": "intermediate",
+    "primaryMuscles": ["full_body"],
+    "secondaryMuscles": [],
+    "equipment": ["swimsuit", "goggles"],
+    "environment": "pool",
+    "instructions": ["Warm up with easy laps", "Focus on technique", "Control breathing"],
+    "tips": ["Learn proper stroke technique", "Start with shorter distances"],
+    "defaultUnit": "time",
+    "metrics": {
+      "trackTime": true,
+      "trackDistance": true,
+      "trackRPE": true
+    },
+    "isDefault": true
+  }
+]

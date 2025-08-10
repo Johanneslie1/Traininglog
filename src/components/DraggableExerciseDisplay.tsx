@@ -1,16 +1,17 @@
 import React, { useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { ExerciseData } from '../services/exerciseDataService';
+import { UnifiedExerciseData } from '../utils/unifiedExerciseUtils';
 import { SupersetGroup } from '../types/session';
 import { useSupersets } from '../context/SupersetContext';
 import ExerciseCard from './ExerciseCard';
 import SupersetActionsButton from './SupersetActionsButton';
 
 interface DraggableExerciseDisplayProps {
-  exercises: ExerciseData[];
-  onEditExercise: (exercise: ExerciseData) => void;
-  onDeleteExercise: (exercise: ExerciseData) => void;
-  onReorderExercises: (exercises: ExerciseData[]) => void;
+  exercises: UnifiedExerciseData[];
+  onEditExercise: (exercise: UnifiedExerciseData) => void;
+  onDeleteExercise: (exercise: UnifiedExerciseData) => void;
+  onReorderExercises: (exercises: UnifiedExerciseData[]) => void;
 }
 
 const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({

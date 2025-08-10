@@ -16,13 +16,15 @@ import WorkoutSummary from './WorkoutSummary';
 import { db } from '../../services/firebase/config';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { exportExerciseData } from '../../utils/exportUtils';
-import { getExerciseLogsByDate, saveExerciseLog, deleteLocalExerciseLog } from '../../utils/localStorageUtils';
-import { deleteExerciseLog, addExerciseLog } from '../../services/firebase/exerciseLogs';
+import { getExerciseLogsByDate, saveExerciseLog } from '../../utils/localStorageUtils';
+import { addExerciseLog } from '../../services/firebase/exerciseLogs';
 import { importExerciseLogs } from '../../utils/importUtils';
 import SideMenu from '../../components/SideMenu';
 import ExportModal from '../../components/ExportModal';
 import DraggableExerciseDisplay from '../../components/DraggableExerciseDisplay';
 import FloatingSupersetControls from '../../components/FloatingSupersetControls';
+import { getAllExercisesByDate, UnifiedExerciseData, deleteExercise } from '../../utils/unifiedExerciseUtils';
+import { ActivityType } from '../../types/activityTypes';
 
 interface ExerciseLogProps {}
 
@@ -85,9 +87,10 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
 
   // Exercise data loading
   const [selectedDate, setSelectedDate] = useState<Date>(() => normalizeDate(new Date()));
-  const [exercises, setExercises] = useState<ExerciseData[]>([]);
+  const [exercises, setExercises] = useState<UnifiedExerciseData[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<ExerciseData | null>(null);
+  const [editingExercise, setEditingExercise] = useState<UnifiedExerciseData | null>(null); // Add editing state
 
   // Convert local storage exercise to ExerciseData format
   const convertToExerciseData = useCallback((exercise: Omit<ExerciseLogType, 'id'> & { id?: string }, userId: string): ExerciseData => ({
@@ -120,11 +123,10 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     loadSupersetsForDate(dateString);
 
     try {
-      // First, get all local exercises
-      const allLocalExercises = getExerciseLogsByDate(loadedDate)
-        .map(exercise => convertToExerciseData(exercise, userId));
+      // Use the unified function to get all exercise types
+      const allExercises = await getAllExercisesByDate(loadedDate, userId);
 
-      // Get exercises from Firestore
+      // Also try to get any Firebase resistance exercises to merge
       const { startOfDay, endOfDay } = getDateRange(loadedDate);
       const q = query(
         collection(db, 'users', userId, 'exercises'),
@@ -144,28 +146,36 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
         }, userId);
       });
 
-      // Filter local exercises to only include those not in Firestore
-      const uniqueLocalExercises = allLocalExercises
-        .filter(exercise => !exercise.id || !firebaseExercises.some(fEx => fEx.id === exercise.id));
+      // Filter out any duplicates from the unified list
+      const uniqueFirebaseExercises = firebaseExercises.filter(fEx => 
+        !allExercises.some(ex => ex.id === fEx.id)
+      );
 
-      // Combine Firestore and unique local exercises
-      const allExercises = [...firebaseExercises, ...uniqueLocalExercises];
+      // Combine all exercises
+      const combinedExercises = [...allExercises, ...uniqueFirebaseExercises];
 
       // Sort by timestamp to maintain consistent order
-      allExercises.sort((a, b) => {
+      combinedExercises.sort((a, b) => {
         if (a.timestamp instanceof Date && b.timestamp instanceof Date) {
           return a.timestamp.getTime() - b.timestamp.getTime();
         }
         return 0;
       });
 
-      setExercises(allExercises);
+      setExercises(combinedExercises);
     } catch (error) {
       console.error('Error fetching exercises:', error);
-      // On Firestore error, fall back to local data
-      const localExercises = getExerciseLogsByDate(loadedDate)
-        .map(exercise => convertToExerciseData(exercise, userId));
-      setExercises(localExercises);
+      // On error, try to get unified data anyway
+      try {
+        const allExercises = await getAllExercisesByDate(loadedDate, userId);
+        setExercises(allExercises);
+      } catch (fallbackError) {
+        console.error('Error in fallback:', fallbackError);
+        // Final fallback to just local resistance exercises
+        const localExercises = getExerciseLogsByDate(loadedDate)
+          .map(exercise => convertToExerciseData(exercise, userId));
+        setExercises(localExercises);
+      }
     } finally {
       setLoading(false);
     }
@@ -259,10 +269,10 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     }
   }, [selectedExercise, user, selectedDate, handleCloseSetLogger, loadExercises]);
 
-  const handleDeleteExercise = async (exercise: ExerciseData) => {
-    if (!user?.id || !exercise.id) {
-      console.error('Cannot delete exercise: missing user ID or exercise ID', { userId: user?.id, exerciseId: exercise.id });
-      alert('Cannot delete exercise: missing required information');
+  const handleDeleteExercise = async (exercise: UnifiedExerciseData) => {
+    if (!user?.id) {
+      console.error('Cannot delete exercise: missing user ID', { userId: user?.id });
+      alert('Cannot delete exercise: user not authenticated');
       return;
     }
     
@@ -278,36 +288,32 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
         exerciseId: exercise.id, 
         userId: user.id,
         exerciseName: exercise.exerciseName,
-        timestamp: exercise.timestamp
+        timestamp: exercise.timestamp,
+        activityType: exercise.activityType
       });
 
-      // First try to delete from Firestore
-      try {
-        await deleteExerciseLog(exercise.id, user.id);
-        console.log('✅ Exercise deleted from Firestore successfully');
-      } catch (error) {
-        console.error('❌ Error deleting from Firestore:', error);
-        // Revert UI change on error
-        setExercises(prev => [...prev, exercise]);
-        throw error; // Re-throw to handle in outer catch
+      // Use the unified delete function
+      const deleteResult = await deleteExercise(exercise, user.id);
+      
+      if (deleteResult) {
+        console.log('✅ Exercise deleted successfully');
+        
+        // Remove exercise from any superset it might be in
+        if (exercise.id) {
+          removeExerciseFromSuperset(exercise.id);
+        }
+        
+        // Reload exercises to ensure UI is in sync
+        await loadExercises(selectedDate);
+      } else {
+        throw new Error('Delete operation returned false');
       }
 
-      // Then try to delete from local storage
-      try {
-        const localStorageResult = await deleteLocalExerciseLog(exercise.id);
-        console.log('✅ Exercise deleted from local storage:', localStorageResult);
-      } catch (error) {
-        console.warn('⚠️ Error deleting from local storage:', error);
-        // Don't throw here, as Firestore is our source of truth
-      }
-
-      // Remove exercise from any superset it might be in
-      removeExerciseFromSuperset(exercise.id);
-
-      // Update UI immediately by removing the exercise from state
-      setExercises(prevExercises => prevExercises.filter(ex => ex.id !== exercise.id));
     } catch (error) {
       console.error('❌ Error deleting exercise:', error);
+      
+      // Revert UI change on error
+      setExercises(prev => [...prev, exercise]);
       
       // Show a more specific error message
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -334,8 +340,18 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   // No longer need event listener since we use the floating controls component
 
   const handleEditExercise = (exercise: ExerciseData) => {
-    setSelectedExercise(exercise);
-    updateUiState('showSetLogger', true);
+    // Check activity type to determine which editor to open
+    const unifiedExercise = exercise as UnifiedExerciseData;
+    
+    if (unifiedExercise.activityType && unifiedExercise.activityType !== ActivityType.RESISTANCE) {
+      // For non-resistance activities, set editing mode and open LogOptions
+      setEditingExercise(unifiedExercise);
+      updateUiState('showLogOptions', true);
+    } else {
+      // For resistance exercises, use the existing set logger
+      setSelectedExercise(exercise);
+      updateUiState('showSetLogger', true);
+    }
   };
 
   // Handle exercise reordering with persistence
@@ -576,9 +592,16 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
       {uiState.showLogOptions && (
         <div className="fixed inset-0 bg-black/90 z-50">
           <LogOptions 
-            onClose={() => updateUiState('showLogOptions', false)} 
-            onExerciseAdded={() => loadExercises(selectedDate)}
+            onClose={() => {
+              updateUiState('showLogOptions', false);
+              setEditingExercise(null); // Clear editing state when closing
+            }}
+            onExerciseAdded={() => {
+              loadExercises(selectedDate);
+              setEditingExercise(null); // Clear editing state after saving
+            }}
             selectedDate={selectedDate}
+            editingExercise={editingExercise} // Pass editing exercise
           />
         </div>
       )}

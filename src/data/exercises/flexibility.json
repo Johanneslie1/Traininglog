@@ -1,0 +1,65 @@
+[
+  {
+    "id": "flexibility-1",
+    "name": "Hamstring Stretch",
+    "description": "Static stretch targeting the hamstring muscles",
+    "type": "flexibility",
+    "activityType": "STRETCHING",
+    "category": "static_stretching",
+    "difficulty": "beginner",
+    "primaryMuscles": ["hamstrings"],
+    "secondaryMuscles": ["calves"],
+    "equipment": [],
+    "environment": "any",
+    "instructions": ["Sit with legs extended", "Reach forward slowly", "Hold the stretch"],
+    "tips": ["Don't bounce", "Breathe deeply", "Hold for 30 seconds"],
+    "defaultUnit": "time",
+    "metrics": {
+      "trackTime": true,
+      "trackRPE": true
+    },
+    "isDefault": true
+  },
+  {
+    "id": "flexibility-2",
+    "name": "Shoulder Stretch",
+    "description": "Static stretch for shoulder flexibility",
+    "type": "flexibility",
+    "activityType": "STRETCHING",
+    "category": "static_stretching",
+    "difficulty": "beginner",
+    "primaryMuscles": ["shoulders"],
+    "secondaryMuscles": ["triceps"],
+    "equipment": [],
+    "environment": "any",
+    "instructions": ["Bring arm across chest", "Hold with other arm", "Feel stretch in shoulder"],
+    "tips": ["Don't force the stretch", "Hold for 30 seconds each arm"],
+    "defaultUnit": "time",
+    "metrics": {
+      "trackTime": true,
+      "trackRPE": true
+    },
+    "isDefault": true
+  },
+  {
+    "id": "flexibility-3",
+    "name": "Hip Flexor Stretch",
+    "description": "Dynamic stretch for hip flexibility",
+    "type": "flexibility",
+    "activityType": "STRETCHING",
+    "category": "dynamic_stretching",
+    "difficulty": "beginner",
+    "primaryMuscles": ["quadriceps"],
+    "secondaryMuscles": ["core"],
+    "equipment": [],
+    "environment": "any",
+    "instructions": ["Step into lunge position", "Lower hips forward", "Feel stretch in hip flexors"],
+    "tips": ["Keep back straight", "Don't let knee go past toes"],
+    "defaultUnit": "time",
+    "metrics": {
+      "trackTime": true,
+      "trackRPE": true
+    },
+    "isDefault": true
+  }
+]

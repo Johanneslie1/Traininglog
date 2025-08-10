@@ -1,26 +1,57 @@
+import { ActivityType } from './activityTypes';
+
 export interface Exercise {
   id: string;
   name: string;
   description: string;
-  type: 'strength' | 'cardio' | 'flexibility' | 'bodyweight';
-  category: 'compound' | 'isolation' | 'olympic' | 'cardio' | 'stretching' | 'power';
-  primaryMuscles: MuscleGroup[];
-  secondaryMuscles: MuscleGroup[];
+  type?: 'strength' | 'cardio' | 'flexibility' | 'bodyweight' | 'plyometrics' | 'endurance' | 'teamSports' | 'speedAgility' | 'other';
+  activityType?: ActivityType;
+  category: string; // More flexible category system
+  difficulty?: 'beginner' | 'intermediate' | 'advanced';
+  
+  // Core muscle/target areas
+  primaryMuscles?: MuscleGroup[];
+  secondaryMuscles?: MuscleGroup[];
+  targetAreas?: string[]; // For non-resistance exercises
+  
+  // Equipment and setup
   equipment?: string[];
+  environment?: string;
+  space?: string;
+  setup?: string[];
+  
+  // Instructions and guidance
   instructions: string[];
   tips?: string[];
   videoUrl?: string;
   imageUrl?: string;
-  customExercise?: boolean; // If true, this exercise was created by a user
-  userId?: string; // Only set if customExercise is true
-  defaultUnit: 'kg' | 'lbs' | 'time' | 'distance' | 'reps';
-  metrics: {
+  
+  // Metrics tracking
+  primaryMetrics?: string[];
+  optionalMetrics?: string[];
+  defaultUnit?: 'kg' | 'lbs' | 'time' | 'distance' | 'reps';
+  metrics?: {
     trackWeight?: boolean;
     trackReps?: boolean;
     trackTime?: boolean;
     trackDistance?: boolean;
     trackRPE?: boolean;
+    trackDuration?: boolean;
+    trackHeight?: boolean;
   };
+  
+  // Activity-specific fields
+  skills?: string[]; // For sports and skill-based activities
+  teamBased?: boolean; // For sports
+  sportType?: string;
+  drillType?: string; // For speed & agility
+  
+  // Classification and discovery
+  tags?: string[];
+  isDefault?: boolean;
+  customExercise?: boolean; // If true, this exercise was created by a user
+  userId?: string; // Only set if customExercise is true
+  createdBy?: string;
 }
 
 export type MuscleGroup =
@@ -66,6 +97,8 @@ export interface ExerciseLog {
   deviceId?: string;
   /** User ID who owns this exercise log */
   userId?: string;
+  /** Type of exercise for training template compatibility */
+  exerciseType?: string;
 }
 
 export type ExerciseType = Exercise['type'];
