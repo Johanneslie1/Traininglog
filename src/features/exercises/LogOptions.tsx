@@ -10,6 +10,7 @@ import ProgramExercisePicker from '@/features/programs/ProgramExercisePicker';
 import { SetEditorDialog } from '@/components/SetEditorDialog';
 import { addExerciseLog } from '@/services/firebase/exerciseLogs';
 import SportActivityPicker from '@/components/activities/SportActivityPicker';
+import SpeedAgilityActivityPicker from '@/components/activities/SpeedAgilityActivityPicker';
 // import StretchingActivityPicker from '@/components/activities/StretchingActivityPicker';
 import EnduranceActivityPicker from '@/components/activities/EnduranceActivityPicker';
 import OtherActivityPicker from '@/components/activities/OtherActivityPicker';
@@ -26,7 +27,7 @@ interface LogOptionsProps {
   editingExercise?: UnifiedExerciseData | null; // Add editing exercise prop
 }
 
-type ViewState = 'main' | 'search' | 'calendar' | 'setEditor' | 'programPicker' | 'copyPrevious' | 'sport' | 'stretching' | 'endurance' | 'other' | 'resistance' | 'recentExercises';
+type ViewState = 'main' | 'search' | 'calendar' | 'setEditor' | 'programPicker' | 'copyPrevious' | 'sport' | 'stretching' | 'endurance' | 'other' | 'speedAgility' | 'resistance' | 'recentExercises';
 
 const helperCategories: Category[] = [
   { id: 'programs', name: 'Add from Program', icon: '📋', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-purple-600', textColor: 'text-white' },
@@ -82,6 +83,15 @@ const activityTypes = [
     examples: 'Running, Cycling, Swimming'
   },
   {
+    id: 'speedAgility',
+    name: 'Speed & Agility',
+    description: 'Sprints, plyometrics, change of direction',
+    icon: '⚡',
+    bgColor: 'bg-gradient-to-r from-yellow-500 to-amber-600',
+    textColor: 'text-white',
+    examples: 'Plyometrics, Ladder, Sprints'
+  },
+  {
     id: 'other',
     name: 'Other Activities',
     description: 'Custom activities and tracking',
@@ -113,6 +123,9 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
           break;
         case 'other':
           setView('other');
+          break;
+        case 'speedAgility':
+          setView('speedAgility');
           break;
         default:
           setView('main');
@@ -237,6 +250,21 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
           setView('main');
         }}
         selectedDate={selectedDate}
+      />
+    );
+  }
+
+  if (view === 'speedAgility') {
+    return (
+      <SpeedAgilityActivityPicker
+        onClose={onClose}
+        onBack={() => setView('main')}
+        onActivityLogged={() => {
+          onExerciseAdded?.();
+          setView('main');
+        }}
+        selectedDate={selectedDate}
+        editingExercise={editingExercise}
       />
     );
   }
@@ -457,6 +485,8 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
                       setView('endurance');
                     } else if (activityType.id === 'other') {
                       setView('other');
+                    } else if (activityType.id === 'speedAgility') {
+                      setView('speedAgility');
                     }
                   }}
                   className={`
