@@ -84,12 +84,12 @@ const activityTypes = [
   },
   {
     id: 'speedAgility',
-    name: 'Speed & Agility',
-    description: 'Sprints, plyometrics, change of direction',
+  name: 'Speed, Agility & Plyometrics',
+  description: 'Sprints, jumps, plyometrics, change of direction',
     icon: '⚡',
     bgColor: 'bg-gradient-to-r from-yellow-500 to-amber-600',
     textColor: 'text-white',
-    examples: 'Plyometrics, Ladder, Sprints'
+  examples: 'Plyometrics, Ladder, Sprints, Jumps'
   },
   {
     id: 'other',

@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ActivityType, SpeedAgilityActivity } from '@/types/activityTypes';
-import { getExercisesByActivityType } from '@/services/exerciseDatabaseService';
+// import { getExercisesByActivityType } from '@/services/exerciseDatabaseService';
 import { speedAgilityTemplate } from '@/config/defaultTemplates';
+import rawData from '@/data/exercises/speedAgility.json';
+import { enrich, applyFilters, collectFacets, FilterState, SpeedAgilityExercise } from '@/utils/speedAgilityFilters';
 import UniversalActivityLogger from './UniversalActivityLogger';
 import { UnifiedExerciseData } from '@/utils/unifiedExerciseUtils';
 
@@ -20,17 +22,39 @@ const SpeedAgilityActivityPicker: React.FC<SpeedAgilityActivityPickerProps> = ({
   selectedDate = new Date(),
   editingExercise = null
 }) => {
-  const [activities, setActivities] = useState<SpeedAgilityActivity[]>([]);
   const [selectedActivity, setSelectedActivity] = useState<SpeedAgilityActivity | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [view, setView] = useState<'list' | 'logging'>('list');
+  // Advanced filters
+  const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState<Set<string>>(new Set());
+  const [lateralFilter, setLateralFilter] = useState<Set<string>>(new Set());
+  const [equipmentFilter, setEquipmentFilter] = useState<Set<string>>(new Set());
+  const [tagFilter, setTagFilter] = useState<Set<string>>(new Set());
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  const enriched = useMemo(() => enrich(rawData as SpeedAgilityExercise[]), []);
+  const facets = useMemo(() => collectFacets(enriched), [enriched]);
+  const advancedFiltered = useMemo(() => {
+    const f: FilterState = {
+      search,
+      type: typeFilter,
+      lateralization: lateralFilter,
+      equipment: equipmentFilter,
+      includeTags: tagFilter
+    };
+    return applyFilters(enriched, f);
+  }, [search, typeFilter, lateralFilter, equipmentFilter, tagFilter, enriched]);
+
+  function toggle(setter: React.Dispatch<React.SetStateAction<Set<string>>>, value: string) {
+    setter(prev => {
+      const next = new Set(prev);
+      next.has(value) ? next.delete(value) : next.add(value);
+      return next;
+    });
+  }
 
   useEffect(() => {
-    loadActivities();
-
     if (editingExercise) {
-      // Create mock activity based on existing logged exercise
       const mock: SpeedAgilityActivity = {
         id: editingExercise.id || 'editing-speedAgility',
         name: editingExercise.exerciseName,
@@ -43,59 +67,31 @@ const SpeedAgilityActivityPicker: React.FC<SpeedAgilityActivityPickerProps> = ({
         difficulty: 'beginner',
         setup: [],
         instructions: [],
-        metrics: {
-          trackTime: true,
-          trackDistance: true,
-          trackReps: true,
-          trackRPE: true
-        }
+        metrics: { trackTime: true, trackDistance: true, trackReps: true, trackRPE: true }
       };
       setSelectedActivity(mock);
       setView('logging');
     }
   }, [editingExercise]);
 
-  const loadActivities = () => {
-    const exercises = getExercisesByActivityType(ActivityType.SPEED_AGILITY);
-    const mapped = exercises.map((ex, index) => {
-      const m: any = ex.metrics || {};
-      return {
-        id: ex.id || `speedAgility-${index}`,
-        name: ex.name,
-        description: ex.description,
-        activityType: ActivityType.SPEED_AGILITY,
-        category: ex.category || 'general',
-        isDefault: ex.isDefault ?? true,
-        drillType: (ex as any).drillType || 'agility',
-        equipment: ex.equipment || [],
-        difficulty: (ex as any).difficulty || 'beginner',
-        setup: [(ex as any).environment, (ex as any).space].filter(Boolean),
-        instructions: ex.instructions || [],
-        metrics: {
-          trackTime: !!m.trackTime,
-            trackDistance: !!m.trackDistance,
-            trackReps: !!m.trackReps,
-            trackHeight: !!m.trackHeight,
-            trackRPE: !!m.trackRPE
-        }
-      } as SpeedAgilityActivity;
-    });
-    setActivities(mapped);
-  };
-
-  const handleSelect = (activity: SpeedAgilityActivity) => {
+  function handleSelectEnriched(ex: SpeedAgilityExercise) {
+    const activity: SpeedAgilityActivity = {
+      id: ex.id,
+      name: ex.name,
+      category: ex.category || 'general',
+  description: (ex as any).description || '',
+      isDefault: true,
+      activityType: ActivityType.SPEED_AGILITY,
+      drillType: (ex as any).drillType || ex.type || 'agility',
+  equipment: Array.isArray((ex as any).equipment) ? (ex as any).equipment : ((ex as any).equipment ? [(ex as any).equipment] : []),
+  difficulty: (ex as any).difficulty || 'beginner',
+  setup: Array.isArray((ex as any).setup) ? (ex as any).setup : [],
+  instructions: Array.isArray((ex as any).instructions) ? (ex as any).instructions : ((ex as any).instructions ? [(ex as any).instructions] : []),
+      metrics: { trackTime: true, trackDistance: true, trackReps: true, trackRPE: true }
+    };
     setSelectedActivity(activity);
     setView('logging');
-  };
-
-  // Categories from JSON (use category or drillType)
-  const categories = ['All', ...Array.from(new Set(activities.flatMap(a => a.category ? [a.category] : [])))];
-
-  const filtered = activities.filter(a => {
-    const matchesSearch = a.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === '' || selectedCategory === 'All' || a.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  }
 
   if (view === 'logging' && selectedActivity) {
     return (
@@ -125,7 +121,7 @@ const SpeedAgilityActivityPicker: React.FC<SpeedAgilityActivityPickerProps> = ({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <h2 className="text-2xl font-bold text-white">Speed & Agility</h2>
+            <h2 className="text-2xl font-bold text-white">Speed, Agility & Plyometrics</h2>
           </div>
           <button
             onClick={onClose}
@@ -137,65 +133,143 @@ const SpeedAgilityActivityPicker: React.FC<SpeedAgilityActivityPickerProps> = ({
           </button>
         </div>
 
-        {/* Search & Filter */}
-        <div className="p-6 border-b border-gray-700">
-          <div className="flex gap-4 mb-4">
-            <div className="flex-1">
-              <input
-                type="text"
-                placeholder="Search drills..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-              />
-            </div>
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-            >
-              {categories.map(category => (
-                <option key={category} value={category === 'All' ? '' : category}>{category}</option>
-              ))}
-            </select>
+        {/* Search & Advanced Filters */}
+        {/* Search, Quick Filters & Advanced (Sticky) */}
+        <div className="p-4 border-b border-gray-700 space-y-3 bg-[#1a1a1a]/95 backdrop-blur sticky top-0 z-10">
+          <div className="flex gap-2 items-center">
+            <input
+              type="text"
+              placeholder="Search drills (name or instructions)"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:border-yellow-500"
+              aria-label="Search speed agility plyometric drills"
+            />
+            <button
+              onClick={() => { setSearch(''); setTypeFilter(new Set()); setLateralFilter(new Set()); setEquipmentFilter(new Set()); setTagFilter(new Set()); }}
+              className="px-3 py-2 text-xs font-medium bg-gray-800 border border-gray-600 rounded-md text-gray-300 hover:text-white hover:border-yellow-500"
+              aria-label="Reset filters"
+            >Reset</button>
+            <button
+              onClick={() => setShowAdvanced(s => !s)}
+              className="px-3 py-2 text-xs font-medium bg-gray-800 border border-gray-600 rounded-md text-gray-300 hover:text-white hover:border-yellow-500"
+              aria-expanded={showAdvanced}
+              aria-controls="advanced-filters"
+            >{showAdvanced ? 'Hide' : 'Filters'}</button>
           </div>
+
+          {/* Quick Filter Chips */}
+          <div className="flex flex-wrap gap-2">
+            {['sprint','agility','plyometric','jump','reaction','acceleration','ladder','hurdle'].map(q => {
+              const active = typeFilter.has(q) || tagFilter.has(q);
+              const handler = () => {
+                if (['sprint','agility','plyometric'].includes(q)) {
+                  toggle(setTypeFilter, q);
+                } else {
+                  toggle(setTagFilter, q);
+                }
+              };
+              return (
+                <button
+                  key={q}
+                  onClick={handler}
+                  className={`px-3 py-1 rounded-full text-xs font-medium border transition ${active ? 'bg-yellow-500 border-yellow-400 text-black' : 'bg-gray-800 border-gray-600 text-gray-300 hover:border-yellow-500 hover:text-white'}`}
+                >{q}</button>
+              );
+            })}
+            {/* Lateral quick toggles */}
+            {['unilateral','bilateral'].map(lat => {
+              const active = lateralFilter.has(lat);
+              return (
+                <button
+                  key={lat}
+                  onClick={() => toggle(setLateralFilter, lat)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium border transition ${active ? 'bg-blue-500 border-blue-400 text-white' : 'bg-gray-800 border-gray-600 text-gray-300 hover:border-blue-400 hover:text-white'}`}
+                >{lat}</button>
+              );
+            })}
+          </div>
+
+          {showAdvanced && (
+            <div id="advanced-filters" className="space-y-3">
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 text-[11px]">
+                <FilterBlock title="Type" values={Array.from(facets.type)} selected={typeFilter} onToggle={v=>toggle(setTypeFilter,v)} />
+                <FilterBlock title="Lateral" values={Array.from(facets.lateralization)} selected={lateralFilter} onToggle={v=>toggle(setLateralFilter,v)} />
+                <FilterBlock title="Equipment" values={Array.from(facets.equipment)} selected={equipmentFilter} onToggle={v=>toggle(setEquipmentFilter,v)} />
+                <FilterBlock title="Tags" values={Array.from(facets.tags).filter(t=>['jump','sprint','skip','bound','shuffle','resisted','assisted','reaction','explosive','ladder','hurdle','acceleration','depth','pogo','tuck'].includes(t))} selected={tagFilter} onToggle={v=>toggle(setTagFilter,v)} />
+              </div>
+            </div>
+          )}
+          <p className="text-[11px] text-gray-400">Showing <span className="text-yellow-400 font-semibold">{advancedFiltered.length}</span> of {enriched.length} drills</p>
         </div>
 
         {/* Activities List */}
         <div className="flex-1 overflow-y-auto p-6">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filtered.map(activity => (
+            {advancedFiltered.map(ex => (
               <div
-                key={activity.id}
-                onClick={() => handleSelect(activity)}
+                key={ex.id}
+                onClick={() => handleSelectEnriched(ex)}
                 className="bg-gray-800 rounded-lg p-4 cursor-pointer hover:bg-gray-700 transition-colors border border-gray-600"
               >
-                <h3 className="text-lg font-semibold text-white mb-2">{activity.name}</h3>
-                {activity.description && (
-                  <p className="text-gray-400 text-sm mb-2">{activity.description}</p>
+                <h3 className="text-lg font-semibold text-white mb-1">{ex.name}</h3>
+                {(ex as any).description && (
+                  <p className="text-gray-400 text-xs mb-2 line-clamp-3">{(ex as any).description}</p>
                 )}
-                <div className="flex flex-wrap gap-2">
-                  {activity.category && (
-                    <span className="px-2 py-1 bg-yellow-600 text-white text-xs rounded">{activity.category}</span>
+                <div className="flex flex-wrap gap-1">
+                  {ex.category && (
+                    <span className="px-2 py-0.5 bg-yellow-600 text-white text-[10px] rounded">{ex.category}</span>
                   )}
-                  {activity.drillType && (
-                    <span className="px-2 py-1 bg-blue-600 text-white text-xs rounded">{activity.drillType}</span>
+                  {(ex as any).drillType && (
+                    <span className="px-2 py-0.5 bg-blue-600 text-white text-[10px] rounded">{(ex as any).drillType}</span>
                   )}
-                  {activity.difficulty && (
-                    <span className="px-2 py-1 bg-orange-600 text-white text-xs rounded">{activity.difficulty}</span>
+                  {(ex as any).difficulty && (
+                    <span className="px-2 py-0.5 bg-orange-600 text-white text-[10px] rounded">{(ex as any).difficulty}</span>
                   )}
+                  {Array.from(((ex as any).tags || []) as string[]).slice(0,3).map((t: string) => (
+                    <span key={t} className="px-2 py-0.5 bg-gray-700 text-gray-200 text-[10px] rounded">{t}</span>
+                  ))}
                 </div>
               </div>
             ))}
           </div>
 
-          {filtered.length === 0 && (
+          {advancedFiltered.length === 0 && (
             <div className="text-center py-12">
               <p className="text-gray-400 text-lg">No drills found</p>
               <p className="text-gray-500 text-sm mt-2">Try adjusting your search or filter</p>
             </div>
           )}
         </div>
+      </div>
+    </div>
+  );
+};
+
+// Small internal filter block component
+interface FilterBlockProps {
+  title: string;
+  values: string[];
+  selected: Set<string>;
+  onToggle: (value: string) => void;
+}
+
+const FilterBlock: React.FC<FilterBlockProps> = ({ title, values, selected, onToggle }) => {
+  if (!values.length) return null;
+  return (
+    <div>
+      <p className="text-[10px] uppercase tracking-wide text-gray-400 mb-1 font-semibold">{title}</p>
+      <div className="flex flex-wrap gap-1">
+        {values.sort().map(v => {
+          const active = selected.has(v);
+          return (
+            <button
+              key={v}
+              onClick={() => onToggle(v)}
+              className={`px-2 py-0.5 rounded border text-[10px] ${active ? 'bg-yellow-600 border-yellow-500 text-white' : 'bg-gray-800 border-gray-600 text-gray-300 hover:border-yellow-500 hover:text-white'}`}
+            >{v}</button>
+          );
+        })}
       </div>
     </div>
   );
