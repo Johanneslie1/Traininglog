@@ -3,7 +3,7 @@ import { Program, ProgramSession } from '@/types/program';
 import SessionModal from './SessionModal';
 import SessionBuilder from './SessionBuilder';
 import ProgramBuilder from './ProgramBuilder';
-import { PencilIcon, TrashIcon, ChevronDownIcon, CogIcon } from '@heroicons/react/outline';
+import { PencilIcon, TrashIcon, ChevronDownIcon, CogIcon, ArrowLeftIcon } from '@heroicons/react/outline';
 import { usePrograms } from '@/context/ProgramsContext';
 import { createSession, deleteSession } from '@/services/programService';
 
@@ -253,90 +253,99 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
   };
 
   return (
-    <div className="p-6">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white">{program.name}</h1>
-          <p className="text-gray-400 mt-1">{program.description}</p>
+    <div className="min-h-screen bg-black/90 text-white">
+      <div className="p-6">
+      {/* Header - Match LogOptions styling */}
+      <header className="sticky top-0 flex items-center justify-between p-4 bg-[#1a1a1a] border-b border-white/10">
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={onBack}
+            className="p-2 hover:bg-white/10 rounded-xl transition-all duration-200"
+          >
+            <ArrowLeftIcon className="w-5 h-5 text-gray-300" />
+          </button>
+          <div>
+            <h1 className="text-xl font-semibold text-white">{program.name}</h1>
+            {program.description && (
+              <p className="text-sm text-gray-400 mt-0.5">{program.description}</p>
+            )}
+          </div>
         </div>
+        
+        {/* Quick Actions */}
         <div className="flex items-center gap-2">
           {!selectionMode && (
             <>
               <button
                 onClick={handleProgramEdit}
-                className="p-2 hover:bg-blue-600/20 rounded-lg transition-colors text-blue-400 hover:text-blue-300"
+                className="p-2.5 hover:bg-gray-800/60 rounded-xl transition-all duration-200 text-blue-400 hover:text-blue-300"
                 title="Edit program"
                 aria-label={`Edit program ${program.name}`}
               >
-                <CogIcon className="w-6 h-6" />
+                <CogIcon className="w-5 h-5" />
               </button>
               <button
                 onClick={handleDeleteProgram}
                 disabled={isDeletingProgram}
-                className="p-2 hover:bg-red-600/20 rounded-lg transition-colors text-red-400 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="p-2.5 hover:bg-gray-800/60 rounded-xl transition-all duration-200 text-red-400 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Delete program"
                 aria-label={`Delete program ${program.name}`}
               >
                 {isDeletingProgram ? (
-                  <div className="w-6 h-6 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  <TrashIcon className="w-6 h-6" />
+                  <TrashIcon className="w-5 h-5" />
                 )}
               </button>
             </>
           )}
-          <button
-            onClick={onBack}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-          >
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
         </div>
-      </div>
+      </header>
 
-      <div className="space-y-4">
+      {/* Main Content */}
+      <main className="flex-1 overflow-y-auto overscroll-contain pb-safe min-h-0 p-6">
+
+      <div className="space-y-3">
         {sessions.length > 0 ? (
           sessions.map((session) => (
-            <div key={session.id} className="bg-[#1a1a1a] rounded-xl overflow-hidden shadow-lg border border-white/5">
+            <div key={session.id} className="bg-[#1a1a1a] rounded-2xl overflow-hidden border border-gray-800 hover:border-gray-700 transition-all duration-200">
               {/* Session Header */}
-              <div className="bg-gradient-to-r from-[#2a2a2a] to-[#222] px-6 py-4 flex items-center justify-between border-b border-white/5">
+              <div className="px-5 py-4 flex items-center justify-between border-b border-gray-800/50">
                 <div className="flex-1">
-                  <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                    {session.name}
-                    <span className="text-sm font-normal text-gray-400 bg-black/20 px-2 py-0.5 rounded-full">
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-lg font-semibold text-white">{session.name}</h3>
+                    <span className="text-xs font-medium text-gray-400 bg-gray-800/60 px-2.5 py-1 rounded-full">
                       {session.exercises.length} exercises
                     </span>
-                  </h3>
+                  </div>
                 </div>
                 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
                   {!selectionMode && (
                     <>
                       <button
                         onClick={() => handleSessionEdit(session)}
-                        className="p-2 hover:bg-black/20 rounded-lg transition-colors text-blue-400 hover:text-blue-300"
+                        className="p-2 hover:bg-gray-800/60 rounded-xl transition-all duration-200 text-blue-400 hover:text-blue-300"
                         title="Edit session"
                       >
-                        <PencilIcon className="w-5 h-5" />
+                        <PencilIcon className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteSession(session.id)}
-                        className="p-2 hover:bg-black/20 rounded-lg transition-colors text-red-400 hover:text-red-300"
+                        className="p-2 hover:bg-gray-800/60 rounded-xl transition-all duration-200 text-red-400 hover:text-red-300"
                         title="Delete session"
                       >
-                        <TrashIcon className="w-5 h-5" />
+                        <TrashIcon className="w-4 h-4" />
                       </button>
                     </>
                   )}
                   <button
                     onClick={() => toggleSession(session.id)}
-                    className="p-2 hover:bg-black/20 rounded-lg transition-colors"
+                    className="p-2 hover:bg-gray-800/60 rounded-xl transition-all duration-200"
                     title={expandedSessions.includes(session.id) ? "Collapse session" : "Expand session"}
                   >
                     <ChevronDownIcon
-                      className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${
+                      className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
                         expandedSessions.includes(session.id) ? 'rotate-180' : ''
                       }`}
                     />
@@ -346,16 +355,18 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
 
               {/* Session Content */}
               {expandedSessions.includes(session.id) && (
-                <div className="divide-y divide-white/5">
-                  {session.exercises.map((exercise) => (
+                <div className="p-1">
+                  {session.exercises.map((exercise, index) => (
                     <div 
                       key={exercise.id}
-                      className="px-6 py-4 hover:bg-white/5 transition-colors"
+                      className={`px-4 py-3 hover:bg-gray-800/40 transition-all duration-200 rounded-xl mx-1 ${
+                        index !== session.exercises.length - 1 ? 'mb-1' : ''
+                      }`}
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <h4 className="text-lg font-medium text-white">{exercise.name}</h4>
-                          <div className="text-sm text-gray-400 mt-1">
+                          <h4 className="text-base font-medium text-white">{exercise.name}</h4>
+                          <div className="text-sm text-gray-400 mt-0.5">
                             {exercise.sets} sets × {exercise.reps} reps
                             {typeof exercise.weight === 'number' && exercise.weight > 0 && ` @ ${exercise.weight}kg`}
                           </div>
@@ -368,7 +379,15 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
             </div>
           ))
         ) : (
-          <div className="text-gray-500">No sessions yet.</div>
+          <div className="text-center py-12">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gray-800/50 flex items-center justify-center">
+              <svg className="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium text-white mb-2">No sessions yet</h3>
+            <p className="text-gray-400 text-sm mb-6">Create your first training session to get started</p>
+          </div>
         )}
         
         {!selectionMode && (
@@ -377,15 +396,16 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
               setEditingSession(null);
               setShowSessionBuilder(true);
             }} 
-            className="mt-4 w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+            className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 flex items-center justify-center gap-3 font-medium shadow-lg hover:shadow-xl border border-blue-500/20"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            Add Session
+            Add New Session
           </button>
         )}
       </div>
+      </main>
 
       {/* Program Editor Modal */}
       {showProgramEditor && (
@@ -423,6 +443,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
           initialData={editingSession}
         />
       )}
+      </div>
     </div>
   );
 };
