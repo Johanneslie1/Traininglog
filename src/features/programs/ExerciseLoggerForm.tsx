@@ -54,7 +54,7 @@ const ExerciseLoggerForm: React.FC<ExerciseLoggerFormProps> = ({ initialExercise
                 <li key={ex.id} className="flex items-center gap-2 text-gray-200 text-sm mb-1">
                   <div>
                     <div>{ex.name}</div>
-                    <div className="text-sm text-gray-400">{ex.sets} sets × {ex.reps} reps</div>
+                    <div className="text-sm text-gray-400">Sets and reps will be logged during workout</div>
                   </div>
                   <button type="button" onClick={() => removeExercise(ex.id)} className="ml-2 text-red-400">
                     Remove

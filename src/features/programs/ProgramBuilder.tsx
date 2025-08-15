@@ -160,13 +160,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
     return sessions.reduce((total, session) => total + session.exercises.length, 0);
   };
 
-  const getTotalSets = () => {
-    return sessions.reduce((total, session) => 
-      total + session.exercises.reduce((sessionTotal, exercise) => 
-        sessionTotal + (exercise.setsData?.length || exercise.sets), 0
-      ), 0
-    );
-  };
+
 
   return (
     <>
@@ -267,7 +261,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
                     Program Sessions ({sessions.length})
                   </h3>
                   <div className="text-sm text-gray-400">
-                    {getTotalExercises()} exercises • {getTotalSets()} total sets
+                    {getTotalExercises()} exercises
                   </div>
                 </div>
                 
@@ -278,7 +272,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
                         <h4 className="text-white font-semibold text-lg">{session.name}</h4>
                         <div className="text-sm text-gray-400 mt-1">
                           {session.exercises.length} exercise{session.exercises.length !== 1 ? 's' : ''} • 
-                          {session.exercises.reduce((total, ex) => total + (ex.setsData?.length || ex.sets), 0)} sets
+                          {session.exercises.length} exercises
                           {session.notes && (
                             <span className="ml-2 text-gray-500">• {session.notes}</span>
                           )}
@@ -328,7 +322,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
                             <div key={`${session.id}-exercise-${idx}-${exercise.name}`} className="text-sm text-gray-300 flex items-center gap-2">
                               <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></span>
                               <span className="truncate">
-                                {exercise.name} ({exercise.setsData?.length || exercise.sets} sets)
+                                {exercise.name}
                               </span>
                             </div>
                           ))}
@@ -362,7 +356,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
             <div className="flex items-center justify-between">
               <div className="text-gray-400 text-sm">
                 <div className="font-medium">
-                  {sessions.length} session{sessions.length !== 1 ? 's' : ''} • {getTotalExercises()} exercises • {getTotalSets()} total sets
+                  {sessions.length} session{sessions.length !== 1 ? 's' : ''} • {getTotalExercises()} exercises
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
                   💡 Create sessions first, then add exercises to each session

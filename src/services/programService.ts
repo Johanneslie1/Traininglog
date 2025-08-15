@@ -88,18 +88,10 @@ function validateProgram(program: Partial<Program>, isNew: boolean = false): voi
       if (!Array.isArray(session.exercises)) {
         throw new ProgramValidationError(`Session ${index + 1} must have an exercises array`);
       }
-      // Add more lenient validation for exercises
+      // Validate exercises - only check name and ID
       session.exercises.forEach((exercise, exIndex) => {
         if (!exercise.name?.trim()) {
           throw new ProgramValidationError(`Exercise ${exIndex + 1} in session ${index + 1} must have a name`);
-        }
-        if (typeof exercise.sets !== 'number' || exercise.sets < 0) {
-          console.warn(`[programService] Exercise ${exercise.name} has invalid sets value:`, exercise.sets, 'defaulting to 1');
-          exercise.sets = exercise.setsData?.length || 1;
-        }
-        if (typeof exercise.reps !== 'number' || exercise.reps < 0) {
-          console.warn(`[programService] Exercise ${exercise.name} has invalid reps value:`, exercise.reps, 'defaulting to 0');
-          exercise.reps = exercise.setsData?.[0]?.reps || 0;
         }
       });
     });
@@ -432,7 +424,7 @@ export const deleteSession = async (programId: string, sessionId: string): Promi
 // Create a new session in a program
 export const createSession = async (programId: string, session: {
   name: string;
-  exercises: Array<{ id?: string; name: string; sets: number; reps: number; weight?: number; setsData?: any[]; }>;
+  exercises: Array<{ id?: string; name: string; notes?: string; order?: number; }>;
   order?: number;
 }): Promise<string> => {
   try {
@@ -452,31 +444,17 @@ export const createSession = async (programId: string, session: {
       throw new Error('You can only add sessions to your own programs');
     }
 
-    // Process exercises to ensure correct format
+    // Process exercises - just store the exercise reference
     const processedExercises = session.exercises.map(exercise => {
       const exerciseId = (!exercise.id || exercise.id.startsWith('temp-')) 
         ? crypto.randomUUID() 
         : exercise.id;
 
-      const setsData = exercise.setsData 
-        ? exercise.setsData.map(set => ({
-            reps: set.reps || exercise.reps || 10,
-            weight: typeof set.weight === 'number' ? set.weight : (exercise.weight || 0),
-            difficulty: set.difficulty || 'MODERATE'
-          }))
-        : Array(exercise.sets || 3).fill({
-            reps: exercise.reps || 10,
-            weight: exercise.weight || 0,
-            difficulty: 'MODERATE'
-          });
-
       return {
         id: exerciseId,
         name: exercise.name,
-        sets: setsData.length,
-        reps: setsData[0]?.reps || exercise.reps || 10,
-        weight: setsData[0]?.weight || exercise.weight || 0,
-        setsData: setsData
+        notes: exercise.notes || '',
+        order: exercise.order || 0
       };
     });
 

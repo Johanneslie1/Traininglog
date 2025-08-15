@@ -29,11 +29,7 @@ const SessionModal: React.FC<SessionModalProps> = ({ isOpen, onClose, onSave, in
         trackReps: true
       },
       instructions: [],
-      sets: Array(ex.sets).fill({
-        reps: ex.reps,
-        weight: ex.weight || 0,
-        difficulty: 'MODERATE'
-      })
+      sets: [] // Empty sets - will be logged during workout
     })) || []
   );
   const [showForm, setShowForm] = useState(false);

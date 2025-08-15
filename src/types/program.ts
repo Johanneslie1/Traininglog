@@ -1,5 +1,3 @@
-import { ExerciseSet } from './sets';
-
 export interface Program {
   id: string;
   name: string;
@@ -26,9 +24,7 @@ export interface ProgramSession {
 export interface ProgramExercise {
   id: string;
   name: string;
-  sets: number;
-  reps: number;
-  weight?: number;
   notes?: string;
-  setsData?: ExerciseSet[];  // Full set data from ExerciseSetLogger
+  order?: number;
+  // Removed: sets, reps, weight, setsData - these should only be logged during actual workouts
 };

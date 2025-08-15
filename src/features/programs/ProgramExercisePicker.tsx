@@ -97,11 +97,7 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
             trackReps: true,
           }
         },
-        sets: Array(exercise.sets).fill({
-          reps: exercise.reps,
-          weight: exercise.weight || 0,
-          difficulty: 'MODERATE' as const
-        })
+        sets: [] // Empty sets - will be logged during workout
       };
     }).filter((ex): ex is NonNullable<typeof ex> => ex !== null);
 
@@ -331,21 +327,9 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
                                 {exercise.name}
                               </h4>
                               <div className="mt-2 flex flex-wrap gap-2">
-                                {exercise.sets > 0 && (
-                                  <span className="inline-flex items-center px-2 py-1 rounded bg-[#1a1a1a] text-sm text-gray-400">
-                                    {exercise.sets} sets
-                                  </span>
-                                )}
-                                {exercise.reps > 0 && (
-                                  <span className="inline-flex items-center px-2 py-1 rounded bg-[#1a1a1a] text-sm text-gray-400">
-                                    {exercise.reps} reps
-                                  </span>
-                                )}
-                                {exercise.weight && (
-                                  <span className="inline-flex items-center px-2 py-1 rounded bg-[#1a1a1a] text-sm text-gray-400">
-                                    {exercise.weight} kg
-                                  </span>
-                                )}
+                                <span className="inline-flex items-center px-2 py-1 rounded bg-[#1a1a1a] text-sm text-gray-400">
+                                  Sets and reps will be logged during workout
+                                </span>
                               </div>
                             </div>
                           </div>

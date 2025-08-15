@@ -101,8 +101,10 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
         const sessionToCreate = {
           name: session.name,
           exercises: session.exercises.map(ex => ({
-            ...ex,
-            id: ex.id || undefined // Let Firestore generate IDs for new exercises
+            id: ex.id || undefined,
+            name: ex.name,
+            notes: ex.notes,
+            order: ex.order
           })),
           order: nextOrder
         };
@@ -367,8 +369,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                         <div>
                           <h4 className="text-base font-medium text-white">{exercise.name}</h4>
                           <div className="text-sm text-gray-400 mt-0.5">
-                            {exercise.sets} sets × {exercise.reps} reps
-                            {typeof exercise.weight === 'number' && exercise.weight > 0 && ` @ ${exercise.weight}kg`}
+                            Sets and reps will be logged during workout
                           </div>
                         </div>
                       </div>

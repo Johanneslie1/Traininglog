@@ -65,7 +65,7 @@ const ProgramSelectionWrapper: React.FC = () => {
                   trackReps: true
                 }
               } as Exercise,
-              sets: e.setsData || []
+              sets: [] // Empty sets - will be logged during workout
             }))
           );
           state.onSelect(selectedExercises);

@@ -53,14 +53,8 @@ export const convertProgramExercise = (
 ): ProgramExercise => {
   if (fromUnit === toUnit) return exercise;
 
-  return {
-    ...exercise,
-    weight: exercise.weight ? convertWeight(exercise.weight, fromUnit, toUnit) : exercise.weight,
-    setsData: exercise.setsData?.map(set => ({
-      ...set,
-      weight: set.weight !== undefined ? convertWeight(set.weight, fromUnit, toUnit) : 0
-    }))
-  };
+  // Since ProgramExercise no longer has weight/setsData, just return the exercise as-is
+  return exercise;
 };
 
 /**

@@ -1,17 +1,11 @@
 import React, { useState } from 'react';
 import { Exercise } from '@/types/exercise';
-import { ExerciseSet } from '@/types/sets';
-import { DifficultyCategory } from '@/types/difficulty';
 import { ProgramSession, ProgramExercise } from '@/types/program';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store/store';
 import ExerciseHistoryPicker from './ExerciseHistoryPicker';
 import ProgramExercisePicker from './ProgramExercisePicker';
 import ExerciseDatabasePicker from './ExerciseDatabasePicker';
 import ExerciseSearch from '@/features/exercises/ExerciseSearch';
-// Category types no longer needed directly here
 import CopyFromPreviousSessionDialog from '@/features/exercises/CopyFromPreviousSessionDialog';
-import { SetEditorDialog } from '@/components/SetEditorDialog';
 import ProgramAddExerciseOptions from './ProgramAddExerciseOptions';
 
 interface SessionBuilderProps {
@@ -21,9 +15,7 @@ interface SessionBuilderProps {
   sessionName?: string;
 }
 
-type ViewState = 'main' | 'exerciseSelection' | 'search' | 'setEditor' | 'programPicker' | 'copyPrevious' | 'history' | 'database';
-
-// (Removed local category definitions - now delegated to ProgramAddExerciseOptions)
+type ViewState = 'main' | 'exerciseSelection' | 'search' | 'programPicker' | 'copyPrevious' | 'history' | 'database';
 
 const SessionBuilder: React.FC<SessionBuilderProps> = ({
   onClose,
@@ -31,105 +23,56 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
   initialSession,
   sessionName = ''
 }) => {
-  const user = useSelector((state: RootState) => state.auth.user);
   const [view, setView] = useState<ViewState>('main');
-  // selectedCategory state removed (handled internally by ProgramAddExerciseOptions / ExerciseSearch)
-  const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
-  
-  const [selectedExercises, setSelectedExercises] = useState<{ exercise: Exercise; sets: ExerciseSet[] }[]>(
+
+  // Only store exercise references - no sets data
+  const [selectedExercises, setSelectedExercises] = useState<Exercise[]>(
     initialSession?.exercises?.map(ex => ({
-      exercise: {
-        id: ex.id,
-        name: ex.name,
-        type: 'strength' as const,
-        category: 'compound' as const,
-        primaryMuscles: [],
-        secondaryMuscles: [],
-        instructions: [],
-        description: ex.notes || '',
-        defaultUnit: 'kg' as const,
-        metrics: { trackWeight: true, trackReps: true }
-      },
-      sets: ex.setsData || []
+      id: ex.id,
+      name: ex.name,
+      type: 'strength' as const,
+      category: 'compound' as const,
+      primaryMuscles: [],
+      secondaryMuscles: [],
+      instructions: [],
+      description: ex.notes || '',
+      defaultUnit: 'kg' as const,
+      metrics: { trackWeight: true, trackReps: true }
     })) || []
   );
   
   const [currentSessionName, setCurrentSessionName] = useState(initialSession?.name || sessionName);
   const [sessionNotes, setSessionNotes] = useState(initialSession?.notes || '');
-  const [editingSet, setEditingSet] = useState<{ exerciseIndex: number; setIndex: number } | null>(null);
-  const [tempSetData, setTempSetData] = useState<{ weight: string; reps: string }>({ weight: '', reps: '' });
   const [editingExerciseName, setEditingExerciseName] = useState<number | null>(null);
   const [tempExerciseName, setTempExerciseName] = useState('');
 
-  // Exercise selection handlers
-  const handleAddFromHistory = (exercises: { exercise: Exercise; sets: ExerciseSet[] }[]) => {
-    setSelectedExercises(prev => [...prev, ...exercises]);
+  // Exercise selection handlers - extract exercises from the objects
+  const handleAddFromHistory = (exercises: { exercise: Exercise; sets: any[] }[]) => {
+    const exercisesToAdd = exercises.map(item => item.exercise);
+    setSelectedExercises(prev => [...prev, ...exercisesToAdd]);
     setView('main');
   };
 
-  const handleAddFromPrograms = (exercises: { exercise: Exercise; sets: ExerciseSet[] }[]) => {
-    setSelectedExercises(prev => [...prev, ...exercises]);
+  const handleAddFromPrograms = (exercises: { exercise: Exercise; sets: any[] }[]) => {
+    const exercisesToAdd = exercises.map(item => item.exercise);
+    setSelectedExercises(prev => [...prev, ...exercisesToAdd]);
     setView('main');
   };
 
-  const handleAddFromDatabase = (exercises: { exercise: Exercise; sets: ExerciseSet[] }[]) => {
-    setSelectedExercises(prev => [...prev, ...exercises]);
+  const handleAddFromDatabase = (exercises: { exercise: Exercise; sets: any[] }[]) => {
+    const exercisesToAdd = exercises.map(item => item.exercise);
+    setSelectedExercises(prev => [...prev, ...exercisesToAdd]);
     setView('main');
   };
 
-  const handleCopiedExercises = (exercises: { exercise: Exercise; sets: ExerciseSet[] }[]) => {
-    setSelectedExercises(prev => [...prev, ...exercises]);
-    setView('main');
-  };
-
-  // Category selection now handled inside ProgramAddExerciseOptions
 
   const handleExerciseSelect = (exercise: any) => {
-    // Convert the exercise template to a full Exercise
-    setSelectedExercise({
-      ...exercise,
-      id: `temp-${exercise.name.toLowerCase().replace(/\s+/g, '-')}`,
-      description: exercise.description || '',
-      primaryMuscles: [],
-      secondaryMuscles: [],
-      instructions: [],
-      metrics: {
-        trackWeight: true,
-        trackReps: true
-      },
-      defaultUnit: 'kg'
-    });
-    setView('setEditor');
-  };
-
-  const handleSaveNewExercise = async (set: ExerciseSet) => {
-    if (!selectedExercise) return;
-
-    // Apply default template: for strength exercises create 3 sets (3x8) using entered set as template
-    let sets: ExerciseSet[] = [set];
-    if (selectedExercise.type === 'strength') {
-      const baseReps = set.reps && set.reps > 0 ? set.reps : 8;
-      const baseWeight = set.weight || 0;
-      const baseDifficulty = set.difficulty || DifficultyCategory.NORMAL;
-      // Ensure exactly 3 sets by cloning the first entered set values
-      while (sets.length < 3) {
-        sets.push({
-          reps: baseReps,
-          weight: baseWeight,
-            difficulty: baseDifficulty
-        });
-      }
-    }
-
-    const newExerciseWithSets = {
-      exercise: selectedExercise,
-      sets
-    };
-
-    setSelectedExercises(prev => [...prev, newExerciseWithSets]);
-    setSelectedExercise(null);
+    // Just add the exercise directly without sets editor
+    setSelectedExercises(prev => [...prev, exercise]);
     setView('main');
   };
+
+
 
   // Exercise management utilities
   const handleRemoveExercise = (index: number) => {
@@ -137,87 +80,17 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
   };
 
   const moveExercise = (index: number, direction: 'up' | 'down') => {
-    const result = Array.from(selectedExercises);
+    const result = [...selectedExercises];
     if (direction === 'up' && index > 0) {
-      [result[index - 1], result[index]] = [result[index], result[index - 1]];
-    } else if (direction === 'down' && index < selectedExercises.length - 1) {
+      [result[index], result[index - 1]] = [result[index - 1], result[index]];
+    } else if (direction === 'down' && index < result.length - 1) {
       [result[index], result[index + 1]] = [result[index + 1], result[index]];
     }
     setSelectedExercises(result);
   };
 
-  const handleEditSet = (exerciseIndex: number, setIndex: number) => {
-    const currentSet = selectedExercises[exerciseIndex].sets[setIndex];
-    setTempSetData({
-      weight: currentSet.weight?.toString() || '',
-      reps: currentSet.reps?.toString() || ''
-    });
-    setEditingSet({ exerciseIndex, setIndex });
-  };
-
-  const handleSaveSetEdit = () => {
-    if (editingSet) {
-      const { exerciseIndex, setIndex } = editingSet;
-      setSelectedExercises(prev => {
-        const newExercises = [...prev];
-        newExercises[exerciseIndex] = {
-          ...newExercises[exerciseIndex],
-          sets: newExercises[exerciseIndex].sets.map((set, idx) =>
-            idx === setIndex
-              ? {
-                  ...set,
-                  weight: parseFloat(tempSetData.weight) || 0,
-                  reps: parseInt(tempSetData.reps) || 0
-                }
-              : set
-          )
-        };
-        return newExercises;
-      });
-      setEditingSet(null);
-      setTempSetData({ weight: '', reps: '' });
-    }
-  };
-
-  const handleCancelSetEdit = () => {
-    setEditingSet(null);
-    setTempSetData({ weight: '', reps: '' });
-  };
-
-  const handleAddSet = (exerciseIndex: number) => {
-    setSelectedExercises(prev => {
-      const newExercises = [...prev];
-      const lastSet = newExercises[exerciseIndex].sets[newExercises[exerciseIndex].sets.length - 1];
-      newExercises[exerciseIndex] = {
-        ...newExercises[exerciseIndex],
-        sets: [
-          ...newExercises[exerciseIndex].sets,
-          {
-            reps: lastSet?.reps || 8,
-            weight: lastSet?.weight || 0,
-            difficulty: DifficultyCategory.NORMAL
-          }
-        ]
-      };
-      return newExercises;
-    });
-  };
-
-  const handleRemoveSet = (exerciseIndex: number, setIndex: number) => {
-    setSelectedExercises(prev => {
-      const newExercises = [...prev];
-      if (newExercises[exerciseIndex].sets.length > 1) {
-        newExercises[exerciseIndex] = {
-          ...newExercises[exerciseIndex],
-          sets: newExercises[exerciseIndex].sets.filter((_, idx) => idx !== setIndex)
-        };
-      }
-      return newExercises;
-    });
-  };
-
   const handleEditExerciseName = (exerciseIndex: number) => {
-    setTempExerciseName(selectedExercises[exerciseIndex].exercise.name);
+    setTempExerciseName(selectedExercises[exerciseIndex].name);
     setEditingExerciseName(exerciseIndex);
   };
 
@@ -232,10 +105,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
         const newExercises = [...prev];
         newExercises[editingExerciseName] = {
           ...newExercises[editingExerciseName],
-          exercise: {
-            ...newExercises[editingExerciseName].exercise,
-            name: tempExerciseName.trim()
-          }
+          name: tempExerciseName.trim()
         };
         return newExercises;
       });
@@ -251,13 +121,10 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
 
   const handleDuplicateExercise = (exerciseIndex: number) => {
     const exerciseToDuplicate = selectedExercises[exerciseIndex];
-    const duplicatedExercise = {
+    const duplicatedExercise: Exercise = {
       ...exerciseToDuplicate,
-      exercise: {
-        ...exerciseToDuplicate.exercise,
-        id: `${exerciseToDuplicate.exercise.id}-duplicate-${Date.now()}`,
-        name: `${exerciseToDuplicate.exercise.name} (Copy)`
-      }
+      id: `${exerciseToDuplicate.id}-duplicate-${Date.now()}`,
+      name: `${exerciseToDuplicate.name} (Copy)`
     };
     
     setSelectedExercises(prev => [
@@ -267,7 +134,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
     ]);
   };
 
-  const handleSaveSession = () => {
+  const handleSaveSession = async () => {
     if (!currentSessionName.trim()) {
       alert('Please enter a session name');
       return;
@@ -279,21 +146,18 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
     }
 
     // Validate that all exercises have names
-    const exercisesWithoutNames = selectedExercises.filter(item => !item.exercise.name?.trim());
+    const exercisesWithoutNames = selectedExercises.filter(item => !item.name?.trim());
     if (exercisesWithoutNames.length > 0) {
       alert(`Please ensure all exercises have names. Found ${exercisesWithoutNames.length} exercise(s) without names.`);
       return;
     }
 
-    // Convert exercises to ProgramExercise format
+    // Convert exercises to ProgramExercise format (exercise reference only)
     const exercises: ProgramExercise[] = selectedExercises.map((item, index) => ({
-      id: `${item.exercise.id}-${index}`,
-      name: item.exercise.name,
+      id: item.id,
+      name: item.name,
       order: index,
-      sets: item.sets.length,
-      reps: item.sets.reduce((total, set) => total + (set.reps || 0), 0),
-      setsData: item.sets,
-      notes: item.exercise.description || ''
+      notes: item.description || ''
     }));
 
     const session: Omit<ProgramSession, 'userId'> = {
@@ -321,26 +185,25 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
       <CopyFromPreviousSessionDialog
         isOpen={true}
         onClose={() => setView('main')}
-        onExercisesSelected={(exercises) => {
-          const convertedExercises = exercises.map(ex => ({
-            exercise: {
-              id: ex.id || `temp-${ex.exerciseName?.toLowerCase().replace(/\s+/g, '-')}`,
-              name: ex.exerciseName || '',
-              type: 'strength' as const,
-              category: 'compound' as const,
-              primaryMuscles: [],
-              secondaryMuscles: [],
-              instructions: [],
-              description: '',
-              defaultUnit: 'kg' as const,
-              metrics: { trackWeight: true, trackReps: true }
-            },
-            sets: ex.sets || []
-          }));
-          handleCopiedExercises(convertedExercises);
-        }}
         currentDate={new Date()}
-        userId={user?.id || ''}
+        onExercisesSelected={(exercises) => {
+          // Convert ExerciseData to Exercise format
+          const exercisesToAdd = exercises.map(ex => ({
+            id: ex.id || `temp-${Date.now()}`,
+            name: ex.exerciseName,
+            type: 'strength' as const,
+            category: 'compound' as const,
+            primaryMuscles: [],
+            secondaryMuscles: [],
+            instructions: [],
+            description: '',
+            defaultUnit: 'kg' as const,
+            metrics: { trackWeight: true, trackReps: true }
+          }));
+          setSelectedExercises(prev => [...prev, ...exercisesToAdd]);
+          setView('main');
+        }}
+        userId=""
       />
     );
   }
@@ -372,27 +235,13 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
     );
   }
 
-  if (view === 'setEditor' && selectedExercise) {
-    return (
-      <SetEditorDialog
-        onClose={() => {
-          setSelectedExercise(null);
-          setView('main');
-        }}
-        onSave={handleSaveNewExercise}
-        exerciseName={selectedExercise.name}
-        setNumber={1}
-        totalSets={1}
-      />
-    );
-  }
-
   if (view === 'exerciseSelection') {
     return (
       <ProgramAddExerciseOptions
         onClose={() => setView('main')}
         onAddExercises={(items) => {
-          setSelectedExercises(prev => [...prev, ...items]);
+          const exercisesToAdd = items.map(item => item.exercise);
+          setSelectedExercises(prev => [...prev, ...exercisesToAdd]);
           setView('main');
         }}
         onOpenProgramPicker={() => setView('programPicker')}
@@ -453,17 +302,17 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
             <textarea
               value={sessionNotes}
               onChange={(e) => setSessionNotes(e.target.value)}
-              placeholder="Add notes about this session"
-              className="w-full px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-[#8B5CF6] resize-none"
+              placeholder="Add any notes for this session..."
               rows={3}
+              className="w-full px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-[#8B5CF6] resize-none"
             />
           </div>
         </div>
 
         {/* Exercises Section */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-white">Exercises ({selectedExercises.length})</h2>
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-medium text-white">Exercises</h2>
             <button
               onClick={() => setView('exerciseSelection')}
               className="px-4 py-2 bg-[#2a2a2a] hover:bg-[#3a3a3a] text-white rounded-lg transition-colors border border-white/10"
@@ -473,27 +322,26 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
           </div>
 
           {selectedExercises.length === 0 ? (
-            <div className="text-center py-12 text-gray-400">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#2a2a2a] flex items-center justify-center">
-                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            <div className="text-center py-12 bg-[#1a1a1a] rounded-xl border border-white/10">
+              <div className="text-gray-500 mb-4">
+                <svg className="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
+                No exercises added yet
               </div>
-              <p className="text-lg mb-2">No exercises added yet</p>
-              <p className="text-sm mb-4">Add exercises from your history, programs, or the database</p>
               <button
                 onClick={() => setView('exerciseSelection')}
-                className="px-6 py-3 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white rounded-lg transition-colors"
+                className="px-6 py-3 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white rounded-lg transition-colors font-medium"
               >
                 Add First Exercise
               </button>
             </div>
           ) : (
             <div className="space-y-3">
-              {selectedExercises.map((item, exerciseIndex) => (
-                <div key={`${item.exercise.id}-${exerciseIndex}`} className="bg-[#1a1a1a] rounded-xl border border-white/10 p-4">
+              {selectedExercises.map((exercise, exerciseIndex) => (
+                <div key={`${exercise.id}-${exerciseIndex}`} className="bg-[#1a1a1a] rounded-xl border border-white/10 p-4">
                   {/* Exercise Header */}
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center justify-between">
                     <div className="flex-1">
                       {editingExerciseName === exerciseIndex ? (
                         <div className="flex items-center gap-2">
@@ -524,9 +372,10 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
                       ) : (
                         <button
                           onClick={() => handleEditExerciseName(exerciseIndex)}
-                          className="text-left hover:bg-white/5 rounded p-1 -m-1 transition-colors"
+                          className="text-left hover:bg-white/5 rounded p-1 -m-1 transition-colors w-full"
                         >
-                          <h3 className="text-lg font-medium text-white">{item.exercise.name}</h3>
+                          <h3 className="text-lg font-medium text-white">{exercise.name}</h3>
+                          <p className="text-sm text-gray-400 mt-1">Sets and reps will be logged during workout</p>
                         </button>
                       )}
                     </div>
@@ -581,84 +430,6 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
                         </svg>
                       </button>
                     </div>
-                  </div>
-
-                  {/* Sets */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-300">Sets ({item.sets.length})</span>
-                      <button
-                        onClick={() => handleAddSet(exerciseIndex)}
-                        className="px-3 py-1 bg-[#2a2a2a] hover:bg-[#3a3a3a] text-white rounded-lg transition-colors text-sm border border-white/10"
-                      >
-                        Add Set
-                      </button>
-                    </div>
-                    
-                    {item.sets.map((set, setIndex) => (
-                      <div key={`${item.exercise.id}-set-${setIndex}`} className="flex items-center gap-3 p-3 bg-[#2a2a2a] rounded-lg">
-                        <span className="text-sm text-gray-400 w-8">#{setIndex + 1}</span>
-                        
-                        {editingSet?.exerciseIndex === exerciseIndex && editingSet?.setIndex === setIndex ? (
-                          <>
-                            <input
-                              type="number"
-                              value={tempSetData.weight}
-                              onChange={(e) => setTempSetData(prev => ({ ...prev, weight: e.target.value }))}
-                              placeholder="Weight"
-                              className="flex-1 px-2 py-1 bg-[#1a1a1a] border border-white/10 rounded text-white text-sm focus:outline-none focus:border-[#8B5CF6]"
-                            />
-                            <span className="text-gray-400 text-sm">kg</span>
-                            <span className="text-gray-400">×</span>
-                            <input
-                              type="number"
-                              value={tempSetData.reps}
-                              onChange={(e) => setTempSetData(prev => ({ ...prev, reps: e.target.value }))}
-                              placeholder="Reps"
-                              className="flex-1 px-2 py-1 bg-[#1a1a1a] border border-white/10 rounded text-white text-sm focus:outline-none focus:border-[#8B5CF6]"
-                            />
-                            <button
-                              onClick={handleSaveSetEdit}
-                              className="p-1 hover:bg-white/10 rounded text-green-400"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                            </button>
-                            <button
-                              onClick={handleCancelSetEdit}
-                              className="p-1 hover:bg-white/10 rounded text-red-400"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button
-                              onClick={() => handleEditSet(exerciseIndex, setIndex)}
-                              className="flex-1 text-left hover:bg-white/5 rounded p-1 -m-1 transition-colors"
-                            >
-                              <span className="text-white font-medium">{set.weight || 0} kg</span>
-                              <span className="text-gray-400 mx-2">×</span>
-                              <span className="text-white font-medium">{set.reps || 0} reps</span>
-                            </button>
-                            {item.sets.length > 1 && (
-                              <button
-                                onClick={() => handleRemoveSet(exerciseIndex, setIndex)}
-                                className="p-1 hover:bg-white/10 rounded text-red-400"
-                                title="Remove set"
-                              >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                              </button>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    ))}
                   </div>
                 </div>
               ))}
