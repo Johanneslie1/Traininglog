@@ -134,45 +134,62 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
   };
 
   return (
-    <div className="relative min-h-screen pb-20">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold">Programs</h2>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setShowTemplateManager(true)}
-            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
-          >
-            <CollectionIcon className="w-4 h-4" />
-            Templates
-          </button>
-          <button
-            onClick={() => setShowProgramBuilder(true)}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
-          >
-            <PlusIcon className="w-4 h-4" />
-            Builder
-          </button>
+    <div className="min-h-screen bg-black/90">
+      {/* Header */}
+      <header className="sticky top-0 bg-[#1a1a1a] border-b border-white/10 p-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-white">Programs</h2>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowTemplateManager(true)}
+              className="px-4 py-2.5 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-all duration-200 flex items-center gap-2 font-medium"
+            >
+              <CollectionIcon className="w-4 h-4" />
+              Templates
+            </button>
+            <button
+              onClick={() => setShowProgramBuilder(true)}
+              className="px-4 py-2.5 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 flex items-center gap-2 font-medium shadow-lg"
+            >
+              <PlusIcon className="w-4 h-4" />
+              Builder
+            </button>
+          </div>
         </div>
-      </div>
-      
+      </header>
+
+      {/* Main Content */}
+      <main className="p-4">
       {error && (
-        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+        <div className="mb-4 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl">
           {error}
         </div>
       )}
       {programs.length === 0 ? (
-        <div className="text-center p-8 text-gray-500">
-          No programs found. Click the + button to create one.
+        <div className="text-center py-16">
+          <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gray-800/50 flex items-center justify-center">
+            <svg className="w-10 h-10 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-medium text-white mb-3">No programs yet</h3>
+          <p className="text-gray-400 text-sm mb-8">Create your first training program to get started</p>
+          <button
+            onClick={() => setShowProgramBuilder(true)}
+            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 font-medium shadow-lg"
+          >
+            Create Program
+          </button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {programs.map((program: Program) => (
             <div
               key={program.id}
-              className="relative bg-[#23272F] rounded-xl p-4 flex flex-col items-start justify-between min-h-[120px] shadow-md cursor-pointer overflow-hidden group"
+              className="relative bg-[#1a1a1a] rounded-2xl p-5 flex flex-col justify-between min-h-[140px] cursor-pointer overflow-hidden group border border-gray-800 hover:border-gray-700 transition-all duration-200 hover:shadow-xl"
               onClick={() => (onSelect ? onSelect(program.id) : navigate(`/programs/${program.id}`))}
             >
-              <div className="absolute right-3 top-3 opacity-20 text-5xl pointer-events-none select-none">
+              <div className="absolute right-4 top-4 opacity-10 text-4xl pointer-events-none select-none">
                 <span role="img" aria-label="kettlebell">🏋️‍♂️</span>
               </div>
               
@@ -180,7 +197,7 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
               <button
                 onClick={(e) => handleDeleteProgram(program.id, program.name, e)}
                 disabled={deletingProgramId === program.id}
-                className="absolute top-2 left-2 p-1.5 bg-red-600/80 hover:bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 z-20 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="absolute top-3 left-3 p-2 bg-red-600/90 hover:bg-red-500 text-white rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-200 z-20 disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Delete program"
                 aria-label={`Delete program ${program.name}`}
               >
@@ -191,16 +208,26 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
                 )}
               </button>
 
-              <div className="font-semibold text-lg text-white mb-1 z-10">{program.name}</div>
-              <div className="flex items-center gap-2 z-10">
-                <span className={`px-2 py-0.5 rounded text-xs text-white ${levelColors[program.level.charAt(0).toUpperCase() + program.level.slice(1)] || 'bg-gray-700'}`}>
-                  {program.level.charAt(0).toUpperCase() + program.level.slice(1)}
-                </span>
-                {program.sessions && program.sessions.length > 0 && (
-                  <span className="text-gray-400 text-xs">
-                    {program.sessions.length} session{program.sessions.length !== 1 ? 's' : ''}
-                  </span>
-                )}
+              <div className="flex flex-col justify-between h-full z-10">
+                <div>
+                  <h3 className="font-semibold text-lg text-white mb-2">{program.name}</h3>
+                  {program.description && (
+                    <p className="text-sm text-gray-400 mb-3 line-clamp-2">{program.description}</p>
+                  )}
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium text-white ${levelColors[program.level.charAt(0).toUpperCase() + program.level.slice(1)] || 'bg-gray-700'}`}>
+                      {program.level.charAt(0).toUpperCase() + program.level.slice(1)}
+                    </span>
+                  </div>
+                  {program.sessions && program.sessions.length > 0 && (
+                    <span className="text-gray-400 text-xs font-medium">
+                      {program.sessions.length} session{program.sessions.length !== 1 ? 's' : ''}
+                    </span>
+                  )}
+                </div>
               </div>
               {program.description && (
                 <div className="text-gray-400 text-xs mt-2 z-10 line-clamp-2">{program.description}</div>
@@ -216,6 +243,8 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
       >
         +
       </button>
+      </main>
+      
       <ProgramModal 
         isOpen={showModal} 
         onClose={() => {
