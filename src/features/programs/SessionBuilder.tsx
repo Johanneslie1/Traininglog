@@ -9,9 +9,10 @@ import ExerciseHistoryPicker from './ExerciseHistoryPicker';
 import ProgramExercisePicker from './ProgramExercisePicker';
 import ExerciseDatabasePicker from './ExerciseDatabasePicker';
 import ExerciseSearch from '@/features/exercises/ExerciseSearch';
-import CategoryButton, { Category } from '@/features/exercises/CategoryButton';
+// Category types no longer needed directly here
 import CopyFromPreviousSessionDialog from '@/features/exercises/CopyFromPreviousSessionDialog';
 import { SetEditorDialog } from '@/components/SetEditorDialog';
+import ProgramAddExerciseOptions from './ProgramAddExerciseOptions';
 
 interface SessionBuilderProps {
   onClose: () => void;
@@ -22,30 +23,7 @@ interface SessionBuilderProps {
 
 type ViewState = 'main' | 'exerciseSelection' | 'search' | 'setEditor' | 'programPicker' | 'copyPrevious' | 'history' | 'database';
 
-// Exercise selection categories matching the logging dashboard
-const helperCategories: Category[] = [
-  { id: 'programs', name: 'Add from Program', icon: '📋', bgColor: 'bg-[#2a2a2a]', iconBgColor: 'bg-purple-600', textColor: 'text-white' },
-  { id: 'copyPrevious', name: 'Copy from Previous', icon: '📝', bgColor: 'bg-[#2a2a2a]', iconBgColor: 'bg-blue-600', textColor: 'text-white' },
-  { id: 'history', name: 'From History', icon: '🕒', bgColor: 'bg-[#2a2a2a]', iconBgColor: 'bg-green-600', textColor: 'text-white' },
-  { id: 'database', name: 'Exercise Database', icon: '🗄️', bgColor: 'bg-[#2a2a2a]', iconBgColor: 'bg-orange-600', textColor: 'text-white' },
-];
-
-const muscleGroups: Category[] = [
-  { id: 'chest', name: 'Chest', icon: '💪', bgColor: 'bg-[#2a2a2a]', iconBgColor: 'bg-green-600', textColor: 'text-white' },
-  { id: 'back', name: 'Back', icon: '🔙', bgColor: 'bg-[#2a2a2a]', iconBgColor: 'bg-blue-600', textColor: 'text-white' },
-  { id: 'legs', name: 'Legs', icon: '🦵', bgColor: 'bg-[#2a2a2a]', iconBgColor: 'bg-yellow-600', textColor: 'text-white' },
-  { id: 'shoulders', name: 'Shoulders', icon: '🎯', bgColor: 'bg-[#2a2a2a]', iconBgColor: 'bg-cyan-600', textColor: 'text-white' },
-  { id: 'arms', name: 'Arms', icon: '💪', bgColor: 'bg-[#2a2a2a]', iconBgColor: 'bg-red-600', textColor: 'text-white' },
-  { id: 'core', name: 'Core', icon: '⭕', bgColor: 'bg-[#2a2a2a]', iconBgColor: 'bg-purple-600', textColor: 'text-white' },
-  { id: 'fullBody', name: 'Full-Body', icon: '👤', bgColor: 'bg-[#2a2a2a]', iconBgColor: 'bg-orange-600', textColor: 'text-white' },
-];
-
-const trainingTypes: Category[] = [
-  { id: 'cardio', name: 'Cardio', icon: '🏃', bgColor: 'bg-[#2a2a2a]', iconBgColor: 'bg-red-600', textColor: 'text-white' },
-  { id: 'agility', name: 'Agility', icon: '⚡', bgColor: 'bg-[#2a2a2a]', iconBgColor: 'bg-yellow-600', textColor: 'text-white' },
-  { id: 'speed', name: 'Speed', icon: '🏃‍♂️', bgColor: 'bg-[#2a2a2a]', iconBgColor: 'bg-blue-600', textColor: 'text-white' },
-  { id: 'stretching', name: 'Stretching', icon: '🧘‍♂️', bgColor: 'bg-[#2a2a2a]', iconBgColor: 'bg-green-600', textColor: 'text-white' },
-];
+// (Removed local category definitions - now delegated to ProgramAddExerciseOptions)
 
 const SessionBuilder: React.FC<SessionBuilderProps> = ({
   onClose,
@@ -55,7 +33,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
 }) => {
   const user = useSelector((state: RootState) => state.auth.user);
   const [view, setView] = useState<ViewState>('main');
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  // selectedCategory state removed (handled internally by ProgramAddExerciseOptions / ExerciseSearch)
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   
   const [selectedExercises, setSelectedExercises] = useState<{ exercise: Exercise; sets: ExerciseSet[] }[]>(
@@ -104,28 +82,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
     setView('main');
   };
 
-  const handleCategorySelect = (category: Category) => {
-    setSelectedCategory(category);
-    // Map special categories to their respective views
-    switch (category.id) {
-      case 'programs':
-        setView('programPicker');
-        break;
-      case 'copyPrevious':
-        setView('copyPrevious');
-        break;
-      case 'history':
-        setView('history');
-        break;
-      case 'database':
-        setView('database');
-        break;
-      default:
-        // For muscle groups and training types, go to search
-        setView('search');
-        break;
-    }
-  };
+  // Category selection now handled inside ProgramAddExerciseOptions
 
   const handleExerciseSelect = (exercise: any) => {
     // Convert the exercise template to a full Exercise
@@ -148,9 +105,25 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
   const handleSaveNewExercise = async (set: ExerciseSet) => {
     if (!selectedExercise) return;
 
+    // Apply default template: for strength exercises create 3 sets (3x8) using entered set as template
+    let sets: ExerciseSet[] = [set];
+    if (selectedExercise.type === 'strength') {
+      const baseReps = set.reps && set.reps > 0 ? set.reps : 8;
+      const baseWeight = set.weight || 0;
+      const baseDifficulty = set.difficulty || DifficultyCategory.NORMAL;
+      // Ensure exactly 3 sets by cloning the first entered set values
+      while (sets.length < 3) {
+        sets.push({
+          reps: baseReps,
+          weight: baseWeight,
+            difficulty: baseDifficulty
+        });
+      }
+    }
+
     const newExerciseWithSets = {
       exercise: selectedExercise,
-      sets: [set]
+      sets
     };
 
     setSelectedExercises(prev => [...prev, newExerciseWithSets]);
@@ -394,7 +367,6 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
     return (
       <ExerciseSearch
         onClose={() => setView('main')}
-        category={selectedCategory}
         onSelectExercise={handleExerciseSelect}
       />
     );
@@ -417,68 +389,17 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
 
   if (view === 'exerciseSelection') {
     return (
-      <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex flex-col z-50">
-        {/* Header - Fixed at top */}
-        <header className="sticky top-0 flex items-center justify-between p-4 bg-[#1a1a1a] border-b border-white/10">
-          <h2 className="text-xl font-bold text-white">Add Exercises</h2>
-          <button 
-            onClick={() => setView('main')}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white"
-            aria-label="Close"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </header>
-
-        {/* Main Content - Scrollable */}
-        <main className="flex-1 overflow-y-auto overscroll-contain pb-safe min-h-0">
-          <div className="max-w-md mx-auto p-4 space-y-6 md:space-y-8">
-            {/* Quick Add Section */}
-            <section className="space-y-3 md:space-y-4">
-              <h3 className="text-lg font-semibold text-white/90">Quick Add</h3>
-              <div className="grid grid-cols-2 gap-3 md:gap-4">
-                {helperCategories.map(category => (
-                  <CategoryButton
-                    key={category.id}
-                    category={category}
-                    onClick={() => handleCategorySelect(category)}
-                  />
-                ))}
-              </div>
-            </section>
-
-            {/* Muscle Groups Section */}
-            <section className="space-y-3 md:space-y-4">
-              <h3 className="text-lg font-semibold text-white/90">Muscle Groups</h3>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4">
-                {muscleGroups.map(category => (
-                  <CategoryButton
-                    key={category.id}
-                    category={category}
-                    onClick={() => handleCategorySelect(category)}
-                  />
-                ))}
-              </div>
-            </section>
-
-            {/* Training Types Section */}
-            <section className="space-y-3 md:space-y-4">
-              <h3 className="text-lg font-semibold text-white/90">Training Types</h3>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4">
-                {trainingTypes.map(category => (
-                  <CategoryButton
-                    key={category.id}
-                    category={category}
-                    onClick={() => handleCategorySelect(category)}
-                  />
-                ))}
-              </div>
-            </section>
-          </div>
-        </main>
-      </div>
+      <ProgramAddExerciseOptions
+        onClose={() => setView('main')}
+        onAddExercises={(items) => {
+          setSelectedExercises(prev => [...prev, ...items]);
+          setView('main');
+        }}
+        onOpenProgramPicker={() => setView('programPicker')}
+        onOpenCopyPrevious={() => setView('copyPrevious')}
+        onOpenHistory={() => setView('history')}
+        onOpenDatabase={() => setView('database')}
+      />
     );
   }
 

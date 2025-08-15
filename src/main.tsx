@@ -21,8 +21,8 @@ if (import.meta.env.DEV) {
   };
 }
 
-// Simple service worker registration for PWA
-if ('serviceWorker' in navigator) {
+// Only register service worker in production to avoid caching dev modules
+if (!import.meta.env.DEV && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').then(registration => {
       console.log('SW registered:', registration);

@@ -125,22 +125,36 @@ export function searchExercises(query: string, activityTypes?: ActivityType[]): 
   typesToSearch.forEach(type => {
     const exercises = allExercises[type] || [];
     const matchingExercises = exercises.filter(exercise => {
-      const searchText = [
-        exercise.name,
-        exercise.description,
-        exercise.category,
-        ...(exercise.tags || []),
-        ...(exercise.instructions || []),
-        ...(exercise.tips || [])
-      ].join(' ').toLowerCase();
+      // Only search in exercise name
+      const exerciseName = exercise.name.toLowerCase();
       
-      return searchTerms.some(term => searchText.includes(term));
+      // Check if all search terms are found in the exercise name
+      return searchTerms.every(term => exerciseName.includes(term));
     });
     
     results = [...results, ...matchingExercises];
   });
   
-  return results;
+  // Sort results by relevance
+  const query_lower = query.toLowerCase();
+  results.sort((a, b) => {
+    const aName = a.name.toLowerCase();
+    const bName = b.name.toLowerCase();
+    
+    // Exact match comes first
+    if (aName === query_lower && bName !== query_lower) return -1;
+    if (bName === query_lower && aName !== query_lower) return 1;
+    
+    // Starts with query comes second
+    if (aName.startsWith(query_lower) && !bName.startsWith(query_lower)) return -1;
+    if (bName.startsWith(query_lower) && !aName.startsWith(query_lower)) return 1;
+    
+    // Alphabetical order for the rest
+    return aName.localeCompare(bName);
+  });
+  
+  // Limit results to prevent too many matches
+  return results.slice(0, 30);
 }
 
 // Get exercise categories for an activity type
