@@ -3,8 +3,6 @@ import { Exercise } from '@/types/exercise';
 import { ExerciseSet } from '@/types/sets';
 import CategoryButton, { Category } from '@/features/exercises/CategoryButton';
 import ExerciseSearch from '@/features/exercises/ExerciseSearch';
-import { SetEditorDialog } from '@/components/SetEditorDialog';
-import { DifficultyCategory } from '@/types/difficulty';
 import { ActivityType } from '@/types/activityTypes';
 import { getExercisesByActivityType, searchExercises } from '@/services/exerciseDatabaseService';
 import UniversalExercisePicker from '@/components/activities/UniversalExercisePicker';
@@ -15,7 +13,7 @@ import { enrich as sportEnrich, collectFacets as sportCollectFacets, applyFilter
  * Mirrors LogOptions UI but returns selected exercises to SessionBuilder
  */
 
-type ViewState = 'main' | 'resistance' | 'search' | 'setEditor' | 'universalSearch'
+type ViewState = 'main' | 'resistance' | 'search' | 'universalSearch'
   | 'sport' | 'stretching' | 'endurance' | 'speedAgility' | 'other';
 
 interface ProgramAddExerciseOptionsProps {
@@ -63,7 +61,6 @@ export const ProgramAddExerciseOptions: React.FC<ProgramAddExerciseOptionsProps>
 }) => {
   const [view, setView] = useState<ViewState>('main');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
-  const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [universalSearchQuery, setUniversalSearchQuery] = useState('');
 
   if (view === 'universalSearch') {
@@ -116,8 +113,12 @@ export const ProgramAddExerciseOptions: React.FC<ProgramAddExerciseOptionsProps>
                       <button
                         key={exercise.id}
                         onClick={() => {
-                          setSelectedExercise(exercise);
-                          setView('setEditor');
+                          // Directly add exercise without set editor
+                          const exerciseWithSets = {
+                            exercise,
+                            sets: [] // Empty sets - will be logged during workout
+                          };
+                          onAddExercises([exerciseWithSets]);
                         }}
                         className="w-full text-left p-4 bg-[#1a1a1a] rounded-xl hover:bg-[#222] transition-colors border border-white/10"
                       >
@@ -167,35 +168,17 @@ export const ProgramAddExerciseOptions: React.FC<ProgramAddExerciseOptionsProps>
         onClose={() => setView('resistance')}
         category={selectedCategory}
         onSelectExercise={(exercise) => {
-          setSelectedExercise({
+          // Directly add exercise without set editor
+          const exerciseToAdd = {
             ...exercise,
             id: exercise.id || `temp-${exercise.name.toLowerCase().replace(/\s+/g, '-')}`
-          });
-          setView('setEditor');
+          };
+          const exerciseWithSets = {
+            exercise: exerciseToAdd,
+            sets: [] // Empty sets - will be logged during workout
+          };
+          onAddExercises([exerciseWithSets]);
         }}
-      />
-    );
-  }
-
-  if (view === 'setEditor' && selectedExercise) {
-    return (
-      <SetEditorDialog
-        onClose={() => { setSelectedExercise(null); setView('resistance'); }}
-        onSave={(set) => {
-          let sets: ExerciseSet[] = [set];
-          const baseReps = set.reps && set.reps > 0 ? set.reps : 8;
-          const baseWeight = set.weight || 0;
-          const baseDifficulty = set.difficulty || DifficultyCategory.NORMAL;
-          while (sets.length < 3) {
-            sets.push({ reps: baseReps, weight: baseWeight, difficulty: baseDifficulty });
-          }
-          onAddExercises([{ exercise: selectedExercise, sets }]);
-          setSelectedExercise(null);
-          onClose();
-        }}
-        exerciseName={selectedExercise.name}
-        setNumber={1}
-        totalSets={1}
       />
     );
   }

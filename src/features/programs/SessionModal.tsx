@@ -1,8 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { ProgramSession } from '@/types/program';
-import ExerciseLogOptionsForm, { ExerciseWithSets } from '../exercises/ExerciseLogOptionsForm';
 import SessionExerciseLogOptions, { ExerciseWithSets as SessionExerciseWithSets } from './SessionExerciseLogOptions';
-import { ExerciseSetLogger } from '../exercises/ExerciseSetLogger';
 import { getAuth } from 'firebase/auth';
 
 interface SessionModalProps {
@@ -14,7 +12,7 @@ interface SessionModalProps {
 
 const SessionModal: React.FC<SessionModalProps> = ({ isOpen, onClose, onSave, initialData }) => {
   const [name, setName] = useState(initialData?.name || '');
-  const [exercises, setExercises] = useState<ExerciseWithSets[]>(
+  const [exercises, setExercises] = useState<SessionExerciseWithSets[]>(
     initialData?.exercises.map(ex => ({
       id: ex.id,
       name: ex.name,
@@ -32,9 +30,7 @@ const SessionModal: React.FC<SessionModalProps> = ({ isOpen, onClose, onSave, in
       sets: [] // Empty sets - will be logged during workout
     })) || []
   );
-  const [showForm, setShowForm] = useState(false);
   const [showAddExercise, setShowAddExercise] = useState(false);
-  const [editIndex, setEditIndex] = useState<number | null>(null);
 
   // Get current user ID
   const getCurrentUserId = useCallback(() => {
@@ -51,17 +47,8 @@ const SessionModal: React.FC<SessionModalProps> = ({ isOpen, onClose, onSave, in
     setShowAddExercise(false);
   };
 
-  // Edit an exercise's sets
-  const handleEditExercise = (sets: any[]) => {
-    if (editIndex === null) return;
-    setExercises(prev => prev.map((ex, idx) => idx === editIndex ? { ...ex, sets } : ex));
-    setEditIndex(null);
-  };
-
-  // For batch edit (legacy, keep for now)
-  const handleSaveExercises = (exs: ExerciseWithSets[]) => {
-    setExercises(exs);
-    setShowForm(false);
+  const removeExercise = (id: string) => {
+    setExercises(prev => prev.filter((ex, idx) => ex.id !== id && idx.toString() !== id));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -123,52 +110,42 @@ const SessionModal: React.FC<SessionModalProps> = ({ isOpen, onClose, onSave, in
           onChange={e => setName(e.target.value)}
           required
         />
-        <div className="mb-4">
-          <h3 className="text-white mb-2">Exercises</h3>
-          <div className="flex gap-2 mb-2">
-            <button type="button" onClick={() => setShowAddExercise(true)} className="px-3 py-1 bg-green-700 text-white rounded">Add Exercise</button>
-            <button type="button" onClick={() => setShowForm(true)} className="px-3 py-1 bg-blue-700 text-white rounded">Edit All</button>
-          </div>
-          {exercises.length === 0 && <div className="text-gray-500">No exercises added yet.</div>}
-          <ul>
-            {exercises.map((ex, idx) => (
-              <li key={ex.id || idx} className="text-gray-200 text-sm mb-1 flex items-center gap-2">
-                {ex.name} - {ex.sets.length} sets
-                <button type="button" className="text-blue-400 ml-2" onClick={() => setEditIndex(idx)}>Edit</button>
-                <button type="button" className="text-red-400 ml-2" onClick={() => setExercises(prev => prev.filter((_, i) => i !== idx))}>Remove</button>
-              </li>
-            ))}
-          </ul>
+        <div className="mb-6">
+          <h3 className="text-white text-lg font-medium mb-3">Exercises</h3>
+          <button 
+            type="button" 
+            onClick={() => setShowAddExercise(true)} 
+            className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors mb-4"
+          >
+            Add Exercise
+          </button>
+          {exercises.length === 0 ? (
+            <div className="text-gray-400 text-center py-4 bg-gray-800 rounded-lg">
+              No exercises added yet
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {exercises.map((ex, idx) => (
+                <div key={ex.id || idx} className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+                  <span className="text-gray-200 font-medium">{ex.name}</span>
+                  <button 
+                    type="button" 
+                    onClick={() => removeExercise(ex.id || idx.toString())}
+                    className="text-red-400 hover:text-red-300 transition-colors"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
         <div className="flex justify-end gap-2">
           <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-700 text-white rounded-lg">Cancel</button>
           <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg">Save</button>
         </div>
       </form>
-      {showForm && (
-        <>
-          {typeof editIndex === 'number' && exercises[editIndex] && (
-            <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 z-60">
-              <div className="bg-[#23272F] p-6 rounded-lg w-full max-w-md shadow-lg">
-                <ExerciseSetLogger
-                  exercise={exercises[editIndex]}
-                  onSave={handleEditExercise}
-                  onCancel={() => setEditIndex(null)}
-                />
-              </div>
-            </div>
-          )}
-          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 z-60">
-            <div className="bg-[#23272F] p-6 rounded-lg w-full max-w-md shadow-lg">
-              <ExerciseLogOptionsForm
-                initialExercises={exercises}
-                onSave={handleSaveExercises}
-                onClose={() => setShowForm(false)}
-              />
-            </div>
-          </div>
-        </>
-      )}
+      
       {showAddExercise && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 z-60">
           <div className="bg-[#23272F] p-6 rounded-lg w-full max-w-md shadow-lg">
