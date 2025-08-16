@@ -39,7 +39,7 @@ const Register = () => {
       setError('');
       const user = await registerUser(data);
       dispatch(setUser(user));
-      navigate('/dashboard');
+      navigate('/');
     } catch (err: any) {
       setError(err.message);
     } finally {

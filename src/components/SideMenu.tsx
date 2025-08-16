@@ -11,7 +11,6 @@ interface SideMenuProps {
   onNavigateToday: () => void;
   onNavigatePrograms: () => void;
   onNavigateExercises: () => void;
-  onNavigateDashboard?: () => void;
 }
 
 const SideMenu: React.FC<SideMenuProps> = ({
@@ -22,8 +21,7 @@ const SideMenu: React.FC<SideMenuProps> = ({
   onShowWorkoutSummary,
   onNavigateToday,
   onNavigatePrograms,
-  onNavigateExercises,
-  onNavigateDashboard
+  onNavigateExercises
 }) => {
   const [showSettings, setShowSettings] = useState(false);
   const [showSupersetGuide, setShowSupersetGuide] = useState(false);
@@ -64,14 +62,6 @@ const SideMenu: React.FC<SideMenuProps> = ({
               </svg>
               Exercise Log
             </button>
-            {onNavigateDashboard && (
-              <button onClick={onNavigateDashboard} className="w-full flex items-center gap-3 px-4 py-3 text-[#F2F3F7] hover:bg-[#2D3440] rounded-lg transition-colors">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-                Dashboard
-              </button>
-            )}
             <button onClick={onNavigatePrograms} className="w-full flex items-center gap-3 px-4 py-3 text-[#F2F3F7] hover:bg-[#2D3440] rounded-lg transition-colors">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2a4 4 0 014-4h6" />

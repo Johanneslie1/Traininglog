@@ -328,7 +328,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   const handleExport = useCallback(async (startDate?: Date, endDate?: Date, format: 'csv' | 'json' | 'both' = 'both') => {
     try {
       // Pass undefined to let the export function get all exercises from Firestore and filter by date range
-      // This ensures we export from all dates, not just the currently selected date on the dashboard
+      // This ensures we export from all dates, not just the currently selected date
       // Fixes issue where only exercises from the selected date were exported instead of the full range
       await exportExerciseData(undefined, startDate, endDate, format);
     } catch (error) {
@@ -585,7 +585,6 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
         onNavigateToday={() => setSelectedDate(new Date())}
         onNavigatePrograms={() => { navigate('/programs'); }}
         onNavigateExercises={() => { navigate('/exercises'); }}
-        onNavigateDashboard={() => { navigate('/dashboard'); }}
       />
 
       {/* Log Options Modal */}

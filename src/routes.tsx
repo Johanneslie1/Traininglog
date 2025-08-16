@@ -11,7 +11,6 @@ import { Program } from '@/types/program';
 const Login = lazy(() => import('@/features/auth/Login'));
 const Register = lazy(() => import('@/features/auth/Register'));
 const ExerciseLog = lazy(() => import('@/features/exercises/ExerciseLog'));
-const Dashboard = lazy(() => import('@/features/dashboard/Dashboard'));
 const ProgramList = lazy(() => import('@/features/programs/ProgramList'));
 const ProgramDetail = lazy(() => import('@/features/programs/ProgramDetail'));
 const Debug = lazy(() => import('@/features/debug/Debug'));
@@ -115,14 +114,6 @@ const AppRoutes: React.FC = () => {
           element={
             <ProtectedRoute>
               <ExerciseLog />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
             </ProtectedRoute>
           }
         />
