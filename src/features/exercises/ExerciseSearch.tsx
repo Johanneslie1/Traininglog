@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { allExercises } from '@/data/exercises';
 import { importedExercises } from '@/data/importedExercises';
 import { Category } from './CategoryButton';
-import { CreateExerciseDialog } from '@/components/exercises/CreateExerciseDialog';
+import { CreateUniversalExerciseDialog } from '@/components/exercises/CreateUniversalExerciseDialog';
 import { Exercise, MuscleGroup } from '@/types/exercise';
+import { ActivityType } from '@/types/activityTypes';
 import { toast } from 'react-hot-toast';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/services/firebase/config';
@@ -262,9 +263,11 @@ export const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
 
       {/* Create Exercise Dialog */}
       {showCreateDialog && (
-        <CreateExerciseDialog
+        <CreateUniversalExerciseDialog
           onClose={() => setShowCreateDialog(false)}
           onSuccess={handleExerciseCreated}
+          activityType={ActivityType.RESISTANCE}
+          searchQuery={searchTerm}
         />
       )}
     </div>

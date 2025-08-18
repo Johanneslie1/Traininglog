@@ -5,9 +5,10 @@ import {
   onAuthStateChanged} from 'firebase/auth';
 import { doc, setDoc, getDoc, Timestamp } from 'firebase/firestore';
 import { auth, db } from './config';
+import { logger } from '../../utils/logger';
 
 // Log the current origin - useful for debugging GitHub Pages
-console.log('Auth service initialized with origin:', window.location.origin);
+logger.info('Auth service initialized with origin:', window.location.origin);
 
 let authInitialized = false;
 
@@ -84,22 +85,22 @@ export const loginUser = async (data: LoginData): Promise<User> => {
   const { email, password } = data;
 
   try {
-    console.log('Attempting to sign in with email:', email);
+    logger.debug('Attempting to sign in with email:', email);
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const { uid } = userCredential.user;
-    console.log('Sign in successful, fetching user data for uid:', uid);
+    logger.debug('Sign in successful, fetching user data for uid:', uid);
 
     // Get additional user data from Firestore
     const userDoc = await getDoc(doc(db, 'users', uid));
     if (!userDoc.exists()) {
-      console.error('User document not found in Firestore after login');
+      logger.error('User document not found in Firestore after login');
       throw new Error('User data not found');
     }
-    console.log('User data retrieved from Firestore');
+    logger.debug('User data retrieved from Firestore');
 
     return convertTimestamps(userDoc.data() as User);
   } catch (error: any) {
-    console.error('Login error:', error);
+    logger.error('Login error:', error);
     throw new Error(error.message);
   }
 };
@@ -138,22 +139,22 @@ export const getCurrentUser = async (): Promise<User | null> => {
     
     const firebaseUser = auth.currentUser;
     if (!firebaseUser) {
-      console.log('No current user found');
+      logger.debug('No current user found');
       return null;
     }
 
-    console.log('Fetching user data for:', firebaseUser.uid);
+    logger.debug('Fetching user data for:', firebaseUser.uid);
     const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
     
     if (!userDoc.exists()) {
-      console.warn('User document not found in Firestore');
+      logger.warn('User document not found in Firestore');
       // Sign out the user if their document doesn't exist
       await signOut(auth);
       return null;
     }
 
     const userData = userDoc.data();
-    console.log('User data retrieved successfully');
+    logger.debug('User data retrieved successfully');
     
     return {
       id: firebaseUser.uid,
@@ -165,7 +166,7 @@ export const getCurrentUser = async (): Promise<User | null> => {
       updatedAt: userData.updatedAt?.toDate() || new Date()
     };
   } catch (error) {
-    console.error('Error getting user data:', error);
+    logger.error('Error getting user data:', error);
     // Don't throw, return null to allow the app to handle the error gracefully
     return null;
   }

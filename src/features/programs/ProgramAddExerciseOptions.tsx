@@ -7,6 +7,7 @@ import { ActivityType } from '@/types/activityTypes';
 import { getExercisesByActivityType, searchExercises } from '@/services/exerciseDatabaseService';
 import UniversalExercisePicker from '@/components/activities/UniversalExercisePicker';
 import { enrich as sportEnrich, collectFacets as sportCollectFacets, applyFilters as sportApplyFilters } from '@/utils/sportFilters';
+import { CreateUniversalExerciseDialog } from '@/components/exercises/CreateUniversalExerciseDialog';
 
 /**
  * ProgramAddExerciseOptions
@@ -62,6 +63,8 @@ export const ProgramAddExerciseOptions: React.FC<ProgramAddExerciseOptionsProps>
   const [view, setView] = useState<ViewState>('main');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [universalSearchQuery, setUniversalSearchQuery] = useState('');
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [createDialogActivityType, setCreateDialogActivityType] = useState<ActivityType>(ActivityType.RESISTANCE);
 
   if (view === 'universalSearch') {
     const searchResults = searchExercises(universalSearchQuery);
@@ -146,7 +149,19 @@ export const ProgramAddExerciseOptions: React.FC<ProgramAddExerciseOptionsProps>
                   ) : universalSearchQuery.length > 1 ? (
                     <div className="text-center py-8">
                       <p className="text-white/60">No exercises found for "{universalSearchQuery}"</p>
-                      <p className="text-white/40 text-sm mt-2">Try a different search term</p>
+                      <p className="text-white/40 text-sm mt-2">Try a different search term or create a new exercise</p>
+                      <button
+                        onClick={() => {
+                          setCreateDialogActivityType(ActivityType.RESISTANCE);
+                          setShowCreateDialog(true);
+                        }}
+                        className="mt-4 flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-purple-600 text-white font-medium hover:bg-purple-700 transition-colors mx-auto"
+                      >
+                        <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 102 0v-5h5a1 1 0 100-2h-5V4a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                        Create New Exercise
+                      </button>
                     </div>
                   ) : (
                     <div className="text-center py-8">
@@ -201,6 +216,7 @@ export const ProgramAddExerciseOptions: React.FC<ProgramAddExerciseOptionsProps>
             enrich={sportEnrich as any}
             collectFacets={sportCollectFacets as any}
             applyFilters={sportApplyFilters as any}
+            activityType={activity}
             onSelect={(ex) => {
               const exercise: Exercise = {
                 ...ex,
@@ -262,6 +278,18 @@ export const ProgramAddExerciseOptions: React.FC<ProgramAddExerciseOptionsProps>
                 />
                 <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
               </div>
+              <button
+                onClick={() => {
+                  setCreateDialogActivityType(ActivityType.RESISTANCE);
+                  setShowCreateDialog(true);
+                }}
+                className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg bg-purple-600 text-white font-medium hover:bg-purple-700 transition-colors"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 102 0v-5h5a1 1 0 100-2h-5V4a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                Create Custom Exercise
+              </button>
             </section>
             <section className="space-y-3 md:space-y-4">
               <h3 className="text-lg font-semibold text-white/90">Muscle Groups</h3>
@@ -295,17 +323,6 @@ export const ProgramAddExerciseOptions: React.FC<ProgramAddExerciseOptionsProps>
       </header>
       <main className="flex-1 overflow-y-auto overscroll-contain pb-safe min-h-0">
         <div className="max-w-md mx-auto p-4 space-y-6 md:space-y-8">
-          <section className="space-y-3">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search all exercises..."
-                className="w-full px-4 py-3 pl-10 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                onFocus={() => setView('universalSearch')}
-              />
-              <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-            </div>
-          </section>
           <section className="space-y-3 md:space-y-4">
             <h3 className="text-lg font-semibold text-white/90">Quick Add</h3>
             <div className="grid grid-cols-2 gap-3 md:gap-4">
@@ -327,26 +344,52 @@ export const ProgramAddExerciseOptions: React.FC<ProgramAddExerciseOptionsProps>
             <h3 className="text-lg font-semibold text-white/90">Choose Activity Type</h3>
             <div className="grid grid-cols-1 gap-3 md:gap-4">
               {activityTypes.map(a => (
-                <div
-                  key={a.id}
-                  onClick={() => setView(a.id as ViewState)}
-                  className={`${a.bgColor} rounded-xl p-4 cursor-pointer transition-all duration-200 ease-in-out hover:scale-105 hover:shadow-lg active:scale-95 border border-white/10`}
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="text-3xl">{a.icon}</div>
-                    <div className="flex-1">
-                      <h4 className={`font-semibold text-lg ${a.textColor}`}>{a.name}</h4>
-                      <p className={`text-sm opacity-90 ${a.textColor}`}>{a.description}</p>
-                      <p className={`text-xs opacity-75 mt-1 ${a.textColor}`}>{a.examples}</p>
+                <div key={a.id} className="space-y-2">
+                  <div
+                    onClick={() => setView(a.id as ViewState)}
+                    className={`${a.bgColor} rounded-xl p-4 cursor-pointer transition-all duration-200 ease-in-out hover:scale-105 hover:shadow-lg active:scale-95 border border-white/10`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="text-3xl">{a.icon}</div>
+                      <div className="flex-1">
+                        <h4 className={`font-semibold text-lg ${a.textColor}`}>{a.name}</h4>
+                        <p className={`text-sm opacity-90 ${a.textColor}`}>{a.description}</p>
+                        <p className={`text-xs opacity-75 mt-1 ${a.textColor}`}>{a.examples}</p>
+                      </div>
+                      <div className="text-white/60"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg></div>
                     </div>
-                    <div className="text-white/60"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg></div>
                   </div>
+                  <button
+                    onClick={() => {
+                      setCreateDialogActivityType(a.id as ActivityType);
+                      setShowCreateDialog(true);
+                    }}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-white/10 text-white/80 hover:bg-white/20 hover:text-white transition-colors text-sm"
+                  >
+                    <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 102 0v-5h5a1 1 0 100-2h-5V4a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    Create {a.name.split(' ')[0]} Exercise
+                  </button>
                 </div>
               ))}
             </div>
           </section>
         </div>
       </main>
+      
+      {/* Create Exercise Dialog */}
+      {showCreateDialog && (
+        <CreateUniversalExerciseDialog
+          onClose={() => setShowCreateDialog(false)}
+          onSuccess={(_exerciseId) => {
+            setShowCreateDialog(false);
+            // Optionally handle the created exercise
+          }}
+          activityType={createDialogActivityType}
+          searchQuery={universalSearchQuery}
+        />
+      )}
     </div>
   );
 };

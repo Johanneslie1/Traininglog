@@ -82,7 +82,7 @@ interface ProtectedRouteProps {
 // Protected Route wrapper
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { isAuthenticated, isLoading } = useSelector((state: RootState) => state.auth);
-  console.log('ProtectedRoute:', { isAuthenticated, isLoading });
+  // Remove verbose logging - this component renders frequently
   
   if (isLoading) {
     return (
@@ -98,7 +98,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
 // App Routes
 const AppRoutes: React.FC = () => {
-  console.log('AppRoutes rendering');
+  // Remove frequent rendering log
   return (
     <Suspense fallback={
       <div className="flex items-center justify-center min-h-screen bg-black">

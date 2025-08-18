@@ -18,6 +18,8 @@ import { ExerciseHistoryPicker } from '@/features/programs/ExerciseHistoryPicker
 import { UnifiedExerciseData } from '@/utils/unifiedExerciseUtils';
 import { useEffect } from 'react';
 import { searchExercises } from '@/services/exerciseDatabaseService';
+import { CreateUniversalExerciseDialog } from '@/components/exercises/CreateUniversalExerciseDialog';
+import { ActivityType } from '@/types/activityTypes';
 
 type ExerciseData = Partial<Exercise & { sets?: ExerciseSet[] }>;
 
@@ -108,6 +110,8 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [universalSearchQuery, setUniversalSearchQuery] = useState('');
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [createDialogActivityType, setCreateDialogActivityType] = useState<ActivityType>(ActivityType.RESISTANCE);
   const user = useSelector((state: RootState) => state.auth.user);
 
   // If we're editing an exercise, determine which view to show based on activity type
@@ -263,7 +267,19 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
                   ) : universalSearchQuery.length > 1 ? (
                     <div className="text-center py-8">
                       <p className="text-white/60">No exercises found for "{universalSearchQuery}"</p>
-                      <p className="text-white/40 text-sm mt-2">Try a different search term</p>
+                      <p className="text-white/40 text-sm mt-2">Try a different search term or create a new exercise</p>
+                      <button
+                        onClick={() => {
+                          setCreateDialogActivityType(ActivityType.RESISTANCE);
+                          setShowCreateDialog(true);
+                        }}
+                        className="mt-4 flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-purple-600 text-white font-medium hover:bg-purple-700 transition-colors mx-auto"
+                      >
+                        <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 102 0v-5h5a1 1 0 100-2h-5V4a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                        Create New Exercise
+                      </button>
                     </div>
                   ) : (
                     <div className="text-center py-8">
@@ -647,6 +663,19 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
           </section>
         </div>
       </main>
+      
+      {/* Create Exercise Dialog */}
+      {showCreateDialog && (
+        <CreateUniversalExerciseDialog
+          onClose={() => setShowCreateDialog(false)}
+          onSuccess={(_exerciseId) => {
+            setShowCreateDialog(false);
+            // Optionally handle the created exercise
+          }}
+          activityType={createDialogActivityType}
+          searchQuery={universalSearchQuery}
+        />
+      )}
     </div>
   );
 };

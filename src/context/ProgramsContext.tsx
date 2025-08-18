@@ -3,6 +3,7 @@ import { auth } from '@/services/firebase/config';
 import { Program } from '@/types/program';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import * as programService from '@/services/programService';
+import { logger } from '@/utils/logger';
 
 interface ProgramsContextType {
   programs: Program[];
@@ -29,7 +30,7 @@ export const ProgramsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      console.log('[ProgramsContext] Auth state changed:', user?.uid || 'no user');
+      logger.debug('[ProgramsContext] Auth state changed:', user?.uid || 'no user');
       setUser(user);
     });
     return () => unsubscribe();
@@ -37,7 +38,7 @@ export const ProgramsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const fetchPrograms = useCallback(async (force = false) => {
     if (!user) {
-      console.log('[ProgramsContext] No user, clearing programs');
+      logger.debug('[ProgramsContext] No user, clearing programs');
       setPrograms([]);
       setIsLoading(false);
       return;
@@ -45,7 +46,7 @@ export const ProgramsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     // Prevent duplicate fetches unless forced
     if (fetchingRef && !force) {
-      console.log('[ProgramsContext] Already loading, skipping duplicate fetch');
+      logger.verbose('[ProgramsContext] Already loading, skipping duplicate fetch');
       return;
     }
 
@@ -54,17 +55,10 @@ export const ProgramsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setError(null);
 
     try {
-      console.log('[ProgramsContext] Fetching programs for user:', user.uid);
+      logger.debug('[ProgramsContext] Fetching programs for user:', user.uid);
       // Load programs with their sessions
       const loadedPrograms = await programService.getPrograms();
-      console.log('[ProgramsContext] Fetched programs:', {
-        count: loadedPrograms.length,
-        programs: loadedPrograms.map(p => ({
-          id: p.id,
-          name: p.name,
-          sessionCount: p.sessions?.length || 0
-        }))
-      });
+      logger.debug('[ProgramsContext] Fetched programs:', loadedPrograms.length);
       setPrograms(loadedPrograms);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch programs';

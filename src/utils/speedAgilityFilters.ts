@@ -44,8 +44,14 @@ const NAME_TAG_RULES: Array<[RegExp, string]> = [
   [/ankle|ankling/i, 'ankle'],
 ];
 
-function norm(str: string) {
-  return str.toLowerCase().replace(/\s+/g, '-');
+function norm(str: unknown): string {
+  if (str == null) return '';
+  if (typeof str === 'string') return str.toLowerCase().replace(/\s+/g, '-');
+  try { 
+    return String(str).toLowerCase().replace(/\s+/g, '-'); 
+  } catch { 
+    return ''; 
+  }
 }
 
 export function deriveTags(e: SpeedAgilityExercise): string[] {

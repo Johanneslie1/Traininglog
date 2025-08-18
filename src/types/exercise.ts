@@ -33,12 +33,21 @@ export interface Exercise {
   metrics?: {
     trackWeight?: boolean;
     trackReps?: boolean;
+    trackSets?: boolean;
     trackTime?: boolean;
     trackDistance?: boolean;
     trackRPE?: boolean;
     trackDuration?: boolean;
     trackHeight?: boolean;
+    trackPower?: boolean;
+    trackIntensity?: boolean;
+    trackIncline?: boolean;
+    trackElevation?: boolean;
+    trackFloors?: boolean;
   };
+  
+  // Intensity levels for exercises that support variable intensity
+  intensityLevels?: string[];
   
   // Activity-specific fields
   skills?: string[]; // For sports and skill-based activities

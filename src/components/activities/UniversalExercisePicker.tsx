@@ -1,17 +1,23 @@
 import React, { useState, useMemo } from 'react';
+import { CreateUniversalExerciseDialog } from '@/components/exercises/CreateUniversalExerciseDialog';
+import { ActivityType } from '@/types/activityTypes';
 
 // Move FilterBlock definition up so it's declared before use
 interface FilterBlockProps { title: string; values: string[]; selected: Set<string>; onToggle: (value: string) => void; }
 const FilterBlock: React.FC<FilterBlockProps> = ({ title, values, selected, onToggle }) => {
   if (!values.length) return null;
+  
+  // Deduplicate values to prevent duplicate React keys
+  const uniqueValues = Array.from(new Set(values));
+  
   return (
     <div>
       <p className="text-[10px] uppercase tracking-wide text-gray-400 mb-1 font-semibold">{title}</p>
       <div className="flex flex-wrap gap-1">
-        {values.sort().map((v: string) => {
+        {uniqueValues.sort().map((v: string) => {
           const active = selected.has(v);
             return (
-              <button key={v} onClick={() => onToggle(v)} className={`px-2 py-0.5 rounded border text-[10px] ${active ? 'bg-yellow-600 border-yellow-500 text-white' : 'bg-gray-800 border-gray-600 text-gray-300 hover:border-yellow-500 hover:text-white'}`}>{v}</button>
+              <button key={`${title}-${v}`} onClick={() => onToggle(v)} className={`px-2 py-0.5 rounded border text-[10px] ${active ? 'bg-yellow-600 border-yellow-500 text-white' : 'bg-gray-800 border-gray-600 text-gray-300 hover:border-yellow-500 hover:text-white'}`}>{v}</button>
             );
         })}
       </div>
@@ -28,6 +34,7 @@ export interface UniversalExercisePickerProps {
   title: string;
   subtitle?: string;
   renderCard?: (exercise: any, active?: boolean) => React.ReactNode;
+  activityType?: ActivityType; // Add activityType for create exercise dialog
   // New optional multi-select mode
   multiSelect?: boolean;
   onConfirmSelection?: (selected: any[]) => void;
@@ -44,6 +51,7 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
   title,
   subtitle,
   renderCard,
+  activityType = ActivityType.OTHER,
   multiSelect = false,
   onConfirmSelection,
   confirmLabel = 'Add Selected',
@@ -58,6 +66,7 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
   const [selectedMap, setSelectedMap] = useState<Record<string, boolean>>(
     () => initialSelectedIds.reduce((acc, id) => { acc[id] = true; return acc; }, {} as Record<string, boolean>)
   );
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   function toggle(setter: React.Dispatch<React.SetStateAction<Set<string>>>, value: string) {
     setter(prev => {
@@ -75,6 +84,16 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
       onSelect(ex);
     }
   }
+
+  const handleCreateExercise = () => {
+    setShowCreateDialog(true);
+  };
+
+  const handleExerciseCreated = (_exerciseId: string) => {
+    setShowCreateDialog(false);
+    // Optionally refresh the exercise list or handle the new exercise
+    // For now, we'll just close the dialog
+  };
 
   const enriched = useMemo(() => {
     try {
@@ -257,6 +276,17 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
           <div className="text-center py-12">
             <p className="text-gray-400 text-lg">No exercises found</p>
             <p className="text-gray-500 text-sm mt-2">Try adjusting your search or filter</p>
+            <div className="mt-6">
+              <button
+                onClick={handleCreateExercise}
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-purple-600 text-white font-medium hover:bg-purple-700 transition-colors"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 102 0v-5h5a1 1 0 100-2h-5V4a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                Create New Exercise
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -271,6 +301,16 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
             <button onClick={() => { if (onConfirmSelection) onConfirmSelection(selectedList); }} disabled={selectedCount===0} className={`px-4 py-2 text-sm font-semibold rounded-md ${selectedCount===0 ? 'bg-gray-700 text-gray-500 cursor-not-allowed' : 'bg-yellow-500 hover:bg-yellow-400 text-black'}`}>{confirmLabel} {selectedCount>0 && `(${selectedCount})`}</button>
           </div>
         </div>
+      )}
+      
+      {/* Create Exercise Dialog */}
+      {showCreateDialog && (
+        <CreateUniversalExerciseDialog
+          onClose={() => setShowCreateDialog(false)}
+          onSuccess={handleExerciseCreated}
+          activityType={activityType}
+          searchQuery={search}
+        />
       )}
     </div>
   );
