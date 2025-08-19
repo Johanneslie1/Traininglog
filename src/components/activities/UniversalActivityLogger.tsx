@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { TrainingTemplate, TemplateField, UniversalExerciseSet } from '@/types/trainingTemplates';
-import { activityLoggingService } from '@/services/activityService';
+import { addExerciseLog } from '@/services/firebase/exerciseLogs';
 import { UnifiedExerciseData } from '@/utils/unifiedExerciseUtils';
+import { ExerciseSet } from '@/types/sets';
 
 interface UniversalActivityLoggerProps {
   template: TrainingTemplate;
@@ -129,68 +130,82 @@ const UniversalActivityLogger: React.FC<UniversalActivityLoggerProps> = ({
         sessionCount: sessions.length
       });
 
-      // Use the appropriate logging service based on activity type
-      if (template.type === 'teamSports') {
-        await activityLoggingService.logSportActivity(
-          template.id,
-          activityName,
-          sessions,
-          user.id,
-          selectedDate
-        );
-      } else if (template.type === 'endurance') {
-        // For endurance, map the field names correctly
-        const mappedSessions = sessions.map(session => ({
-          ...session,
-          // Map averageHR to averageHeartRate for consistency with logging service
-          averageHeartRate: session.averageHR || session.averageHeartRate,
-          maxHeartRate: session.maxHR || session.maxHeartRate,
-          // Ensure all fields are included
-          rpe: session.rpe,
-          hrZone1: session.hrZone1,
-          hrZone2: session.hrZone2,
-          hrZone3: session.hrZone3
-        }));
-        
-        console.log('🏃 Mapped endurance sessions:', mappedSessions);
-        
-        await activityLoggingService.logEnduranceExercise(
-          template.id,
-          activityName,
-          mappedSessions,
-          user.id,
-          selectedDate
-        );
-      } else if (template.type === 'flexibility') {
-        await activityLoggingService.logStretchingExercise(
-          template.id,
-          activityName,
-          sessions,
-          user.id,
-          selectedDate
-        );
-      } else if (template.type === 'speedAgility') {
-        console.log('⚡ Logging speed & agility exercise with sessions:', sessions);
-        
-        await activityLoggingService.logSpeedAgilityExercise(
-          template.id,
-          activityName,
-          sessions,
-          user.id,
-          selectedDate
-        );
-      } else if (template.type === 'other') {
-        await activityLoggingService.logOtherActivity(
-          template.id,
-          activityName,
-          sessions,
-          user.id,
-          selectedDate
-        );
-      }
+      // Convert sessions to ExerciseSet format
+      const sets: ExerciseSet[] = sessions.map((session) => {
+        const exerciseSet: ExerciseSet = {
+          weight: 0, // Non-resistance exercises don't use weight
+          reps: 1, // Use 1 rep to represent one session/set
+          difficulty: session.difficulty || 'easy' as any,
+          notes: session.notes
+        };
+
+        // Add type-specific fields
+        if (template.type === 'endurance') {
+          exerciseSet.duration = session.duration;
+          exerciseSet.distance = session.distance;
+          exerciseSet.averageHeartRate = session.averageHR || session.averageHeartRate;
+          exerciseSet.maxHeartRate = session.maxHR || session.maxHeartRate;
+          exerciseSet.calories = session.calories;
+          exerciseSet.elevation = session.elevation;
+          exerciseSet.rpe = session.rpe;
+          exerciseSet.hrZone1 = session.hrZone1;
+          exerciseSet.hrZone2 = session.hrZone2;
+          exerciseSet.hrZone3 = session.hrZone3;
+        } else if (template.type === 'teamSports') {
+          exerciseSet.duration = session.duration;
+          exerciseSet.distance = session.distance;
+          exerciseSet.calories = session.calories;
+          exerciseSet.rpe = session.rpe;
+          exerciseSet.score = session.score;
+          exerciseSet.opponent = session.opponent;
+          exerciseSet.performance = session.performance;
+          exerciseSet.skills = session.skills;
+        } else if (template.type === 'flexibility') {
+          exerciseSet.duration = session.duration;
+          exerciseSet.holdTime = session.holdTime;
+          exerciseSet.intensity = session.intensity;
+          exerciseSet.flexibility = session.flexibility;
+          exerciseSet.stretchType = session.stretchType;
+          exerciseSet.bodyPart = session.bodyPart;
+        } else if (template.type === 'speedAgility') {
+          exerciseSet.reps = session.reps || 1;
+          exerciseSet.sets = session.sets;
+          exerciseSet.duration = session.duration;
+          exerciseSet.distance = session.distance;
+          exerciseSet.height = session.height;
+          exerciseSet.time = session.time;
+          exerciseSet.restTime = session.restTime;
+          exerciseSet.rpe = session.rpe;
+        } else if (template.type === 'other') {
+          exerciseSet.duration = session.duration;
+          exerciseSet.distance = session.distance;
+          exerciseSet.calories = session.calories;
+          exerciseSet.rpe = session.rpe;
+        }
+
+        return exerciseSet;
+      });
+
+      console.log('💾 UniversalActivityLogger: Converted sessions to sets:', sets);
+
+      const exerciseLogData = {
+        exerciseName: activityName,
+        userId: user.id,
+        sets: sets,
+      };
+
+      console.log('💾 UniversalActivityLogger: Calling addExerciseLog with:', exerciseLogData);
+
+      const docId = await addExerciseLog(
+        exerciseLogData,
+        selectedDate
+      );
+
+      console.log('✅ UniversalActivityLogger: Activity saved successfully with ID:', docId);
+
       onActivityLogged();
     } catch (error) {
-      console.error('Error saving activity:', error);
+      console.error('❌ UniversalActivityLogger: Error saving activity:', error);
     } finally {
       setLoading(false);
     }

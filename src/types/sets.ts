@@ -23,6 +23,7 @@ export interface ExerciseSet {
   averageHR?: number; // Average heart rate
   averageHeartRate?: number; // Alternative naming for average heart rate
   maxHR?: number; // Maximum heart rate
+  maxHeartRate?: number; // Alternative naming for maximum heart rate
   calories?: number; // Calories burned
   
   // Plyometrics-specific fields
@@ -40,12 +41,15 @@ export interface ExerciseSet {
   matchResult?: string;
   score?: string; // Score or result for sport activities
   opponent?: string; // Opponent or team played against
+  performance?: string; // Performance rating or notes
+  skills?: string; // Skills worked on
   
   // Flexibility-specific fields
   stretchType?: string; // Type of stretch
   intensity?: number; // Intensity 1-10
   bodyPart?: string;
   holdTime?: number; // Hold time for static stretches
+  flexibility?: number; // Flexibility rating 1-10
   
   // Other fields
   elevation?: number; // Elevation gain
