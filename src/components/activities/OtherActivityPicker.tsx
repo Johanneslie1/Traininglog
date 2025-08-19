@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { ActivityType, OtherActivity } from '@/types/activityTypes';
 import { getExercisesByActivityType } from '@/services/exerciseDatabaseService';
-import { otherTemplate } from '@/config/defaultTemplates';
-import UniversalActivityLogger from './UniversalActivityLogger';
+import { UniversalSetLogger } from '@/components/UniversalSetLogger';
 import UniversalExercisePicker from './UniversalExercisePicker';
 import { enrich, collectFacets, applyFilters } from '@/utils/otherFilters';
+import { addExerciseLog } from '@/services/firebase/exerciseLogs';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
+import { ExerciseSet } from '@/types/sets';
+import { Exercise } from '@/types/exercise';
 
 interface OtherActivityPickerProps {
   onClose: () => void;
@@ -22,6 +26,7 @@ const OtherActivityPicker: React.FC<OtherActivityPickerProps> = ({
   const [data, setData] = useState<OtherActivity[]>([]);
   const [selected, setSelected] = useState<OtherActivity | null>(null);
   const [view, setView] = useState<'list' | 'logging'>('list');
+  const user = useSelector((state: RootState) => state.auth.user);
 
   useEffect(() => {
     const exercises = getExercisesByActivityType(ActivityType.OTHER) as any[];
@@ -44,14 +49,61 @@ const OtherActivityPicker: React.FC<OtherActivityPickerProps> = ({
   }
 
   if (view === 'logging' && selected) {
+    // Convert OtherActivity to Exercise format for UniversalSetLogger
+    const exercise: Exercise = {
+      id: selected.id,
+      name: selected.name,
+      description: selected.description || '',
+      activityType: ActivityType.OTHER,
+      type: 'other',
+      category: selected.category || 'general',
+      equipment: ['bodyweight'],
+      instructions: [selected.description || ''],
+      difficulty: 'beginner',
+      defaultUnit: 'time',
+      metrics: {
+        trackTime: true,
+        trackDuration: true,
+        trackRPE: true
+      }
+    };
+
     return (
-      <UniversalActivityLogger
-        template={otherTemplate}
-        activityName={selected.name}
-        onClose={onClose}
-        onBack={() => setView('list')}
-        onActivityLogged={onActivityLogged}
-        selectedDate={selectedDate}
+      <UniversalSetLogger
+        exercise={exercise}
+        onCancel={() => setView('list')}
+        onSave={async (sets: ExerciseSet[]) => {
+          try {
+            console.log('💾 OtherActivityPicker: Starting to save exercise sets:', {
+              exercise,
+              sets,
+              user: user?.id,
+              selectedDate
+            });
+
+            if (!user?.id) throw new Error('User not authenticated');
+
+            const exerciseLogData = {
+              exerciseName: selected.name,
+              userId: user.id,
+              sets: sets,
+            };
+
+            console.log('💾 OtherActivityPicker: Calling addExerciseLog with:', exerciseLogData);
+
+            const docId = await addExerciseLog(
+              exerciseLogData,
+              selectedDate || new Date()
+            );
+
+            console.log('✅ OtherActivityPicker: Exercise saved successfully with ID:', docId);
+
+            onActivityLogged();
+            setView('list');
+          } catch (error) {
+            console.error('❌ OtherActivityPicker: Error saving exercise:', error);
+          }
+        }}
       />
     );
   }

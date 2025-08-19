@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { ActivityType, SportActivity } from '@/types/activityTypes';
 import { getExercisesByActivityType } from '@/services/exerciseDatabaseService';
-import { teamSportsTemplate } from '@/config/defaultTemplates';
-import UniversalActivityLogger from './UniversalActivityLogger';
+import { UniversalSetLogger } from '@/components/UniversalSetLogger';
 import UniversalExercisePicker from './UniversalExercisePicker';
 import { enrich, collectFacets, applyFilters } from '@/utils/sportFilters';
 import { UnifiedExerciseData } from '@/utils/unifiedExerciseUtils';
+import { addExerciseLog } from '@/services/firebase/exerciseLogs';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
+import { ExerciseSet } from '@/types/sets';
+import { Exercise } from '@/types/exercise';
 
 interface SportActivityPickerProps {
   onClose: () => void;
@@ -25,6 +29,7 @@ const SportActivityPicker: React.FC<SportActivityPickerProps> = ({
   const [data, setData] = useState<SportActivity[]>([]);
   const [selected, setSelected] = useState<SportActivity | null>(null);
   const [view, setView] = useState<'list' | 'logging'>('list');
+  const user = useSelector((state: RootState) => state.auth.user);
 
   useEffect(() => {
     const exercises = getExercisesByActivityType(ActivityType.SPORT) as any[];
@@ -74,15 +79,63 @@ const SportActivityPicker: React.FC<SportActivityPickerProps> = ({
   function handleSelect(ex: SportActivity) { setSelected(ex); setView('logging'); }
 
   if (view === 'logging' && selected) {
+    // Convert SportActivity to Exercise format for UniversalSetLogger
+    const exercise: Exercise = {
+      id: selected.id,
+      name: selected.name,
+      description: selected.description || '',
+      activityType: ActivityType.SPORT,
+      type: 'teamSports',
+      category: selected.category || 'sport',
+      equipment: selected.equipment || [],
+      instructions: [selected.description || ''],
+      difficulty: 'beginner',
+      defaultUnit: 'time',
+      metrics: {
+        trackTime: true,
+        trackDuration: true,
+        trackRPE: true
+      }
+    };
+
     return (
-      <UniversalActivityLogger
-        template={teamSportsTemplate}
-        activityName={selected.name}
-        onClose={onClose}
-        onBack={() => setView('list')}
-        onActivityLogged={onActivityLogged}
-        selectedDate={selectedDate}
-        editingExercise={editingExercise}
+      <UniversalSetLogger
+        exercise={exercise}
+        onCancel={() => setView('list')}
+        onSave={async (sets: ExerciseSet[]) => {
+          try {
+            console.log('💾 SportActivityPicker: Starting to save exercise sets:', {
+              exercise,
+              sets,
+              user: user?.id,
+              selectedDate
+            });
+
+            if (!user?.id) throw new Error('User not authenticated');
+
+            const exerciseLogData = {
+              exerciseName: selected.name,
+              userId: user.id,
+              sets: sets,
+            };
+
+            console.log('💾 SportActivityPicker: Calling addExerciseLog with:', exerciseLogData);
+
+            const docId = await addExerciseLog(
+              exerciseLogData,
+              selectedDate || new Date()
+            );
+
+            console.log('✅ SportActivityPicker: Exercise saved successfully with ID:', docId);
+
+            onActivityLogged();
+            setView('list');
+          } catch (error) {
+            console.error('❌ SportActivityPicker: Error saving exercise:', error);
+          }
+        }}
+        initialSets={editingExercise?.sets || []}
+        isEditing={!!editingExercise}
       />
     );
   }

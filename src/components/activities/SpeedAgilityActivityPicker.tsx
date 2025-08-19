@@ -1,11 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ActivityType, SpeedAgilityActivity } from '@/types/activityTypes';
-// import { getExercisesByActivityType } from '@/services/exerciseDatabaseService';
 import { speedAgilityTemplate } from '@/config/defaultTemplates';
 import rawData from '@/data/exercises/speedAgility.json';
 import { enrich, applyFilters, collectFacets, FilterState, SpeedAgilityExercise } from '@/utils/speedAgilityFilters';
-import UniversalActivityLogger from './UniversalActivityLogger';
+import { UniversalSetLogger } from '@/components/UniversalSetLogger';
 import { UnifiedExerciseData } from '@/utils/unifiedExerciseUtils';
+import { addExerciseLog } from '@/services/firebase/exerciseLogs';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
+import { ExerciseSet } from '@/types/sets';
+import { Exercise } from '@/types/exercise';
 
 interface SpeedAgilityActivityPickerProps {
   onClose: () => void;
@@ -44,6 +48,8 @@ const SpeedAgilityActivityPicker: React.FC<SpeedAgilityActivityPickerProps> = ({
     };
     return applyFilters(enriched, f);
   }, [search, typeFilter, lateralFilter, equipmentFilter, tagFilter, enriched]);
+
+  const user = useSelector((state: RootState) => state.auth.user);
 
   function toggle(setter: React.Dispatch<React.SetStateAction<Set<string>>>, value: string) {
     setter(prev => {
@@ -94,15 +100,68 @@ const SpeedAgilityActivityPicker: React.FC<SpeedAgilityActivityPickerProps> = ({
   }
 
   if (view === 'logging' && selectedActivity) {
+    // Convert SpeedAgilityActivity to Exercise format for UniversalSetLogger
+    const exercise: Exercise = {
+      id: selectedActivity.id,
+      name: selectedActivity.name,
+      description: selectedActivity.description || '',
+      activityType: ActivityType.SPEED_AGILITY,
+      type: 'speedAgility',
+      category: selectedActivity.category,
+      equipment: selectedActivity.equipment,
+      instructions: Array.isArray(selectedActivity.instructions) 
+        ? selectedActivity.instructions 
+        : [selectedActivity.instructions || ''],
+      difficulty: selectedActivity.difficulty,
+      defaultUnit: 'time',
+      metrics: {
+        trackTime: true,
+        trackReps: true,
+        trackSets: true,
+        trackDistance: true,
+        trackRPE: true,
+        trackHeight: true
+      }
+    };
+
     return (
-      <UniversalActivityLogger
-        template={speedAgilityTemplate}
-        activityName={selectedActivity.name}
-        onClose={onClose}
-        onBack={() => setView('list')}
-        onActivityLogged={onActivityLogged}
-        selectedDate={selectedDate}
-        editingExercise={editingExercise}
+      <UniversalSetLogger
+        exercise={exercise}
+        onCancel={() => setView('list')}
+        onSave={async (sets: ExerciseSet[]) => {
+          try {
+            console.log('💾 SpeedAgilityActivityPicker: Starting to save exercise sets:', {
+              exercise,
+              sets,
+              user: user?.id,
+              selectedDate
+            });
+
+            if (!user?.id) throw new Error('User not authenticated');
+
+            const exerciseLogData = {
+              exerciseName: selectedActivity.name,
+              userId: user.id,
+              sets: sets,
+            };
+
+            console.log('💾 SpeedAgilityActivityPicker: Calling addExerciseLog with:', exerciseLogData);
+
+            const docId = await addExerciseLog(
+              exerciseLogData,
+              selectedDate || new Date()
+            );
+
+            console.log('✅ SpeedAgilityActivityPicker: Exercise saved successfully with ID:', docId);
+
+            onActivityLogged();
+            setView('list');
+          } catch (error) {
+            console.error('❌ SpeedAgilityActivityPicker: Error saving exercise:', error);
+          }
+        }}
+        initialSets={editingExercise?.sets || []}
+        isEditing={!!editingExercise}
       />
     );
   }

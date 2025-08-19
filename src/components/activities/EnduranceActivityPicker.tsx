@@ -2,9 +2,14 @@
 import enduranceData from '@/data/exercises/endurance.json';
 import { enrich, collectFacets, applyFilters } from '@/utils/enduranceFilters';
 import UniversalExercisePicker from './UniversalExercisePicker';
-import UniversalActivityLogger from './UniversalActivityLogger';
-import { enduranceTemplate } from '@/config/defaultTemplates';
+import { UniversalSetLogger } from '@/components/UniversalSetLogger';
 import { EnduranceExercise } from '@/types/activityTypes';
+import { addExerciseLog } from '@/services/firebase/exerciseLogs';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
+import { ExerciseSet } from '@/types/sets';
+import { Exercise } from '@/types/exercise';
+import { ActivityType } from '@/types/activityTypes';
 
 interface EnduranceActivityPickerProps {
   onClose: () => void;
@@ -17,6 +22,7 @@ interface EnduranceActivityPickerProps {
 const EnduranceActivityPicker: React.FC<EnduranceActivityPickerProps> = ({ onClose, onBack, onActivityLogged, selectedDate = new Date(), editingExercise = null }) => {
   const [selected, setSelected] = useState<EnduranceExercise | null>(null);
   const [view, setView] = useState<'list' | 'logging'>('list');
+  const user = useSelector((state: RootState) => state.auth.user);
 
   function handleSelect(ex: EnduranceExercise) {
     setSelected(ex);
@@ -24,8 +30,65 @@ const EnduranceActivityPicker: React.FC<EnduranceActivityPickerProps> = ({ onClo
   }
 
   if (view === 'logging' && selected) {
+    // Convert EnduranceExercise to Exercise format for UniversalSetLogger
+    const exercise: Exercise = {
+      id: selected.id,
+      name: selected.name,
+      description: selected.description || '',
+      activityType: ActivityType.ENDURANCE,
+      type: 'endurance',
+      category: selected.category || 'cardio',
+      equipment: Array.isArray(selected.equipment) ? selected.equipment : [selected.equipment || 'bodyweight'],
+      instructions: [selected.description || ''],
+      difficulty: 'beginner',
+      defaultUnit: 'time',
+      metrics: {
+        trackTime: true,
+        trackDistance: true,
+        trackRPE: true,
+        trackDuration: true
+      }
+    };
+
     return (
-      <UniversalActivityLogger template={enduranceTemplate} activityName={selected.name} onClose={onClose} onBack={() => setView('list')} onActivityLogged={onActivityLogged} selectedDate={selectedDate} editingExercise={editingExercise} />
+      <UniversalSetLogger
+        exercise={exercise}
+        onCancel={() => setView('list')}
+        onSave={async (sets: ExerciseSet[]) => {
+          try {
+            console.log('💾 EnduranceActivityPicker: Starting to save exercise sets:', {
+              exercise,
+              sets,
+              user: user?.id,
+              selectedDate
+            });
+
+            if (!user?.id) throw new Error('User not authenticated');
+
+            const exerciseLogData = {
+              exerciseName: selected.name,
+              userId: user.id,
+              sets: sets,
+            };
+
+            console.log('💾 EnduranceActivityPicker: Calling addExerciseLog with:', exerciseLogData);
+
+            const docId = await addExerciseLog(
+              exerciseLogData,
+              selectedDate || new Date()
+            );
+
+            console.log('✅ EnduranceActivityPicker: Exercise saved successfully with ID:', docId);
+
+            onActivityLogged();
+            setView('list');
+          } catch (error) {
+            console.error('❌ EnduranceActivityPicker: Error saving exercise:', error);
+          }
+        }}
+        initialSets={editingExercise?.sets || []}
+        isEditing={!!editingExercise}
+      />
     );
   }
 
