@@ -525,6 +525,23 @@
     "isDefault": false
   },
   {
+    "id": "endurance_generic_sprint",
+    "name": "Sprint",
+    "description": "Short maximal-speed running over a short distance. Useful for intervals and speed work.",
+    "type": "endurance",
+    "activityType": "ENDURANCE",
+    "category": "running",
+    "difficulty": "intermediate",
+    "primaryMuscles": ["quadriceps", "glutes", "hamstrings", "calves"],
+    "equipment": ["running_shoes"],
+    "environment": "outdoor",
+    "instructions": ["Warm up thoroughly", "Sprint at maximum effort for the chosen distance or time", "Recover fully between reps"],
+    "tips": ["Maintain upright posture", "Drive arms aggressively"],
+    "defaultUnit": "distance",
+    "metrics": { "trackTime": true, "trackDistance": true, "trackRPE": true },
+    "isDefault": false
+  },
+  {
     "id": "endurance-44",
     "name": "SkiErg Intervals",
     "description": "Alternating hard ski pulls with recovery periods",

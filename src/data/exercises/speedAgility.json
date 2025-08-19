@@ -1150,4 +1150,18 @@
     "metrics": { "trackReps": true, "trackSets": true, "trackRPE": true },
     "isDefault": true
   }
+  ,
+  {
+    "id": "sap_generic_sprint",
+    "name": "Sprint",
+    "category": "speed",
+    "type": "sprint",
+    "lateralization": "bilateral",
+    "equipment": ["bodyweight"],
+    "muscleGroups": ["quadriceps", "glutes", "hamstrings", "calves"],
+    "instructions": "Run at maximum or near-maximum speed for a short distance. Use proper sprint mechanics: aggressive arm drive, high knee lift, and powerful push-off.",
+    "defaultUnit": "distance",
+    "metrics": { "trackDistance": true, "trackTime": true, "trackReps": true, "trackSets": true },
+    "isDefault": true
+  }
 ]
