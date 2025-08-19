@@ -4,7 +4,7 @@ export interface Exercise {
   id: string;
   name: string;
   description: string;
-  type?: 'strength' | 'cardio' | 'flexibility' | 'bodyweight' | 'plyometrics' | 'endurance' | 'teamSports' | 'speedAgility' | 'other';
+  type?: 'strength' | 'cardio' | 'flexibility' | 'bodyweight' | 'plyometrics' | 'endurance' | 'teamSports' | 'speedAgility' | 'other' | 'speed_agility';
   activityType?: ActivityType;
   category: string; // More flexible category system
   difficulty?: 'beginner' | 'intermediate' | 'advanced';

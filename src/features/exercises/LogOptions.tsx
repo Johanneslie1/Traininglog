@@ -7,7 +7,7 @@ import { RootState } from '@/store/store';
 import CopyFromPreviousSessionDialog from './CopyFromPreviousSessionDialog';
 import CategoryButton, { Category } from './CategoryButton';
 import ProgramExercisePicker from '@/features/programs/ProgramExercisePicker';
-import { SetEditorDialog } from '@/components/SetEditorDialog';
+import { UniversalSetLogger } from '@/components/UniversalSetLogger';
 import { addExerciseLog } from '@/services/firebase/exerciseLogs';
 import SportActivityPicker from '@/components/activities/SportActivityPicker';
 import SpeedAgilityActivityPicker from '@/components/activities/SpeedAgilityActivityPicker';
@@ -508,16 +508,17 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
 
   if (view === 'setEditor' && selectedExercise) {
     return (
-      <SetEditorDialog
-        onClose={() => {
+      <UniversalSetLogger
+        exercise={selectedExercise}
+        onCancel={() => {
           setSelectedExercise(null);
           setView('main');
         }}
-        onSave={async (set) => {
+        onSave={async (sets: ExerciseSet[]) => {
           try {
-            console.log('💾 LogOptions: Starting to save exercise set:', {
+            console.log('💾 LogOptions: Starting to save exercise sets:', {
               exercise: selectedExercise,
-              set,
+              sets,
               user: user?.id,
               selectedDate
             });
@@ -527,7 +528,7 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
             const exerciseLogData = {
               exerciseName: selectedExercise.name,
               userId: user.id,
-              sets: [set],
+              sets: sets,
             };
 
             console.log('💾 LogOptions: Calling addExerciseLog with:', exerciseLogData);
@@ -547,9 +548,8 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
             // Here you might want to show an error notification to the user
           }
         }}
-        exerciseName={selectedExercise.name}
-        setNumber={1}
-        totalSets={1}
+        initialSets={editingExercise?.sets}
+        isEditing={!!editingExercise}
       />
     );
   }
@@ -658,6 +658,59 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
                     </div>
                   </div>
                 </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Create Custom Exercise Section */}
+          <section className="space-y-3 md:space-y-4 border-t border-white/10 pt-4">
+            <h3 className="text-lg font-semibold text-white/90">Create Custom Exercise</h3>
+            <div className="grid grid-cols-2 gap-3 md:gap-4">
+              {activityTypes.map(activityType => (
+                <button
+                  key={`create-${activityType.id}`}
+                  onClick={() => {
+                    let dialogActivityType = ActivityType.RESISTANCE;
+                    switch (activityType.id) {
+                      case 'resistance':
+                        dialogActivityType = ActivityType.RESISTANCE;
+                        break;
+                      case 'sport':
+                        dialogActivityType = ActivityType.SPORT;
+                        break;
+                      case 'stretching':
+                        dialogActivityType = ActivityType.STRETCHING;
+                        break;
+                      case 'endurance':
+                        dialogActivityType = ActivityType.ENDURANCE;
+                        break;
+                      case 'speedAgility':
+                        dialogActivityType = ActivityType.SPEED_AGILITY;
+                        break;
+                      case 'other':
+                        dialogActivityType = ActivityType.OTHER;
+                        break;
+                    }
+                    setCreateDialogActivityType(dialogActivityType);
+                    setShowCreateDialog(true);
+                  }}
+                  className="flex items-center p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors text-left"
+                >
+                  <div className="text-lg mr-3">{activityType.icon}</div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white text-sm font-medium truncate">
+                      Create {activityType.name}
+                    </p>
+                    <p className="text-gray-400 text-xs truncate">
+                      Custom exercise
+                    </p>
+                  </div>
+                  <div className="text-white/40">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                  </div>
+                </button>
               ))}
             </div>
           </section>

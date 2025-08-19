@@ -21,7 +21,9 @@ export interface ExerciseSet {
   hrZone4?: number; // Heart rate zone 4 time
   hrZone5?: number; // Heart rate zone 5 time
   averageHR?: number; // Average heart rate
+  averageHeartRate?: number; // Alternative naming for average heart rate
   maxHR?: number; // Maximum heart rate
+  calories?: number; // Calories burned
   
   // Plyometrics-specific fields
   height?: number; // Jump height in cm
@@ -36,6 +38,8 @@ export interface ExerciseSet {
   drillType?: string;
   skillsWorked?: string[];
   matchResult?: string;
+  score?: string; // Score or result for sport activities
+  opponent?: string; // Opponent or team played against
   
   // Flexibility-specific fields
   stretchType?: string; // Type of stretch

@@ -2,13 +2,17 @@ import React, { useState, useEffect } from 'react';
 import type { Exercise } from '@/types/exercise';
 import type { ExerciseSet } from '@/types/sets';
 import { SetEditorDialog } from '@/components/SetEditorDialog';
+import { UniversalSetLogger } from '@/components/UniversalSetLogger';
 import { DifficultyCategory } from '@/types/difficulty';
+import { ActivityType } from '@/types/activityTypes';
 
 interface ExerciseSetLoggerProps {
   exercise: Partial<Exercise> & { 
     id: string; 
     name: string;
     sets?: ExerciseSet[];
+    type?: string;
+    activityType?: ActivityType;
   };
   onSave: ((sets: ExerciseSet[], exerciseId: string) => void) | ((sets: ExerciseSet[]) => void);
   onCancel: () => void;
@@ -17,6 +21,35 @@ interface ExerciseSetLoggerProps {
   showPreviousSets?: boolean; // Whether to show previous sets option
   useExerciseId?: boolean; // Whether to pass exerciseId to onSave
 }
+
+// Check if exercise is non-resistance type and should use universal logger
+const shouldUseUniversalLogger = (exercise: Partial<Exercise>): boolean => {
+  // Check activityType first
+  if (exercise.activityType && exercise.activityType !== ActivityType.RESISTANCE) {
+    return true;
+  }
+
+  // Check type field
+  if (exercise.type) {
+    const nonResistanceTypes = ['cardio', 'endurance', 'flexibility', 'teamSports', 'speedAgility', 'speed_agility', 'other'];
+    if (nonResistanceTypes.includes(exercise.type)) {
+      return true;
+    }
+  }
+
+  // Check category for hints
+  const category = exercise.category?.toLowerCase() || '';
+  if (category.includes('cardio') || 
+      category.includes('endurance') || 
+      category.includes('stretch') || 
+      category.includes('sport') || 
+      category.includes('agility') ||
+      category.includes('plyometric')) {
+    return true;
+  }
+
+  return false;
+};
 
 export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
   exercise,
@@ -27,6 +60,28 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
   showPreviousSets = true,
   useExerciseId = false
 }) => {
+  // Check if we should use the universal logger for non-resistance exercises
+  if (shouldUseUniversalLogger(exercise)) {
+    const handleUniversalSave = (sets: ExerciseSet[]) => {
+      if (useExerciseId) {
+        (onSave as (sets: ExerciseSet[], exerciseId: string) => void)(sets, exercise.id);
+      } else {
+        (onSave as (sets: ExerciseSet[]) => void)(sets);
+      }
+    };
+
+    return (
+      <UniversalSetLogger
+        exercise={exercise as Exercise}
+        onSave={handleUniversalSave}
+        onCancel={onCancel}
+        initialSets={exercise.sets || []}
+        isEditing={isEditing}
+      />
+    );
+  }
+
+  // Use traditional resistance training logger for strength exercises
   const [sets, setSets] = useState<ExerciseSet[]>(() => {
     if (isEditing && exercise.sets && exercise.sets.length > 0) {
       return exercise.sets;

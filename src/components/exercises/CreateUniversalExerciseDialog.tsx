@@ -279,8 +279,8 @@ export const CreateUniversalExerciseDialog: React.FC<CreateUniversalExerciseDial
       case ActivityType.ENDURANCE:
         return {
           trackWeight: false,
-          trackReps: false,
-          trackSets: false,
+          trackReps: true, // All exercises support sets/reps
+          trackSets: true,
           trackTime: true,
           trackDistance: true,
           trackRPE: true,
@@ -289,8 +289,8 @@ export const CreateUniversalExerciseDialog: React.FC<CreateUniversalExerciseDial
       case ActivityType.STRETCHING:
         return {
           trackWeight: false,
-          trackReps: false,
-          trackSets: false,
+          trackReps: true, // All exercises support sets/reps
+          trackSets: true,
           trackTime: true,
           trackDistance: false,
           trackRPE: true,
@@ -318,8 +318,8 @@ export const CreateUniversalExerciseDialog: React.FC<CreateUniversalExerciseDial
       default:
         return {
           trackWeight: false,
-          trackReps: false,
-          trackSets: false,
+          trackReps: true, // All exercises support sets/reps
+          trackSets: true,
           trackTime: true,
           trackDistance: false,
           trackRPE: true,
