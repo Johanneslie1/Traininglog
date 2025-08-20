@@ -18,6 +18,7 @@ type ExerciseLogInput = {
   exerciseName: string;
   userId: string;
   sets: ExerciseSet[];
+  activityType?: string; // Add activity type to the input type
 };
 
 export const addExerciseLog = async (
@@ -37,7 +38,8 @@ export const addExerciseLog = async (
       timestamp: Timestamp.fromDate(selectedDate || new Date()),
       deviceId: window.navigator.userAgent,
       userId: logData.userId,
-      sets: Array.isArray(logData.sets) ? logData.sets : [] // Ensure sets is always an array
+      sets: Array.isArray(logData.sets) ? logData.sets : [], // Ensure sets is always an array
+      ...(logData.activityType && { activityType: logData.activityType }) // Include activityType if provided
     };
 
     console.log('📝 Prepared exercise data:', exerciseData);

@@ -101,8 +101,6 @@ const getAllExercisesForExport = async (): Promise<ExerciseLog[]> => {
           distance: session.distance,
           calories: session.calories,
           intensity: session.intensity,
-          score: session.score,
-          opponent: session.opponent,
           performance: session.performance,
           skills: session.skills,
           notes: session.notes
@@ -132,7 +130,6 @@ const getAllExercisesForExport = async (): Promise<ExerciseLog[]> => {
         sets = dataArray.map((stretch: any, index: number) => ({
           setNumber: index + 1,
           activityType: 'stretching',
-          duration: stretch.duration,
           holdTime: stretch.holdTime,
           intensity: stretch.intensity,
           flexibility: stretch.flexibility,

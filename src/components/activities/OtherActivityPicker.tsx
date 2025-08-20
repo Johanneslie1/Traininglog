@@ -87,6 +87,7 @@ const OtherActivityPicker: React.FC<OtherActivityPickerProps> = ({
               exerciseName: selected.name,
               userId: user.id,
               sets: sets,
+              activityType: ActivityType.OTHER
             };
 
             console.log('💾 OtherActivityPicker: Calling addExerciseLog with:', exerciseLogData);

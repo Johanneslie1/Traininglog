@@ -142,6 +142,7 @@ const SpeedAgilityActivityPicker: React.FC<SpeedAgilityActivityPickerProps> = ({
               exerciseName: selectedActivity.name,
               userId: user.id,
               sets: sets,
+              activityType: ActivityType.SPEED_AGILITY
             };
 
             console.log('💾 SpeedAgilityActivityPicker: Calling addExerciseLog with:', exerciseLogData);

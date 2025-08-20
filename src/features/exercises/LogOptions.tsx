@@ -118,19 +118,22 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
   useEffect(() => {
     if (editingExercise) {
       switch (editingExercise.activityType) {
-        case 'sport':
+        case ActivityType.RESISTANCE:
+          setView('resistance');
+          break;
+        case ActivityType.SPORT:
           setView('sport');
           break;
-        case 'stretching':
+        case ActivityType.STRETCHING:
           setView('stretching');
           break;
-        case 'endurance':
+        case ActivityType.ENDURANCE:
           setView('endurance');
           break;
-        case 'other':
+        case ActivityType.OTHER:
           setView('other');
           break;
-        case 'speedAgility':
+        case ActivityType.SPEED_AGILITY:
           setView('speedAgility');
           break;
         default:

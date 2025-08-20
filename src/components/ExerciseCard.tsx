@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ExerciseSet } from '../types/sets';
 import { UnifiedExerciseData } from '../utils/unifiedExerciseUtils';
 import { useSupersets } from '../context/SupersetContext';
+import { ActivityType } from '../types/activityTypes';
 
 interface ExerciseCardProps {
   exercise: UnifiedExerciseData;
@@ -205,14 +206,25 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
                   {hasValue(set.duration) && (
                     <div className="flex items-center justify-between">
                       <span className="text-gray-400">Duration:</span>
-                      <span className="text-white">{set.duration} min</span>
+                      <span className="text-white">
+                        {exercise.activityType === ActivityType.SPEED_AGILITY ? `${set.duration} sec` : `${set.duration} min`}
+                      </span>
                     </div>
                   )}
                   
                   {hasValue(set.distance) && (
                     <div className="flex items-center justify-between">
                       <span className="text-gray-400">Distance:</span>
-                      <span className="text-white">{set.distance} m</span>
+                      <span className="text-white">
+                        {exercise.activityType === ActivityType.SPEED_AGILITY ? `${set.distance} m` : `${set.distance} km`}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {hasValue(set.height) && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">Height:</span>
+                      <span className="text-white">{set.height} cm</span>
                     </div>
                   )}
                   
@@ -230,24 +242,17 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
                     </div>
                   )}
                   
+                  {hasValue(set.maxHeartRate) && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">Max HR:</span>
+                      <span className="text-white">{set.maxHeartRate} bpm</span>
+                    </div>
+                  )}
+                  
                   {hasValue(set.intensity) && (
                     <div className="flex items-center justify-between">
                       <span className="text-gray-400">Intensity:</span>
                       <span className="text-white">{set.intensity}/10</span>
-                    </div>
-                  )}
-                  
-                  {hasValue(set.score) && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-400">Score:</span>
-                      <span className="text-white">{set.score}</span>
-                    </div>
-                  )}
-                  
-                  {hasValue(set.opponent) && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-400">Opponent:</span>
-                      <span className="text-white">{set.opponent}</span>
                     </div>
                   )}
                   

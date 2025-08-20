@@ -117,6 +117,7 @@ const SportActivityPicker: React.FC<SportActivityPickerProps> = ({
               exerciseName: selected.name,
               userId: user.id,
               sets: sets,
+              activityType: ActivityType.SPORT
             };
 
             console.log('💾 SportActivityPicker: Calling addExerciseLog with:', exerciseLogData);

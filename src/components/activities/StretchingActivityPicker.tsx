@@ -74,6 +74,7 @@ const StretchingActivityPicker: React.FC<StretchingActivityPickerProps> = ({
 							exerciseName: selected.name,
 							userId: user.id,
 							sets: sets,
+							activityType: ActivityType.STRETCHING
 						};
 
 						console.log('💾 StretchingActivityPicker: Calling addExerciseLog with:', exerciseLogData);

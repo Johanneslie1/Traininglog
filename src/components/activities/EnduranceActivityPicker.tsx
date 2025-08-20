@@ -69,6 +69,7 @@ const EnduranceActivityPicker: React.FC<EnduranceActivityPickerProps> = ({ onClo
               exerciseName: selected.name,
               userId: user.id,
               sets: sets,
+              activityType: ActivityType.ENDURANCE
             };
 
             console.log('💾 EnduranceActivityPicker: Calling addExerciseLog with:', exerciseLogData);

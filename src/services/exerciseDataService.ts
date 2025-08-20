@@ -2,6 +2,7 @@ import { db, auth } from '@/services/firebase/config';
 import { collection, query, where, getDocs, addDoc, updateDoc, doc } from 'firebase/firestore';
 import { signInAnonymously } from 'firebase/auth';
 import { ExerciseSet } from '@/types/sets';
+import { ActivityType } from '@/types/activityTypes';
 
 export interface ExerciseData {
   id?: string;
@@ -11,6 +12,7 @@ export interface ExerciseData {
   sets: ExerciseSet[];
   deviceId?: string;
   supersetId?: string; // Add superset support
+  activityType?: ActivityType; // Add activity type support using proper enum
 }
 
 export class ExerciseDataService {
@@ -45,7 +47,8 @@ export class ExerciseDataService {
           sets: exercise.sets,
           timestamp: exercise.timestamp,
           userId: exercise.userId || userId,
-          deviceId: exercise.deviceId || window.navigator.userAgent
+          deviceId: exercise.deviceId || window.navigator.userAgent,
+          ...(exercise.activityType && { activityType: exercise.activityType })
         };
 
         if (exercise.id) {
@@ -93,7 +96,8 @@ export class ExerciseDataService {
             sets: data.sets,
             timestamp: data.timestamp.toDate(),
             userId: data.userId,
-            deviceId: data.deviceId
+            deviceId: data.deviceId,
+            ...(data.activityType && { activityType: data.activityType })
           } as ExerciseData;
         });
 
