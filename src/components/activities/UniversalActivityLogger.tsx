@@ -169,7 +169,6 @@ const UniversalActivityLogger: React.FC<UniversalActivityLoggerProps> = ({
           exerciseSet.bodyPart = session.bodyPart;
         } else if (template.type === 'speedAgility') {
           exerciseSet.reps = session.reps || 1;
-          exerciseSet.sets = session.sets;
           exerciseSet.duration = session.duration;
           exerciseSet.distance = session.distance;
           exerciseSet.height = session.height;

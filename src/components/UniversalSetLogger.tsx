@@ -134,7 +134,6 @@ const getDefaultSet = (exerciseType: string): ExerciseSet => {
         ...baseSet,
         weight: 0,
         reps: 10,
-        sets: 3,
         duration: 1, // minutes per set
         height: 30 // cm for jumps
       };
@@ -336,12 +335,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
         break;
 
       case 'speed_agility':
-        fields.push(
-          <div key="sets-reps" className="grid grid-cols-2 gap-4">
-            {renderField('sets', 'Sets', 'number', 1)}
-            {renderField('reps', 'Reps per Set', 'number', 1)}
-          </div>
-        );
+        fields.push(renderField('reps', 'Reps per Set', 'number', 1));
         fields.push(renderField('duration', 'Duration per Set (min)', 'number', 0.1, 0.1));
         fields.push(renderField('height', 'Height/Distance (cm)', 'number', 0));
         fields.push(renderField('restTime', 'Rest Between Sets (sec)', 'number', 0));

@@ -30,7 +30,6 @@ export interface ExerciseSet {
   height?: number; // Jump height in cm
   explosivePower?: number; // Explosive power rating 1-10
   reactivePower?: number; // Reactive power rating 1-10
-  sets?: number; // Number of sets for plyometric exercises
   time?: number; // Time for drills in seconds
   
   // Team Sports-specific fields

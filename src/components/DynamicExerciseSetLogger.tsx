@@ -149,7 +149,6 @@ const DynamicExerciseSetLogger: React.FC<DynamicExerciseSetLoggerProps> = ({
     // Render fields based on exercise type
     switch (exerciseType) {
       case 'strength':
-        fields.push(renderField(setIndex, 'sets', 'Sets'));
         fields.push(renderField(setIndex, 'reps', 'Reps'));
         fields.push(renderField(setIndex, 'weight', 'Weight (kg)'));
         fields.push(
@@ -180,7 +179,6 @@ const DynamicExerciseSetLogger: React.FC<DynamicExerciseSetLoggerProps> = ({
         break;
 
       case 'plyometrics':
-        fields.push(renderField(setIndex, 'sets', 'Sets'));
         fields.push(renderField(setIndex, 'reps', 'Reps'));
         fields.push(renderField(setIndex, 'height', 'Height/Distance (cm)'));
         fields.push(

@@ -57,7 +57,6 @@ export const testFirebasePermissions = async (userId: string): Promise<void> => 
       categories: ['Plyometrics'],
       sets: [{
         reps: 15,
-        sets: 3,
         height: 24, // Box height in cm
         intensity: 8,
         notes: 'Explosive movements'
