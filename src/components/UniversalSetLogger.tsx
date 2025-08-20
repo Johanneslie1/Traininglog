@@ -101,7 +101,12 @@ const getDefaultSet = (exerciseType: string): ExerciseSet => {
         reps: 1,
         duration: 30, // minutes
         distance: 5, // km
-        rpe: 6
+        rpe: 6,
+        hrZone1: 0,
+        hrZone2: 5,
+        hrZone3: 20,
+        hrZone4: 5,
+        hrZone5: 0
       };
 
     case 'flexibility':
@@ -120,7 +125,8 @@ const getDefaultSet = (exerciseType: string): ExerciseSet => {
         weight: 0,
         reps: 1,
         duration: 60, // minutes
-        rpe: 7
+        rpe: 7,
+        calories: 300
       };
 
     case 'speed_agility':
@@ -275,6 +281,43 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
         fields.push(renderField('calories', 'Calories', 'number', 0));
         fields.push(renderField('averageHeartRate', 'Average Heart Rate', 'number', 40, 1));
         fields.push(renderField('elevation', 'Elevation Gain (m)', 'number', 0));
+        
+        // Heart Rate Zones (collapsible)
+        fields.push(
+          <div key="hr-zones" className="space-y-3">
+            <button
+              type="button"
+              onClick={() => {
+                const element = document.getElementById(`hr-zones-${setIndex}`);
+                if (element) {
+                  element.style.display = element.style.display === 'none' ? 'block' : 'none';
+                }
+              }}
+              className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-gray-300 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
+            >
+              <span>Heart Rate Zones (minutes)</span>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            <div id={`hr-zones-${setIndex}`} style={{ display: 'none' }} className="space-y-3 pl-3">
+              <div className="text-xs text-gray-400 mb-2">
+                Zone 1: Recovery (50-60%) • Zone 2: Base (60-70%) • Zone 3: Tempo (70-80%) • Zone 4: Threshold (80-90%) • Zone 5: Max (90-100%)
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {renderField('hrZone1', 'Zone 1 (min)', 'number', 0, 0.1)}
+                {renderField('hrZone2', 'Zone 2 (min)', 'number', 0, 0.1)}
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {renderField('hrZone3', 'Zone 3 (min)', 'number', 0, 0.1)}
+                {renderField('hrZone4', 'Zone 4 (min)', 'number', 0, 0.1)}
+              </div>
+              <div className="grid grid-cols-1 gap-3">
+                {renderField('hrZone5', 'Zone 5 (min)', 'number', 0, 0.1)}
+              </div>
+            </div>
+          </div>
+        );
         break;
 
       case 'flexibility':
@@ -287,6 +330,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
       case 'sport':
         fields.push(renderField('duration', 'Duration (minutes) *', 'number', 1));
         fields.push(renderField('distance', 'Distance (km)', 'number', 0, 0.1));
+        fields.push(renderField('calories', 'Calories', 'number', 0));
         fields.push(renderField('score', 'Score/Result', 'text', undefined, undefined, 'e.g., 2-1, Personal best'));
         fields.push(renderField('opponent', 'Opponent/Team', 'text', undefined, undefined, 'Optional'));
         break;

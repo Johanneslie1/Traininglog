@@ -274,7 +274,7 @@ export const exerciseDataToCsv = (exercises: ExerciseLog[], startDate?: Date, en
     headers.push('Duration (min)', 'Distance (m)', 'Calories', 'Score', 'Opponent', 'Performance');
   }
   if (hasEndurance) {
-    headers.push('Duration (min)', 'Distance (m)', 'Pace', 'Avg HR', 'Max HR', 'Calories', 'Elevation', 'RPE', 'Zone 1', 'Zone 2', 'Zone 3');
+    headers.push('Duration (min)', 'Distance (m)', 'Pace', 'Avg HR', 'Max HR', 'Calories', 'Elevation', 'RPE', 'Zone 1', 'Zone 2', 'Zone 3', 'Zone 4', 'Zone 5');
   }
   if (hasStretching) {
     headers.push('Duration (min)', 'Hold Time (s)', 'Body Part', 'Stretch Type', 'Flexibility');
@@ -345,10 +345,12 @@ export const exerciseDataToCsv = (exercises: ExerciseLog[], startDate?: Date, en
             String((set as any).rpe || ''),
             String((set as any).hrZone1 || ''),
             String((set as any).hrZone2 || ''),
-            String((set as any).hrZone3 || '')
+            String((set as any).hrZone3 || ''),
+            String((set as any).hrZone4 || ''),
+            String((set as any).hrZone5 || '')
           );
         } else {
-          row.push('', '', '', '', '', '', '', '', '', '', ''); // Empty for non-endurance activities
+          row.push('', '', '', '', '', '', '', '', '', '', '', '', ''); // Empty for non-endurance activities
         }
       }
       

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ActivityType, SpeedAgilityActivity } from '@/types/activityTypes';
-import { speedAgilityTemplate } from '@/config/defaultTemplates';
 import rawData from '@/data/exercises/speedAgility.json';
 import { enrich, applyFilters, collectFacets, FilterState, SpeedAgilityExercise } from '@/utils/speedAgilityFilters';
 import { UniversalSetLogger } from '@/components/UniversalSetLogger';
