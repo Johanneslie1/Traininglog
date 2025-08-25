@@ -79,7 +79,10 @@ export default defineConfig(({ mode }) => {
           ]
         },
         devOptions: {
-          enabled: true,
+          // Enable PWA dev features only in production builds; having the PWA dev service worker
+          // enabled during `vite dev` can interfere with module requests and HMR and cause
+          // dynamic-import failures in the browser. Use the mode flag to control this.
+          enabled: !isDev,
           type: 'module',
           navigateFallback: 'index.html'
         },
