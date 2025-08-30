@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Exercise Data Debug</title>
+    <style>
+        body { font-family: monospace; background: #1a1a1a; color: white; padding: 20px; }
+        .section { margin: 20px 0; padding: 20px; border: 1px solid #333; border-radius: 8px; }
+        .exercise { background: #2a2a2a; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        pre { background: #333; padding: 10px; border-radius: 5px; overflow-x: auto; }
+        button { background: #8B5CF6; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Exercise Data Debug Tool</h1>
+    
+    <div class="section">
+        <h2>Current Data Analysis</h2>
+        <button onclick="analyzeData()">Analyze Current Data</button>
+        <button onclick="createTestData()">Create Test Data</button>
+        <button onclick="clearAllData()">Clear All Data</button>
+        <div id="analysis"></div>
+    </div>
+
+    <div class="section">
+        <h2>Today's Exercises (From getAllExercisesByDate)</h2>
+        <div id="todays-exercises"></div>
+    </div>
+
+    <script>
+        function analyzeData() {
+            const analysis = document.getElementById('analysis');
+            
+            // Get all data sources
+            const activityLogs = JSON.parse(localStorage.getItem('activity-logs') || '[]');
+            const exerciseLogs = JSON.parse(localStorage.getItem('exercise-logs') || '[]');
+            
+            let html = '<h3>Data Analysis Results:</h3>';
+            
+            html += '<h4>Activity Logs (' + activityLogs.length + ' total):</h4>';
+            activityLogs.forEach((log, index) => {
+                html += `<div class="exercise">
+                    <strong>${log.activityName}</strong> (${log.activityType})
+                    <br>ID: ${log.id}
+                    <br>Sessions: ${log.sessions ? log.sessions.length : 0}
+                    <br>First Session Data: <pre>${JSON.stringify(log.sessions?.[0], null, 2)}</pre>
+                </div>`;
+            });
+            
+            html += '<h4>Exercise Logs (' + exerciseLogs.length + ' total):</h4>';
+            exerciseLogs.forEach((log, index) => {
+                html += `<div class="exercise">
+                    <strong>${log.exerciseName}</strong>
+                    <br>ID: ${log.id}
+                    <br>Sets: ${log.sets ? log.sets.length : 0}
+                    <br>First Set Data: <pre>${JSON.stringify(log.sets?.[0], null, 2)}</pre>
+                </div>`;
+            });
+            
+            analysis.innerHTML = html;
+        }
+
+        function createTestData() {
+            const testData = [
+                {
+                    id: 'test-sprint-' + Date.now(),
+                    activityType: 'speedAgility',
+                    activityName: 'Sprint',
+                    userId: 'test-user',
+                    timestamp: new Date().toISOString(),
+                    sessions: [{
+                        sessionNumber: 1,
+                        reps: 10,
+                        time: 12.5,
+                        distance: 100,
+                        height: 30,
+                        restTime: 120,
+                        rpe: 6,
+                        intensity: 8,
+                        drillType: 'sprint',
+                        notes: 'Sprint training session'
+                    }]
+                },
+                {
+                    id: 'test-knees-' + Date.now(),
+                    activityType: 'speedAgility',
+                    activityName: 'High Knees',
+                    userId: 'test-user',
+                    timestamp: new Date().toISOString(),
+                    sessions: [{
+                        sessionNumber: 1,
+                        reps: 10,
+                        time: 60,
+                        restTime: 120,
+                        rpe: 6,
+                        intensity: 7,
+                        drillType: 'agility',
+                        notes: 'High knees drill'
+                    }]
+                },
+                {
+                    id: 'test-jogging-' + Date.now(),
+                    activityType: 'endurance',
+                    activityName: 'Jogging',
+                    userId: 'test-user',
+                    timestamp: new Date().toISOString(),
+                    sessions: [{
+                        sessionNumber: 1,
+                        duration: 30,
+                        distance: 5,
+                        pace: '6:00/km',
+                        averageHeartRate: 150,
+                        maxHeartRate: 165,
+                        calories: 300,
+                        elevation: 50,
+                        rpe: 6,
+                        hrZone1: 5,
+                        hrZone2: 20,
+                        hrZone3: 5,
+                        notes: 'Easy jog'
+                    }]
+                }
+            ];
+            
+            // Save test data
+            const existingLogs = JSON.parse(localStorage.getItem('activity-logs') || '[]');
+            const updatedLogs = [...existingLogs, ...testData];
+            localStorage.setItem('activity-logs', JSON.stringify(updatedLogs));
+            
+            alert('Test data created! Analyze data to see results.');
+        }
+
+        function clearAllData() {
+            localStorage.removeItem('activity-logs');
+            localStorage.removeItem('exercise-logs');
+            document.getElementById('analysis').innerHTML = '';
+            document.getElementById('todays-exercises').innerHTML = '';
+            alert('All data cleared!');
+        }
+
+        async function simulateGetAllExercisesByDate() {
+            const container = document.getElementById('todays-exercises');
+            
+            try {
+                // Simulate the conversion process
+                const activityLogs = JSON.parse(localStorage.getItem('activity-logs') || '[]');
+                const todayLogs = activityLogs.filter(log => {
+                    const logDate = new Date(log.timestamp);
+                    const today = new Date();
+                    return logDate.toDateString() === today.toDateString();
+                });
+                
+                container.innerHTML = '<h4>Today\\'s Converted Exercises:</h4>';
+                
+                todayLogs.forEach(log => {
+                    // Simulate the conversion
+                    const convertedData = {
+                        id: log.id,
+                        exerciseName: log.activityName,
+                        timestamp: new Date(log.timestamp),
+                        userId: log.userId,
+                        sets: [],
+                        activityType: log.activityType,
+                        activityData: log
+                    };
+                    
+                    // Convert sessions to sets
+                    if (log.activityType === 'speedAgility') {
+                        convertedData.sets = log.sessions?.map((session, index) => ({
+                            setNumber: index + 1,
+                            reps: session.reps,
+                            time: session.time,
+                            duration: session.duration,
+                            distance: session.distance,
+                            height: session.height,
+                            restTime: session.restTime,
+                            rpe: session.rpe,
+                            intensity: session.intensity,
+                            drillType: session.drillType,
+                            notes: session.notes
+                        })) || [];
+                    } else if (log.activityType === 'endurance') {
+                        convertedData.sets = log.sessions?.map((session, index) => ({
+                            setNumber: index + 1,
+                            duration: session.duration,
+                            distance: session.distance,
+                            pace: session.pace,
+                            averageHeartRate: session.averageHeartRate,
+                            maxHeartRate: session.maxHeartRate,
+                            calories: session.calories,
+                            elevation: session.elevation,
+                            rpe: session.rpe,
+                            hrZone1: session.hrZone1,
+                            hrZone2: session.hrZone2,
+                            hrZone3: session.hrZone3,
+                            notes: session.notes
+                        })) || [];
+                    }
+                    
+                    container.innerHTML += `
+                        <div class="exercise">
+                            <strong>${convertedData.exerciseName}</strong> (${convertedData.activityType})
+                            <br>ID: ${convertedData.id}
+                            <br>Sets: ${convertedData.sets.length}
+                            <br>Activity Type Check: activityType = "${convertedData.activityType}" !== "resistance" = ${convertedData.activityType !== 'resistance'}
+                            <br>Condition Result: ${convertedData.activityType && convertedData.activityType !== 'resistance'}
+                            <br>First Set: <pre>${JSON.stringify(convertedData.sets[0], null, 2)}</pre>
+                        </div>
+                    `;
+                });
+                
+            } catch (error) {
+                container.innerHTML = '<p style="color: red;">Error: ' + error.message + '</p>';
+            }
+        }
+
+        // Auto-run on page load
+        window.onload = function() {
+            analyzeData();
+            simulateGetAllExercisesByDate();
+        };
+    </script>
+</body>
+</html>

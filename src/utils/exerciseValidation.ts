@@ -72,10 +72,17 @@ export const validateExerciseSet = (set: Partial<ExerciseSet>, exerciseType: Exe
         warnings.push('Total HR zone time exceeds exercise duration');
       }
       break;
-      
-    case 'flexibility':
+        case 'flexibility':
+      // Duration is optional if holdTime is provided
       if (set.duration !== undefined && set.duration <= 0) {
         errors.push('Duration must be greater than 0');
+      }
+      if (set.holdTime !== undefined && set.holdTime <= 0) {
+        errors.push('Hold time must be greater than 0');
+      }
+      // At least one time measurement is required
+      if ((!set.duration || set.duration <= 0) && (!set.holdTime || set.holdTime <= 0)) {
+        errors.push('Either duration or hold time must be specified');
       }
       if (set.intensity !== undefined && (set.intensity < 1 || set.intensity > 10)) {
         errors.push('Intensity must be between 1 and 10');

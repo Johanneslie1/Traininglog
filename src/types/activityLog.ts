@@ -1,7 +1,7 @@
 import { ExerciseSet } from './sets';
 
 // Activity types for the new activity logs collection
-export type ActivityType = 'endurance' | 'team_sports' | 'outdoor' | 'flexibility';
+export type ActivityType = 'endurance' | 'team_sports' | 'outdoor' | 'flexibility' | 'speedAgility';
 
 // Base interface for activity logs
 export interface ActivityLog {
@@ -99,7 +99,9 @@ export const mapExerciseTypeToActivityType = (exerciseType: string): ActivityTyp
       return 'endurance';
     case 'team_sports':
     case 'teamSports':
-      return 'team_sports';
+      return 'team_sports';    case 'speed_agility':
+    case 'speedAgility':
+      return 'speedAgility';
     case 'other':
     case 'outdoor':
       return 'outdoor';

@@ -126,8 +126,7 @@ const SpeedAgilityActivityPicker: React.FC<SpeedAgilityActivityPickerProps> = ({
     return (
       <UniversalSetLogger
         exercise={exercise}
-        onCancel={() => setView('list')}
-        onSave={async (sets: ExerciseSet[]) => {
+        onCancel={() => setView('list')}        onSave={async (sets: ExerciseSet[]) => {
           try {
             console.log('💾 SpeedAgilityActivityPicker: Starting to save exercise sets:', {
               exercise,

@@ -42,17 +42,15 @@ export interface ResistanceExercise extends BaseActivity {
 export interface SportActivity extends BaseActivity {
   activityType: ActivityType.SPORT;
   sportType: string; // football, basketball, tennis, etc.
-  position?: string;
   skillLevel: 'beginner' | 'intermediate' | 'advanced' | 'professional';
   teamBased: boolean;
   equipment: string[];
-  primarySkills: string[];
-  metrics: {
+  primarySkills: string[];  metrics: {
     trackDuration: boolean;
-    trackScore: boolean;
     trackIntensity: boolean;
-    trackOpponent?: boolean;
     trackPerformance: boolean;
+    trackScore?: boolean;
+    trackOpponent?: boolean;
   };
 }
 
@@ -178,18 +176,8 @@ export interface SportSession {
   sessionNumber: number;
   duration: number; // minutes
   intensity: number; // 1-10 scale
-  score?: string;
-  opponent?: string;
   performance: number; // 1-10 scale
-  skills: SportSkill[];
   notes?: string;
-}
-
-export interface SportSkill {
-  skillName: string;
-  attempts: number;
-  successful: number;
-  rating: number; // 1-10 scale
 }
 
 // Stretching exercise logging

@@ -99,9 +99,7 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
         <p>No exercises logged yet. Start by adding your first exercise!</p>
       </div>
     );
-  }
-
-  return (
+  }  return (
     <DragDropContext onDragEnd={handleDragEnd}>
       <Droppable droppableId="exercises">
         {(provided) => (

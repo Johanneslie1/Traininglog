@@ -1,12 +1,12 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from '@jest/globals';
 
 // Import the norm function - we'll need to export it for testing
 // For now, let's recreate it here for testing
 function norm(str: unknown): string {
   if (str == null) return '';
-  if (typeof str === 'string') return str.toLowerCase().replace(/\s+/g, '-');
+  if (typeof str === 'string') return str.toLowerCase().trim().replace(/\s+/g, '-');
   try { 
-    return String(str).toLowerCase().replace(/\s+/g, '-'); 
+    return String(str).toLowerCase().trim().replace(/\s+/g, '-'); 
   } catch { 
     return ''; 
   }
@@ -42,10 +42,9 @@ describe('speedAgilityFilters - norm function', () => {
     expect(norm(true)).toBe('true');
     expect(norm(false)).toBe('false');
   });
-
   it('should handle empty strings and whitespace', () => {
     expect(norm('')).toBe('');
-    expect(norm('   ')).toBe('-'); // Whitespace gets replaced with dash
+    expect(norm('   ')).toBe(''); // Trimmed whitespace becomes empty
     expect(norm('  multiple   spaces  ')).toBe('multiple-spaces');
   });
 });

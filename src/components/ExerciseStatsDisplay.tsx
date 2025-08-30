@@ -214,9 +214,7 @@ const ExerciseStatsDisplay: React.FC<ExerciseStatsDisplayProps> = ({
         if (set.rir !== undefined) {
           details.push(<span key="rir" className="text-yellow-400">RIR {set.rir}</span>);
         }
-        break;
-
-      case 'plyometrics':
+        break;      case 'plyometrics':
         if (set.reps) {
           details.push(<span key="reps">{set.reps} reps</span>);
         }
@@ -225,6 +223,33 @@ const ExerciseStatsDisplay: React.FC<ExerciseStatsDisplayProps> = ({
         }
         if (set.rpe) {
           details.push(<span key="rpe" className="text-yellow-400">RPE {set.rpe}</span>);
+        }
+        break;
+
+      case 'speedAgility':
+        if (set.reps) {
+          details.push(<span key="reps">{set.reps} reps</span>);
+        }
+        if (set.duration) {
+          details.push(<span key="duration">{set.duration}s</span>);
+        }
+        if (set.time) {
+          details.push(<span key="time">{set.time}s/rep</span>);
+        }
+        if (set.distance) {
+          details.push(<span key="distance">{set.distance}m</span>);
+        }
+        if (set.height) {
+          details.push(<span key="height">{set.height}cm</span>);
+        }
+        if (set.intensity) {
+          details.push(<span key="intensity" className="text-blue-400">Intensity {set.intensity}</span>);
+        }
+        if (set.rpe) {
+          details.push(<span key="rpe" className="text-yellow-400">RPE {set.rpe}</span>);
+        }
+        if (set.restTime) {
+          details.push(<span key="rest">{set.restTime}s rest</span>);
         }
         break;
 

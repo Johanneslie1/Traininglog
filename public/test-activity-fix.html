@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Activity Display Fix</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            margin: 10px;
+            cursor: pointer;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #333;
+            border-radius: 5px;
+        }
+        .data-display {
+            background: #2a2a2a;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Activity Display Fix Test</h1>
+    
+    <div class="section">
+        <h2>1. Add Test Activity Data</h2>
+        <button onclick="addEnduranceActivity()">Add Endurance Activity</button>
+        <button onclick="addSportActivity()">Add Sport Activity</button>
+        <button onclick="addSpeedAgilityActivity()">Add Speed & Agility Activity</button>
+        <button onclick="addResistanceExercise()">Add Resistance Exercise</button>
+    </div>
+
+    <div class="section">
+        <h2>2. Check Activity Logs</h2>
+        <button onclick="showActivityLogs()">Show Activity Logs</button>
+        <button onclick="showResistanceLogs()">Show Resistance Logs</button>
+        <div id="logs-display" class="data-display"></div>
+    </div>
+
+    <div class="section">
+        <h2>3. Test Unified Display</h2>
+        <button onclick="testUnifiedDisplay()">Test getAllExercisesByDate</button>
+        <div id="unified-display" class="data-display"></div>
+    </div>
+
+    <div class="section">
+        <h2>4. Clear All Data</h2>
+        <button onclick="clearAllData()" style="background: #f44336;">Clear All Test Data</button>
+    </div>
+
+    <script>
+        // Add sample endurance activity
+        function addEnduranceActivity() {
+            const userId = 'test-user-123';
+            const today = new Date();
+            
+            const enduranceLog = {
+                id: 'endurance-' + Date.now(),
+                activityId: 'running',
+                activityType: 'endurance',
+                activityName: 'Morning Run',
+                userId: userId,
+                timestamp: today,
+                sessions: [{
+                    sessionNumber: 1,
+                    duration: 30,
+                    distance: 5.2,
+                    pace: '5:45',
+                    averageHeartRate: 145,
+                    maxHeartRate: 165,
+                    calories: 350,
+                    elevation: 150,
+                    rpe: 7,
+                    hrZone1: 5,
+                    hrZone2: 20,
+                    hrZone3: 5,
+                    notes: 'Good steady run'
+                }]
+            };
+
+            const logs = JSON.parse(localStorage.getItem('activity-logs') || '[]');
+            logs.push(enduranceLog);
+            localStorage.setItem('activity-logs', JSON.stringify(logs));
+            
+            alert('✅ Added endurance activity!');
+        }
+
+        // Add sample sport activity
+        function addSportActivity() {
+            const userId = 'test-user-123';
+            const today = new Date();
+            
+            const sportLog = {
+                id: 'sport-' + Date.now(),
+                activityId: 'basketball',
+                activityType: 'sport',
+                activityName: 'Basketball Practice',
+                userId: userId,
+                timestamp: today,
+                sessions: [{
+                    sessionNumber: 1,
+                    duration: 90,
+                    calories: 450,
+                    intensity: 8,
+                    score: '85-78',
+                    opponent: 'Blue Team',
+                    performance: 8,
+                    skills: ['shooting', 'dribbling', 'defense'],
+                    notes: 'Great game, improved 3-point shooting'
+                }]
+            };
+
+            const logs = JSON.parse(localStorage.getItem('activity-logs') || '[]');
+            logs.push(sportLog);
+            localStorage.setItem('activity-logs', JSON.stringify(logs));
+            
+            alert('✅ Added sport activity!');
+        }
+
+        // Add sample speed & agility activity
+        function addSpeedAgilityActivity() {
+            const userId = 'test-user-123';
+            const today = new Date();
+            
+            const speedAgilityLog = {
+                id: 'speedagility-' + Date.now(),
+                activityId: 'cone-drills',
+                activityType: 'speedAgility',
+                activityName: 'Cone Drills',
+                userId: userId,
+                timestamp: today,
+                sessions: [{
+                    sessionNumber: 1,
+                    reps: 8,
+                    time: 12.5,
+                    distance: 20,
+                    height: 45,
+                    restTime: 60,
+                    rpe: 8,
+                    intensity: 9,
+                    drillType: 'agility',
+                    notes: 'Improved footwork speed'
+                }]
+            };
+
+            const logs = JSON.parse(localStorage.getItem('activity-logs') || '[]');
+            logs.push(speedAgilityLog);
+            localStorage.setItem('activity-logs', JSON.stringify(logs));
+            
+            alert('✅ Added speed & agility activity!');
+        }
+
+        // Add sample resistance exercise
+        function addResistanceExercise() {
+            const userId = 'test-user-123';
+            const today = new Date();
+            
+            const resistanceLog = {
+                id: 'resistance-' + Date.now(),
+                exerciseName: 'Bench Press',
+                userId: userId,
+                timestamp: today,
+                sets: [
+                    { setNumber: 1, weight: 80, reps: 10, rpe: 7 },
+                    { setNumber: 2, weight: 85, reps: 8, rpe: 8 },
+                    { setNumber: 3, weight: 90, reps: 6, rpe: 9 }
+                ],
+                deviceId: 'test-device'
+            };
+
+            const logs = JSON.parse(localStorage.getItem('exercise-logs') || '[]');
+            logs.push(resistanceLog);
+            localStorage.setItem('exercise-logs', JSON.stringify(logs));
+            
+            alert('✅ Added resistance exercise!');
+        }
+
+        // Show activity logs
+        function showActivityLogs() {
+            const logs = JSON.parse(localStorage.getItem('activity-logs') || '[]');
+            document.getElementById('logs-display').textContent = 
+                'Activity Logs (' + logs.length + '):\n' + JSON.stringify(logs, null, 2);
+        }
+
+        // Show resistance logs
+        function showResistanceLogs() {
+            const logs = JSON.parse(localStorage.getItem('exercise-logs') || '[]');
+            document.getElementById('logs-display').textContent = 
+                'Resistance Logs (' + logs.length + '):\n' + JSON.stringify(logs, null, 2);
+        }
+
+        // Test unified display (similar to what the app does)
+        function testUnifiedDisplay() {
+            const activityLogs = JSON.parse(localStorage.getItem('activity-logs') || '[]');
+            const resistanceLogs = JSON.parse(localStorage.getItem('exercise-logs') || '[]');
+            
+            const today = new Date();
+            const todayString = today.toDateString();
+            
+            // Filter for today
+            const todayActivities = activityLogs.filter(log => 
+                new Date(log.timestamp).toDateString() === todayString
+            );
+            const todayResistance = resistanceLogs.filter(log => 
+                new Date(log.timestamp).toDateString() === todayString
+            );
+            
+            // Convert activities to unified format
+            const convertedActivities = todayActivities.map(log => ({
+                id: log.id,
+                exerciseName: log.activityName,
+                timestamp: new Date(log.timestamp),
+                userId: log.userId,
+                sets: log.sessions || [],
+                activityType: log.activityType, // This is the key field!
+                activityData: log
+            }));
+            
+            // Convert resistance to unified format
+            const convertedResistance = todayResistance.map(log => ({
+                id: log.id,
+                exerciseName: log.exerciseName,
+                timestamp: new Date(log.timestamp),
+                userId: log.userId,
+                sets: log.sets || [],
+                activityType: 'resistance', // This should match ActivityType.RESISTANCE
+                deviceId: log.deviceId
+            }));
+            
+            const allExercises = [...convertedActivities, ...convertedResistance];
+            
+            document.getElementById('unified-display').textContent = 
+                `Unified Display Test (${allExercises.length} exercises today):\n\n` +
+                allExercises.map((ex, i) => 
+                    `${i + 1}. ${ex.exerciseName}\n` +
+                    `   Activity Type: ${ex.activityType}\n` +
+                    `   Sets/Sessions: ${ex.sets.length}\n` +
+                    `   Should show as: ${ex.activityType !== 'resistance' ? 'ACTIVITY format' : 'RESISTANCE format'}\n`
+                ).join('\n');
+        }
+
+        // Clear all test data
+        function clearAllData() {
+            localStorage.removeItem('activity-logs');
+            localStorage.removeItem('exercise-logs');
+            document.getElementById('logs-display').textContent = '';
+            document.getElementById('unified-display').textContent = '';
+            alert('🗑️ All test data cleared!');
+        }
+
+        // Auto-run unified display test on page load
+        window.onload = function() {
+            console.log('🧪 Activity Display Fix Test Page Loaded');
+            testUnifiedDisplay();
+        };
+    </script>
+</body>
+</html>

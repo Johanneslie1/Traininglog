@@ -150,16 +150,12 @@ const UniversalActivityLogger: React.FC<UniversalActivityLoggerProps> = ({
           exerciseSet.rpe = session.rpe;
           exerciseSet.hrZone1 = session.hrZone1;
           exerciseSet.hrZone2 = session.hrZone2;
-          exerciseSet.hrZone3 = session.hrZone3;
-        } else if (template.type === 'teamSports') {
+          exerciseSet.hrZone3 = session.hrZone3;        } else if (template.type === 'teamSports') {
           exerciseSet.duration = session.duration;
           exerciseSet.distance = session.distance;
           exerciseSet.calories = session.calories;
-          exerciseSet.rpe = session.rpe;
-          exerciseSet.score = session.score;
-          exerciseSet.opponent = session.opponent;
+          exerciseSet.intensity = session.intensity;
           exerciseSet.performance = session.performance;
-          exerciseSet.skills = session.skills;
         } else if (template.type === 'flexibility') {
           exerciseSet.duration = session.duration;
           exerciseSet.holdTime = session.holdTime;
@@ -213,8 +209,7 @@ const UniversalActivityLogger: React.FC<UniversalActivityLoggerProps> = ({
   const renderField = (field: TemplateField) => {
     const value = currentSession[field.fieldId] || '';
 
-    switch (field.type) {
-      case 'duration':
+    switch (field.type) {      case 'duration':
         return (
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -223,10 +218,61 @@ const UniversalActivityLogger: React.FC<UniversalActivityLoggerProps> = ({
             <input
               type="number"
               value={value}
-              onChange={(e) => setCurrentSession(prev => ({ 
-                ...prev, 
-                [field.fieldId]: Number(e.target.value) 
-              }))}
+              onChange={(e) => {
+                const inputValue = e.target.value;
+                // Allow empty string or valid numeric input
+                if (inputValue === '' || inputValue === '-' || inputValue === '.') {
+                  setCurrentSession(prev => ({ 
+                    ...prev, 
+                    [field.fieldId]: inputValue
+                  }));
+                } else {
+                  const numValue = Number(inputValue);
+                  if (!isNaN(numValue)) {
+                    setCurrentSession(prev => ({ 
+                      ...prev, 
+                      [field.fieldId]: numValue
+                    }));
+                  }
+                }
+              }}
+              className="w-full p-3 bg-[#2a2a2a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-blue-500"
+              min={field.min}
+              max={field.max}
+              step={field.step}
+              placeholder={field.placeholder}
+              required={field.required}
+            />
+            {field.unit && <span className="text-sm text-gray-400 mt-1 block">{field.unit}</span>}          </div>
+        );
+
+      case 'distance':
+        return (
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              {field.label} {field.required && <span className="text-red-400">*</span>}
+            </label>
+            <input
+              type="number"
+              value={value}
+              onChange={(e) => {
+                const inputValue = e.target.value;
+                // Allow empty string or valid numeric input
+                if (inputValue === '' || inputValue === '-' || inputValue === '.') {
+                  setCurrentSession(prev => ({ 
+                    ...prev, 
+                    [field.fieldId]: inputValue
+                  }));
+                } else {
+                  const numValue = Number(inputValue);
+                  if (!isNaN(numValue)) {
+                    setCurrentSession(prev => ({ 
+                      ...prev, 
+                      [field.fieldId]: numValue
+                    }));
+                  }
+                }
+              }}
               className="w-full p-3 bg-[#2a2a2a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-blue-500"
               min={field.min}
               max={field.max}
@@ -238,7 +284,6 @@ const UniversalActivityLogger: React.FC<UniversalActivityLoggerProps> = ({
           </div>
         );
 
-      case 'distance':
       case 'number':
       case 'heartRate':
       case 'rpe':
@@ -250,10 +295,24 @@ const UniversalActivityLogger: React.FC<UniversalActivityLoggerProps> = ({
             <input
               type="number"
               value={value}
-              onChange={(e) => setCurrentSession(prev => ({ 
-                ...prev, 
-                [field.fieldId]: Number(e.target.value) 
-              }))}
+              onChange={(e) => {
+                const inputValue = e.target.value;
+                // Allow empty string or valid numeric input
+                if (inputValue === '' || inputValue === '-' || inputValue === '.') {
+                  setCurrentSession(prev => ({ 
+                    ...prev, 
+                    [field.fieldId]: inputValue
+                  }));
+                } else {
+                  const numValue = Number(inputValue);
+                  if (!isNaN(numValue)) {
+                    setCurrentSession(prev => ({ 
+                      ...prev, 
+                      [field.fieldId]: numValue
+                    }));
+                  }
+                }
+              }}
               className="w-full p-3 bg-[#2a2a2a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-blue-500"
               min={field.min}
               max={field.max}

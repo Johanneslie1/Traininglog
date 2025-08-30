@@ -57,6 +57,56 @@ const getExerciseType = (exercise: Exercise): string => {
     }
   }
 
+  // Check exercise name for patterns
+  const exerciseName = exercise.name?.toLowerCase() || '';
+  
+  // Endurance activities
+  if (exerciseName.includes('treadmill') || 
+      exerciseName.includes('running') || 
+      exerciseName.includes('jogging') ||
+      exerciseName.includes('cycling') ||
+      exerciseName.includes('swimming') ||
+      exerciseName.includes('rowing') ||
+      exerciseName.includes('elliptical') ||
+      exerciseName.includes('cardio')) {
+    return 'endurance';
+  }
+  
+  // Sport activities
+  if (exerciseName.includes('soccer') || 
+      exerciseName.includes('football') ||
+      exerciseName.includes('basketball') ||
+      exerciseName.includes('tennis') ||
+      exerciseName.includes('volleyball') ||
+      exerciseName.includes('hockey') ||
+      exerciseName.includes('baseball') ||
+      exerciseName.includes('badminton')) {
+    return 'sport';
+  }
+  
+  // Speed & Agility activities
+  if (exerciseName.includes('high knees') ||
+      exerciseName.includes('butt kicks') ||
+      exerciseName.includes('ladder') ||
+      exerciseName.includes('cone') ||
+      exerciseName.includes('sprint') ||
+      exerciseName.includes('agility') ||
+      exerciseName.includes('plyometric') ||
+      exerciseName.includes('jump') ||
+      exerciseName.includes('hop') ||
+      exerciseName.includes('bounds')) {
+    return 'speed_agility';
+  }
+  
+  // Flexibility activities
+  if (exerciseName.includes('stretch') ||
+      exerciseName.includes('yoga') ||
+      exerciseName.includes('mobility') ||
+      exerciseName.includes('foam roll') ||
+      exerciseName.includes('massage')) {
+    return 'flexibility';
+  }
+
   // Check category for hints
   const category = exercise.category?.toLowerCase() || '';
   if (category.includes('cardio') || category.includes('running') || category.includes('cycling')) {
@@ -92,9 +142,7 @@ const getDefaultSet = (exerciseType: string): ExerciseSet => {
         weight: 20,
         reps: 10,
         rpe: 5
-      };
-
-    case 'endurance':
+      };    case 'endurance':
       return {
         ...baseSet,
         weight: 0,
@@ -107,40 +155,37 @@ const getDefaultSet = (exerciseType: string): ExerciseSet => {
         hrZone3: 20,
         hrZone4: 5,
         hrZone5: 0
-      };
-
-    case 'flexibility':
+      };    case 'flexibility':
       return {
         ...baseSet,
         weight: 0,
         reps: 1,
+        duration: 10, // 10 minutes default for flexibility session
         holdTime: 30, // seconds
         intensity: 5,
         stretchType: 'static'
-      };
-
-    case 'sport':
+      };case 'sport':
       return {
         ...baseSet,
         weight: 0,
         reps: 1,
         duration: 60, // minutes
         rpe: 7,
-        calories: 300
-      };
-
-    case 'speed_agility':
+        calories: 300,
+        performance: '7'
+      };    case 'speed_agility':
       return {
         ...baseSet,
         weight: 0,
         reps: 10,
         duration: 60, // seconds per set
+        time: 3.0, // seconds per rep
         distance: 50, // meters for sprints
         height: 30, // cm for jumps
-        restTime: 120 // seconds between sets
-      };
-
-    case 'other':
+        restTime: 120, // seconds between sets
+        intensity: 7, // intensity rating 1-10
+        rpe: 6
+      };case 'other':
     default:
       return {
         ...baseSet,
@@ -213,11 +258,9 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
         case 'endurance':
         case 'sport':
         case 'other':
-          return (set.duration && set.duration > 0) || (set.distance && set.distance > 0);
-        case 'flexibility':
-          return set.duration && set.duration > 0;
-        case 'speed_agility':
-          return set.reps > 0;
+          return (set.duration && set.duration > 0) || (set.distance && set.distance > 0);        case 'flexibility':
+          return (set.duration && set.duration > 0) || (set.holdTime && set.holdTime > 0);        case 'speed_agility':
+          return (set.reps > 0) && ((set.duration && set.duration > 0) || (set.time && set.time > 0) || (set.distance && set.distance > 0) || (set.height && set.height > 0));
         default:
           return true;
       }
@@ -242,14 +285,28 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
       type: 'number' | 'text' = 'number',
       min?: number,
       step?: number,
-      placeholder?: string
-    ) => (
+      placeholder?: string    ) => (
       <div key={field} className="space-y-1">
         <label className="block text-sm font-medium text-gray-300">{label}</label>
         <input
           type={type}
           value={set[field] as string || ''}
-          onChange={(e) => updateSet(setIndex, field, type === 'number' ? Number(e.target.value) : e.target.value)}
+          onChange={(e) => {
+            const value = e.target.value;
+            if (type === 'number') {
+              // Allow empty string or numeric values
+              if (value === '' || value === '-' || value === '.') {
+                updateSet(setIndex, field, value);
+              } else {
+                const numValue = Number(value);
+                if (!isNaN(numValue)) {
+                  updateSet(setIndex, field, numValue);
+                }
+              }
+            } else {
+              updateSet(setIndex, field, value);
+            }
+          }}
           className="w-full px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500"
           min={min}
           step={step}
@@ -321,12 +378,10 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
               <div className="grid grid-cols-1 gap-3">
                 {renderField('hrZone5', 'Zone 5 (min)', 'number', 0, 0.1)}
               </div>
-            </div>
-          </div>
+            </div>          </div>
         );
-        break;
-
-      case 'flexibility':
+        break;      case 'flexibility':
+        fields.push(renderField('duration', 'Duration (minutes)', 'number', 0.1, 0.1));
         fields.push(renderField('holdTime', 'Hold Time (seconds)', 'number', 1));
         fields.push(renderField('intensity', 'Intensity (1-10)', 'number', 1, 1));
         fields.push(
@@ -348,17 +403,36 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
             </select>
           </div>
         );
-        break;
-
-      case 'sport':
+        break;      case 'sport':
         fields.push(renderField('duration', 'Duration (minutes) *', 'number', 1));
         fields.push(renderField('distance', 'Distance (km)', 'number', 0, 0.1));
         fields.push(renderField('calories', 'Calories', 'number', 0));
-        break;
-
-      case 'speed_agility':
+        
+        // Performance-focused fields only
+        fields.push(
+          <div key="performance" className="space-y-1">
+            <label className="block text-sm font-medium text-gray-300">
+              Performance Rating (1-10)
+            </label>
+            <input
+              type="number"
+              min="1"
+              max="10"
+              value={set.performance || ''}
+              onChange={(e) => updateSet(setIndex, 'performance', e.target.value)}
+              className="w-full px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500"
+              placeholder="Rate your performance"
+            />
+          </div>
+        );
+        break;      case 'speed_agility':
         fields.push(renderField('reps', 'Reps per Set', 'number', 1));
-        fields.push(renderField('duration', 'Duration per Set (seconds)', 'number', 1));
+        fields.push(
+          <div key="duration-time" className="grid grid-cols-2 gap-4">
+            {renderField('duration', 'Set Duration (sec)', 'number', 1, 0.1)}
+            {renderField('time', 'Time per Rep (sec)', 'number', 0, 0.01)}
+          </div>
+        );
         fields.push(
           <div key="height-distance" className="grid grid-cols-2 gap-4">
             {renderField('height', 'Height (cm)', 'number', 0, 1)}
@@ -366,9 +440,9 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
           </div>
         );
         fields.push(renderField('restTime', 'Rest Between Sets (seconds)', 'number', 0));
+        fields.push(renderField('intensity', 'Intensity (1-10)', 'number', 1, 1, 'Rate exercise intensity'));
         break;
-
-      case 'other':
+        break;      case 'other':
       default:
         fields.push(renderField('duration', 'Duration (minutes) *', 'number', 0.1, 0.1));
         fields.push(renderField('distance', 'Distance (km)', 'number', 0, 0.1));

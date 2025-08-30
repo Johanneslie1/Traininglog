@@ -25,23 +25,14 @@ export interface ExerciseSet {
   maxHR?: number; // Maximum heart rate
   maxHeartRate?: number; // Alternative naming for maximum heart rate
   calories?: number; // Calories burned
-  
-  // Plyometrics-specific fields
+    // Plyometrics-specific fields
   height?: number; // Jump height in cm
   explosivePower?: number; // Explosive power rating 1-10
   reactivePower?: number; // Reactive power rating 1-10
   time?: number; // Time for drills in seconds
   
-  // Team Sports-specific fields
-  teamName?: string;
-  position?: string;
-  drillType?: string;
-  skillsWorked?: string[];
-  matchResult?: string;
-  score?: string; // Score or result for sport activities
-  opponent?: string; // Opponent or team played against
+  // Team Sports-specific fields (performance-focused only)
   performance?: string; // Performance rating or notes
-  skills?: string; // Skills worked on
   
   // Flexibility-specific fields
   stretchType?: string; // Type of stretch
@@ -49,8 +40,7 @@ export interface ExerciseSet {
   bodyPart?: string;
   holdTime?: number; // Hold time for static stretches
   flexibility?: number; // Flexibility rating 1-10
-  
-  // Other fields
+    // Other fields
+  pace?: string; // Pace for endurance activities (e.g., "5:30/km")
   elevation?: number; // Elevation gain
-  conditions?: string; // Weather/environmental conditions
 }
