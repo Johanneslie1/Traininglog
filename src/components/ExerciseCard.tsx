@@ -222,13 +222,13 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
                 // Note: We don't exclude zero values as they might be legitimate (e.g., 0 calories)
               };              return (
                 <div className="space-y-3">                  {/* Volume Metrics Row */}
-                  <div className="grid grid-cols-2 gap-3">                    {hasValue(set.reps) && (exercise.activityType === ActivityType.SPEED_AGILITY) && (
+                  <div className="grid grid-cols-2 gap-3">                    {hasValue(set.reps) && (exercise.activityType === ActivityType.SPEED_AGILITY || exercise.activityType === ActivityType.STRETCHING) && (
                       <div className="bg-gray-800/50 rounded-lg p-2">
                         <div className="text-xs text-gray-400 mb-1">Reps</div>
                         <div className="text-white font-medium">{set.reps}</div>
                       </div>
                     )}
-                    {hasValue(set.duration) && exercise.activityType !== ActivityType.SPEED_AGILITY && (
+                    {hasValue(set.duration) && exercise.activityType !== ActivityType.SPEED_AGILITY && exercise.activityType !== ActivityType.STRETCHING && (
                       <div className="bg-gray-800/50 rounded-lg p-2">
                         <div className="text-xs text-gray-400 mb-1">Duration</div>
                         <div className="text-white font-medium">

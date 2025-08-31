@@ -58,7 +58,7 @@ function convertActivityLogToExerciseData(activityLog: ActivityLog): UnifiedExer
     const dataArray = stretchLog.stretches || stretchLog.sessions || [];
     baseData.sets = dataArray.map((session: any, index: number) => ({
       setNumber: index + 1,
-      duration: session.duration,
+      reps: session.reps,
       intensity: session.intensity,
       notes: session.notes,
       ...(session.holdTime && { holdTime: session.holdTime }),

@@ -157,7 +157,7 @@ const UniversalActivityLogger: React.FC<UniversalActivityLoggerProps> = ({
           exerciseSet.intensity = session.intensity;
           exerciseSet.performance = session.performance;
         } else if (template.type === 'flexibility') {
-          exerciseSet.duration = session.duration;
+          exerciseSet.reps = session.reps || 1;
           exerciseSet.holdTime = session.holdTime;
           exerciseSet.intensity = session.intensity;
           exerciseSet.flexibility = session.flexibility;

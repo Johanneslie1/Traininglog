@@ -259,12 +259,12 @@ export const flexibilityTemplate: TrainingTemplate = {
   description: 'Stretching, yoga, and mobility work',
   fields: [
     {
-      fieldId: 'duration',
-      label: 'Duration (minutes)',
-      type: 'duration',
+      fieldId: 'reps',
+      label: 'Repetitions',
+      type: 'reps',
       required: true,
       min: 1,
-      max: 120
+      max: 50
     },
     {
       fieldId: 'stretchType',
@@ -280,13 +280,6 @@ export const flexibilityTemplate: TrainingTemplate = {
       required: true,
       min: 1,
       max: 10
-    },
-    {
-      fieldId: 'bodyPart',
-      label: 'Body Part Focus',
-      type: 'select',
-      required: false,
-      options: ['Full Body', 'Upper Body', 'Lower Body', 'Core', 'Shoulders', 'Hips', 'Legs', 'Back']
     },
     {
       fieldId: 'holdTime',
@@ -380,13 +373,21 @@ export const speedAgilityTemplate: TrainingTemplate = {
     },
     {
       fieldId: 'distance',
-      label: 'Distance (meters) or Height (cm)',
+      label: 'Distance (meters)',
       type: 'distance',
       required: false,
       min: 0,
       max: 1000,
-      step: 0.1,
-      placeholder: 'Choose either distance OR height'
+      step: 0.1
+    },
+    {
+      fieldId: 'height',
+      label: 'Height (cm)',
+      type: 'height',
+      required: false,
+      min: 0,
+      max: 200,
+      step: 1
     },
     {
       fieldId: 'restTime',

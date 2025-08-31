@@ -159,8 +159,7 @@ const getDefaultSet = (exerciseType: string): ExerciseSet => {
       return {
         ...baseSet,
         weight: 0,
-        reps: 1,
-        duration: 10, // 10 minutes default for flexibility session
+        reps: 10, // 10 reps default for flexibility session
         holdTime: 30, // seconds
         intensity: 5,
         stretchType: 'static'
@@ -259,7 +258,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
         case 'sport':
         case 'other':
           return (set.duration && set.duration > 0) || (set.distance && set.distance > 0);        case 'flexibility':
-          return (set.duration && set.duration > 0) || (set.holdTime && set.holdTime > 0);        case 'speed_agility':
+          return (set.reps && set.reps > 0) || (set.holdTime && set.holdTime > 0);        case 'speed_agility':
           return (set.reps > 0) && ((set.duration && set.duration > 0) || (set.time && set.time > 0) || (set.distance && set.distance > 0) || (set.height && set.height > 0));
         default:
           return true;
@@ -381,9 +380,35 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
             </div>          </div>
         );
         break;      case 'flexibility':
-        fields.push(renderField('duration', 'Duration (minutes)', 'number', 0.1, 0.1));
+        fields.push(renderField('reps', 'Repetitions', 'number', 1));
         fields.push(renderField('holdTime', 'Hold Time (seconds)', 'number', 1));
-        fields.push(renderField('intensity', 'Intensity (1-10)', 'number', 1, 1));
+        
+        // Intensity dropdown like RPE
+        fields.push(
+          <div key="intensity" className="space-y-1">
+            <label className="block text-sm font-medium text-gray-300">
+              Intensity
+            </label>
+            <select
+              value={set.intensity || ''}
+              onChange={(e) => updateSet(setIndex, 'intensity', parseInt(e.target.value))}
+              className="w-full px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500"
+            >
+              <option value="">Select Intensity</option>
+              <option value="1">1 - Very Light</option>
+              <option value="2">2 - Light</option>
+              <option value="3">3 - Moderate-Light</option>
+              <option value="4">4 - Moderate</option>
+              <option value="5">5 - Moderate-Hard</option>
+              <option value="6">6 - Hard</option>
+              <option value="7">7 - Very Hard</option>
+              <option value="8">8 - Extremely Hard</option>
+              <option value="9">9 - Near Maximum</option>
+              <option value="10">10 - Maximum</option>
+            </select>
+          </div>
+        );
+        
         fields.push(
           <div key="stretch-type" className="space-y-1">
             <label className="block text-sm font-medium text-gray-300">
@@ -397,9 +422,8 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
               <option value="static">Static Stretching</option>
               <option value="dynamic">Dynamic Stretching</option>
               <option value="pnf">PNF (Proprioceptive Neuromuscular Facilitation)</option>
-              <option value="ballistic">Ballistic Stretching</option>
-              <option value="active">Active Stretching</option>
-              <option value="passive">Passive Stretching</option>
+              <option value="yoga">Yoga</option>
+              <option value="mobility">Mobility Flow</option>
             </select>
           </div>
         );
@@ -428,48 +452,11 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
         break;      case 'speed_agility':
         fields.push(renderField('reps', 'Reps per Set', 'number', 1));
         
-        // Mutually exclusive distance/height field
+        // Distance and Height fields (both optional and independently editable)
         fields.push(
-          <div key="distance-height" className="space-y-1">
-            <label className="block text-sm font-medium text-gray-300">
-              Distance (meters) or Height (cm)
-            </label>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <input
-                  type="number"
-                  min="0"
-                  max="1000"
-                  step="0.1"
-                  value={set.distance || ''}
-                  onChange={(e) => {
-                    updateSet(setIndex, 'distance', e.target.value);
-                    if (e.target.value) updateSet(setIndex, 'height', ''); // Clear height if distance is set
-                  }}
-                  className="w-full px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500"
-                  placeholder="Distance"
-                  disabled={!!set.height}
-                />
-                <div className="text-xs text-gray-400 mt-1">Distance (m)</div>
-              </div>
-              <div>
-                <input
-                  type="number"
-                  min="0"
-                  max="200"
-                  step="1"
-                  value={set.height || ''}
-                  onChange={(e) => {
-                    updateSet(setIndex, 'height', e.target.value);
-                    if (e.target.value) updateSet(setIndex, 'distance', ''); // Clear distance if height is set
-                  }}
-                  className="w-full px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500"
-                  placeholder="Height"
-                  disabled={!!set.distance}
-                />
-                <div className="text-xs text-gray-400 mt-1">Height (cm)</div>
-              </div>
-            </div>
+          <div key="distance-height" className="grid grid-cols-2 gap-4">
+            {renderField('distance', 'Distance (meters)', 'number', 0, 0.1)}
+            {renderField('height', 'Height (cm)', 'number', 0, 1)}
           </div>
         );
         

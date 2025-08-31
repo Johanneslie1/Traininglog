@@ -49,8 +49,7 @@ const StretchingActivityPicker: React.FC<StretchingActivityPickerProps> = ({
 			difficulty: 'beginner',
 			defaultUnit: 'time',
 			metrics: {
-				trackTime: true,
-				trackDuration: true,
+				trackReps: true,
 				trackIntensity: true
 			}
 		};
