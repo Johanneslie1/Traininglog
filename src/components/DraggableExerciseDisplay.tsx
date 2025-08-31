@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { ExerciseData } from '../services/exerciseDataService';
 import { UnifiedExerciseData } from '../utils/unifiedExerciseUtils';
@@ -21,6 +21,7 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
   onReorderExercises
 }) => {
   const { state, updateExerciseOrder } = useSupersets();
+  const [hiddenExercises, setHiddenExercises] = useState<Set<string>>(new Set());
 
   // Handle drag end event
   const handleDragEnd = (result: DropResult) => {
@@ -36,6 +37,19 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
     // Update exercise order in the superset context
     const exerciseIds = items.map(exercise => exercise.id || '').filter(id => id !== '');
     updateExerciseOrder(exerciseIds);
+  };
+
+  // Toggle exercise visibility
+  const toggleExerciseVisibility = (exerciseId: string) => {
+    setHiddenExercises(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(exerciseId)) {
+        newSet.delete(exerciseId);
+      } else {
+        newSet.add(exerciseId);
+      }
+      return newSet;
+    });
   };
   
   // Effect to update exercise IDs in the superset context when exercises change
@@ -167,6 +181,8 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
                                   onEdit={() => onEditExercise(exercise)}
                                   onDelete={() => onDeleteExercise(exercise)}
                                   showActions={true}
+                                  isHidden={hiddenExercises.has(exercise.id || '')}
+                                  onToggleVisibility={() => toggleExerciseVisibility(exercise.id || '')}
                                 />
                               </div>
                             </div>
@@ -182,6 +198,8 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
                           onEdit={() => onEditExercise(group.exercises[0])}
                           onDelete={() => onDeleteExercise(group.exercises[0])}
                           showActions={true}
+                          isHidden={hiddenExercises.has(group.exercises[0].id || '')}
+                          onToggleVisibility={() => toggleExerciseVisibility(group.exercises[0].id || '')}
                         />
                       </div>
                     )}
