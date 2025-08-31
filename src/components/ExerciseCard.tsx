@@ -129,7 +129,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
     })();
 
     if (isNonResistance) {
-      // Non-resistance activity - clean format
+      // Non-resistance activity - display all sets
       return (
         <div className="text-sm text-gray-300">
           {/* Activity type badge */}
@@ -137,202 +137,161 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
             <span className="px-2 py-1 bg-blue-600/20 text-blue-300 text-xs rounded-full">
               {(exercise.activityType || 'Unknown').charAt(0).toUpperCase() + (exercise.activityType || 'Unknown').slice(1)} Activity
             </span>
+            <span className="text-xs text-gray-400">
+              {exercise.sets?.length || 0} set{(exercise.sets?.length || 0) !== 1 ? 's' : ''}
+            </span>
           </div>
           
-          {/* Display key metrics in the clean format */}
-          {exercise.sets && exercise.sets.length > 0 && (() => {
-            const set = exercise.sets[0] as any; // Use first set for display
-            
-            // Helper function to check if a value exists and is not empty
-            const hasValue = (value: any): boolean => {
-              return value !== null && 
-                     value !== undefined && 
-                     value !== '' && 
-                     !(typeof value === 'string' && value.trim() === '') &&
-                     !(typeof value === 'number' && isNaN(value));
-              // Note: We don't exclude zero values as they might be legitimate (e.g., 0 calories)
-            };
-            
-            return (
-              <div className="space-y-3">
-                {/* Volume Metrics Row */}
-                <div className="grid grid-cols-2 gap-3">
-                  {hasValue(set.reps) && (exercise.activityType === ActivityType.SPEED_AGILITY || exercise.activityType === ActivityType.STRETCHING) && (
-                    <div className="bg-gray-800/50 rounded-lg p-2">
-                      <div className="text-xs text-gray-400 mb-1">Reps</div>
-                      <div className="text-white font-medium">{set.reps}</div>
+          {/* Display all sets */}
+          {exercise.sets && exercise.sets.length > 0 && (
+            <div className="space-y-3">
+              {exercise.sets.map((set, setIndex) => {
+                // Helper function to check if a value exists and is not empty
+                const hasValue = (value: any): boolean => {
+                  return value !== null && 
+                         value !== undefined && 
+                         value !== '' && 
+                         !(typeof value === 'string' && value.trim() === '') &&
+                         !(typeof value === 'number' && isNaN(value));
+                  // Note: We don't exclude zero values as they might be legitimate (e.g., 0 calories)
+                };
+                
+                return (
+                  <div key={setIndex} className="bg-gray-800/30 rounded-lg p-3 border-l-2 border-blue-500/50">
+                    <div className="text-xs text-blue-300 mb-2 font-medium">
+                      Set {setIndex + 1}
                     </div>
-                  )}
-                  {hasValue(set.duration) && exercise.activityType !== ActivityType.SPEED_AGILITY && exercise.activityType !== ActivityType.STRETCHING && (
-                    <div className="bg-gray-800/50 rounded-lg p-2">
-                      <div className="text-xs text-gray-400 mb-1">Duration</div>
-                      <div className="text-white font-medium">
-                        {(exercise.activityType || 'unknown') === 'endurance' ? `${set.duration} min` : `${set.duration} sec`}
+                    
+                    {/* Volume Metrics Row */}
+                    <div className="grid grid-cols-2 gap-3 mb-2">
+                      {hasValue(set.reps) && (exercise.activityType === ActivityType.SPEED_AGILITY || exercise.activityType === ActivityType.STRETCHING) && (
+                        <div className="bg-gray-800/50 rounded p-2">
+                          <div className="text-xs text-gray-400 mb-1">Reps</div>
+                          <div className="text-white font-medium">{set.reps}</div>
+                        </div>
+                      )}
+                      {hasValue(set.duration) && exercise.activityType !== ActivityType.SPEED_AGILITY && exercise.activityType !== ActivityType.STRETCHING && (
+                        <div className="bg-gray-800/50 rounded p-2">
+                          <div className="text-xs text-gray-400 mb-1">Duration</div>
+                          <div className="text-white font-medium">
+                            {(exercise.activityType || 'unknown') === 'endurance' ? `${set.duration} min` : `${set.duration} sec`}
+                          </div>
+                        </div>
+                      )}
+                      {hasValue(set.distance) && (
+                        <div className="bg-gray-800/50 rounded p-2">
+                          <div className="text-xs text-gray-400 mb-1">Distance</div>
+                          <div className="text-white font-medium">
+                            {(exercise.activityType || 'unknown') === 'endurance' ? `${set.distance} km` : `${set.distance} m`}
+                          </div>
+                        </div>
+                      )}
+                      {hasValue(set.height) && (exercise.activityType === ActivityType.SPEED_AGILITY) && (
+                        <div className="bg-gray-800/50 rounded p-2">
+                          <div className="text-xs text-gray-400 mb-1">Height</div>
+                          <div className="text-white font-medium">{set.height} cm</div>
+                        </div>
+                      )}
+                      {hasValue(set.calories) && (
+                        <div className="bg-gray-800/50 rounded p-2">
+                          <div className="text-xs text-gray-400 mb-1">Calories</div>
+                          <div className="text-white font-medium">{set.calories} kcal</div>
+                        </div>
+                      )}
+                      {hasValue(set.holdTime) && (
+                        <div className="bg-gray-800/50 rounded p-2">
+                          <div className="text-xs text-gray-400 mb-1">Hold Time</div>
+                          <div className="text-white font-medium">{set.holdTime}s</div>
+                        </div>
+                      )}
+                      {hasValue(set.stretchType) && (exercise.activityType === ActivityType.STRETCHING) && (
+                        <div className="bg-gray-800/50 rounded p-2">
+                          <div className="text-xs text-gray-400 mb-1">Stretch Type</div>
+                          <div className="text-white font-medium capitalize">{set.stretchType}</div>
+                        </div>
+                      )}
+                      {hasValue(set.restTime) && (exercise.activityType === ActivityType.SPEED_AGILITY) && (
+                        <div className="bg-gray-800/50 rounded p-2">
+                          <div className="text-xs text-gray-400 mb-1">Rest Time</div>
+                          <div className="text-white font-medium">{set.restTime}s</div>
+                        </div>
+                      )}
+                      {hasValue(set.rpe) && (exercise.activityType === ActivityType.SPEED_AGILITY) && (
+                        <div className="bg-gray-800/50 rounded p-2">
+                          <div className="text-xs text-gray-400 mb-1">RPE</div>
+                          <div className="text-white font-medium">{set.rpe}/10</div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Strain Metrics - Heart Rate */}
+                    {(hasValue(set.heartRate) || hasValue(set.maxHeartRate) || hasValue(set.averageHeartRate)) && (
+                      <div className="bg-red-900/20 rounded p-2 mb-2">
+                        <div className="text-xs text-red-300 mb-1 font-medium">Heart Rate</div>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          {hasValue(set.averageHeartRate) && (
+                            <div>
+                              <span className="text-gray-400">Avg:</span>
+                              <span className="text-white ml-1">{set.averageHeartRate} bpm</span>
+                            </div>
+                          )}
+                          {hasValue(set.maxHeartRate) && (
+                            <div>
+                              <span className="text-gray-400">Max:</span>
+                              <span className="text-white ml-1">{set.maxHeartRate} bpm</span>
+                            </div>
+                          )}
+                          {hasValue(set.heartRate) && !hasValue(set.averageHeartRate) && (
+                            <div>
+                              <span className="text-gray-400">HR:</span>
+                              <span className="text-white ml-1">{set.heartRate} bpm</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  {hasValue(set.distance) && (
-                    <div className="bg-gray-800/50 rounded-lg p-2">
-                      <div className="text-xs text-gray-400 mb-1">Distance</div>
-                      <div className="text-white font-medium">
-                        {(exercise.activityType || 'unknown') === 'endurance' ? `${set.distance} km` : `${set.distance} m`}
+                    )}
+
+                    {/* Intensity Metrics */}
+                    {((hasValue(set.rpe) && exercise.activityType !== ActivityType.SPEED_AGILITY) || 
+                      (hasValue(set.intensity) && exercise.activityType !== ActivityType.SPEED_AGILITY) || 
+                      hasValue(set.performance)) && (
+                      <div className="bg-yellow-900/20 rounded p-2 mb-2">
+                        <div className="text-xs text-yellow-300 mb-1 font-medium">Intensity</div>
+                        <div className="grid grid-cols-3 gap-2 text-sm">
+                          {hasValue(set.rpe) && exercise.activityType !== ActivityType.SPEED_AGILITY && (
+                            <div>
+                              <span className="text-gray-400">RPE:</span>
+                              <span className="text-white ml-1">{set.rpe}/10</span>
+                            </div>
+                          )}
+                          {hasValue(set.intensity) && exercise.activityType !== ActivityType.SPEED_AGILITY && (
+                            <div>
+                              <span className="text-gray-400">Intensity:</span>
+                              <span className="text-white ml-1">{set.intensity}/10</span>
+                            </div>
+                          )}
+                          {hasValue(set.performance) && (
+                            <div>
+                              <span className="text-gray-400">Performance:</span>
+                              <span className="text-white ml-1">{set.performance}/10</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  {hasValue(set.height) && (exercise.activityType === ActivityType.SPEED_AGILITY) && (
-                    <div className="bg-gray-800/50 rounded-lg p-2">
-                      <div className="text-xs text-gray-400 mb-1">Height</div>
-                      <div className="text-white font-medium">{set.height} cm</div>
-                    </div>
-                  )}
-                  {hasValue(set.calories) && (
-                    <div className="bg-gray-800/50 rounded-lg p-2">
-                      <div className="text-xs text-gray-400 mb-1">Calories</div>
-                      <div className="text-white font-medium">{set.calories} kcal</div>
-                    </div>
-                  )}
-                  {hasValue(set.holdTime) && (
-                    <div className="bg-gray-800/50 rounded-lg p-2">
-                      <div className="text-xs text-gray-400 mb-1">Hold Time</div>
-                      <div className="text-white font-medium">{set.holdTime}s</div>
-                    </div>
-                  )}
-                  {hasValue(set.stretchType) && (exercise.activityType === ActivityType.STRETCHING) && (
-                    <div className="bg-gray-800/50 rounded-lg p-2">
-                      <div className="text-xs text-gray-400 mb-1">Stretch Type</div>
-                      <div className="text-white font-medium capitalize">{set.stretchType}</div>
-                    </div>
-                  )}
-                  {hasValue(set.restTime) && (exercise.activityType === ActivityType.SPEED_AGILITY) && (
-                    <div className="bg-gray-800/50 rounded-lg p-2">
-                      <div className="text-xs text-gray-400 mb-1">Rest Time</div>
-                      <div className="text-white font-medium">{set.restTime}s</div>
-                    </div>
-                  )}
-                  {hasValue(set.rpe) && (exercise.activityType === ActivityType.SPEED_AGILITY) && (
-                    <div className="bg-gray-800/50 rounded-lg p-2">
-                      <div className="text-xs text-gray-400 mb-1">RPE</div>
-                      <div className="text-white font-medium">{set.rpe}/10</div>
-                    </div>
-                  )}
-                </div>
+                    )}
 
-                {/* Strain Metrics - Heart Rate */}
-                {(hasValue(set.heartRate) || hasValue(set.maxHeartRate) || hasValue(set.averageHeartRate)) && (
-                  <div className="bg-red-900/20 rounded-lg p-3">
-                    <div className="text-xs text-red-300 mb-2 font-medium">Heart Rate (Strain)</div>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      {hasValue(set.averageHeartRate) && (
-                        <div>
-                          <span className="text-gray-400">Avg:</span>
-                          <span className="text-white ml-1">{set.averageHeartRate} bpm</span>
-                        </div>
-                      )}
-                      {hasValue(set.maxHeartRate) && (
-                        <div>
-                          <span className="text-gray-400">Max:</span>
-                          <span className="text-white ml-1">{set.maxHeartRate} bpm</span>
-                        </div>
-                      )}
-                      {hasValue(set.heartRate) && !hasValue(set.averageHeartRate) && (
-                        <div>
-                          <span className="text-gray-400">HR:</span>
-                          <span className="text-white ml-1">{set.heartRate} bpm</span>
-                        </div>
-                      )}
-                    </div>
+                    {/* Notes - Only if they contain performance insights */}
+                    {hasValue(set.notes) && (
+                      <div className="bg-gray-800/40 rounded p-2 border-l-2 border-blue-500">
+                        <div className="text-xs text-gray-400 mb-1">Notes</div>
+                        <div className="text-white text-sm">{set.notes}</div>
+                      </div>
+                    )}
                   </div>
-                )}
-
-                {/* Strain Metrics - HR Zones */}
-                {(hasValue(set.hrZone1) || hasValue(set.hrZone2) || hasValue(set.hrZone3) || hasValue(set.hrZone4) || hasValue(set.hrZone5)) && (
-                  <div className="bg-red-900/20 rounded-lg p-3">
-                    <div className="text-xs text-red-300 mb-2 font-medium">HR Zones (Strain Distribution)</div>
-                    <div className="grid grid-cols-3 gap-2 text-xs">
-                      {hasValue(set.hrZone1) && (
-                        <div>
-                          <span className="text-gray-400">Z1:</span>
-                          <span className="text-white ml-1">{set.hrZone1}m</span>
-                        </div>
-                      )}
-                      {hasValue(set.hrZone2) && (
-                        <div>
-                          <span className="text-gray-400">Z2:</span>
-                          <span className="text-white ml-1">{set.hrZone2}m</span>
-                        </div>
-                      )}
-                      {hasValue(set.hrZone3) && (
-                        <div>
-                          <span className="text-gray-400">Z3:</span>
-                          <span className="text-white ml-1">{set.hrZone3}m</span>
-                        </div>
-                      )}
-                      {hasValue(set.hrZone4) && (
-                        <div>
-                          <span className="text-gray-400">Z4:</span>
-                          <span className="text-white ml-1">{set.hrZone4}m</span>
-                        </div>
-                      )}
-                      {hasValue(set.hrZone5) && (
-                        <div>
-                          <span className="text-gray-400">Z5:</span>
-                          <span className="text-white ml-1">{set.hrZone5}m</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Strain Metrics - Rest Time for Speed & Agility */}
-                {(exercise.activityType === ActivityType.SPEED_AGILITY) && hasValue(set.restTime) && (
-                  <div className="bg-red-900/20 rounded-lg p-3">
-                    <div className="text-xs text-red-300 mb-2 font-medium">Recovery (Strain)</div>
-                    <div className="text-sm">
-                      <span className="text-gray-400">Rest Time:</span>
-                      <span className="text-white ml-1">{set.restTime}s</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Intensity Metrics */}
-                {((hasValue(set.rpe) && exercise.activityType !== ActivityType.SPEED_AGILITY) || 
-                  (hasValue(set.intensity) && exercise.activityType !== ActivityType.SPEED_AGILITY) || 
-                  hasValue(set.performance)) && (
-                  <div className="bg-yellow-900/20 rounded-lg p-3">
-                    <div className="text-xs text-yellow-300 mb-2 font-medium">Intensity</div>
-                    <div className="grid grid-cols-3 gap-2 text-sm">
-                      {hasValue(set.rpe) && exercise.activityType !== ActivityType.SPEED_AGILITY && (
-                        <div>
-                          <span className="text-gray-400">RPE:</span>
-                          <span className="text-white ml-1">{set.rpe}/10</span>
-                        </div>
-                      )}
-                      {hasValue(set.intensity) && exercise.activityType !== ActivityType.SPEED_AGILITY && (
-                        <div>
-                          <span className="text-gray-400">Intensity:</span>
-                          <span className="text-white ml-1">{set.intensity}/10</span>
-                        </div>
-                      )}
-                      {hasValue(set.performance) && (
-                        <div>
-                          <span className="text-gray-400">Performance:</span>
-                          <span className="text-white ml-1">{set.performance}/10</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Notes - Only if they contain performance insights */}
-                {hasValue(set.notes) && (
-                  <div className="bg-gray-800/40 rounded-lg p-3 border-l-2 border-blue-500">
-                    <div className="text-xs text-gray-400 mb-1">Performance Notes</div>
-                    <div className="text-white text-sm">{set.notes}</div>
-                  </div>
-                )}
-              </div>
-            );
-          })()}
+                );
+              })}
+            </div>
+          )}
         </div>
       );
     } else if ('sets' in exercise && exercise.sets) {

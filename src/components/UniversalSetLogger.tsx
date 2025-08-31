@@ -249,7 +249,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
   };
 
   const handleSave = () => {
-    // Validate that we have at least one set with some data
+    // Option 3: Relaxed validation - only require at least one field per set
     const validSets = sets.filter(set => {
       switch (exerciseType) {
         case 'strength':
@@ -258,17 +258,36 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
         case 'endurance':
         case 'sport':
         case 'other':
-          return (set.duration && set.duration > 0) || (set.distance && set.distance > 0);        case 'flexibility':
-          return (set.reps && set.reps > 0) || (set.holdTime && set.holdTime > 0);        case 'speed_agility':
-          return (set.reps > 0) && ((set.duration && set.duration > 0) || (set.time && set.time > 0) || (set.distance && set.distance > 0) || (set.height && set.height > 0));
+          return (set.duration && set.duration > 0) ||
+                 (set.distance && set.distance > 0) ||
+                 (set.calories && set.calories > 0) ||
+                 (set.rpe && set.rpe > 0);
+        case 'flexibility':
+          return (set.reps && set.reps > 0) ||
+                 (set.holdTime && set.holdTime > 0) ||
+                 (set.intensity && set.intensity > 0);
+        case 'speed_agility':
+          return (set.reps > 0) ||
+                 (set.duration && set.duration > 0) ||
+                 (set.time && set.time > 0) ||
+                 (set.distance && set.distance > 0) ||
+                 (set.height && set.height > 0);
         default:
           return true;
       }
     });
 
     if (validSets.length === 0) {
-      toast.error('Please fill in at least one complete set');
+      toast.error('Please fill in at least one field for each set');
       return;
+    }
+
+    // Warn about incomplete sets but still save them
+    const incompleteCount = sets.length - validSets.length;
+    if (incompleteCount > 0) {
+      toast(`Note: ${incompleteCount} set(s) have minimal data but will be saved`, {
+        duration: 3000,
+      });
     }
 
     onSave(validSets);
