@@ -228,7 +228,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
                         <div className="text-white font-medium">{set.reps}</div>
                       </div>
                     )}
-                    {hasValue(set.duration) && (
+                    {hasValue(set.duration) && exercise.activityType !== ActivityType.SPEED_AGILITY && (
                       <div className="bg-gray-800/50 rounded-lg p-2">
                         <div className="text-xs text-gray-400 mb-1">Duration</div>
                         <div className="text-white font-medium">
@@ -272,16 +272,10 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
                         <div className="text-white font-medium">{set.restTime}s</div>
                       </div>
                     )}
-                    {hasValue(set.time) && (exercise.activityType === ActivityType.SPEED_AGILITY) && (
+                    {hasValue(set.rpe) && (exercise.activityType === ActivityType.SPEED_AGILITY) && (
                       <div className="bg-gray-800/50 rounded-lg p-2">
-                        <div className="text-xs text-gray-400 mb-1">Time per Rep</div>
-                        <div className="text-white font-medium">{set.time}s</div>
-                      </div>
-                    )}
-                    {hasValue(set.intensity) && (exercise.activityType === ActivityType.SPEED_AGILITY) && (
-                      <div className="bg-gray-800/50 rounded-lg p-2">
-                        <div className="text-xs text-gray-400 mb-1">Intensity</div>
-                        <div className="text-white font-medium">{set.intensity}/10</div>
+                        <div className="text-xs text-gray-400 mb-1">RPE</div>
+                        <div className="text-white font-medium">{set.rpe}/10</div>
                       </div>
                     )}                  </div>
 
@@ -360,17 +354,19 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
                   )}
 
                   {/* Intensity Metrics */}
-                  {(hasValue(set.rpe) || hasValue(set.intensity) || hasValue(set.performance)) && (
+                  {((hasValue(set.rpe) && exercise.activityType !== ActivityType.SPEED_AGILITY) || 
+                    (hasValue(set.intensity) && exercise.activityType !== ActivityType.SPEED_AGILITY) || 
+                    hasValue(set.performance)) && (
                     <div className="bg-yellow-900/20 rounded-lg p-3">
                       <div className="text-xs text-yellow-300 mb-2 font-medium">Intensity</div>
                       <div className="grid grid-cols-3 gap-2 text-sm">
-                        {hasValue(set.rpe) && (
+                        {hasValue(set.rpe) && exercise.activityType !== ActivityType.SPEED_AGILITY && (
                           <div>
                             <span className="text-gray-400">RPE:</span>
                             <span className="text-white ml-1">{set.rpe}/10</span>
                           </div>
                         )}
-                        {hasValue(set.intensity) && (
+                        {hasValue(set.intensity) && exercise.activityType !== ActivityType.SPEED_AGILITY && (
                           <div>
                             <span className="text-gray-400">Intensity:</span>
                             <span className="text-white ml-1">{set.intensity}/10</span>

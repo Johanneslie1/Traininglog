@@ -72,7 +72,7 @@ const SpeedAgilityActivityPicker: React.FC<SpeedAgilityActivityPickerProps> = ({
         difficulty: 'beginner',
         setup: [],
         instructions: [],
-        metrics: { trackTime: true, trackDistance: true, trackReps: true, trackRPE: true }
+        metrics: { trackTime: false, trackDistance: true, trackReps: true, trackRPE: true, trackHeight: true }
       };
       setSelectedActivity(mock);
       setView('logging');
@@ -92,7 +92,7 @@ const SpeedAgilityActivityPicker: React.FC<SpeedAgilityActivityPickerProps> = ({
   difficulty: (ex as any).difficulty || 'beginner',
   setup: Array.isArray((ex as any).setup) ? (ex as any).setup : [],
   instructions: Array.isArray((ex as any).instructions) ? (ex as any).instructions : ((ex as any).instructions ? [(ex as any).instructions] : []),
-      metrics: { trackTime: true, trackDistance: true, trackReps: true, trackRPE: true }
+      metrics: { trackTime: false, trackDistance: true, trackReps: true, trackRPE: true, trackHeight: true }
     };
     setSelectedActivity(activity);
     setView('logging');
@@ -114,7 +114,7 @@ const SpeedAgilityActivityPicker: React.FC<SpeedAgilityActivityPickerProps> = ({
       difficulty: selectedActivity.difficulty,
       defaultUnit: 'time',
       metrics: {
-        trackTime: true,
+        trackTime: false,
         trackReps: true,
         trackSets: true,
         trackDistance: true,

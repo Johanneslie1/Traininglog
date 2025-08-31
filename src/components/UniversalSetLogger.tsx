@@ -427,20 +427,53 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
         );
         break;      case 'speed_agility':
         fields.push(renderField('reps', 'Reps per Set', 'number', 1));
+        
+        // Mutually exclusive distance/height field
         fields.push(
-          <div key="duration-time" className="grid grid-cols-2 gap-4">
-            {renderField('duration', 'Set Duration (sec)', 'number', 1, 0.1)}
-            {renderField('time', 'Time per Rep (sec)', 'number', 0, 0.01)}
+          <div key="distance-height" className="space-y-1">
+            <label className="block text-sm font-medium text-gray-300">
+              Distance (meters) or Height (cm)
+            </label>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <input
+                  type="number"
+                  min="0"
+                  max="1000"
+                  step="0.1"
+                  value={set.distance || ''}
+                  onChange={(e) => {
+                    updateSet(setIndex, 'distance', e.target.value);
+                    if (e.target.value) updateSet(setIndex, 'height', ''); // Clear height if distance is set
+                  }}
+                  className="w-full px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500"
+                  placeholder="Distance"
+                  disabled={!!set.height}
+                />
+                <div className="text-xs text-gray-400 mt-1">Distance (m)</div>
+              </div>
+              <div>
+                <input
+                  type="number"
+                  min="0"
+                  max="200"
+                  step="1"
+                  value={set.height || ''}
+                  onChange={(e) => {
+                    updateSet(setIndex, 'height', e.target.value);
+                    if (e.target.value) updateSet(setIndex, 'distance', ''); // Clear distance if height is set
+                  }}
+                  className="w-full px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500"
+                  placeholder="Height"
+                  disabled={!!set.distance}
+                />
+                <div className="text-xs text-gray-400 mt-1">Height (cm)</div>
+              </div>
+            </div>
           </div>
         );
-        fields.push(
-          <div key="height-distance" className="grid grid-cols-2 gap-4">
-            {renderField('height', 'Height (cm)', 'number', 0, 1)}
-            {renderField('distance', 'Distance (meters)', 'number', 0, 0.1)}
-          </div>
-        );
+        
         fields.push(renderField('restTime', 'Rest Between Sets (seconds)', 'number', 0));
-        fields.push(renderField('intensity', 'Intensity (1-10)', 'number', 1, 1, 'Rate exercise intensity'));
         break;
         break;      case 'other':
       default:

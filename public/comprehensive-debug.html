@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprehensive Non-Resistance Exercise Debug</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d30 100%);
+            color: #fff;
+            line-height: 1.6;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(0, 123, 255, 0.1);
+            border-radius: 10px;
+            border: 1px solid rgba(0, 123, 255, 0.3);
+        }
+        .section {
+            background: #2a2a2a;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid #404040;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        .section h2 {
+            color: #4CAF50;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        button {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            min-width: 140px;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 123, 255, 0.4);
+        }
+        .dangerous {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        }
+        .dangerous:hover {
+            box-shadow: 0 4px 8px rgba(220, 53, 69, 0.4);
+        }
+        .success {
+            background: linear-gradient(135deg, #28a745 0%, #218838 100%);
+        }
+        .success:hover {
+            box-shadow: 0 4px 8px rgba(40, 167, 69, 0.4);
+        }
+        .warning {
+            background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+            color: #000;
+        }
+        .warning:hover {
+            box-shadow: 0 4px 8px rgba(255, 193, 7, 0.4);
+        }
+        .log-output {
+            background: #000;
+            color: #0f0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #333;
+            font-size: 12px;
+        }
+        .data-display {
+            background: #1a1a1a;
+            border: 1px solid #444;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-good { background: #4CAF50; }
+        .status-warning { background: #FFC107; }
+        .status-error { background: #F44336; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .metric-card {
+            background: #333;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #007bff;
+        }
+        .metric-card h4 {
+            margin: 0 0 10px 0;
+            color: #007bff;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #444;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50 0%, #8BC34A 100%);
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔍 Non-Resistance Exercise Diagnostic Tool</h1>
+        <p>Comprehensive debugging and testing suite for exercise logging and display</p>
+    </div>
+    
+    <div class="grid">
+        <div class="section">
+            <h2>🔧 System Status</h2>
+            <div id="system-status"></div>
+            <div class="button-group">
+                <button onclick="checkSystemStatus()" class="warning">Check System Status</button>
+                <button onclick="checkAuthentication()">Check Auth</button>
+                <button onclick="testImports()">Test Imports</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📊 Data Analysis</h2>
+            <div id="data-summary"></div>
+            <div class="button-group">
+                <button onclick="analyzeStorageData()">Analyze Storage</button>
+                <button onclick="checkTodaysExercises()">Check Today</button>
+                <button onclick="testDataConversion()">Test Conversion</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>🧪 Exercise Creation Tests</h2>
+        <div class="button-group">
+            <button onclick="createTestEndurance()" class="success">Create Endurance</button>
+            <button onclick="createTestSport()" class="success">Create Sport</button>
+            <button onclick="createTestSpeedAgility()" class="success">Create Speed&Agility</button>
+            <button onclick="createTestStretching()" class="success">Create Stretching</button>
+            <button onclick="createAllTestExercises()" class="success">Create All Tests</button>
+        </div>
+        <div id="creation-results" class="data-display"></div>
+    </div>
+
+    <div class="section">
+        <h2>⚙️ Universal Logger Test</h2>
+        <div class="button-group">
+            <button onclick="testUniversalLogger()" class="warning">Test Universal Logger</button>
+            <button onclick="testFirebaseSave()" class="warning">Test Firebase Save</button>
+            <button onclick="testLocalStorageSave()">Test localStorage Save</button>
+        </div>
+        <div id="logger-results" class="data-display"></div>
+    </div>
+
+    <div class="section">
+        <h2>🎨 Display Logic Tests</h2>
+        <div class="button-group">
+            <button onclick="testDisplayDetection()">Test Detection Logic</button>
+            <button onclick="testExerciseCardLogic()">Test ExerciseCard</button>
+            <button onclick="validateDisplayFormats()">Validate Formats</button>
+        </div>
+        <div id="display-results" class="data-display"></div>
+    </div>
+
+    <div class="section">
+        <h2>🗑️ Data Management</h2>
+        <div class="button-group">
+            <button onclick="backupData()" class="warning">Backup Data</button>
+            <button onclick="clearActivityLogs()" class="dangerous">Clear Activities</button>
+            <button onclick="clearExerciseLogs()" class="dangerous">Clear Exercises</button>
+            <button onclick="clearAllData()" class="dangerous">Clear All</button>
+            <button onclick="restoreData()" class="success">Restore Backup</button>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>📝 Console Output</h2>
+        <div id="console-log" class="log-output">System ready. Click buttons above to run tests...\n</div>
+    </div>
+
+    <script>
+        // Enhanced console logging
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        const logOutput = document.getElementById('console-log');
+        let backup = null;
+        
+        function logToOutput(level, ...args) {
+            const timestamp = new Date().toLocaleTimeString();
+            const message = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+            ).join(' ');
+            
+            const color = {
+                'LOG': '#0f0',
+                'ERROR': '#f44',
+                'WARN': '#fa0'
+            }[level];
+            
+            logOutput.innerHTML += `<span style="color: #888">[${timestamp}]</span> <span style="color: ${color}">[${level}]</span> ${message}\n`;
+            logOutput.scrollTop = logOutput.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            logToOutput('LOG', ...args);
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            logToOutput('ERROR', ...args);
+        };
+        
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            logToOutput('WARN', ...args);
+        };
+
+        // System Status Functions
+        async function checkSystemStatus() {
+            console.log('🔧 Checking system status...');
+            const status = document.getElementById('system-status');
+            
+            let html = '<div class="grid">';
+            
+            // Check localStorage
+            try {
+                localStorage.setItem('test', 'test');
+                localStorage.removeItem('test');
+                html += '<div class="metric-card"><h4><span class="status-indicator status-good"></span>localStorage</h4>Working properly</div>';
+            } catch (e) {
+                html += '<div class="metric-card"><h4><span class="status-indicator status-error"></span>localStorage</h4>Error: ' + e.message + '</div>';
+            }
+            
+            // Check exercise logs
+            const exerciseLogs = JSON.parse(localStorage.getItem('exercise-logs') || '[]');
+            html += `<div class="metric-card"><h4><span class="status-indicator ${exerciseLogs.length > 0 ? 'status-good' : 'status-warning'}"></span>Exercise Logs</h4>${exerciseLogs.length} entries</div>`;
+            
+            // Check activity logs
+            const activityLogs = JSON.parse(localStorage.getItem('activity-logs') || '[]');
+            html += `<div class="metric-card"><h4><span class="status-indicator ${activityLogs.length > 0 ? 'status-good' : 'status-warning'}"></span>Activity Logs</h4>${activityLogs.length} entries</div>`;
+            
+            // Check today's data
+            const today = new Date().toDateString();
+            const todayActivities = activityLogs.filter(log => new Date(log.timestamp).toDateString() === today);
+            const todayExercises = exerciseLogs.filter(log => new Date(log.timestamp).toDateString() === today);
+            html += `<div class="metric-card"><h4><span class="status-indicator ${(todayActivities.length + todayExercises.length) > 0 ? 'status-good' : 'status-warning'}"></span>Today's Data</h4>${todayActivities.length} activities, ${todayExercises.length} exercises</div>`;
+            
+            html += '</div>';
+            status.innerHTML = html;
+            
+            console.log('✅ System status check complete');
+        }
+
+        async function checkAuthentication() {
+            console.log('🔐 Checking authentication status...');
+            
+            try {
+                // Try to import Firebase auth
+                const { getAuth } = await import('firebase/auth');
+                const auth = getAuth();
+                const user = auth.currentUser;
+                
+                if (user) {
+                    console.log('✅ User authenticated:', {
+                        uid: user.uid,
+                        email: user.email,
+                        isAnonymous: user.isAnonymous
+                    });
+                } else {
+                    console.warn('⚠️ No authenticated user found');
+                }
+                
+                // Also check Redux store
+                if (window.store) {
+                    const state = window.store.getState();
+                    console.log('📦 Redux auth state:', state.auth);
+                } else {
+                    console.warn('⚠️ Redux store not available on window');
+                }
+                
+            } catch (error) {
+                console.error('❌ Error checking authentication:', error);
+            }
+        }
+
+        async function testImports() {
+            console.log('📦 Testing module imports...');
+            
+            const imports = [
+                { name: 'Firebase activityLogs', path: '/src/services/firebase/activityLogs.ts' },
+                { name: 'Unified Exercise Utils', path: '/src/utils/unifiedExerciseUtils.ts' },
+                { name: 'Activity Types', path: '/src/types/activityTypes.ts' },
+                { name: 'Activity Log Types', path: '/src/types/activityLog.ts' }
+            ];
+            
+            for (const imp of imports) {
+                try {
+                    const module = await import(imp.path);
+                    console.log(`✅ ${imp.name}: Successfully imported`, Object.keys(module));
+                } catch (error) {
+                    console.error(`❌ ${imp.name}: Import failed`, error);
+                }
+            }
+        }
+
+        // Data Analysis Functions
+        function analyzeStorageData() {
+            console.log('📊 Analyzing storage data...');
+            
+            const exerciseLogs = JSON.parse(localStorage.getItem('exercise-logs') || '[]');
+            const activityLogs = JSON.parse(localStorage.getItem('activity-logs') || '[]');
+            
+            console.log(`📋 Exercise logs: ${exerciseLogs.length} total`);
+            console.log(`📋 Activity logs: ${activityLogs.length} total`);
+            
+            // Group activities by type
+            const activityTypes = activityLogs.reduce((acc, log) => {
+                acc[log.activityType] = (acc[log.activityType] || 0) + 1;
+                return acc;
+            }, {});
+            
+            console.log('📊 Activity types:', activityTypes);
+            
+            // Show recent activities with details
+            console.log('📋 Recent activities (last 5):');
+            activityLogs.slice(-5).forEach((log, i) => {
+                console.log(`${i + 1}. ${log.activityName} (${log.activityType})`);
+                console.log(`   Timestamp: ${log.timestamp}`);
+                console.log(`   Sessions: ${log.sessions?.length || 0}`);
+                if (log.sessions?.[0]) {
+                    console.log(`   First session data:`, log.sessions[0]);
+                }
+            });
+            
+            // Update summary
+            const summary = document.getElementById('data-summary');
+            summary.innerHTML = `
+                <div class="grid">
+                    <div class="metric-card">
+                        <h4>Total Exercises</h4>
+                        <div style="font-size: 24px; font-weight: bold;">${exerciseLogs.length}</div>
+                    </div>
+                    <div class="metric-card">
+                        <h4>Total Activities</h4>
+                        <div style="font-size: 24px; font-weight: bold;">${activityLogs.length}</div>
+                    </div>
+                    <div class="metric-card">
+                        <h4>Activity Types</h4>
+                        <div>${Object.keys(activityTypes).join(', ') || 'None'}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function checkTodaysExercises() {
+            console.log('📅 Checking today\'s exercises...');
+            
+            const today = new Date();
+            const todayStr = today.toDateString();
+            
+            const activityLogs = JSON.parse(localStorage.getItem('activity-logs') || '[]');
+            const exerciseLogs = JSON.parse(localStorage.getItem('exercise-logs') || '[]');
+            
+            const todayActivities = activityLogs.filter(log => 
+                new Date(log.timestamp).toDateString() === todayStr
+            );
+            const todayExercises = exerciseLogs.filter(log => 
+                new Date(log.timestamp).toDateString() === todayStr
+            );
+            
+            console.log(`📊 Today (${todayStr}):`);
+            console.log(`- Activities: ${todayActivities.length}`);
+            console.log(`- Exercises: ${todayExercises.length}`);
+            
+            if (todayActivities.length > 0) {
+                console.log('📋 Today\'s activities:');
+                todayActivities.forEach((log, i) => {
+                    console.log(`${i + 1}. ${log.activityName} (${log.activityType})`);
+                    console.log(`   Sessions: ${log.sessions?.length || 0}`);
+                });
+            } else {
+                console.log('📋 No activities logged today');
+            }
+            
+            if (todayExercises.length > 0) {
+                console.log('📋 Today\'s exercises:');
+                todayExercises.forEach((log, i) => {
+                    console.log(`${i + 1}. ${log.exerciseName}`);
+                    console.log(`   Sets: ${log.sets?.length || 0}`);
+                });
+            } else {
+                console.log('📋 No exercises logged today');
+            }
+        }
+
+        async function testDataConversion() {
+            console.log('🔄 Testing data conversion...');
+            
+            try {
+                const { getAllExercisesByDate } = await import('/src/utils/unifiedExerciseUtils.ts');
+                
+                const today = new Date();
+                const userId = 'test-user-123';
+                
+                console.log('📅 Getting unified exercises for today...');
+                const exercises = await getAllExercisesByDate(today, userId);
+                
+                console.log(`✅ Found ${exercises.length} unified exercises`);
+                exercises.forEach((ex, i) => {
+                    console.log(`${i + 1}. ${ex.exerciseName} (${ex.activityType || 'no-type'})`);
+                    console.log(`   Sets: ${ex.sets?.length || 0}`);
+                    if (ex.sets?.[0]) {
+                        console.log(`   First set:`, ex.sets[0]);
+                    }
+                });
+                
+            } catch (error) {
+                console.error('❌ Error testing conversion:', error);
+            }
+        }
+
+        // Test Creation Functions
+        function createTestEndurance() {
+            console.log('🏃 Creating test endurance exercise...');
+            
+            const testLog = {
+                id: 'test-endurance-' + Date.now(),
+                activityType: 'endurance',
+                activityName: 'Debug Test Run',
+                userId: 'test-user-123',
+                timestamp: new Date().toISOString(),
+                sessions: [{
+                    sessionNumber: 1,
+                    duration: 35,
+                    distance: 6.2,
+                    pace: '5:30/km',
+                    averageHeartRate: 158,
+                    maxHeartRate: 175,
+                    calories: 420,
+                    elevation: 100,
+                    rpe: 7,
+                    hrZone1: 5,
+                    hrZone2: 25,
+                    hrZone3: 5,
+                    notes: 'Debug test endurance session'
+                }]
+            };
+            
+            const logs = JSON.parse(localStorage.getItem('activity-logs') || '[]');
+            logs.push(testLog);
+            localStorage.setItem('activity-logs', JSON.stringify(logs));
+            
+            console.log('✅ Created endurance exercise:', testLog.activityName);
+            updateCreationResults(`✅ Created: ${testLog.activityName}`);
+        }
+
+        function createTestSport() {
+            console.log('⚽ Creating test sport exercise...');
+            
+            const testLog = {
+                id: 'test-sport-' + Date.now(),
+                activityType: 'sport',
+                activityName: 'Debug Basketball',
+                userId: 'test-user-123',
+                timestamp: new Date().toISOString(),
+                sessions: [{
+                    sessionNumber: 1,
+                    duration: 75,
+                    distance: 3.2,
+                    calories: 580,
+                    intensity: 8,
+                    score: '102-98',
+                    opponent: 'Debug Team',
+                    performance: 8,
+                    skills: ['shooting', 'defense', 'passing'],
+                    notes: 'Debug test sport session'
+                }]
+            };
+            
+            const logs = JSON.parse(localStorage.getItem('activity-logs') || '[]');
+            logs.push(testLog);
+            localStorage.setItem('activity-logs', JSON.stringify(logs));
+            
+            console.log('✅ Created sport exercise:', testLog.activityName);
+            updateCreationResults(`✅ Created: ${testLog.activityName}`);
+        }
+
+        function createTestSpeedAgility() {
+            console.log('⚡ Creating test speed & agility exercise...');
+            
+            const testLog = {
+                id: 'test-speedagility-' + Date.now(),
+                activityType: 'speedAgility',
+                activityName: 'Debug Sprint Drills',
+                userId: 'test-user-123',
+                timestamp: new Date().toISOString(),
+                sessions: [{
+                    sessionNumber: 1,
+                    reps: 10,
+                    time: 11.8,
+                    distance: 60,
+                    height: 40,
+                    restTime: 120,
+                    rpe: 8,
+                    intensity: 9,
+                    drillType: 'sprint',
+                    notes: 'Debug test speed & agility session'
+                }]
+            };
+            
+            const logs = JSON.parse(localStorage.getItem('activity-logs') || '[]');
+            logs.push(testLog);
+            localStorage.setItem('activity-logs', JSON.stringify(logs));
+            
+            console.log('✅ Created speed & agility exercise:', testLog.activityName);
+            updateCreationResults(`✅ Created: ${testLog.activityName}`);
+        }
+
+        function createTestStretching() {
+            console.log('🧘 Creating test stretching exercise...');
+            
+            const testLog = {
+                id: 'test-stretching-' + Date.now(),
+                activityType: 'stretching',
+                activityName: 'Debug Yoga Flow',
+                userId: 'test-user-123',
+                timestamp: new Date().toISOString(),
+                sessions: [{
+                    sessionNumber: 1,
+                    duration: 25,
+                    holdTime: 45,
+                    intensity: 6,
+                    stretchType: 'dynamic',
+                    bodyPart: 'full-body',
+                    flexibility: 8,
+                    notes: 'Debug test stretching session'
+                }]
+            };
+            
+            const logs = JSON.parse(localStorage.getItem('activity-logs') || '[]');
+            logs.push(testLog);
+            localStorage.setItem('activity-logs', JSON.stringify(logs));
+            
+            console.log('✅ Created stretching exercise:', testLog.activityName);
+            updateCreationResults(`✅ Created: ${testLog.activityName}`);
+        }
+
+        function createAllTestExercises() {
+            console.log('🎯 Creating all test exercises...');
+            createTestEndurance();
+            createTestSport();
+            createTestSpeedAgility();
+            createTestStretching();
+            console.log('✅ All test exercises created');
+        }
+
+        function updateCreationResults(message) {
+            const results = document.getElementById('creation-results');
+            results.textContent += message + '\n';
+            results.scrollTop = results.scrollHeight;
+        }
+
+        // Universal Logger Tests
+        async function testUniversalLogger() {
+            console.log('⚙️ Testing Universal Logger functionality...');
+            
+            try {
+                // Test the mapping function
+                const { mapExerciseTypeToActivityType } = await import('/src/types/activityLog.ts');
+                
+                const testMappings = [
+                    'endurance',
+                    'teamSports',
+                    'speedAgility',
+                    'flexibility',
+                    'other'
+                ];
+                
+                console.log('🔄 Testing exercise type mappings:');
+                testMappings.forEach(type => {
+                    const mapped = mapExerciseTypeToActivityType(type);
+                    console.log(`${type} → ${mapped}`);
+                });
+                
+            } catch (error) {
+                console.error('❌ Error testing Universal Logger:', error);
+            }
+        }
+
+        async function testFirebaseSave() {
+            console.log('🔥 Testing Firebase save functionality...');
+            
+            try {
+                const { addActivityLog } = await import('/src/services/firebase/activityLogs.ts');
+                const { ActivityType } = await import('/src/types/activityTypes.ts');
+                
+                // Check auth first
+                const { getAuth } = await import('firebase/auth');
+                const auth = getAuth();
+                const user = auth.currentUser;
+                
+                if (!user) {
+                    console.warn('⚠️ No authenticated user - cannot test Firebase save');
+                    return;
+                }
+                
+                const testData = {
+                    activityName: 'Firebase Test Run',
+                    userId: user.uid,
+                    activityType: ActivityType.ENDURANCE,
+                    sets: [{
+                        setNumber: 1,
+                        weight: 0,
+                        reps: 1,
+                        difficulty: 'normal',
+                        duration: 20,
+                        distance: 3.5,
+                        pace: '6:00/km',
+                        averageHeartRate: 145,
+                        calories: 250,
+                        rpe: 6,
+                        notes: 'Firebase test'
+                    }]
+                };
+                
+                console.log('💾 Attempting Firebase save...', testData);
+                const docId = await addActivityLog(testData, new Date());
+                console.log('✅ Firebase save successful, ID:', docId);
+                
+            } catch (error) {
+                console.error('❌ Firebase save failed:', error);
+            }
+        }
+
+        function testLocalStorageSave() {
+            console.log('📦 Testing localStorage save...');
+            
+            const testActivity = {
+                id: 'test-localStorage-' + Date.now(),
+                activityType: 'endurance',
+                activityName: 'localStorage Test Run',
+                userId: 'test-user-123',
+                timestamp: new Date().toISOString(),
+                sessions: [{
+                    sessionNumber: 1,
+                    duration: 30,
+                    distance: 5.0,
+                    pace: '6:00/km',
+                    averageHeartRate: 150,
+                    maxHeartRate: 165,
+                    calories: 300,
+                    rpe: 6,
+                    notes: 'localStorage test'
+                }]
+            };
+            
+            const logs = JSON.parse(localStorage.getItem('activity-logs') || '[]');
+            logs.push(testActivity);
+            localStorage.setItem('activity-logs', JSON.stringify(logs));
+            
+            console.log('✅ localStorage save successful:', testActivity.activityName);
+        }
+
+        // Display Logic Tests
+        function testDisplayDetection() {
+            console.log('🎨 Testing display detection logic...');
+            
+            const testExercises = [
+                {
+                    id: 'test-1',
+                    exerciseName: 'Test Endurance',
+                    activityType: 'endurance',
+                    sets: [{ duration: 30, distance: 5, calories: 300 }]
+                },
+                {
+                    id: 'test-2',
+                    exerciseName: 'Test Resistance',
+                    activityType: 'resistance',
+                    sets: [{ weight: 80, reps: 10, rpe: 7 }]
+                },
+                {
+                    id: 'test-3',
+                    exerciseName: 'Test Unknown',
+                    sets: [{ duration: 15, distance: 2 }] // No activityType but has activity fields
+                }
+            ];
+            
+            testExercises.forEach(exercise => {
+                const isNonResistance = (exercise.activityType && 
+                    !['resistance', 'strength'].includes(exercise.activityType)) ||
+                    (exercise.sets?.[0] && (
+                        ((!exercise.sets[0].weight || exercise.sets[0].weight === 0) && 
+                         (!exercise.sets[0].reps || exercise.sets[0].reps <= 1)) &&
+                        (exercise.sets[0].duration || exercise.sets[0].distance || exercise.sets[0].calories)
+                    ));
+                
+                console.log(`📋 ${exercise.exerciseName}:`, {
+                    activityType: exercise.activityType || 'undefined',
+                    isNonResistance,
+                    expectedFormat: isNonResistance ? 'Activity format' : 'Weight/reps format',
+                    firstSet: exercise.sets[0]
+                });
+            });
+        }
+
+        function testExerciseCardLogic() {
+            console.log('🎯 Testing ExerciseCard detection logic...');
+            
+            // This simulates the exact logic from ExerciseCard.tsx
+            const activityLogs = JSON.parse(localStorage.getItem('activity-logs') || '[]');
+            
+            console.log(`Testing ${activityLogs.length} real activity logs...`);
+            
+            activityLogs.forEach((log, i) => {
+                // Simulate the conversion that happens in unifiedExerciseUtils
+                const convertedExercise = {
+                    id: log.id,
+                    exerciseName: log.activityName,
+                    activityType: log.activityType,
+                    sets: log.sessions?.map((session, index) => ({
+                        setNumber: index + 1,
+                        ...session
+                    })) || []
+                };
+                
+                // Test the exact detection logic from ExerciseCard
+                const isNonResistance = (() => {
+                    if (convertedExercise.activityType && !['resistance', 'strength'].includes(convertedExercise.activityType)) {
+                        return true;
+                    }
+                    
+                    if (convertedExercise.sets && convertedExercise.sets.length > 0) {
+                        const firstSet = convertedExercise.sets[0];
+                        const hasResistanceFields = (firstSet.weight && firstSet.weight > 0) || 
+                                                  (firstSet.reps && firstSet.reps > 1);
+                        const hasActivityFields = firstSet.duration || firstSet.distance || firstSet.calories ||
+                                                firstSet.averageHeartRate || firstSet.holdTime || firstSet.pace;
+                        
+                        if (!hasResistanceFields && hasActivityFields) {
+                            return true;
+                        }
+                    }
+                    
+                    return false;
+                })();
+                
+                console.log(`${i + 1}. ${convertedExercise.exerciseName}:`, {
+                    activityType: convertedExercise.activityType,
+                    isNonResistance,
+                    willShowActivityFormat: isNonResistance
+                });
+            });
+        }
+
+        function validateDisplayFormats() {
+            console.log('✅ Validating display formats...');
+            
+            // Test with actual data
+            const activityLogs = JSON.parse(localStorage.getItem('activity-logs') || '[]');
+            
+            if (activityLogs.length === 0) {
+                console.warn('⚠️ No activity logs to validate - create some test data first');
+                return;
+            }
+            
+            console.log('📊 Format validation results:');
+            
+            activityLogs.forEach((log, i) => {
+                const hasRequiredFields = log.sessions && log.sessions.length > 0;
+                const firstSession = log.sessions?.[0];
+                
+                let fieldsPresent = [];
+                if (firstSession) {
+                    if (firstSession.duration) fieldsPresent.push('duration');
+                    if (firstSession.distance) fieldsPresent.push('distance');
+                    if (firstSession.calories) fieldsPresent.push('calories');
+                    if (firstSession.rpe) fieldsPresent.push('rpe');
+                    if (firstSession.pace) fieldsPresent.push('pace');
+                    if (firstSession.averageHeartRate) fieldsPresent.push('avgHR');
+                }
+                
+                console.log(`${i + 1}. ${log.activityName} (${log.activityType}):`);
+                console.log(`   ✅ Has sessions: ${hasRequiredFields}`);
+                console.log(`   📊 Fields present: ${fieldsPresent.join(', ') || 'none'}`);
+                console.log(`   🎯 Should display: ${fieldsPresent.length > 0 ? 'Activity format' : 'Error - no fields'}`);
+            });
+        }
+
+        // Data Management Functions
+        function backupData() {
+            console.log('💾 Backing up data...');
+            
+            backup = {
+                'exercise-logs': localStorage.getItem('exercise-logs'),
+                'activity-logs': localStorage.getItem('activity-logs'),
+                timestamp: new Date().toISOString()
+            };
+            
+            console.log('✅ Data backed up to memory');
+        }
+
+        function restoreData() {
+            if (!backup) {
+                console.warn('⚠️ No backup available');
+                return;
+            }
+            
+            console.log('📥 Restoring data from backup...');
+            
+            if (backup['exercise-logs']) {
+                localStorage.setItem('exercise-logs', backup['exercise-logs']);
+            }
+            if (backup['activity-logs']) {
+                localStorage.setItem('activity-logs', backup['activity-logs']);
+            }
+            
+            console.log('✅ Data restored from backup');
+        }
+
+        function clearActivityLogs() {
+            if (confirm('Clear all activity logs?')) {
+                localStorage.removeItem('activity-logs');
+                console.log('🗑️ Activity logs cleared');
+            }
+        }
+
+        function clearExerciseLogs() {
+            if (confirm('Clear all exercise logs?')) {
+                localStorage.removeItem('exercise-logs');
+                console.log('🗑️ Exercise logs cleared');
+            }
+        }
+
+        function clearAllData() {
+            if (confirm('Clear ALL data? This cannot be undone.')) {
+                localStorage.removeItem('activity-logs');
+                localStorage.removeItem('exercise-logs');
+                console.log('🗑️ All data cleared');
+            }
+        }
+
+        // Initialize
+        console.log('🚀 Non-Resistance Exercise Debug Tool initialized');
+        console.log('📋 Click the buttons above to run comprehensive tests');
+        
+        // Auto-check system status on load
+        setTimeout(checkSystemStatus, 1000);
+    </script>
+</body>
+</html>

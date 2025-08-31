@@ -111,7 +111,6 @@ function convertActivityLogToExerciseData(activityLog: ActivityLog): UnifiedExer
     baseData.sets = speedAgilityLog.sessions?.map((session: any, index: number) => ({
       setNumber: index + 1,
       reps: session.reps,
-      ...(session.time && { time: session.time }),
       ...(session.distance && { distance: session.distance }),
       ...(session.height && { height: session.height }),
       ...(session.restTime && { restTime: session.restTime }),

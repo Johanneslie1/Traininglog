@@ -379,31 +379,14 @@ export const speedAgilityTemplate: TrainingTemplate = {
       max: 50
     },
     {
-      fieldId: 'time',
-      label: 'Time (seconds)',
-      type: 'duration',
-      required: false,
-      min: 0,
-      max: 300,
-      step: 0.1
-    },
-    {
       fieldId: 'distance',
-      label: 'Distance (meters)',
+      label: 'Distance (meters) or Height (cm)',
       type: 'distance',
       required: false,
       min: 0,
       max: 1000,
-      step: 0.1
-    },
-    {
-      fieldId: 'height',
-      label: 'Height (cm)',
-      type: 'height',
-      required: false,
-      min: 0,
-      max: 200,
-      step: 1
+      step: 0.1,
+      placeholder: 'Choose either distance OR height'
     },
     {
       fieldId: 'restTime',
