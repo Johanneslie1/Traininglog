@@ -24,7 +24,6 @@ import ExportModal from '../../components/ExportModal';
 import DraggableExerciseDisplay from '../../components/DraggableExerciseDisplay';
 import FloatingSupersetControls from '../../components/FloatingSupersetControls';
 import { getAllExercisesByDate, UnifiedExerciseData, deleteExercise } from '../../utils/unifiedExerciseUtils';
-import { ActivityType } from '../../types/activityTypes';
 
 interface ExerciseLogProps {}
 
@@ -340,18 +339,10 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   // No longer need event listener since we use the floating controls component
 
   const handleEditExercise = (exercise: ExerciseData) => {
-    // Check activity type to determine which editor to open
+    // Always use LogOptions for editing to provide consistent experience
     const unifiedExercise = exercise as UnifiedExerciseData;
-    
-    if (unifiedExercise.activityType && unifiedExercise.activityType !== ActivityType.RESISTANCE) {
-      // For non-resistance activities, set editing mode and open LogOptions
-      setEditingExercise(unifiedExercise);
-      updateUiState('showLogOptions', true);
-    } else {
-      // For resistance exercises, use the existing set logger
-      setSelectedExercise(exercise);
-      updateUiState('showSetLogger', true);
-    }
+    setEditingExercise(unifiedExercise);
+    updateUiState('showLogOptions', true);
   };
 
   // Handle exercise reordering with persistence

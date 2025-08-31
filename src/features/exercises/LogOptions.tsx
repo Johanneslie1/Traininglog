@@ -30,7 +30,7 @@ interface LogOptionsProps {
   editingExercise?: UnifiedExerciseData | null; // Add editing exercise prop
 }
 
-type ViewState = 'main' | 'search' | 'calendar' | 'setEditor' | 'programPicker' | 'copyPrevious' | 'sport' | 'stretching' | 'endurance' | 'other' | 'speedAgility' | 'resistance' | 'recentExercises' | 'universalSearch';
+type ViewState = 'main' | 'search' | 'calendar' | 'setEditor' | 'programPicker' | 'copyPrevious' | 'sport' | 'stretching' | 'endurance' | 'other' | 'speedAgility' | 'resistance' | 'recentExercises' | 'universalSearch' | 'editExercise';
 
 const helperCategories: Category[] = [
   { id: 'programs', name: 'Add from Program', icon: '📋', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-purple-600', textColor: 'text-white' },
@@ -114,31 +114,10 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
   const [createDialogActivityType, setCreateDialogActivityType] = useState<ActivityType>(ActivityType.RESISTANCE);
   const user = useSelector((state: RootState) => state.auth.user);
 
-  // If we're editing an exercise, determine which view to show based on activity type
+  // If we're editing an exercise, go directly to edit view
   useEffect(() => {
     if (editingExercise) {
-      switch (editingExercise.activityType) {
-        case ActivityType.RESISTANCE:
-          setView('resistance');
-          break;
-        case ActivityType.SPORT:
-          setView('sport');
-          break;
-        case ActivityType.STRETCHING:
-          setView('stretching');
-          break;
-        case ActivityType.ENDURANCE:
-          setView('endurance');
-          break;
-        case ActivityType.OTHER:
-          setView('other');
-          break;
-        case ActivityType.SPEED_AGILITY:
-          setView('speedAgility');
-          break;
-        default:
-          setView('main');
-      }
+      setView('editExercise');
     }
   }, [editingExercise]);
 
@@ -557,11 +536,90 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
     );
   }
 
+  if (view === 'editExercise' && editingExercise) {
+    // Convert UnifiedExerciseData to Exercise format for UniversalSetLogger
+    const exerciseForLogger: Exercise = {
+      id: editingExercise.id || `edit-${Date.now()}`,
+      name: editingExercise.exerciseName,
+      description: editingExercise.exerciseName,
+      activityType: editingExercise.activityType,
+      type: editingExercise.activityType === ActivityType.RESISTANCE ? 'strength' :
+            editingExercise.activityType === ActivityType.ENDURANCE ? 'endurance' :
+            editingExercise.activityType === ActivityType.STRETCHING ? 'flexibility' :
+            editingExercise.activityType === ActivityType.SPORT ? 'teamSports' :
+            editingExercise.activityType === ActivityType.SPEED_AGILITY ? 'speed_agility' : 'other',
+      category: 'general',
+      equipment: [],
+      instructions: [],
+      difficulty: 'intermediate',
+      primaryMuscles: [],
+      secondaryMuscles: [],
+      targetAreas: [],
+      metrics: {
+        trackWeight: editingExercise.activityType === ActivityType.RESISTANCE,
+        trackReps: true,
+        trackTime: editingExercise.activityType !== ActivityType.RESISTANCE,
+        trackDistance: editingExercise.activityType === ActivityType.ENDURANCE,
+        trackRPE: true
+      },
+      defaultUnit: editingExercise.activityType === ActivityType.RESISTANCE ? 'kg' : 'time'
+    };
+
+    return (
+      <UniversalSetLogger
+        exercise={exerciseForLogger}
+        onCancel={() => {
+          setView('main');
+        }}
+        onSave={async (sets: ExerciseSet[]) => {
+          try {
+            console.log('💾 LogOptions: Updating exercise:', {
+              exercise: editingExercise,
+              sets,
+              user: user?.id,
+              selectedDate
+            });
+
+            if (!user?.id) throw new Error('User not authenticated');
+
+            // Update the existing exercise with new sets
+            const exerciseLogData = {
+              exerciseName: editingExercise.exerciseName,
+              userId: user.id,
+              sets: sets,
+              activityType: editingExercise.activityType
+            };
+
+            console.log('💾 LogOptions: Calling addExerciseLog with existing ID:', editingExercise.id);
+
+            const docId = await addExerciseLog(
+              exerciseLogData,
+              editingExercise.timestamp || new Date(),
+              editingExercise.id // Pass existing ID to update
+            );
+
+            console.log('✅ LogOptions: Exercise updated successfully with ID:', docId);
+
+            onExerciseAdded?.();
+            setView('main');
+          } catch (error) {
+            console.error('❌ LogOptions: Error updating exercise:', error);
+            // Here you might want to show an error notification to the user
+          }
+        }}
+        initialSets={editingExercise.sets}
+        isEditing={true}
+      />
+    );
+  }
+
   return (
     <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex flex-col z-50">
       {/* Header - Fixed at top */}
       <header className="sticky top-0 flex items-center justify-between p-4 bg-[#1a1a1a] border-b border-white/10">
-        <h2 className="text-xl font-bold text-white">Add Exercise</h2>
+        <h2 className="text-xl font-bold text-white">
+          {editingExercise ? 'Edit Exercise' : 'Add Exercise'}
+        </h2>
         <button 
           onClick={onClose}
           className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white"

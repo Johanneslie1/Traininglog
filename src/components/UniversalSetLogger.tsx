@@ -201,6 +201,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
   onSave,
   onCancel,
   initialSets = [],
+  isEditing = false,
 }) => {
   const exerciseType = getExerciseType(exercise);
   const [sets, setSets] = useState<ExerciseSet[]>([]);
@@ -532,7 +533,9 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
       {/* Header */}
       <div className="p-4 border-b border-white/10">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-white">{exercise.name}</h2>
+          <h2 className="text-xl font-bold text-white">
+            {isEditing ? 'Edit' : 'Log'} {exercise.name}
+          </h2>
           <div className="text-sm text-gray-400">
             {sets.length} {getSetLabel()}{sets.length !== 1 ? 's' : ''}
           </div>
@@ -615,7 +618,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
             onClick={handleSave}
             className="flex-1 py-3 rounded-lg bg-purple-600 text-white font-medium hover:bg-purple-700 transition-colors"
           >
-            Save {getSetLabel()}{sets.length !== 1 ? 's' : ''}
+            {isEditing ? 'Update' : 'Save'} {getSetLabel()}{sets.length !== 1 ? 's' : ''}
           </button>
           <button
             onClick={onCancel}

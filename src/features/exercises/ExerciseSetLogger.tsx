@@ -183,7 +183,9 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
     <div className="flex flex-col h-full bg-[#1a1a1a]">
       <div className="flex-1 p-4">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-white">{exercise.name}</h2>
+          <h2 className="text-xl font-bold text-white">
+            {isEditing ? 'Edit' : 'Log'} {exercise.name}
+          </h2>
           <span className="text-gray-400">{sets.length} sets</span>
         </div>
 
@@ -224,7 +226,7 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
             onClick={handleSaveAndClose}
             className="flex-1 py-3 rounded-lg bg-[#8B5CF6] text-white font-medium hover:bg-[#7C3AED] transition-colors"
           >
-            Save
+            {isEditing ? 'Update' : 'Save'}
           </button>
           <button
             onClick={onCancel}
