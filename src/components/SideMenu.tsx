@@ -1,4 +1,9 @@
 import React, { useState } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { logoutUser } from '@/services/firebase/auth';
+import { logout } from '@/features/auth/authSlice';
+import { RootState } from '@/store/store';
 import Settings from './Settings';
 import SupersetGuide from './SupersetGuide';
 
@@ -25,6 +30,20 @@ const SideMenu: React.FC<SideMenuProps> = ({
 }) => {
   const [showSettings, setShowSettings] = useState(false);
   const [showSupersetGuide, setShowSupersetGuide] = useState(false);
+  const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+      dispatch(logout());
+      onClose(); // Close the menu after logout
+      navigate('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -130,6 +149,66 @@ const SideMenu: React.FC<SideMenuProps> = ({
               Superset Guide
             </button>
           </div>
+
+          {/* Profile Section */}
+          {isAuthenticated && user && (
+            <div className="pt-4 border-t border-[#3E4652] space-y-3">
+              <div className="px-4 py-2">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-8 h-8 bg-[#2D3440] rounded-full flex items-center justify-center">
+                    <svg className="w-4 h-4 text-[#F2F3F7]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-[#F2F3F7] text-sm font-medium">
+                      {user.firstName} {user.lastName}
+                    </p>
+                    <p className="text-[#B0B8C1] text-xs">{user.email}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-3 px-3 py-2 text-red-400 hover:bg-[#2D3440] rounded-lg transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  Logout
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Auth Section for non-authenticated users */}
+          {!isAuthenticated && (
+            <div className="pt-4 border-t border-[#3E4652] space-y-2">
+              <button
+                onClick={() => {
+                  onClose();
+                  navigate('/login');
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 text-[#F2F3F7] hover:bg-[#2D3440] rounded-lg transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                Sign In
+              </button>
+              <button
+                onClick={() => {
+                  onClose();
+                  navigate('/register');
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 text-[#F2F3F7] hover:bg-[#2D3440] rounded-lg transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                </svg>
+                Sign Up
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
