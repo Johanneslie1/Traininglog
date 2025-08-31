@@ -108,6 +108,8 @@ export interface ExerciseLog {
   userId?: string;
   /** Type of exercise for training template compatibility */
   exerciseType?: string;
+  /** Activity type for non-resistance exercises */
+  activityType?: string;
 }
 
 export type ExerciseType = Exercise['type'];

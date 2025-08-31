@@ -1,8 +1,9 @@
 import { ExerciseData } from '@/services/exerciseDataService';
 import { ActivityLog, ActivityType } from '@/types/activityTypes';
 import { activityLoggingService } from '@/services/activityService';
-import { getExerciseLogsByDate, deleteLocalExerciseLog } from '@/utils/localStorageUtils';
+import { getExerciseLogs } from '@/services/firebase/exerciseLogs';
 import { deleteExerciseLog } from '@/services/firebase/exerciseLogs';
+import { deleteLocalExerciseLog } from '@/utils/localStorageUtils';
 import { ExerciseSet } from '@/types/sets';
 
 // Extended ExerciseData to support activity types
@@ -105,6 +106,18 @@ function convertActivityLogToExerciseData(activityLog: ActivityLog): UnifiedExer
         return acc;
       }, {} as any)
     } as ExerciseSet)) || [];
+  } else if (activityLog.activityType === ActivityType.SPEED_AGILITY) {
+    const speedAgilityLog = activityLog as any;
+    baseData.sets = speedAgilityLog.sessions?.map((session: any, index: number) => ({
+      setNumber: index + 1,
+      reps: session.reps,
+      ...(session.time && { time: session.time }),
+      ...(session.distance && { distance: session.distance }),
+      ...(session.height && { height: session.height }),
+      ...(session.restTime && { restTime: session.restTime }),
+      rpe: session.rpe,
+      notes: session.notes
+    } as ExerciseSet)) || [];
   }
 
   console.log('✅ Converted data result:', {
@@ -127,7 +140,13 @@ export async function getAllExercisesByDate(
 ): Promise<UnifiedExerciseData[]> {
   try {
     // Get resistance training exercises (existing) - convert to proper format
-    const resistanceExerciseLogs = getExerciseLogsByDate(date);
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const resistanceExerciseLogs = await getExerciseLogs(userId, startOfDay, endOfDay);
     const resistanceExercises: UnifiedExerciseData[] = resistanceExerciseLogs.map(log => ({
       id: log.id,
       exerciseName: log.exerciseName,
@@ -135,15 +154,8 @@ export async function getAllExercisesByDate(
       userId: log.userId || userId,
       sets: log.sets || [],
       deviceId: log.deviceId,
-      activityType: ActivityType.RESISTANCE
+      activityType: (log.activityType as ActivityType) || ActivityType.RESISTANCE
     }));
-
-    // Get activity logs for the same date
-    const startOfDay = new Date(date);
-    startOfDay.setHours(0, 0, 0, 0);
-    
-    const endOfDay = new Date(date);
-    endOfDay.setHours(23, 59, 59, 999);
 
     const activityLogs = await activityLoggingService.getActivityLogs(
       userId,
@@ -165,17 +177,28 @@ export async function getAllExercisesByDate(
 
   } catch (error) {
     console.error('Error getting all exercises by date:', error);
-    // Fallback to just resistance exercises
-    const resistanceExerciseLogs = getExerciseLogsByDate(date);
-    return resistanceExerciseLogs.map(log => ({
-      id: log.id,
-      exerciseName: log.exerciseName,
-      timestamp: log.timestamp || date,
-      userId: log.userId || userId,
-      sets: log.sets || [],
-      deviceId: log.deviceId,
-      activityType: ActivityType.RESISTANCE
-    }));
+    // Fallback to just resistance exercises from Firebase
+    try {
+      const startOfDay = new Date(date);
+      startOfDay.setHours(0, 0, 0, 0);
+      
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      const resistanceExerciseLogs = await getExerciseLogs(userId, startOfDay, endOfDay);
+      return resistanceExerciseLogs.map(log => ({
+        id: log.id,
+        exerciseName: log.exerciseName,
+        timestamp: log.timestamp || date,
+        userId: log.userId || userId,
+        sets: log.sets || [],
+        deviceId: log.deviceId,
+        activityType: (log.activityType as ActivityType) || ActivityType.RESISTANCE
+      }));
+    } catch (fallbackError) {
+      console.error('Fallback also failed:', fallbackError);
+      return [];
+    }
   }
 }
 

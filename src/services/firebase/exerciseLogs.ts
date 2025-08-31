@@ -219,7 +219,8 @@ export const getExerciseLogs = async (userId: string, startDate: Date, endDate: 
         sets: data.sets,
         timestamp: data.timestamp.toDate(),
         deviceId: data.deviceId || 'legacy',
-        userId: data.userId
+        userId: data.userId,
+        activityType: data.activityType
       } as ExerciseLog;
     });
 
