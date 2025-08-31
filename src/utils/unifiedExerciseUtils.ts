@@ -3,7 +3,7 @@ import { ActivityLog, ActivityType } from '@/types/activityTypes';
 import { activityLoggingService } from '@/services/activityService';
 import { getExerciseLogs } from '@/services/firebase/exerciseLogs';
 import { deleteExerciseLog } from '@/services/firebase/exerciseLogs';
-import { deleteLocalExerciseLog } from '@/utils/localStorageUtils';
+import { getExerciseLogs as getLocalExerciseLogs } from '@/utils/localStorageUtils';
 import { ExerciseSet } from '@/types/sets';
 
 // Extended ExerciseData to support activity types
@@ -203,32 +203,76 @@ export async function getAllExercisesByDate(
 
 /**
  * Delete exercise (handles both resistance and activity types)
+ * Ensures deletion from both Firestore and localStorage for complete removal
  */
 export async function deleteExercise(exercise: UnifiedExerciseData, userId: string): Promise<boolean> {
   try {
-    if (exercise.activityType && exercise.activityType !== ActivityType.RESISTANCE) {
-      // Delete activity log from localStorage
-      const logs: ActivityLog[] = JSON.parse(localStorage.getItem('activity-logs') || '[]');
-      const filteredLogs = logs.filter(log => 
-        !(log.id === exercise.id && log.userId === userId)
-      );
-      localStorage.setItem('activity-logs', JSON.stringify(filteredLogs));
-      console.log('Activity log deleted:', exercise.id);
-      return true;
-    } else {
-      // Delete resistance exercise using existing Firebase function
-      if (exercise.id) {
+    console.log('🗑️ Starting dual deletion for exercise:', {
+      id: exercise.id,
+      exerciseName: exercise.exerciseName,
+      activityType: exercise.activityType
+    });
+
+    let firestoreDeleted = false;
+    let localStorageDeleted = false;
+    let errors: string[] = [];
+
+    // Always try to delete from Firestore first (if we have an ID)
+    if (exercise.id) {
+      try {
         await deleteExerciseLog(exercise.id, userId);
-        return true;
-      } else {
-        // If no ID, try to delete from local storage by exercise ID
-        deleteLocalExerciseLog(exercise.exerciseName);
-        return true;
+        firestoreDeleted = true;
+        console.log('✅ Deleted from Firestore:', exercise.id);
+      } catch (firestoreError) {
+        const errorMsg = firestoreError instanceof Error ? firestoreError.message : 'Unknown Firestore error';
+        errors.push(`Firestore: ${errorMsg}`);
+        console.warn('⚠️ Firestore deletion failed:', errorMsg);
       }
-      return false;
     }
+
+    // Always try to delete from localStorage
+    try {
+      // Delete from exercise logs localStorage
+      const exerciseLogs = getLocalExerciseLogs();
+      const filteredExerciseLogs = exerciseLogs.filter((log: any) => log.id !== exercise.id);
+      localStorage.setItem('exerciseLogs', JSON.stringify(filteredExerciseLogs));
+
+      // Also delete from activity logs localStorage (for activity types)
+      if (exercise.activityType && exercise.activityType !== ActivityType.RESISTANCE) {
+        const activityLogs: ActivityLog[] = JSON.parse(localStorage.getItem('activity-logs') || '[]');
+        const filteredActivityLogs = activityLogs.filter(log => 
+          !(log.id === exercise.id && log.userId === userId)
+        );
+        localStorage.setItem('activity-logs', JSON.stringify(filteredActivityLogs));
+      }
+
+      localStorageDeleted = true;
+      console.log('✅ Deleted from localStorage:', exercise.id);
+    } catch (localStorageError) {
+      const errorMsg = localStorageError instanceof Error ? localStorageError.message : 'Unknown localStorage error';
+      errors.push(`localStorage: ${errorMsg}`);
+      console.warn('⚠️ localStorage deletion failed:', errorMsg);
+    }    // Determine success based on what we were able to delete
+    const success = firestoreDeleted || localStorageDeleted;
+
+    if (success) {
+      console.log('✅ Exercise deletion completed:', {
+        firestoreDeleted,
+        localStorageDeleted,
+        exerciseId: exercise.id
+      });
+
+      if (errors.length > 0) {
+        console.warn('⚠️ Some deletions failed but exercise was removed from at least one location:', errors);
+      }
+    } else {
+      console.error('❌ Exercise deletion failed completely:', errors);
+    }
+
+    return success;
+
   } catch (error) {
-    console.error('Error deleting exercise:', error);
+    console.error('❌ Error in deleteExercise:', error);
     return false;
   }
 }
