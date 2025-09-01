@@ -24,6 +24,7 @@ export interface ExerciseSet {
   averageHeartRate?: number; // Alternative naming for average heart rate
   maxHR?: number; // Maximum heart rate
   maxHeartRate?: number; // Alternative naming for maximum heart rate
+  heartRate?: number; // General heart rate value
   calories?: number; // Calories burned
     // Plyometrics-specific fields
   height?: number; // Jump height in cm

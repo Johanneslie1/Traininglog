@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import type { Exercise } from '@/types/exercise';
 import type { ExerciseSet } from '@/types/sets';
 import { ActivityType } from '@/types/activityTypes';
@@ -25,6 +25,16 @@ const RPE_SCALE = {
   8: { label: 'Very Hard', description: 'Very hard exertion' },
   9: { label: 'Extremely Hard', description: 'Extremely hard exertion' },
   10: { label: 'Maximum', description: 'Maximum exertion' }
+} as const;
+
+// RIR Scale for reference
+const RIR_SCALE = {
+  0: 'No reps left',
+  1: '1 rep left',
+  2: '2 reps left',
+  3: '3 reps left',
+  4: '4 reps left',
+  5: '5+ reps left'
 } as const;
 
 // Determine exercise type from exercise data
@@ -141,7 +151,7 @@ const getDefaultSet = (exerciseType: string): ExerciseSet => {
         ...baseSet,
         weight: 20,
         reps: 10,
-        rpe: 5
+        rir: 2
       };    case 'endurance':
       return {
         ...baseSet,
@@ -206,37 +216,55 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
   const exerciseType = getExerciseType(exercise);
   const [sets, setSets] = useState<ExerciseSet[]>([]);
   const [showRPEHelper, setShowRPEHelper] = useState(false);
+  
+  // Track unique IDs for sets to prevent key issues
+  const [setIds, setSetIds] = useState<string[]>([]);
 
   // Initialize sets
   useEffect(() => {
-    if (initialSets.length > 0) {
-      setSets(initialSets);
+    if (initialSets && initialSets.length > 0) {
+      // Deep clone the initial sets to prevent reference issues
+      const clonedSets = initialSets.map(set => ({ ...set }));
+      setSets(clonedSets);
+      // Generate stable IDs for existing sets
+      const ids = clonedSets.map((_, index) => `set-${exercise.name}-${index}-${Date.now()}`);
+      setSetIds(ids);
     } else {
-      setSets([getDefaultSet(exerciseType)]);
+      const defaultSet = getDefaultSet(exerciseType);
+      setSets([defaultSet]);
+      setSetIds([`set-${exercise.name}-0-${Date.now()}`]);
     }
-  }, [initialSets, exerciseType]);
+  }, [initialSets, exerciseType, exercise.name]);
 
-  const addSet = () => {
+  const addSet = useCallback(() => {
     const lastSet = sets[sets.length - 1];
     const newSet = lastSet ? { ...lastSet } : getDefaultSet(exerciseType);
+    const newId = `set-${exercise.name}-${sets.length}`;
     setSets(prev => [...prev, newSet]);
-  };
+    setSetIds(prev => [...prev, newId]);
+  }, [sets, exerciseType, exercise.name]);
 
-  const removeSet = (index: number) => {
+  const removeSet = useCallback((index: number) => {
     if (sets.length > 1) {
       setSets(prev => prev.filter((_, i) => i !== index));
+      setSetIds(prev => prev.filter((_, i) => i !== index));
     }
-  };
+  }, [sets]);
 
-  const updateSet = (index: number, field: keyof ExerciseSet, value: any) => {
+  const updateSet = useCallback((index: number, field: keyof ExerciseSet, value: any) => {
     setSets(prev => {
-      const newSets = [...prev];
-      newSets[index] = { ...newSets[index], [field]: value };
+      // Create a deep copy to ensure React detects the change
+      const newSets = prev.map((set, i) => {
+        if (i === index) {
+          return { ...set, [field]: value };
+        }
+        return set;
+      });
       return newSets;
     });
-  };
+  }, []);
 
-  const copyPreviousSet = (index: number) => {
+  const copyPreviousSet = useCallback((index: number) => {
     if (index > 0) {
       const previousSet = sets[index - 1];
       setSets(prev => {
@@ -246,7 +274,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
       });
       toast.success('Copied previous set values');
     }
-  };
+  }, [sets]);
 
   const handleSave = () => {
     // Option 3: Relaxed validation - only require at least one field per set
@@ -293,8 +321,10 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
     onSave(validSets);
   };
 
-  const renderFieldsForSet = (setIndex: number) => {
+  const renderFieldsForSet = useMemo(() => (setIndex: number) => {
     const set = sets[setIndex];
+    if (!set) return null;
+
     const fields: React.ReactNode[] = [];
 
     // Common function to render input field
@@ -304,35 +334,80 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
       type: 'number' | 'text' = 'number',
       min?: number,
       step?: number,
-      placeholder?: string    ) => (
-      <div key={field} className="space-y-1">
-        <label className="block text-sm font-medium text-gray-300">{label}</label>
-        <input
-          type={type}
-          value={set[field] as string || ''}
-          onChange={(e) => {
-            const value = e.target.value;
-            if (type === 'number') {
-              // Allow empty string or numeric values
-              if (value === '' || value === '-' || value === '.') {
-                updateSet(setIndex, field, value);
-              } else {
-                const numValue = Number(value);
-                if (!isNaN(numValue)) {
-                  updateSet(setIndex, field, numValue);
+      placeholder?: string,
+      withButtons?: boolean
+    ) => {
+      // Always get the current set value directly from the state
+      const currentValue = sets[setIndex]?.[field];
+      const displayValue = currentValue !== undefined && currentValue !== null ? String(currentValue) : '';
+      
+      return (
+        <div key={field} className="space-y-1">
+          <label className="block text-sm font-medium text-gray-300">{label}</label>
+          <div className="flex items-center gap-2">
+            {withButtons && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const currentNumValue = Number(sets[setIndex]?.[field]) || 0;
+                  const newValue = Math.max(min || 0, currentNumValue - (step || 1));
+                  updateSet(setIndex, field, newValue);
+                }}
+                className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
+              >
+                -
+              </button>
+            )}
+            <input
+              type={type}
+              value={displayValue}
+              onChange={(e) => {
+                e.stopPropagation();
+                const inputValue = e.target.value;
+                
+                if (type === 'number') {
+                  // Handle empty input or partial numbers
+                  if (inputValue === '' || inputValue === '-' || inputValue === '.') {
+                    updateSet(setIndex, field, inputValue === '' ? 0 : inputValue);
+                  } else {
+                    const numValue = parseFloat(inputValue);
+                    if (!isNaN(numValue)) {
+                      updateSet(setIndex, field, numValue);
+                    }
+                  }
+                } else {
+                  updateSet(setIndex, field, inputValue);
                 }
-              }
-            } else {
-              updateSet(setIndex, field, value);
-            }
-          }}
-          className="w-full px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500"
-          min={min}
-          step={step}
-          placeholder={placeholder}
-        />
-      </div>
-    );
+              }}
+              onFocus={(e) => {
+                e.stopPropagation();
+              }}
+              className="flex-1 px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+              min={min}
+              step={step}
+              placeholder={placeholder}
+            />
+            {withButtons && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const currentNumValue = Number(sets[setIndex]?.[field]) || 0;
+                  const newValue = currentNumValue + (step || 1);
+                  updateSet(setIndex, field, newValue);
+                }}
+                className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm"
+              >
+                +
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    };
 
     // Render fields based on exercise type
     switch (exerciseType) {
@@ -340,12 +415,36 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
       case 'bodyweight':
         fields.push(
           <div key="sets-reps" className="grid grid-cols-2 gap-4">
-            {renderField('reps', 'Reps *', 'number', 1)}
-            {renderField('weight', 'Weight (kg)', 'number', 0, 0.5)}
+            {renderField('reps', 'Reps *', 'number', 1, 1, undefined, true)}
+            {renderField('weight', 'Weight (kg)', 'number', 0, 0.5, undefined, true)}
           </div>
         );
-        fields.push(renderField('rir', 'RIR (Reps in Reserve)', 'number', 0, 1));
-        fields.push(renderField('restTime', 'Rest Time (seconds)', 'number', 0));
+        fields.push(
+          <div key="rir" className="space-y-1">
+            <label className="block text-sm font-medium text-gray-300">RIR (Reps in Reserve)</label>
+            <select
+              value={sets[setIndex]?.rir !== undefined ? sets[setIndex].rir : ''}
+              onChange={(e) => {
+                e.stopPropagation();
+                const value = e.target.value;
+                if (value === '') {
+                  updateSet(setIndex, 'rir', undefined);
+                } else {
+                  updateSet(setIndex, 'rir', parseInt(value));
+                }
+              }}
+              onFocus={(e) => e.stopPropagation()}
+              className="w-full px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+            >
+              <option value="">Select RIR</option>
+              {Object.entries(RIR_SCALE).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+        );
         break;
 
       case 'endurance':
@@ -410,8 +509,15 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
               Intensity
             </label>
             <select
-              value={set.intensity || ''}
-              onChange={(e) => updateSet(setIndex, 'intensity', parseInt(e.target.value))}
+              value={sets[setIndex]?.intensity !== undefined ? sets[setIndex].intensity : ''}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === '') {
+                  updateSet(setIndex, 'intensity', undefined);
+                } else {
+                  updateSet(setIndex, 'intensity', parseInt(value));
+                }
+              }}
               className="w-full px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500"
             >
               <option value="">Select Intensity</option>
@@ -435,7 +541,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
               Stretch Type
             </label>
             <select
-              value={set.stretchType || 'static'}
+              value={sets[setIndex]?.stretchType || 'static'}
               onChange={(e) => updateSet(setIndex, 'stretchType', e.target.value)}
               className="w-full px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500"
             >
@@ -462,8 +568,19 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
               type="number"
               min="1"
               max="10"
-              value={set.performance || ''}
-              onChange={(e) => updateSet(setIndex, 'performance', e.target.value)}
+              value={sets[setIndex]?.performance !== undefined ? sets[setIndex].performance : ''}
+              onChange={(e) => {
+                const value = e.target.value;
+                
+                if (value === '') {
+                  updateSet(setIndex, 'performance', undefined);
+                } else {
+                  const numValue = Number(value);
+                  if (!isNaN(numValue)) {
+                    updateSet(setIndex, 'performance', value);
+                  }
+                }
+              }}
               className="w-full px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500"
               placeholder="Rate your performance"
             />
@@ -491,7 +608,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
     }
 
     // RPE field for most exercise types
-    if (!['flexibility'].includes(exerciseType)) {
+    if (!['flexibility', 'strength', 'bodyweight'].includes(exerciseType)) {
       fields.push(
         <div key="rpe" className="space-y-1">
           <label className="block text-sm font-medium text-gray-300">
@@ -505,8 +622,15 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
             </button>
           </label>
           <select
-            value={set.rpe || ''}
-            onChange={(e) => updateSet(setIndex, 'rpe', parseInt(e.target.value))}
+            value={sets[setIndex]?.rpe !== undefined ? sets[setIndex].rpe : ''}
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value === '') {
+                updateSet(setIndex, 'rpe', undefined);
+              } else {
+                updateSet(setIndex, 'rpe', parseInt(value));
+              }
+            }}
             className="w-full px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500"
           >
             <option value="">Select RPE</option>
@@ -525,9 +649,14 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
       <div key="notes" className="space-y-1">
         <label className="block text-sm font-medium text-gray-300">Notes</label>
         <textarea
-          value={set.notes || ''}
-          onChange={(e) => updateSet(setIndex, 'notes', e.target.value)}
-          className="w-full px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500"
+          value={sets[setIndex]?.notes || ''}
+          onChange={(e) => {
+            e.stopPropagation();
+            const value = e.target.value;
+            updateSet(setIndex, 'notes', value);
+          }}
+          onFocus={(e) => e.stopPropagation()}
+          className="w-full px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
           rows={2}
           placeholder="Optional notes about this set..."
         />
@@ -535,7 +664,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
     );
 
     return fields;
-  };
+  }, [sets, updateSet]);
 
   const getSetLabel = () => {
     switch (exerciseType) {
@@ -567,7 +696,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
       {/* Sets List */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {sets.map((_, index) => (
-          <div key={index} className="bg-[#1a1a1a] rounded-lg p-4 border border-white/10">
+          <div key={setIds[index] || `set-${index}`} className="bg-[#1a1a1a] rounded-lg p-4 border border-white/10">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-white">
                 {getSetLabel()} {index + 1}

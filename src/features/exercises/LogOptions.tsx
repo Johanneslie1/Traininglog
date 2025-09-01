@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import ExerciseSearch from './ExerciseSearch';
 import { Exercise } from '@/types/exercise';
 import { ExerciseSet } from '@/types/sets';
 import { useSelector } from 'react-redux';
@@ -14,7 +13,7 @@ import SpeedAgilityActivityPicker from '@/components/activities/SpeedAgilityActi
 import StretchingActivityPicker from '@/components/activities/StretchingActivityPicker';
 import EnduranceActivityPicker from '@/components/activities/EnduranceActivityPicker';
 import OtherActivityPicker from '@/components/activities/OtherActivityPicker';
-import { ExerciseHistoryPicker } from '@/features/programs/ExerciseHistoryPicker';
+import ResistanceTrainingPicker from '@/components/activities/ResistanceTrainingPicker';
 import { UnifiedExerciseData } from '@/utils/unifiedExerciseUtils';
 import { useEffect } from 'react';
 import { searchExercises } from '@/services/exerciseDatabaseService';
@@ -30,21 +29,11 @@ interface LogOptionsProps {
   editingExercise?: UnifiedExerciseData | null; // Add editing exercise prop
 }
 
-type ViewState = 'main' | 'search' | 'calendar' | 'setEditor' | 'programPicker' | 'copyPrevious' | 'sport' | 'stretching' | 'endurance' | 'other' | 'speedAgility' | 'resistance' | 'recentExercises' | 'universalSearch' | 'editExercise';
+type ViewState = 'main' | 'setEditor' | 'programPicker' | 'copyPrevious' | 'sport' | 'stretching' | 'endurance' | 'other' | 'speedAgility' | 'resistance' | 'universalSearch' | 'editExercise';
 
 const helperCategories: Category[] = [
   { id: 'programs', name: 'Add from Program', icon: '📋', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-purple-600', textColor: 'text-white' },
   { id: 'copyPrevious', name: 'Copy from Previous', icon: '📝', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-blue-600', textColor: 'text-white' },
-];
-
-const muscleGroups: Category[] = [
-  { id: 'chest', name: 'Chest', icon: '💪', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-green-600', textColor: 'text-white' },
-  { id: 'back', name: 'Back', icon: '🔙', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-blue-600', textColor: 'text-white' },
-  { id: 'legs', name: 'Legs', icon: '🦵', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-yellow-600', textColor: 'text-white' },
-  { id: 'shoulders', name: 'Shoulders', icon: '🎯', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-cyan-600', textColor: 'text-white' },
-  { id: 'arms', name: 'Arms', icon: '💪', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-red-600', textColor: 'text-white' },
-  { id: 'core', name: 'Core', icon: '⭕', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-primary-600', textColor: 'text-white' },
-  { id: 'fullBody', name: 'Full-Body', icon: '👤', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-orange-600', textColor: 'text-white' },
 ];
 
 // Activity types for the main selection
@@ -107,7 +96,6 @@ const activityTypes = [
 
 export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExercise }: LogOptionsProps): JSX.Element => {
   const [view, setView] = useState<ViewState>('main');
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [universalSearchQuery, setUniversalSearchQuery] = useState('');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -278,15 +266,6 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
   }
 
   // Conditional rendering for different views
-  if (view === 'recentExercises') {
-    return (
-      <ExerciseHistoryPicker
-        onClose={() => setView('resistance')}
-        onSelectExercises={handleProgramSelected}
-      />
-    );
-  }
-
   if (view === 'sport') {
     return (
       <SportActivityPicker
@@ -298,6 +277,21 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
         }}
         selectedDate={selectedDate}
         editingExercise={editingExercise} // Pass editing exercise
+      />
+    );
+  }
+
+  if (view === 'resistance') {
+    return (
+      <ResistanceTrainingPicker
+        onClose={onClose}
+        onBack={() => setView('main')}
+        onActivityLogged={() => {
+          onExerciseAdded?.();
+          setView('main');
+        }}
+        selectedDate={selectedDate}
+        editingExercise={editingExercise}
       />
     );
   }
@@ -376,115 +370,6 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
         currentDate={selectedDate || new Date()}
         userId={user?.id || ''}
       />
-    );
-  }
-
-  if (view === 'search') {
-    return (
-      <ExerciseSearch
-        onClose={() => setView('resistance')}
-        category={selectedCategory}
-        onSelectExercise={(exercise) => {
-          // Convert the exercise template to a full Exercise
-          setSelectedExercise({
-            ...exercise,
-            id: `temp-${exercise.name.toLowerCase().replace(/\s+/g, '-')}`,
-            description: exercise.description || '',
-            primaryMuscles: [],
-            secondaryMuscles: [],
-            instructions: [],
-            metrics: {
-              trackWeight: true,
-              trackReps: true
-            },
-            defaultUnit: 'kg'
-          });
-          setView('setEditor');
-        }}
-      />
-    );
-  }
-
-  // Resistance Training View - Shows search, categories, and recent exercises
-  if (view === 'resistance') {
-    return (
-      <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex flex-col z-50">
-        {/* Header */}
-        <header className="sticky top-0 flex items-center justify-between p-4 bg-[#1a1a1a] border-b border-white/10">
-          <div className="flex items-center space-x-3">
-            <button 
-              onClick={() => setView('main')}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white"
-              aria-label="Back"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <h2 className="text-xl font-bold text-white">🏋️‍♂️ Resistance Training</h2>
-          </div>
-          <button 
-            onClick={onClose}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white"
-            aria-label="Close"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </header>
-
-        {/* Main Content */}
-        <main className="flex-1 overflow-y-auto overscroll-contain pb-safe min-h-0">
-          <div className="max-w-md mx-auto p-4 space-y-6 md:space-y-8">
-            {/* Search Box */}
-            <section className="space-y-3">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search exercises..."
-                  className="w-full px-4 py-3 pl-10 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  onFocus={() => {
-                    setSelectedCategory(null);
-                    setView('search');
-                  }}
-                />
-                <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-            </section>
-
-            {/* Quick Options */}
-            <section className="space-y-3 md:space-y-4">
-              <h3 className="text-lg font-semibold text-white/90">Quick Options</h3>
-              <div className="grid grid-cols-1 gap-3 md:gap-4">
-                <CategoryButton
-                  category={{ id: 'recent', name: 'Recent Exercises', icon: '🕒', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-blue-600', textColor: 'text-white' }}
-                  onClick={() => setView('recentExercises')}
-                />
-              </div>
-            </section>
-
-            {/* Muscle Groups */}
-            <section className="space-y-3 md:space-y-4">
-              <h3 className="text-lg font-semibold text-white/90">Muscle Groups</h3>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4">
-                {muscleGroups.map(category => (
-                  <CategoryButton
-                    key={category.id}
-                    category={category}
-                    onClick={() => {
-                      setSelectedCategory(category);
-                      setView('search');
-                    }}
-                  />
-                ))}
-              </div>
-            </section>
-          </div>
-        </main>
-      </div>
     );
   }
 
