@@ -2,6 +2,7 @@ import React from 'react';
 import { Program, ProgramSession } from '@/types/program';
 import { Exercise } from '@/types/exercise';
 import { ExerciseSet } from '@/types/sets';
+import { ActivityType } from '@/types/activityTypes';
 import ProgramCard from './ProgramCard';
 import { usePrograms } from '@/context/ProgramsContext';
 import UniversalExercisePicker from '@/components/activities/UniversalExercisePicker';
@@ -173,7 +174,31 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
     const [selectedMap, setSelectedMap] = React.useState<Record<string, boolean>>({});
     const selectedCount = Object.values(selectedMap).filter(Boolean).length;
     function toggleSelect(ex: any) { setSelectedMap(prev => ({ ...prev, [ex.id]: !prev[ex.id] })); }
-    function handleAddFromLibrary() { const chosen = enriched.filter(e => selectedMap[e.id]); const mapped = chosen.map(e => ({ exercise: { id: e.id, name: e.name, type: (e.activityType === 'resistance' ? 'strength' : (e.activityType as any)), category: (e.category || 'general') as any, primaryMuscles: e.primaryMuscles || [], secondaryMuscles: e.secondaryMuscles || [], instructions: [], description: e.description || '', defaultUnit: 'kg' as const, metrics: { trackWeight: e.activityType === 'resistance', trackReps: e.activityType === 'resistance', trackTime: e.activityType !== 'resistance' } } as Exercise, sets: e.activityType === 'resistance' ? Array(3).fill({ reps: 8, weight: 0, difficulty: 'MODERATE' as const }) : [] })); onSelectExercises(mapped); onClose(); }
+    function handleAddFromLibrary() { 
+      const chosen = enriched.filter(e => selectedMap[e.id]); 
+      const mapped = chosen.map(e => ({ 
+        exercise: { 
+          id: e.id, 
+          name: e.name, 
+          type: (e.activityType === ActivityType.RESISTANCE ? 'strength' : 'cardio') as any, 
+          category: (e.category || 'general') as any, 
+          primaryMuscles: e.primaryMuscles || [], 
+          secondaryMuscles: e.secondaryMuscles || [], 
+          instructions: [], 
+          description: e.description || '', 
+          defaultUnit: 'kg' as const, 
+          metrics: { 
+            trackWeight: e.activityType === ActivityType.RESISTANCE, 
+            trackReps: e.activityType === ActivityType.RESISTANCE, 
+            trackTime: e.activityType !== ActivityType.RESISTANCE 
+          },
+          activityType: e.activityType as ActivityType
+        } as Exercise, 
+        sets: e.activityType === ActivityType.RESISTANCE ? Array(3).fill({ reps: 8, weight: 0, difficulty: 'MODERATE' as const }) : [] 
+      })); 
+      onSelectExercises(mapped); 
+      onClose(); 
+    }
     return (
       <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50">
         <div className="bg-[#1a1a1a] rounded-xl w-full max-w-5xl max-h-[90vh] flex flex-col relative">

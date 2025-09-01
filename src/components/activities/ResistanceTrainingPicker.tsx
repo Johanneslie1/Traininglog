@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ActivityType } from '@/types/activityTypes';
-import { Exercise, MuscleGroup } from '@/types/exercise';
+import { Exercise } from '@/types/exercise';
 import { UniversalSetLogger } from '@/components/UniversalSetLogger';
 import ExerciseSearch from '@/features/exercises/ExerciseSearch';
 import CategoryButton, { Category } from '@/features/exercises/CategoryButton';

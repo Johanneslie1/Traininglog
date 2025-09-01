@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Exercise } from '@/types/exercise';
 import { ExerciseSet } from '@/types/sets';
 import { ExerciseLog } from '@/types/exercise';
+import { ActivityType } from '@/types/activityTypes';
 import { auth } from '@/services/firebase/config';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '@/services/firebase/config';
@@ -250,7 +251,8 @@ export const ExerciseHistoryPicker: React.FC<ExerciseHistoryPickerProps> = ({
         metrics: {
           trackWeight: true,
           trackReps: true,
-        }
+        },
+        activityType: (log.activityType as ActivityType) || ActivityType.RESISTANCE // Use stored activityType or default to RESISTANCE
       },
       sets: log.sets
     }));
@@ -277,7 +279,8 @@ export const ExerciseHistoryPicker: React.FC<ExerciseHistoryPickerProps> = ({
           metrics: {
             trackWeight: true,
             trackReps: true,
-          }
+          },
+          activityType: (stat.exerciseLog.activityType as ActivityType) || ActivityType.RESISTANCE // Use stored activityType or default to RESISTANCE
         },
         sets: stat.exerciseLog.sets
       };

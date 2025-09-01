@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Program, ProgramSession } from '@/types/program';
+import { ActivityType } from '@/types/activityTypes';
 import { PlusIcon, BookmarkIcon, TrashIcon, PencilIcon } from '@heroicons/react/outline';
 import SessionBuilder from './SessionBuilder';
 import { auth } from '@/services/firebase/config';
@@ -24,6 +25,51 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
   const [showSessionBuilder, setShowSessionBuilder] = useState(false);
   const [editingSession, setEditingSession] = useState<ProgramSession | null>(null);
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+
+  // Helper function to get activity type display info
+  const getActivityTypeInfo = (activityType?: ActivityType) => {
+    const type = activityType || ActivityType.RESISTANCE;
+    switch (type) {
+      case ActivityType.RESISTANCE:
+        return { label: 'Resistance', color: 'bg-blue-600', textColor: 'text-blue-100' };
+      case ActivityType.SPORT:
+        return { label: 'Sport', color: 'bg-green-600', textColor: 'text-green-100' };
+      case ActivityType.STRETCHING:
+        return { label: 'Stretching', color: 'bg-purple-600', textColor: 'text-purple-100' };
+      case ActivityType.ENDURANCE:
+        return { label: 'Endurance', color: 'bg-orange-600', textColor: 'text-orange-100' };
+      case ActivityType.SPEED_AGILITY:
+        return { label: 'Speed/Agility', color: 'bg-red-600', textColor: 'text-red-100' };
+      case ActivityType.OTHER:
+        return { label: 'Other', color: 'bg-gray-600', textColor: 'text-gray-100' };
+      default:
+        return { label: 'Resistance', color: 'bg-blue-600', textColor: 'text-blue-100' };
+    }
+  };
+
+  // Analyze program composition
+  const getProgramAnalytics = () => {
+    const activityCounts: Record<string, number> = {};
+    let totalExercises = 0;
+    const uniqueTypes = new Set<ActivityType>();
+
+    sessions.forEach(session => {
+      session.exercises.forEach(exercise => {
+        const type = exercise.activityType || ActivityType.RESISTANCE;
+        activityCounts[type] = (activityCounts[type] || 0) + 1;
+        uniqueTypes.add(type);
+        totalExercises++;
+      });
+    });
+
+    return {
+      activityCounts,
+      totalExercises,
+      uniqueTypes: Array.from(uniqueTypes),
+      isBalanced: uniqueTypes.size >= 2,
+      resistanceOnly: uniqueTypes.size === 1 && uniqueTypes.has(ActivityType.RESISTANCE)
+    };
+  };
 
   const handleAddSession = () => {
     setEditingSession(null);
@@ -97,6 +143,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
     }
 
     try {
+      const analytics = getProgramAnalytics();
       const templates = JSON.parse(localStorage.getItem('program-templates') || '[]');
       const newTemplate = {
         id: Date.now().toString(),
@@ -104,13 +151,18 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
         description: programDescription,
         level: programLevel,
         sessions: sessions,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        // Enhanced template metadata
+        activityTypes: analytics.uniqueTypes,
+        totalExercises: analytics.totalExercises,
+        isBalanced: analytics.isBalanced,
+        activityCounts: analytics.activityCounts
       };
       
       templates.push(newTemplate);
       localStorage.setItem('program-templates', JSON.stringify(templates));
       setShowSaveTemplate(false);
-      alert('Program saved as template!');
+      alert(`Program saved as template!\n\n📊 ${analytics.totalExercises} exercises across ${analytics.uniqueTypes.length} activity type${analytics.uniqueTypes.length !== 1 ? 's' : ''}${analytics.isBalanced ? '\n🎯 Well-balanced program!' : ''}`);
     } catch (error) {
       console.error('Error saving template:', error);
       alert('Failed to save template');
@@ -128,6 +180,25 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
       return;
     }
 
+    // Activity type validation
+    const analytics = getProgramAnalytics();
+    if (analytics.totalExercises === 0) {
+      alert('Please add at least one exercise to your program');
+      return;
+    }
+
+    // Provide feedback about program composition
+    if (analytics.resistanceOnly && sessions.length > 1) {
+      const confirmed = confirm(
+        `Your program contains only resistance exercises. Consider adding variety with:\n\n` +
+        `• Endurance activities (running, cycling)\n` +
+        `• Flexibility work (stretching, yoga)\n` +
+        `• Sport-specific training\n\n` +
+        `Save anyway?`
+      );
+      if (!confirmed) return;
+    }
+
     const user = auth.currentUser;
     if (!user) {
       alert('You must be logged in to save a program');
@@ -137,7 +208,9 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
     console.log('[ProgramBuilder] Saving program:', {
       name: programName,
       sessionCount: sessions.length,
-      totalExercises: getTotalExercises(),
+      totalExercises: analytics.totalExercises,
+      activityTypes: analytics.uniqueTypes,
+      isBalanced: analytics.isBalanced,
       sessions: sessions.map(s => ({ id: s.id, name: s.name, exerciseCount: s.exercises.length }))
     });
 
@@ -320,9 +393,12 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                           {session.exercises.slice(0, 6).map((exercise, idx) => (
                             <div key={`${session.id}-exercise-${idx}-${exercise.name}`} className="text-sm text-gray-300 flex items-center gap-2">
-                              <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></span>
-                              <span className="truncate">
+                              <span className={`w-2 h-2 rounded-full flex-shrink-0 ${getActivityTypeInfo(exercise.activityType).color}`}></span>
+                              <span className="truncate flex-1">
                                 {exercise.name}
+                              </span>
+                              <span className={`px-1.5 py-0.5 text-xs rounded ${getActivityTypeInfo(exercise.activityType).color} ${getActivityTypeInfo(exercise.activityType).textColor}`}>
+                                {getActivityTypeInfo(exercise.activityType).label}
                               </span>
                             </div>
                           ))}
@@ -356,10 +432,32 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
             <div className="flex items-center justify-between">
               <div className="text-gray-400 text-sm">
                 <div className="font-medium">
-                  {sessions.length} session{sessions.length !== 1 ? 's' : ''} • {getTotalExercises()} exercises
+                  {sessions.length} session{sessions.length !== 1 ? 's' : ''} • {getProgramAnalytics().totalExercises} exercises
                 </div>
+                {getProgramAnalytics().totalExercises > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {getProgramAnalytics().uniqueTypes.map(type => {
+                      const typeInfo = getActivityTypeInfo(type);
+                      const count = getProgramAnalytics().activityCounts[type] || 0;
+                      return (
+                        <span 
+                          key={type} 
+                          className={`px-2 py-0.5 text-xs rounded-full ${typeInfo.color} ${typeInfo.textColor}`}
+                          title={`${count} ${typeInfo.label.toLowerCase()} exercise${count !== 1 ? 's' : ''}`}
+                        >
+                          {typeInfo.label} ({count})
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
                 <div className="text-xs text-gray-500 mt-1">
-                  💡 Create sessions first, then add exercises to each session
+                  {getProgramAnalytics().isBalanced 
+                    ? '🎯 Well-balanced program with multiple activity types'
+                    : getProgramAnalytics().resistanceOnly 
+                      ? '💪 Resistance-focused program'
+                      : '💡 Add variety with different activity types'
+                  }
                 </div>
               </div>
               <div className="flex gap-3">

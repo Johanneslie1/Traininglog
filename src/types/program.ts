@@ -1,3 +1,5 @@
+import { ActivityType } from './activityTypes';
+
 export interface Program {
   id: string;
   name: string;
@@ -26,5 +28,6 @@ export interface ProgramExercise {
   name: string;
   notes?: string;
   order?: number;
+  activityType?: ActivityType; // New field for exercise type classification
   // Removed: sets, reps, weight, setsData - these should only be logged during actual workouts
 };

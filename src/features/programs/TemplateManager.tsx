@@ -1,13 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { Exercise } from '@/types/exercise';
 import { ExerciseSet } from '@/types/sets';
+import { ActivityType } from '@/types/activityTypes';
 import { TrashIcon, DuplicateIcon, PlayIcon } from '@heroicons/react/outline';
 
 interface Template {
   id: string;
   name: string;
+  description?: string;
+  level?: string;
   exercises: { exercise: Exercise; sets: ExerciseSet[] }[];
+  sessions?: any[]; // For program templates
   createdAt: string;
+  // Enhanced template metadata
+  activityTypes?: ActivityType[];
+  totalExercises?: number;
+  isBalanced?: boolean;
+  activityCounts?: Record<string, number>;
 }
 
 interface TemplateManagerProps {
@@ -91,6 +100,26 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
     });
   };
 
+  // Helper function to get activity type display info
+  const getActivityTypeInfo = (activityType: ActivityType) => {
+    switch (activityType) {
+      case ActivityType.RESISTANCE:
+        return { label: 'Resistance', color: 'bg-blue-600', textColor: 'text-blue-100' };
+      case ActivityType.SPORT:
+        return { label: 'Sport', color: 'bg-green-600', textColor: 'text-green-100' };
+      case ActivityType.STRETCHING:
+        return { label: 'Stretching', color: 'bg-purple-600', textColor: 'text-purple-100' };
+      case ActivityType.ENDURANCE:
+        return { label: 'Endurance', color: 'bg-orange-600', textColor: 'text-orange-100' };
+      case ActivityType.SPEED_AGILITY:
+        return { label: 'Speed/Agility', color: 'bg-red-600', textColor: 'text-red-100' };
+      case ActivityType.OTHER:
+        return { label: 'Other', color: 'bg-gray-600', textColor: 'text-gray-100' };
+      default:
+        return { label: 'Resistance', color: 'bg-blue-600', textColor: 'text-blue-100' };
+    }
+  };
+
   const showTemplatePreview = (template: Template) => {
     setSelectedTemplate(template);
     setShowPreview(true);
@@ -137,11 +166,43 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
                       <div className="flex-1">
                         <h3 className="text-white font-medium text-lg mb-1">{template.name}</h3>
                         <div className="text-sm text-gray-400">
-                          {template.exercises.length} exercise{template.exercises.length !== 1 ? 's' : ''}
+                          {template.totalExercises || template.exercises.length} exercise{(template.totalExercises || template.exercises.length) !== 1 ? 's' : ''}
+                          {template.sessions && ` • ${template.sessions.length} session${template.sessions.length !== 1 ? 's' : ''}`}
                         </div>
                         <div className="text-xs text-gray-500 mt-1">
                           Created {formatDate(template.createdAt)}
                         </div>
+                        
+                        {/* Activity Type Badges */}
+                        {template.activityTypes && template.activityTypes.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {template.activityTypes.slice(0, 3).map(type => {
+                              const typeInfo = getActivityTypeInfo(type);
+                              const count = template.activityCounts?.[type] || 0;
+                              return (
+                                <span 
+                                  key={type} 
+                                  className={`px-2 py-0.5 text-xs rounded-full ${typeInfo.color} ${typeInfo.textColor}`}
+                                  title={`${count} ${typeInfo.label.toLowerCase()} exercise${count !== 1 ? 's' : ''}`}
+                                >
+                                  {typeInfo.label} {count > 0 && `(${count})`}
+                                </span>
+                              );
+                            })}
+                            {template.activityTypes.length > 3 && (
+                              <span className="px-2 py-0.5 text-xs rounded-full bg-gray-600 text-gray-100">
+                                +{template.activityTypes.length - 3}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Balance Indicator */}
+                        {template.isBalanced && (
+                          <div className="text-xs text-green-400 mt-1">
+                            🎯 Well-balanced program
+                          </div>
+                        )}
                       </div>
                     </div>
 
