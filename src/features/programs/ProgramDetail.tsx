@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { Program, ProgramSession } from '@/types/program';
+import { ActivityType } from '@/types/activityTypes';
 import SessionModal from './SessionModal';
 import SessionBuilder from './SessionBuilder';
 import ProgramBuilder from './ProgramBuilder';
@@ -24,6 +25,27 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
   const [, setIsLoading] = useState(false);
   const [isDeletingProgram, setIsDeletingProgram] = useState(false);
   const { updateSessionInProgram: updateSession, deleteProgram, updateProgram } = usePrograms();
+
+  // Helper function to get activity type display info
+  const getActivityTypeInfo = (activityType?: ActivityType) => {
+    const type = activityType || ActivityType.RESISTANCE;
+    switch (type) {
+      case ActivityType.RESISTANCE:
+        return { label: 'Resistance', color: 'bg-blue-600', textColor: 'text-blue-100' };
+      case ActivityType.SPORT:
+        return { label: 'Sport', color: 'bg-green-600', textColor: 'text-green-100' };
+      case ActivityType.STRETCHING:
+        return { label: 'Stretching', color: 'bg-purple-600', textColor: 'text-purple-100' };
+      case ActivityType.ENDURANCE:
+        return { label: 'Endurance', color: 'bg-orange-600', textColor: 'text-orange-100' };
+      case ActivityType.SPEED_AGILITY:
+        return { label: 'Speed/Agility', color: 'bg-red-600', textColor: 'text-red-100' };
+      case ActivityType.OTHER:
+        return { label: 'Other', color: 'bg-gray-600', textColor: 'text-gray-100' };
+      default:
+        return { label: 'Resistance', color: 'bg-blue-600', textColor: 'text-blue-100' };
+    }
+  };
 
   React.useEffect(() => {
     // Set a timeout to show loading state for maximum 2 seconds
@@ -367,8 +389,13 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <h4 className="text-base font-medium text-white">{exercise.name}</h4>
-                          <div className="text-sm text-gray-400 mt-0.5">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="text-base font-medium text-white">{exercise.name}</h4>
+                            <span className={`px-2 py-0.5 text-xs rounded-full ${getActivityTypeInfo(exercise.activityType).color} ${getActivityTypeInfo(exercise.activityType).textColor}`}>
+                              {getActivityTypeInfo(exercise.activityType).label}
+                            </span>
+                          </div>
+                          <div className="text-sm text-gray-400">
                             Sets and reps will be logged during workout
                           </div>
                         </div>

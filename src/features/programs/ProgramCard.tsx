@@ -1,5 +1,6 @@
 import React from 'react';
 import { Program } from '@/types/program';
+import { ActivityType } from '@/types/activityTypes';
 
 interface ProgramCardProps {
   program: Program;
@@ -7,6 +8,50 @@ interface ProgramCardProps {
 }
 
 export const ProgramCard: React.FC<ProgramCardProps> = ({ program, onClick }) => {
+  // Analyze program composition
+  const getProgramComposition = () => {
+    const activityTypes = new Set<ActivityType>();
+    let totalExercises = 0;
+
+    program.sessions?.forEach(session => {
+      session.exercises?.forEach(exercise => {
+        if (exercise.activityType) {
+          activityTypes.add(exercise.activityType);
+        } else {
+          activityTypes.add(ActivityType.RESISTANCE); // Default for legacy exercises
+        }
+        totalExercises++;
+      });
+    });
+
+    return {
+      types: Array.from(activityTypes),
+      totalExercises,
+      isMixed: activityTypes.size > 1
+    };
+  };
+
+  const composition = getProgramComposition();
+
+  // Helper function to get activity type display info
+  const getActivityTypeInfo = (activityType: ActivityType) => {
+    switch (activityType) {
+      case ActivityType.RESISTANCE:
+        return { label: 'Resistance', color: 'bg-blue-600', textColor: 'text-blue-100' };
+      case ActivityType.SPORT:
+        return { label: 'Sport', color: 'bg-green-600', textColor: 'text-green-100' };
+      case ActivityType.STRETCHING:
+        return { label: 'Flexibility', color: 'bg-purple-600', textColor: 'text-purple-100' };
+      case ActivityType.ENDURANCE:
+        return { label: 'Endurance', color: 'bg-orange-600', textColor: 'text-orange-100' };
+      case ActivityType.SPEED_AGILITY:
+        return { label: 'Speed', color: 'bg-red-600', textColor: 'text-red-100' };
+      case ActivityType.OTHER:
+        return { label: 'Other', color: 'bg-gray-600', textColor: 'text-gray-100' };
+      default:
+        return { label: 'Resistance', color: 'bg-blue-600', textColor: 'text-blue-100' };
+    }
+  };
   return (
     <button
       onClick={() => onClick(program)}
@@ -27,14 +72,35 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({ program, onClick }) =>
             </span>
           )}
           <span className="text-sm text-gray-400">
-            {program.sessions?.length || 0} sessions
+            {program.sessions?.length || 0} sessions • {composition.totalExercises} exercises
           </span>
-          {program.description && (
-            <p className="mt-2 text-sm text-gray-400 line-clamp-2">
-              {program.description}
-            </p>
+        </div>
+        
+        {/* Activity Type Badges */}
+        <div className="flex flex-wrap gap-1 mt-2">
+          {composition.types.slice(0, 3).map(type => {
+            const typeInfo = getActivityTypeInfo(type);
+            return (
+              <span 
+                key={type} 
+                className={`px-2 py-0.5 text-xs rounded-full ${typeInfo.color} ${typeInfo.textColor}`}
+              >
+                {typeInfo.label}
+              </span>
+            );
+          })}
+          {composition.types.length > 3 && (
+            <span className="px-2 py-0.5 text-xs rounded-full bg-gray-600 text-gray-100">
+              +{composition.types.length - 3}
+            </span>
           )}
         </div>
+        
+        {program.description && (
+          <p className="mt-2 text-sm text-gray-400 line-clamp-2">
+            {program.description}
+          </p>
+        )}
       </div>
 
       {/* More options button */}

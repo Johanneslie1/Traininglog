@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Exercise } from '@/types/exercise';
 import { ProgramSession, ProgramExercise } from '@/types/program';
+import { ActivityType } from '@/types/activityTypes';
 import ExerciseHistoryPicker from './ExerciseHistoryPicker';
 import ProgramExercisePicker from './ProgramExercisePicker';
 import ExerciseDatabasePicker from './ExerciseDatabasePicker';
@@ -25,6 +26,27 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
 }) => {
   const [view, setView] = useState<ViewState>('main');
 
+  // Helper function to get activity type display info
+  const getActivityTypeInfo = (activityType?: ActivityType) => {
+    const type = activityType || ActivityType.RESISTANCE;
+    switch (type) {
+      case ActivityType.RESISTANCE:
+        return { label: 'Resistance', color: 'bg-blue-600', textColor: 'text-blue-100' };
+      case ActivityType.SPORT:
+        return { label: 'Sport', color: 'bg-green-600', textColor: 'text-green-100' };
+      case ActivityType.STRETCHING:
+        return { label: 'Stretching', color: 'bg-purple-600', textColor: 'text-purple-100' };
+      case ActivityType.ENDURANCE:
+        return { label: 'Endurance', color: 'bg-orange-600', textColor: 'text-orange-100' };
+      case ActivityType.SPEED_AGILITY:
+        return { label: 'Speed/Agility', color: 'bg-red-600', textColor: 'text-red-100' };
+      case ActivityType.OTHER:
+        return { label: 'Other', color: 'bg-gray-600', textColor: 'text-gray-100' };
+      default:
+        return { label: 'Resistance', color: 'bg-blue-600', textColor: 'text-blue-100' };
+    }
+  };
+
   // Only store exercise references - no sets data
   const [selectedExercises, setSelectedExercises] = useState<Exercise[]>(
     initialSession?.exercises?.map(ex => ({
@@ -37,7 +59,8 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
       instructions: [],
       description: ex.notes || '',
       defaultUnit: 'kg' as const,
-      metrics: { trackWeight: true, trackReps: true }
+      metrics: { trackWeight: true, trackReps: true },
+      activityType: ex.activityType || ActivityType.RESISTANCE // Use stored activityType or default to RESISTANCE
     })) || []
   );
   
@@ -157,7 +180,8 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
       id: item.id,
       name: item.name,
       order: index,
-      notes: item.description || ''
+      notes: item.description || '',
+      activityType: item.activityType || ActivityType.RESISTANCE // Default to RESISTANCE for backward compatibility
     }));
 
     const session: Omit<ProgramSession, 'userId'> = {
@@ -198,7 +222,8 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
             instructions: [],
             description: '',
             defaultUnit: 'kg' as const,
-            metrics: { trackWeight: true, trackReps: true }
+            metrics: { trackWeight: true, trackReps: true },
+            activityType: ex.activityType || ActivityType.RESISTANCE // Use stored activityType or default to RESISTANCE
           }));
           setSelectedExercises(prev => [...prev, ...exercisesToAdd]);
           setView('main');
@@ -374,8 +399,13 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
                           onClick={() => handleEditExerciseName(exerciseIndex)}
                           className="text-left hover:bg-white/5 rounded p-1 -m-1 transition-colors w-full"
                         >
-                          <h3 className="text-lg font-medium text-white">{exercise.name}</h3>
-                          <p className="text-sm text-gray-400 mt-1">Sets and reps will be logged during workout</p>
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="text-lg font-medium text-white">{exercise.name}</h3>
+                            <span className={`px-2 py-0.5 text-xs rounded-full ${getActivityTypeInfo(exercise.activityType).color} ${getActivityTypeInfo(exercise.activityType).textColor}`}>
+                              {getActivityTypeInfo(exercise.activityType).label}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-400">Sets and reps will be logged during workout</p>
                         </button>
                       )}
                     </div>
