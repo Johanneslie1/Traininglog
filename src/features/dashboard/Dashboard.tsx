@@ -77,7 +77,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold mb-2">Training Dashboard</h1>
-            <p className="text-gray-400">Overview of your training data and export options</p>
+            <p className="text-gray-400">Overview of your training data</p>
           </div>
           <div className="flex gap-4">
             <button

@@ -17,14 +17,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   
   const isDarkBackground = ['/'].includes(location.pathname);
   
-  const handleExport = () => {
-    // TODO: Implement export functionality
-  };
-
-  const handleImport = () => {
-    // TODO: Implement import functionality
-  };
-
   const handleShowWorkoutSummary = () => {
     // TODO: Implement workout summary functionality
   };
@@ -69,8 +61,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <SideMenu
           isOpen={showMenu}
           onClose={() => setShowMenu(false)}
-          onImport={handleImport}
-          onExport={handleExport}
           onShowWorkoutSummary={handleShowWorkoutSummary}
           onNavigateToday={() => handleNavigate('/')}
           onNavigatePrograms={() => handleNavigate('/programs')}

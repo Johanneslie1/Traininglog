@@ -10,8 +10,6 @@ import SupersetGuide from './SupersetGuide';
 interface SideMenuProps {
   isOpen: boolean;
   onClose: () => void;
-  onImport?: () => void;
-  onExport?: () => void;
   onShowWorkoutSummary: () => void;
   onNavigateToday: () => void;
   onNavigatePrograms: () => void;
@@ -21,8 +19,6 @@ interface SideMenuProps {
 const SideMenu: React.FC<SideMenuProps> = ({
   isOpen,
   onClose,
-  onImport,
-  onExport,
   onShowWorkoutSummary,
   onNavigateToday,
   onNavigatePrograms,
@@ -107,30 +103,6 @@ const SideMenu: React.FC<SideMenuProps> = ({
               </svg>
               Workout Summary
             </button>
-            
-            {onExport && (
-              <button
-                onClick={onExport}
-                className="w-full flex items-center gap-3 px-4 py-3 text-text-primary hover:bg-bg-secondary rounded-lg transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-                Export Data
-              </button>
-            )}
-            
-            {onImport && (
-              <button
-                onClick={onImport}
-                className="w-full flex items-center gap-3 px-4 py-3 text-text-primary hover:bg-bg-secondary rounded-lg transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                </svg>
-                Import Data
-              </button>
-            )}
 
             <button
               onClick={() => setShowSettings(true)}
