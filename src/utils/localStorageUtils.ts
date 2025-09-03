@@ -149,36 +149,3 @@ export const saveAllExerciseLogs = (logs: ExerciseLog[]): void => {
 export const clearExerciseLogs = () => {
   localStorage.removeItem(LOGS_STORAGE_KEY);
 };
-
-// Import exercise logs from JSON
-export const importExerciseLogs = (jsonData: string): boolean => {
-  try {
-    const importedLogs = JSON.parse(jsonData);
-    
-    if (!Array.isArray(importedLogs)) {
-      throw new Error('Imported data is not an array');
-    }
-    
-    // Convert string timestamps to Date objects
-    const processedLogs = importedLogs.map((log: any) => ({
-      ...log,
-      timestamp: log.timestamp ? new Date(log.timestamp) : new Date(),
-      deviceId: log.deviceId || getDeviceId(),
-      id: log.id || uuidv4()
-    }));
-    
-    // Store the imported logs
-    const storableLogs = processedLogs.map((log: ExerciseLog) => ({
-      ...log,
-      timestamp: log.timestamp instanceof Date 
-        ? log.timestamp.toISOString() 
-        : new Date(log.timestamp).toISOString()
-    }));
-    
-    localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(storableLogs));
-    return true;
-  } catch (error) {
-    console.error('Error importing logs:', error);
-    return false;
-  }
-};

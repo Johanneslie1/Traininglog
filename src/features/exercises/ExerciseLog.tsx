@@ -15,12 +15,9 @@ import { ExerciseSetLogger } from './ExerciseSetLogger';
 import WorkoutSummary from './WorkoutSummary';
 import { db } from '../../services/firebase/config';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { exportExerciseData } from '../../utils/exportUtils';
 import { getExerciseLogsByDate, saveExerciseLog } from '../../utils/localStorageUtils';
 import { addExerciseLog } from '../../services/firebase/exerciseLogs';
-import { importExerciseLogs } from '../../utils/importUtils';
 import SideMenu from '../../components/SideMenu';
-import ExportModal from '../../components/ExportModal';
 import DraggableExerciseDisplay from '../../components/DraggableExerciseDisplay';
 import FloatingSupersetControls from '../../components/FloatingSupersetControls';
 import { getAllExercisesByDate, UnifiedExerciseData, deleteExercise } from '../../utils/unifiedExerciseUtils';
@@ -57,8 +54,6 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     showLogOptions: boolean;
     showCalendar: boolean;
     showSetLogger: boolean;
-    showImportModal: boolean;
-    showExportModal: boolean;
     showWorkoutSummary: boolean;
     showMenu: boolean;
     showProgramModal: boolean;
@@ -69,8 +64,6 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     showLogOptions: false,
     showCalendar: false,
     showSetLogger: false,
-    showImportModal: false,
-    showExportModal: false,
     showWorkoutSummary: false,
     showMenu: false,
     showProgramModal: false,
@@ -323,19 +316,6 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     }
   };
   
-  // Handle export with date range
-  const handleExport = useCallback(async (startDate?: Date, endDate?: Date, format: 'csv' | 'json' | 'both' = 'both') => {
-    try {
-      // Pass undefined to let the export function get all exercises from Firestore and filter by date range
-      // This ensures we export from all dates, not just the currently selected date
-      // Fixes issue where only exercises from the selected date were exported instead of the full range
-      await exportExerciseData(undefined, startDate, endDate, format);
-    } catch (error) {
-      console.error('Export failed:', error);
-      alert('Export failed. Please try again.');
-    }
-  }, []);
-  
   // No longer need event listener since we use the floating controls component
 
   const handleEditExercise = (exercise: ExerciseData) => {
@@ -393,25 +373,6 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
       month: 'long'
     }).toLowerCase();
   }, []);
-
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !user?.id) return;
-
-    try {
-      const logs = await importExerciseLogs(file);
-      if (logs && logs.length > 0) {
-        // Convert imported logs to ExerciseData format
-        setExercises(prevExercises => [
-          ...prevExercises,
-          ...logs.map(log => convertToExerciseData(log, user.id))
-        ]);
-      }
-      updateUiState('showImportModal', false);
-    } catch (error) {
-      console.error('Error importing data:', error);
-    }
-  };
 
   // Load exercises when date or user changes
   useEffect(() => {
@@ -556,13 +517,6 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
         />
       )}
 
-      {/* Export Modal */}
-      <ExportModal
-        isOpen={uiState.showExportModal}
-        onClose={() => updateUiState('showExportModal', false)}
-        onExport={handleExport}
-      />
-
       {/* Side Menu */}
       {/* Floating Superset Controls */}
       <FloatingSupersetControls />
@@ -570,8 +524,6 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
       <SideMenu
         isOpen={uiState.showMenu}
         onClose={() => updateUiState('showMenu', false)}
-        onImport={() => updateUiState('showImportModal', true)}
-        onExport={() => updateUiState('showExportModal', true)}
         onShowWorkoutSummary={() => updateUiState('showWorkoutSummary', true)}
         onNavigateToday={() => setSelectedDate(new Date())}
         onNavigatePrograms={() => { navigate('/programs'); }}
@@ -616,44 +568,6 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
             showPreviousSets={true}
             useExerciseId={true}
           />
-        </div>
-      )}
-
-      {/* Import Modal */}
-      {uiState.showImportModal && (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50">
-          <div className="bg-[#1a1a1a] rounded-xl p-6 max-w-md w-full border border-white/10">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl text-white font-medium">Import Exercise Data</h2>
-              <button
-                onClick={() => updateUiState('showImportModal', false)}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-              >
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <p className="text-gray-300 mb-4">
-              Select a JSON backup file to import your exercise data.
-            </p>
-            <div className="mb-6">
-              <input
-                type="file"
-                accept=".json"
-                onChange={handleFileUpload}
-                className="block w-full text-white p-3 rounded-xl bg-[#2a2a2a] border border-white/10 focus:outline-none focus:border-[#8B5CF6]"
-              />
-            </div>
-            <div className="flex justify-end">
-              <button
-                onClick={() => updateUiState('showImportModal', false)}
-                className="px-6 py-3 bg-[#2a2a2a] text-white rounded-xl hover:bg-[#3a3a3a] transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
         </div>
       )}
 
