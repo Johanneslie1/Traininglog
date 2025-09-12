@@ -14,10 +14,10 @@ const FilterBlock: React.FC<FilterBlockProps> = ({ title, values, selected, onTo
     <div>
       <p className="text-[10px] uppercase tracking-wide text-gray-400 mb-1 font-semibold">{title}</p>
       <div className="flex flex-wrap gap-1">
-        {uniqueValues.sort().map((v: string) => {
+        {uniqueValues.sort().map((v: string, index: number) => {
           const active = selected.has(v);
             return (
-              <button key={`${title}-${v}`} onClick={() => onToggle(v)} className={`px-2 py-0.5 rounded border text-[10px] ${active ? 'bg-yellow-600 border-yellow-500 text-white' : 'bg-gray-800 border-gray-600 text-gray-300 hover:border-yellow-500 hover:text-white'}`}>{v}</button>
+              <button key={`${title}-${v}-${index}`} onClick={() => onToggle(v)} className={`px-2 py-0.5 rounded border text-[10px] ${active ? 'bg-yellow-600 border-yellow-500 text-white' : 'bg-gray-800 border-gray-600 text-gray-300 hover:border-yellow-500 hover:text-white'}`}>{v}</button>
             );
         })}
       </div>
@@ -226,7 +226,7 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
           <div id="advanced-filters" className="space-y-3">
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 text-[11px]">
               <FilterBlock title="Type" values={Array.from(facets.type)} selected={typeFilter} onToggle={v=>toggle(setTypeFilter,v)} />
-              <FilterBlock title="Lateral" values={Array.from(facets.lateralization)} selected={lateralFilter} onToggle={v=>toggle(setLateralFilter,v)} />
+              <FilterBlock title="Lateralization" values={Array.from(facets.lateralization)} selected={lateralFilter} onToggle={v=>toggle(setLateralFilter,v)} />
               <FilterBlock title="Equipment" values={Array.from(facets.equipment)} selected={equipmentFilter} onToggle={v=>toggle(setEquipmentFilter,v)} />
               <FilterBlock title="Tags" values={Array.from(facets.tags)} selected={tagFilter} onToggle={v=>toggle(setTagFilter,v)} />
             </div>

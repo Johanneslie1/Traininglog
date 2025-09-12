@@ -101,5 +101,13 @@ service cloud.firestore {
     match /test/{testId} {
       allow read, write: if isAuthenticated();
     }
+
+    // Training sessions collection
+    match /trainingSessions/{sessionId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
   }
 }

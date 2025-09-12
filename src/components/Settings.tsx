@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
+import { exportData, downloadCSV } from '@/services/exportService';
 
 interface SettingsProps {
   isOpen: boolean;
@@ -14,7 +17,61 @@ interface Setting {
 }
 
 const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
-  const [settings] = useState<Setting[]>([
+  const { user } = useSelector((state: RootState) => state.auth);
+  const [isExporting, setIsExporting] = useState(false);
+  const handleExport = async () => {
+    if (!user?.id) {
+      alert('Please log in to export your data.');
+      return;
+    }
+    
+    setIsExporting(true);
+    try {
+      const data = await exportData(user.id);
+      
+      if (data.sessions.length > 0) {
+        downloadCSV(
+          data.sessions,
+          ['userId', 'sessionId', 'sessionDate', 'startTime', 'endTime', 'notes', 'totalVolume', 'sessionRPE', 'exerciseCount', 'setCount', 'durationMinutes', 'createdAt', 'updatedAt'],
+          'sessions.csv'
+        );
+      }
+      
+      if (data.exerciseLogs.length > 0) {
+        downloadCSV(
+          data.exerciseLogs,
+          ['userId', 'sessionId', 'exerciseLogId', 'exerciseId', 'exerciseName', 'category', 'type', 'setCount', 'totalReps', 'maxWeight', 'totalVolume', 'averageRPE', 'notes', 'createdAt'],
+          'exercise_logs.csv'
+        );
+      }
+      
+      if (data.sets.length > 0) {
+        downloadCSV(
+          data.sets,
+          ['userId', 'sessionId', 'exerciseLogId', 'exerciseName', 'exerciseType', 'activityType', 'loggedDate', 'loggedTimestamp', 'setNumber', 'reps', 'weight', 'durationSec', 'distanceMeters', 'rpe', 'rir', 'restTimeSec', 'isWarmup', 'setVolume', 'comment', 'notes', 'hrZone1', 'hrZone2', 'hrZone3', 'hrZone4', 'hrZone5', 'averageHR', 'maxHR', 'heartRate', 'calories', 'height', 'explosivePower', 'reactivePower', 'time', 'performance', 'stretchType', 'intensity', 'bodyPart', 'holdTime', 'flexibility', 'pace', 'elevation'],
+          'exercise_sets.csv'
+        );
+      }
+      
+      const exportedFiles = [];
+      if (data.sessions.length > 0) exportedFiles.push('sessions.csv');
+      if (data.exerciseLogs.length > 0) exportedFiles.push('exercise_logs.csv');
+      if (data.sets.length > 0) exportedFiles.push('exercise_sets.csv');
+      
+      if (exportedFiles.length > 0) {
+        alert(`Export completed! Downloaded: ${exportedFiles.join(', ')}\nCheck your downloads folder.`);
+      } else {
+        alert('No data found to export. Try logging some workouts first.');
+      }
+    } catch (error) {
+      console.error('Export failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      alert(`Export failed: ${errorMessage}`);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+  const [settings, setSettings] = useState<Setting[]>([
     {
       id: 'darkMode',
       label: 'Dark Mode',
@@ -33,6 +90,12 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
       ]
     }
   ]);
+
+  const handleSettingChange = (id: string, value: any) => {
+    setSettings(prev => prev.map(setting => 
+      setting.id === id ? { ...setting, value } : setting
+    ));
+  };
 
   if (!isOpen) return null;
 
@@ -76,6 +139,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                   ) : setting.type === 'select' ? (
                     <select
                       value={setting.value}
+                      onChange={(e) => handleSettingChange(setting.id, parseFloat(e.target.value))}
                       className="bg-bg-tertiary text-text-primary px-3 py-1 rounded-md"
                     >
                       {setting.options?.map((option) => (
@@ -87,6 +151,23 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                   ) : null}
                 </div>
               ))}
+              
+              {/* Export Data Button */}
+              <div className="pt-4 border-t border-border">
+                <button
+                  onClick={handleExport}
+                  disabled={isExporting || !user?.id}
+                  className="w-full bg-accent-primary text-white py-3 px-4 rounded-md hover:bg-accent-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {isExporting ? 'Exporting...' : !user?.id ? 'Login Required' : 'Export Data'}
+                </button>
+                <p className="text-sm text-text-secondary mt-2">
+                  {!user?.id 
+                    ? 'Please log in to export your training data.'
+                    : 'Download your training data as CSV files for analysis in Excel, Google Sheets, or other tools.'
+                  }
+                </p>
+              </div>
             </div>
           </div>
 
