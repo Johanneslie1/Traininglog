@@ -71,7 +71,7 @@ export const EXERCISE_TYPE_CONFIGS: Record<ExerciseType, ExerciseTypeConfig> = {
   speedAgility: {
     type: 'speedAgility',
     requiredStats: ['reps', 'rpe'],
-    optionalStats: ['distance', 'time', 'restTime', 'height', 'notes'],
+    optionalStats: ['distance', 'restTime', 'height', 'notes'],
     displayName: 'Speed & Agility',
     description: 'Speed training, agility drills, and quick movement patterns',
     categories: ['Sprint', 'Ladder Drills', 'Cone Drills', 'Shuttle Runs', 'Change of Direction', 'Acceleration', 'Reaction Time'],

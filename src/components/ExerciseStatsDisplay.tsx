@@ -233,9 +233,6 @@ const ExerciseStatsDisplay: React.FC<ExerciseStatsDisplayProps> = ({
         if (set.duration) {
           details.push(<span key="duration">{set.duration}s</span>);
         }
-        if (set.time) {
-          details.push(<span key="time">{set.time}s/rep</span>);
-        }
         if (set.distance) {
           details.push(<span key="distance">{set.distance}m</span>);
         }

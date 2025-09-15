@@ -28,9 +28,6 @@ export interface ExerciseSet {
   calories?: number; // Calories burned
     // Plyometrics-specific fields
   height?: number; // Jump height in cm
-  explosivePower?: number; // Explosive power rating 1-10
-  reactivePower?: number; // Reactive power rating 1-10
-  time?: number; // Time for drills in seconds
   
   // Team Sports-specific fields (performance-focused only)
   performance?: string; // Performance rating or notes

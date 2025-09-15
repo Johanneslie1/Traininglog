@@ -163,14 +163,14 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
                     </div>
                     
                     {/* Volume Metrics Row */}
-                    <div className="grid grid-cols-2 gap-3 mb-2">
-                      {hasValue(set.reps) && (exercise.activityType === ActivityType.SPEED_AGILITY || exercise.activityType === ActivityType.STRETCHING) && (
+                    <div className="flex flex-wrap gap-3 mb-2">
+                      {hasValue(set.reps) && (
                         <div className="bg-gray-800/50 rounded p-2">
                           <div className="text-xs text-gray-400 mb-1">Reps</div>
                           <div className="text-white font-medium">{set.reps}</div>
                         </div>
                       )}
-                      {hasValue(set.duration) && exercise.activityType !== ActivityType.SPEED_AGILITY && exercise.activityType !== ActivityType.STRETCHING && (
+                      {hasValue(set.duration) && (
                         <div className="bg-gray-800/50 rounded p-2">
                           <div className="text-xs text-gray-400 mb-1">Duration</div>
                           <div className="text-white font-medium">
@@ -184,12 +184,6 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
                           <div className="text-white font-medium">
                             {(exercise.activityType || 'unknown') === 'endurance' ? `${set.distance} km` : `${set.distance} m`}
                           </div>
-                        </div>
-                      )}
-                      {hasValue(set.height) && (exercise.activityType === ActivityType.SPEED_AGILITY) && (
-                        <div className="bg-gray-800/50 rounded p-2">
-                          <div className="text-xs text-gray-400 mb-1">Height</div>
-                          <div className="text-white font-medium">{set.height} cm</div>
                         </div>
                       )}
                       {hasValue(set.calories) && (
@@ -220,6 +214,18 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
                         <div className="bg-gray-800/50 rounded p-2">
                           <div className="text-xs text-gray-400 mb-1">RPE</div>
                           <div className="text-white font-medium">{set.rpe}/10</div>
+                        </div>
+                      )}
+                      {hasValue(set.pace) && (
+                        <div className="bg-gray-800/50 rounded p-2">
+                          <div className="text-xs text-gray-400 mb-1">Pace</div>
+                          <div className="text-white font-medium">{set.pace}</div>
+                        </div>
+                      )}
+                      {hasValue(set.elevation) && (
+                        <div className="bg-gray-800/50 rounded p-2">
+                          <div className="text-xs text-gray-400 mb-1">Elevation</div>
+                          <div className="text-white font-medium">{set.elevation}m</div>
                         </div>
                       )}
                     </div>
@@ -337,6 +343,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
               exercise.sets.forEach((set: any) => {
                 // Intensity metrics
                 if (hasValue(set.rpe)) performanceFields.push({ label: 'RPE', value: `${set.rpe}/10` });
+                if (hasValue(set.rir)) performanceFields.push({ label: 'RIR', value: `${set.rir} reps left` });
                 if (hasValue(set.intensity)) performanceFields.push({ label: 'Intensity', value: `${set.intensity}/10` });
                 if (hasValue(set.performance)) performanceFields.push({ label: 'Performance', value: `${set.performance}/10` });
                 

@@ -188,7 +188,6 @@ const getDefaultSet = (exerciseType: string): ExerciseSet => {
         weight: 0,
         reps: 10,
         duration: 60, // seconds per set
-        time: 3.0, // seconds per rep
         distance: 50, // meters for sprints
         height: 30, // cm for jumps
         restTime: 120, // seconds between sets
@@ -297,7 +296,6 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
         case 'speed_agility':
           return (set.reps > 0) ||
                  (set.duration && set.duration > 0) ||
-                 (set.time && set.time > 0) ||
                  (set.distance && set.distance > 0) ||
                  (set.height && set.height > 0);
         default:
