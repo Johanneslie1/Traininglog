@@ -117,7 +117,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
       // Priority 3: Fallback detection for sets with activity-specific fields
       if (exercise.sets?.[0]) {
         const firstSet = exercise.sets[0];
-        const hasResistanceFields = firstSet.weight && firstSet.weight > 0 && firstSet.reps && firstSet.reps > 1;
+        const hasResistanceFields = (firstSet.weight !== undefined && firstSet.weight >= 0) && firstSet.reps && firstSet.reps > 0;
         const hasActivityFields = firstSet.duration || firstSet.distance || firstSet.calories ||
                                 firstSet.averageHeartRate || firstSet.holdTime || firstSet.pace;
         

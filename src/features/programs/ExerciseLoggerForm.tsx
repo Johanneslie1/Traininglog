@@ -20,7 +20,7 @@ const ExerciseLoggerForm: React.FC<ExerciseLoggerFormProps> = ({ initialExercise
         id: crypto.randomUUID(),
         name: exerciseTemplate.name,
         sets: 3,
-        reps: 10,
+        reps: 5,
         weight: exerciseTemplate.type === 'bodyweight' ? undefined : 0,
         notes: exerciseTemplate.description
       }

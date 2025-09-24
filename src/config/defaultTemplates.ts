@@ -13,7 +13,7 @@ export const strengthTemplate: TrainingTemplate = {
       fieldId: 'weight',
       label: 'Weight',
       type: 'weight',
-      required: true,
+      required: false,
       unit: 'kg',
       min: 0,
       step: 0.5

@@ -149,58 +149,68 @@ const getDefaultSet = (exerciseType: string): ExerciseSet => {
     case 'bodyweight':
       return {
         ...baseSet,
-        weight: 20,
-        reps: 10,
-        rir: 2
-      };    case 'endurance':
+        weight: 0,
+        reps: 5,
+        rir: 0
+      };
+
+    case 'endurance':
       return {
         ...baseSet,
         weight: 0,
-        reps: 1,
-        duration: 30, // minutes
-        distance: 5, // km
-        rpe: 6,
+        reps: 0,
+        duration: 0, // minutes
+        distance: 0, // km
+        rpe: 0,
         hrZone1: 0,
-        hrZone2: 5,
-        hrZone3: 20,
-        hrZone4: 5,
+        hrZone2: 0,
+        hrZone3: 0,
+        hrZone4: 0,
         hrZone5: 0
-      };    case 'flexibility':
+      };
+
+    case 'flexibility':
       return {
         ...baseSet,
         weight: 0,
-        reps: 10, // 10 reps default for flexibility session
-        holdTime: 30, // seconds
-        intensity: 5,
+        reps: 5, // 5 reps default for flexibility session
+        holdTime: 0, // seconds
+        intensity: 0,
         stretchType: 'static'
-      };case 'sport':
+      };
+
+    case 'sport':
       return {
         ...baseSet,
         weight: 0,
-        reps: 1,
-        duration: 60, // minutes
-        rpe: 7,
-        calories: 300,
-        performance: '7'
-      };    case 'speed_agility':
+        reps: 0,
+        duration: 0, // minutes
+        rpe: 0,
+        calories: 0,
+        performance: '0'
+      };
+
+    case 'speed_agility':
       return {
         ...baseSet,
         weight: 0,
-        reps: 10,
-        duration: 60, // seconds per set
-        distance: 50, // meters for sprints
-        height: 30, // cm for jumps
-        restTime: 120, // seconds between sets
-        intensity: 7, // intensity rating 1-10
-        rpe: 6
-      };case 'other':
+        reps: 5,
+        duration: 0, // seconds per set
+        distance: 0, // meters for sprints
+        height: 0, // cm for jumps
+        restTime: 0, // seconds between sets
+        intensity: 0, // intensity rating 1-10
+        rpe: 0
+      };
+
+    case 'other':
     default:
       return {
         ...baseSet,
         weight: 0,
-        reps: 1,
-        duration: 30, // minutes
-        rpe: 5
+        reps: 0,
+        duration: 0, // minutes
+        rpe: 0
       };
   }
 };
@@ -281,7 +291,8 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
       switch (exerciseType) {
         case 'strength':
         case 'bodyweight':
-          return set.weight > 0 && set.reps > 0;
+          // Only require reps > 0, weight can be zero or undefined
+          return set.reps > 0;
         case 'endurance':
         case 'sport':
         case 'other':
@@ -304,7 +315,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
     });
 
     if (validSets.length === 0) {
-      toast.error('Please fill in at least one field for each set');
+      toast.error('Please fill in the required fields for each set');
       return;
     }
 

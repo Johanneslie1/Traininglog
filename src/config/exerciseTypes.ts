@@ -16,8 +16,8 @@ export interface ExerciseTypeConfig {
 export const EXERCISE_TYPE_CONFIGS: Record<ExerciseType, ExerciseTypeConfig> = {
   strength: {
     type: 'strength',
-    requiredStats: ['reps', 'weight', 'rir'],
-    optionalStats: ['restTime', 'notes'],
+    requiredStats: ['reps'],
+    optionalStats: ['weight', 'rir', 'restTime', 'notes'],
     displayName: 'Strength',
     description: 'Weight training and resistance exercises',
     categories: ['Compound', 'Isolation', 'Olympic', 'Power'],
@@ -234,7 +234,8 @@ export const validateRequiredStats = (set: Partial<ExerciseSet>, exerciseType: E
   
   config.requiredStats.forEach(stat => {
     const value = set[stat];
-    if (value === undefined || value === null || value === '') {
+    // For required stats, only check if undefined or null, but allow zero values
+    if (value === undefined || value === null) {
       missingStats.push(stat as string);
     }
   });

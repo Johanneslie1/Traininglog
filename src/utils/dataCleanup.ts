@@ -75,7 +75,7 @@ export async function cleanupContaminatedExerciseData(): Promise<{
       
       // Check for absence of resistance training data
       const hasResistanceData = sets.some((set: any) => 
-        (set.weight && set.weight > 0) || 
+        (set.weight !== undefined && set.weight >= 0) || 
         (set.reps && set.reps > 0 && set.weight !== undefined)
       );
       

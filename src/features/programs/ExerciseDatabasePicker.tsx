@@ -178,9 +178,9 @@ const ExerciseDatabasePicker: React.FC<ExerciseDatabasePickerProps> = ({
     const exercisesWithSets = exercisesToAdd.map(exercise => ({
       exercise,
       sets: [
-        { reps: 8, weight: 0, difficulty: DifficultyCategory.NORMAL },
-        { reps: 8, weight: 0, difficulty: DifficultyCategory.NORMAL },
-        { reps: 8, weight: 0, difficulty: DifficultyCategory.NORMAL }
+        { reps: 5, weight: 0, difficulty: DifficultyCategory.NORMAL },
+        { reps: 5, weight: 0, difficulty: DifficultyCategory.NORMAL },
+        { reps: 5, weight: 0, difficulty: DifficultyCategory.NORMAL }
       ] as ExerciseSet[]
     }));
     

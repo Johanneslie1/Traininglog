@@ -146,16 +146,16 @@ export const getDefaultSetForType = (exerciseType: ExerciseType): Partial<Exerci
   config.requiredStats.forEach(stat => {
     switch (stat) {
       case 'reps':
-        defaultSet.reps = exerciseType === 'strength' ? 8 : 10;
+        defaultSet.reps = exerciseType === 'strength' ? 5 : 5;
         break;
       case 'weight':
         defaultSet.weight = 0;
         break;
       case 'rir':
-        defaultSet.rir = 2;
+        defaultSet.rir = 0;
         break;
       case 'rpe':
-        defaultSet.rpe = 5;
+        defaultSet.rpe = 0;
         break;
       case 'duration':
         if (exerciseType === 'flexibility') {

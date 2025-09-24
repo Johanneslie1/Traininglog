@@ -194,7 +194,7 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
           },
           activityType: e.activityType as ActivityType
         } as Exercise, 
-        sets: e.activityType === ActivityType.RESISTANCE ? Array(3).fill({ reps: 8, weight: 0, difficulty: 'MODERATE' as const }) : [] 
+        sets: e.activityType === ActivityType.RESISTANCE ? Array(3).fill({ reps: 5, weight: 0, difficulty: 'MODERATE' as const }) : [] 
       })); 
       onSelectExercises(mapped); 
       onClose(); 

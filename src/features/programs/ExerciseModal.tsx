@@ -9,7 +9,7 @@ interface ExerciseModalProps {
 const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSave }) => {
   const [name, setName] = useState('');
   const [sets, setSets] = useState(3);
-  const [reps, setReps] = useState(10);
+  const [reps, setReps] = useState(5);
   const [weight, setWeight] = useState<number | undefined>(undefined);
   const [restTime, setRestTime] = useState<number | undefined>(undefined);
   const [notes, setNotes] = useState('');
@@ -19,7 +19,7 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSave }
     onSave({ name, sets, reps, weight, restTime, notes });
     setName('');
     setSets(3);
-    setReps(10);
+    setReps(5);
     setWeight(undefined);
     setRestTime(undefined);
     setNotes('');

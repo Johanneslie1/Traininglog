@@ -151,9 +151,9 @@ const AISuggestions: React.FC<AISuggestionsProps> = ({
               metrics: { trackReps: true }
             },
             sets: [
-              { reps: 8, weight: 0, difficulty: DifficultyCategory.EASY },
-              { reps: 10, weight: 0, difficulty: DifficultyCategory.NORMAL },
-              { reps: 12, weight: 0, difficulty: DifficultyCategory.NORMAL }
+              { reps: 5, weight: 0, difficulty: DifficultyCategory.EASY },
+              { reps: 5, weight: 0, difficulty: DifficultyCategory.NORMAL },
+              { reps: 5, weight: 0, difficulty: DifficultyCategory.NORMAL }
             ]
           }]
         });
@@ -209,8 +209,8 @@ const AISuggestions: React.FC<AISuggestionsProps> = ({
               metrics: { trackReps: true }
             },
             sets: [
-              { reps: 15, weight: 0, difficulty: DifficultyCategory.EASY },
-              { reps: 20, weight: 0, difficulty: DifficultyCategory.EASY }
+              { reps: 5, weight: 0, difficulty: DifficultyCategory.EASY },
+              { reps: 5, weight: 0, difficulty: DifficultyCategory.EASY }
             ]
           }]
         });
