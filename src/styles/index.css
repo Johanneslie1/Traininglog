@@ -40,6 +40,37 @@
   .tooltip-container:hover .tooltip {
     @apply visible;
   }
+
+  /* Mobile-optimized input controls */
+  .resistance-input-control {
+    min-height: 44px; /* Apple's recommended minimum touch target size */
+    touch-action: manipulation; /* Prevents double-tap zoom on buttons */
+  }
+
+  .resistance-button {
+    min-width: 40px;
+    min-height: 40px;
+    touch-action: manipulation;
+    user-select: none;
+  }
+
+  /* Improve input focus states on mobile */
+  .resistance-input {
+    -webkit-appearance: none;
+    -moz-appearance: textfield;
+    appearance: none;
+  }
+
+  .resistance-input::-webkit-outer-spin-button,
+  .resistance-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .resistance-input:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.5);
+  }
 }
 
 /* Custom Date Picker Styles */

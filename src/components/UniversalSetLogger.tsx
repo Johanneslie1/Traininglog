@@ -353,7 +353,8 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
                   const newValue = Math.max(min || 0, currentNumValue - (step || 1));
                   updateSet(setIndex, field, newValue);
                 }}
-                className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
+                className="resistance-button flex-shrink-0 w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center bg-red-600 hover:bg-red-700 active:bg-red-800 text-white rounded-lg text-base sm:text-sm font-semibold transition-colors"
+                aria-label={`Decrease ${label.toLowerCase()}`}
               >
                 -
               </button>
@@ -382,7 +383,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
               onFocus={(e) => {
                 e.stopPropagation();
               }}
-              className="flex-1 px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+              className="resistance-input resistance-input-control flex-1 min-w-0 px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white text-center focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors"
               min={min}
               step={step}
               placeholder={placeholder}
@@ -397,7 +398,8 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
                   const newValue = currentNumValue + (step || 1);
                   updateSet(setIndex, field, newValue);
                 }}
-                className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm"
+                className="resistance-button flex-shrink-0 w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center bg-green-600 hover:bg-green-700 active:bg-green-800 text-white rounded-lg text-base sm:text-sm font-semibold transition-colors"
+                aria-label={`Increase ${label.toLowerCase()}`}
               >
                 +
               </button>
@@ -412,7 +414,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
       case 'strength':
       case 'bodyweight':
         fields.push(
-          <div key="sets-reps" className="grid grid-cols-2 gap-4">
+          <div key="sets-reps" className="space-y-4 sm:grid sm:grid-cols-2 sm:gap-4 sm:space-y-0">
             {renderField('reps', 'Reps *', 'number', 1, 1, undefined, true)}
             {renderField('weight', 'Weight (kg)', 'number', 0, 0.5, undefined, true)}
           </div>
@@ -677,33 +679,33 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
   return (
     <div className="fixed inset-0 bg-black/95 flex flex-col z-50">
       {/* Header */}
-      <div className="p-4 border-b border-white/10">
+      <div className="p-3 sm:p-4 border-b border-white/10">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-white">
+          <h2 className="text-lg sm:text-xl font-bold text-white">
             {isEditing ? 'Edit' : 'Log'} {exercise.name}
           </h2>
-          <div className="text-sm text-gray-400">
+          <div className="text-xs sm:text-sm text-gray-400">
             {sets.length} {getSetLabel()}{sets.length !== 1 ? 's' : ''}
           </div>
         </div>
-        <div className="text-sm text-gray-400 mt-1">
+        <div className="text-xs sm:text-sm text-gray-400 mt-1">
           {exerciseType.charAt(0).toUpperCase() + exerciseType.slice(1)} Exercise
         </div>
       </div>
 
       {/* Sets List */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4">
         {sets.map((_, index) => (
-          <div key={setIds[index] || `set-${index}`} className="bg-[#1a1a1a] rounded-lg p-4 border border-white/10">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-white">
+          <div key={setIds[index] || `set-${index}`} className="bg-[#1a1a1a] rounded-lg p-3 sm:p-4 border border-white/10">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <h3 className="text-base sm:text-lg font-medium text-white">
                 {getSetLabel()} {index + 1}
               </h3>
               <div className="flex items-center gap-2">
                 {index > 0 && (
                   <button
                     onClick={() => copyPreviousSet(index)}
-                    className="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+                    className="px-2 py-1 sm:px-3 sm:py-1 text-xs sm:text-sm bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors touch-manipulation"
                   >
                     Copy Previous
                   </button>
@@ -711,7 +713,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
                 {sets.length > 1 && (
                   <button
                     onClick={() => removeSet(index)}
-                    className="px-3 py-1 text-sm bg-red-600 hover:bg-red-700 text-white rounded transition-colors"
+                    className="px-2 py-1 sm:px-3 sm:py-1 text-xs sm:text-sm bg-red-600 hover:bg-red-700 text-white rounded transition-colors touch-manipulation"
                   >
                     Remove
                   </button>
@@ -719,7 +721,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-4">
               {renderFieldsForSet(index)}
             </div>
           </div>
@@ -728,7 +730,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
         {/* Add Set Button */}
         <button
           onClick={addSet}
-          className="w-full py-4 rounded-lg bg-white/5 hover:bg-white/10 text-white font-medium transition-colors border-2 border-dashed border-white/20"
+          className="w-full py-3 sm:py-4 rounded-lg bg-white/5 hover:bg-white/10 active:bg-white/15 text-white font-medium transition-colors border-2 border-dashed border-white/20 touch-manipulation"
         >
           + Add {getSetLabel()}
         </button>
@@ -758,17 +760,17 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
       )}
 
       {/* Bottom Actions */}
-      <div className="p-4 border-t border-white/10">
-        <div className="flex gap-4">
+      <div className="p-3 sm:p-4 border-t border-white/10">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
           <button
             onClick={handleSave}
-            className="flex-1 py-3 rounded-lg bg-purple-600 text-white font-medium hover:bg-purple-700 transition-colors"
+            className="flex-1 py-3 rounded-lg bg-purple-600 text-white font-medium hover:bg-purple-700 active:bg-purple-800 transition-colors touch-manipulation text-base"
           >
             {isEditing ? 'Update' : 'Save'} {getSetLabel()}{sets.length !== 1 ? 's' : ''}
           </button>
           <button
             onClick={onCancel}
-            className="flex-1 py-3 rounded-lg bg-white/5 text-white font-medium hover:bg-white/10 transition-colors"
+            className="flex-1 py-3 rounded-lg bg-white/5 text-white font-medium hover:bg-white/10 active:bg-white/15 transition-colors touch-manipulation text-base"
           >
             Cancel
           </button>
