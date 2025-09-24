@@ -4,6 +4,11 @@ import { ExerciseData } from '../services/exerciseDataService';
 import { UnifiedExerciseData } from '../utils/unifiedExerciseUtils';
 import { SupersetGroup } from '../types/session';
 import { useSupersets } from '../context/SupersetContext';
+import { 
+  loadHiddenExercises, 
+  toggleExerciseVisibility as toggleVisibility,
+  cleanupHiddenExercises 
+} from '../utils/hiddenExercisesStorage';
 import ExerciseCard from './ExerciseCard';
 import SupersetActionsButton from './SupersetActionsButton';
 
@@ -21,7 +26,9 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
   onReorderExercises
 }) => {
   const { state, updateExerciseOrder } = useSupersets();
-  const [hiddenExercises, setHiddenExercises] = useState<Set<string>>(new Set());
+  
+  // Initialize hidden exercises from localStorage
+  const [hiddenExercises, setHiddenExercises] = useState<Set<string>>(loadHiddenExercises);
 
   // Handle drag end event
   const handleDragEnd = (result: DropResult) => {
@@ -41,15 +48,7 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
 
   // Toggle exercise visibility
   const toggleExerciseVisibility = (exerciseId: string) => {
-    setHiddenExercises(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(exerciseId)) {
-        newSet.delete(exerciseId);
-      } else {
-        newSet.add(exerciseId);
-      }
-      return newSet;
-    });
+    setHiddenExercises(prev => toggleVisibility(exerciseId, prev));
   };
   
   // Effect to update exercise IDs in the superset context when exercises change
@@ -59,6 +58,17 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
       updateExerciseOrder(exerciseIds);
     }
   }, [exercises, updateExerciseOrder]);
+
+  // Effect to clean up hidden state for deleted exercises
+  useEffect(() => {
+    const currentExerciseIds = new Set(exercises.map(ex => ex.id || '').filter(id => id !== ''));
+    const hiddenIds = Array.from(hiddenExercises);
+    const hasStaleIds = hiddenIds.some(id => !currentExerciseIds.has(id));
+    
+    if (hasStaleIds) {
+      setHiddenExercises(prev => cleanupHiddenExercises(prev, currentExerciseIds));
+    }
+  }, [exercises, hiddenExercises]);
   
   // Group exercises by supersets
   const groupedExercises = React.useMemo(() => {
