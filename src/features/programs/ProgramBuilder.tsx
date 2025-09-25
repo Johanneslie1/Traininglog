@@ -18,9 +18,6 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
 }) => {
   const [programName, setProgramName] = useState(initialProgram?.name || '');
   const [programDescription, setProgramDescription] = useState(initialProgram?.description || '');
-  const [programLevel, setProgramLevel] = useState<'beginner' | 'intermediate' | 'advanced'>(
-    initialProgram?.level || 'beginner'
-  );
   const [sessions, setSessions] = useState<ProgramSession[]>(initialProgram?.sessions || []);
   const [showSessionBuilder, setShowSessionBuilder] = useState(false);
   const [editingSession, setEditingSession] = useState<ProgramSession | null>(null);
@@ -149,7 +146,6 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
         id: Date.now().toString(),
         name: programName,
         description: programDescription,
-        level: programLevel,
         sessions: sessions,
         createdAt: new Date().toISOString(),
         // Enhanced template metadata
@@ -217,7 +213,6 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
     const program: Omit<Program, 'id' | 'userId'> = {
       name: programName,
       description: programDescription,
-      level: programLevel,
       createdBy: user.uid,
       createdAt: initialProgram?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -269,32 +264,15 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
                 />
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Difficulty Level
-                  </label>
-                  <select
-                    value={programLevel}
-                    onChange={(e) => setProgramLevel(e.target.value as 'beginner' | 'intermediate' | 'advanced')}
-                    className="w-full px-4 py-3 bg-[#181A20] text-white rounded-lg border border-white/10 focus:border-blue-500 focus:outline-none"
-                  >
-                    <option value="beginner">🟢 Beginner</option>
-                    <option value="intermediate">🟡 Intermediate</option>
-                    <option value="advanced">🔴 Advanced</option>
-                  </select>
-                </div>
-
-                <div className="flex items-end">
-                  <button
-                    onClick={() => setShowSaveTemplate(true)}
-                    disabled={sessions.length === 0}
-                    className="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
-                  >
-                    <BookmarkIcon className="w-4 h-4" />
-                    Save as Template
-                  </button>
-                </div>
+              <div className="flex justify-end">
+                <button
+                  onClick={() => setShowSaveTemplate(true)}
+                  disabled={sessions.length === 0}
+                  className="px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+                >
+                  <BookmarkIcon className="w-4 h-4" />
+                  Save as Template
+                </button>
               </div>
 
               <div>

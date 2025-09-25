@@ -4,7 +4,6 @@ export interface Program {
   id: string;
   name: string;
   description?: string;
-  level: 'beginner' | 'intermediate' | 'advanced';
   createdBy: string;
   userId: string;  // Add userId for permissions
   createdAt: string;

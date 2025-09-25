@@ -3,14 +3,11 @@ import React, { useState } from 'react';
 interface ProgramModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: { name: string; level: string; description: string }) => void;
+  onSave: (data: { name: string; description: string }) => void;
 }
-
-const levels = ['Any', 'Beginner', 'Intermediate', 'Advanced'];
 
 const ProgramModal: React.FC<ProgramModalProps> = ({ isOpen, onClose, onSave }) => {
   const [name, setName] = useState('');
-  const [level, setLevel] = useState('Any');
   const [description, setDescription] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -28,18 +25,16 @@ const ProgramModal: React.FC<ProgramModalProps> = ({ isOpen, onClose, onSave }) 
 
       console.log('[ProgramModal] Submitting program:', {
         name,
-        level,
         description,
         timestamp: new Date().toISOString()
       });
 
-      await onSave({ name, level, description });
+      await onSave({ name, description });
       
       console.log('[ProgramModal] Program submitted successfully');
       
       // Reset form
       setName('');
-      setLevel('Any');
       setDescription('');
       
       onClose();
@@ -48,7 +43,7 @@ const ProgramModal: React.FC<ProgramModalProps> = ({ isOpen, onClose, onSave }) 
       console.error('[ProgramModal] Error submitting program:', {
         error: err,
         errorMessage,
-        formData: { name, level, description }
+        formData: { name, description }
       });
       setError(errorMessage);
     } finally {
@@ -78,19 +73,6 @@ const ProgramModal: React.FC<ProgramModalProps> = ({ isOpen, onClose, onSave }) 
           id="program-name"
           name="program-name"
         />
-        
-        <select
-          className="w-full mb-3 px-3 py-2 rounded bg-[#181A20] text-white border border-white/10"
-          value={level}
-          onChange={e => setLevel(e.target.value)}
-          disabled={isSubmitting}
-          id="program-level"
-          name="program-level"
-        >
-          {levels.map(l => (
-            <option key={l} value={l}>{l}</option>
-          ))}
-        </select>
         
         <textarea
           className="w-full mb-4 px-3 py-2 rounded bg-[#181A20] text-white border border-white/10"

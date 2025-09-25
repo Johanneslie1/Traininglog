@@ -66,11 +66,6 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({ program, onClick }) =>
           {program.name}
         </h3>
         <div className="flex items-center gap-2 mt-1">
-          {program.level && (
-            <span className="px-2 py-0.5 text-xs font-medium bg-red-500/20 text-red-400 rounded-full">
-              {program.level.toUpperCase()}
-            </span>
-          )}
           <span className="text-sm text-gray-400">
             {program.sessions?.length || 0} sessions • {composition.totalExercises} exercises
           </span>

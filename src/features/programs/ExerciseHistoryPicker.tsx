@@ -299,7 +299,7 @@ export const ExerciseHistoryPicker: React.FC<ExerciseHistoryPickerProps> = ({
 
   if (loading) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50">
+      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-70">
         <div className="bg-[#23272F] p-8 rounded-lg">
           <div className="flex items-center gap-3">
             <div className="w-6 h-6 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
@@ -312,7 +312,7 @@ export const ExerciseHistoryPicker: React.FC<ExerciseHistoryPickerProps> = ({
 
   if (error) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50">
+      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-70">
         <div className="bg-[#23272F] p-6 rounded-lg max-w-md">
           <h2 className="text-xl font-bold text-red-400 mb-4">Error</h2>
           <p className="text-white mb-4">{error}</p>
@@ -330,7 +330,7 @@ export const ExerciseHistoryPicker: React.FC<ExerciseHistoryPickerProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50">
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-70">
       <div className="bg-[#23272F] rounded-lg w-full max-w-4xl h-5/6 flex flex-col shadow-xl">
         {/* Header */}
         <div className="p-6 border-b border-white/10">

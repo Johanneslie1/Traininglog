@@ -279,7 +279,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
 
   // Main session builder view
   return (
-    <div className="fixed inset-0 bg-black z-50 flex flex-col">
+    <div className="fixed inset-0 bg-black z-60 flex flex-col">
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-4 bg-black/95 backdrop-blur-sm border-b border-white/10">
         <div className="flex items-center gap-3">

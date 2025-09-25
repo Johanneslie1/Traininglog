@@ -16,7 +16,6 @@ import OtherActivityPicker from '@/components/activities/OtherActivityPicker';
 import ResistanceTrainingPicker from '@/components/activities/ResistanceTrainingPicker';
 import { UnifiedExerciseData } from '@/utils/unifiedExerciseUtils';
 import { useEffect } from 'react';
-import { searchExercises } from '@/services/exerciseDatabaseService';
 import { CreateUniversalExerciseDialog } from '@/components/exercises/CreateUniversalExerciseDialog';
 import { ActivityType } from '@/types/activityTypes';
 
@@ -29,7 +28,7 @@ interface LogOptionsProps {
   editingExercise?: UnifiedExerciseData | null; // Add editing exercise prop
 }
 
-type ViewState = 'main' | 'setEditor' | 'programPicker' | 'copyPrevious' | 'sport' | 'stretching' | 'endurance' | 'other' | 'speedAgility' | 'resistance' | 'universalSearch' | 'editExercise';
+type ViewState = 'main' | 'setEditor' | 'programPicker' | 'copyPrevious' | 'sport' | 'stretching' | 'endurance' | 'other' | 'speedAgility' | 'resistance' | 'editExercise';
 
 const helperCategories: Category[] = [
   { id: 'programs', name: 'Add from Program', icon: '📋', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-purple-600', textColor: 'text-white' },
@@ -97,7 +96,6 @@ const activityTypes = [
 export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExercise }: LogOptionsProps): JSX.Element => {
   const [view, setView] = useState<ViewState>('main');
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
-  const [universalSearchQuery, setUniversalSearchQuery] = useState('');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [createDialogActivityType, setCreateDialogActivityType] = useState<ActivityType>(ActivityType.RESISTANCE);
   const user = useSelector((state: RootState) => state.auth.user);
@@ -156,114 +154,6 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
       // Here you might want to show an error notification to the user
     }
   };
-
-  // Conditional rendering for different views
-  if (view === 'universalSearch') {
-    const searchResults = searchExercises(universalSearchQuery);
-    
-    return (
-      <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex flex-col z-50">
-        <header className="sticky top-0 flex items-center justify-between p-4 bg-[#1a1a1a] border-b border-white/10">
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={() => setView('main')}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white"
-              aria-label="Back"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-            </button>
-            <h2 className="text-xl font-bold text-white">🔍 Universal Search</h2>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white"
-            aria-label="Close"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-          </button>
-        </header>
-        <main className="flex-1 overflow-y-auto overscroll-contain pb-safe min-h-0">
-          <div className="max-w-md mx-auto p-4 space-y-6">
-            <section className="space-y-3">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search all exercise databases..."
-                  value={universalSearchQuery}
-                  onChange={(e) => setUniversalSearchQuery(e.target.value)}
-                  className="w-full px-4 py-3 pl-10 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  autoFocus
-                />
-                <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-              </div>
-            </section>
-            {universalSearchQuery && universalSearchQuery.length >= 2 && (
-              <section className="space-y-2">
-                <h3 className="text-lg font-semibold text-white/90">
-                  Search Results ({searchResults.length})
-                </h3>
-                <div className="space-y-2">
-                  {searchResults.length > 0 ? (
-                    searchResults.slice(0, 20).map((exercise) => (
-                      <button
-                        key={exercise.id}
-                        onClick={() => {
-                          setSelectedExercise(exercise);
-                          setView('setEditor');
-                        }}
-                        className="w-full text-left p-4 bg-[#1a1a1a] rounded-xl hover:bg-[#222] transition-colors border border-white/10"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <h4 className="text-white font-medium">{exercise.name}</h4>
-                            <p className="text-gray-400 text-sm mt-1">
-                              {exercise.activityType && `${exercise.activityType} • `}
-                              {(exercise.primaryMuscles || []).join(', ') || 'No muscles specified'}
-                            </p>
-                            {exercise.description && (
-                              <p className="text-gray-500 text-xs mt-1 line-clamp-2">
-                                {exercise.description}
-                              </p>
-                            )}
-                          </div>
-                          <div className="text-white/40">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
-                          </div>
-                        </div>
-                      </button>
-                    ))
-                  ) : universalSearchQuery.length > 1 ? (
-                    <div className="text-center py-8">
-                      <p className="text-white/60">No exercises found for "{universalSearchQuery}"</p>
-                      <p className="text-white/40 text-sm mt-2">Try a different search term or create a new exercise</p>
-                      <button
-                        onClick={() => {
-                          setCreateDialogActivityType(ActivityType.RESISTANCE);
-                          setShowCreateDialog(true);
-                        }}
-                        className="mt-4 flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-purple-600 text-white font-medium hover:bg-purple-700 transition-colors mx-auto"
-                      >
-                        <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 102 0v-5h5a1 1 0 100-2h-5V4a1 1 0 00-1-1z" clipRule="evenodd" />
-                        </svg>
-                        Create New Exercise
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <p className="text-white/60">Type at least 2 characters to search</p>
-                    </div>
-                  )}
-                </div>
-              </section>
-            )}
-          </div>
-        </main>
-      </div>
-    );
-  }
 
   // Conditional rendering for different views
   if (view === 'sport') {
@@ -519,19 +409,6 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
       {/* Main Content - Scrollable */}
       <main className="flex-1 overflow-y-auto overscroll-contain pb-safe min-h-0">
         <div className="max-w-md mx-auto p-4 space-y-6 md:space-y-8">
-          {/* Universal Search Bar */}
-          <section className="space-y-3">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search all exercises..."
-                className="w-full px-4 py-3 pl-10 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                onFocus={() => setView('universalSearch')}
-              />
-              <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-            </div>
-          </section>
-
           {/* Quick Add Section */}
           <section className="space-y-3 md:space-y-4">
             <h3 className="text-lg font-semibold text-white/90">Quick Add</h3>
@@ -672,7 +549,7 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
             // Optionally handle the created exercise
           }}
           activityType={createDialogActivityType}
-          searchQuery={universalSearchQuery}
+          searchQuery=""
         />
       )}
     </div>

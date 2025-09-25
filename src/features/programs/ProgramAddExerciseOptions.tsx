@@ -4,7 +4,7 @@ import { ExerciseSet } from '@/types/sets';
 import CategoryButton, { Category } from '@/features/exercises/CategoryButton';
 import ExerciseSearch from '@/features/exercises/ExerciseSearch';
 import { ActivityType } from '@/types/activityTypes';
-import { getExercisesByActivityType, searchExercises } from '@/services/exerciseDatabaseService';
+import { getExercisesByActivityType } from '@/services/exerciseDatabaseService';
 import UniversalExercisePicker from '@/components/activities/UniversalExercisePicker';
 import { enrich as sportEnrich, collectFacets as sportCollectFacets, applyFilters as sportApplyFilters } from '@/utils/sportFilters';
 import { CreateUniversalExerciseDialog } from '@/components/exercises/CreateUniversalExerciseDialog';
@@ -14,7 +14,7 @@ import { CreateUniversalExerciseDialog } from '@/components/exercises/CreateUniv
  * Mirrors LogOptions UI but returns selected exercises to SessionBuilder
  */
 
-type ViewState = 'main' | 'resistance' | 'search' | 'universalSearch'
+type ViewState = 'main' | 'resistance' | 'search'
   | 'sport' | 'stretching' | 'endurance' | 'speedAgility' | 'other';
 
 interface ProgramAddExerciseOptionsProps {
@@ -62,15 +62,16 @@ export const ProgramAddExerciseOptions: React.FC<ProgramAddExerciseOptionsProps>
 }) => {
   const [view, setView] = useState<ViewState>('main');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
-  const [universalSearchQuery, setUniversalSearchQuery] = useState('');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [createDialogActivityType, setCreateDialogActivityType] = useState<ActivityType>(ActivityType.RESISTANCE);
 
-  if (view === 'universalSearch') {
-    const searchResults = searchExercises(universalSearchQuery);
+  if (false) { // Removed universal search functionality
+    const universalSearchQuery = '';
+    const searchResults: any[] = [];
+    const setUniversalSearchQuery = (_: string) => {};
     
     return (
-      <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex flex-col z-50">
+      <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex flex-col z-70">
         <header className="sticky top-0 flex items-center justify-between p-4 bg-[#1a1a1a] border-b border-white/10">
           <div className="flex items-center space-x-3">
             <button
@@ -201,7 +202,7 @@ export const ProgramAddExerciseOptions: React.FC<ProgramAddExerciseOptionsProps>
   const renderActivityPicker = (activity: ActivityType, title: string, subtitle: string) => {
     const data = getExercisesByActivityType(activity) as any[];
     return (
-      <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50">
+      <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-70">
         <div className="bg-[#1a1a1a] rounded-xl w-full max-w-5xl max-h-[90vh] flex flex-col">
           <button
             onClick={() => setView('main')}
@@ -246,7 +247,7 @@ export const ProgramAddExerciseOptions: React.FC<ProgramAddExerciseOptionsProps>
 
   if (view === 'resistance') {
     return (
-      <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex flex-col z-50">
+      <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex flex-col z-70">
         <header className="sticky top-0 flex items-center justify-between p-4 bg-[#1a1a1a] border-b border-white/10">
           <div className="flex items-center space-x-3">
             <button
@@ -310,7 +311,7 @@ export const ProgramAddExerciseOptions: React.FC<ProgramAddExerciseOptionsProps>
   }
 
   return (
-    <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex flex-col z-50">
+    <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex flex-col z-70">
       <header className="sticky top-0 flex items-center justify-between p-4 bg-[#1a1a1a] border-b border-white/10">
         <h2 className="text-xl font-bold text-white">Add Exercise</h2>
         <button
@@ -387,7 +388,7 @@ export const ProgramAddExerciseOptions: React.FC<ProgramAddExerciseOptionsProps>
             // Optionally handle the created exercise
           }}
           activityType={createDialogActivityType}
-          searchQuery={universalSearchQuery}
+          searchQuery=""
         />
       )}
     </div>

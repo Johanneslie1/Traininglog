@@ -11,13 +11,6 @@ import { ExerciseSet } from '@/types/sets';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { TrashIcon, CollectionIcon, PlusIcon } from '@heroicons/react/outline';
 
-const levelColors: Record<string, string> = {
-  Any: 'bg-gray-500',
-  Beginner: 'bg-green-600',
-  Intermediate: 'bg-yellow-600',
-  Advanced: 'bg-red-600',
-};
-
 const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onSelect }) => {
   const navigate = useNavigate();
   const { programs, addProgram: create, refresh, deleteProgram } = usePrograms();
@@ -30,7 +23,7 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
 
   // No need for useEffect to refresh - ProgramsContext handles this automatically
 
-  const handleAdd = async (data: { name: string; level: string; description: string }) => {
+  const handleAdd = async (data: { name: string; description: string }) => {
     setError(null);
     const user = auth.currentUser;
     if (!user) {
@@ -42,7 +35,6 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
     const newProgram = {
       name: data.name,
       description: data.description || '',
-      level: data.level.toLowerCase() as 'beginner' | 'intermediate' | 'advanced',
       createdBy: user.uid,
       sessions: [],
       isPublic: false,
@@ -217,11 +209,6 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
                 </div>
                 
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium text-white ${levelColors[program.level.charAt(0).toUpperCase() + program.level.slice(1)] || 'bg-gray-700'}`}>
-                      {program.level.charAt(0).toUpperCase() + program.level.slice(1)}
-                    </span>
-                  </div>
                   {program.sessions && program.sessions.length > 0 && (
                     <span className="text-gray-400 text-xs font-medium">
                       {program.sessions.length} session{program.sessions.length !== 1 ? 's' : ''}
