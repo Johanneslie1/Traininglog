@@ -57,7 +57,6 @@ class ProgramValidationError extends Error {
 function validateProgram(program: Partial<Program>, isNew: boolean = false): void {
   console.log('[programService] Validating program:', {
     name: program.name,
-    level: program.level,
     userId: program.userId,
     sessionCount: program.sessions?.length || 0,
     isNew
@@ -65,10 +64,6 @@ function validateProgram(program: Partial<Program>, isNew: boolean = false): voi
 
   if (!program.name?.trim()) {
     throw new ProgramValidationError('Program name is required');
-  }
-
-  if (!program.level) {
-    throw new ProgramValidationError('Program level is required');
   }
 
   if (!isNew && !program.id) {
@@ -233,7 +228,6 @@ export const createProgram = async (program: Omit<Program, 'id' | 'createdAt' | 
 
     console.log('[programService] About to validate program:', {
       name: programForValidation.name,
-      level: programForValidation.level,
       userId: programForValidation.userId,
       sessionCount: programForValidation.sessions.length
     });
@@ -608,7 +602,6 @@ export const createTestProgram = async (): Promise<void> => {
   const testProgram = {
     name: "Test Strength Program",
     description: "A test program to verify permissions",
-    level: "beginner" as const,
     createdBy: user.uid,
     userId: user.uid,
     sessions: [
@@ -632,7 +625,6 @@ export const createTestProgram = async (): Promise<void> => {
   console.log('[TEST] Creating test program with data:', {
     name: testProgram.name,
     userId: testProgram.userId,
-    level: testProgram.level,
     sessionCount: testProgram.sessions.length
   });
   try {
