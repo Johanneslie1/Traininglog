@@ -2,21 +2,17 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePrograms } from '@/context/ProgramsContext';
 import ProgramModal from './ProgramModal';
-import ProgramBuilder from './ProgramBuilder';
-import TemplateManager from './TemplateManager';
+import CreateNewProgram from './CreateNewProgram';
 import { getAuth } from 'firebase/auth';
 import { Program } from '@/types/program';
-import { Exercise } from '@/types/exercise';
-import { ExerciseSet } from '@/types/sets';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { TrashIcon, CollectionIcon, PlusIcon } from '@heroicons/react/outline';
+import { TrashIcon, PlusIcon } from '@heroicons/react/outline';
 
 const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onSelect }) => {
   const navigate = useNavigate();
   const { programs, addProgram: create, refresh, deleteProgram } = usePrograms();
   const [showModal, setShowModal] = useState(false);
-  const [showProgramBuilder, setShowProgramBuilder] = useState(false);
-  const [showTemplateManager, setShowTemplateManager] = useState(false);
+  const [showCreateNew, setShowCreateNew] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deletingProgramId, setDeletingProgramId] = useState<string | null>(null);
   const auth = getAuth();
@@ -71,11 +67,11 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
     }
   };
 
-  const handleProgramBuilderSave = async (program: Omit<Program, 'id' | 'userId'>) => {
+  const handleCreateNewSave = async (program: Omit<Program, 'id' | 'userId'>) => {
     try {
-      console.log('[ProgramList] Creating program from builder:', program);
+      console.log('[ProgramList] Creating new program:', program);
       await create(program);
-      setShowProgramBuilder(false);
+      setShowCreateNew(false);
       await refresh();
       
       // Navigate to the newly created program
@@ -89,17 +85,9 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create program';
-      console.error('Error creating program from builder:', err);
+      console.error('Error creating program:', err);
       setError(errorMessage);
     }
-  };
-
-  const handleUseTemplate = (exercises: { exercise: Exercise; sets: ExerciseSet[] }[]) => {
-    setShowTemplateManager(false);
-    // For now, we'll close the template manager and let user use the program builder
-    // In a full implementation, you could pre-populate the program builder with template data
-    setShowProgramBuilder(true);
-    console.log('Using template with exercises:', exercises);
   };
 
   const handleDeleteProgram = async (programId: string, programName: string, event: React.MouseEvent) => {
@@ -131,22 +119,13 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
       <header className="sticky top-0 bg-[#1a1a1a] border-b border-white/10 p-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold text-white">Programs</h2>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setShowTemplateManager(true)}
-              className="px-4 py-2.5 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-all duration-200 flex items-center gap-2 font-medium"
-            >
-              <CollectionIcon className="w-4 h-4" />
-              Templates
-            </button>
-            <button
-              onClick={() => setShowProgramBuilder(true)}
-              className="px-4 py-2.5 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 flex items-center gap-2 font-medium shadow-lg"
-            >
-              <PlusIcon className="w-4 h-4" />
-              Builder
-            </button>
-          </div>
+          <button
+            onClick={() => setShowCreateNew(true)}
+            className="px-4 py-2.5 bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white rounded-xl hover:from-[#7C3AED] hover:to-[#6D28D9] transition-all duration-200 flex items-center gap-2 font-medium shadow-lg"
+          >
+            <PlusIcon className="w-4 h-4" />
+            Create Program
+          </button>
         </div>
       </header>
 
@@ -167,7 +146,7 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
           <h3 className="text-xl font-medium text-white mb-3">No programs yet</h3>
           <p className="text-gray-400 text-sm mb-8">Create your first training program to get started</p>
           <button
-            onClick={() => setShowProgramBuilder(true)}
+            onClick={() => setShowCreateNew(true)}
             className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 font-medium shadow-lg"
           >
             Create Program
@@ -241,17 +220,10 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
         onSave={handleAdd} 
       />
       
-      {showProgramBuilder && (
-        <ProgramBuilder
-          onClose={() => setShowProgramBuilder(false)}
-          onSave={handleProgramBuilderSave}
-        />
-      )}
-      
-      {showTemplateManager && (
-        <TemplateManager
-          onClose={() => setShowTemplateManager(false)}
-          onUseTemplate={handleUseTemplate}
+      {showCreateNew && (
+        <CreateNewProgram
+          onClose={() => setShowCreateNew(false)}
+          onSave={handleCreateNewSave}
         />
       )}
     </div>

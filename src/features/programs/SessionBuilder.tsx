@@ -279,12 +279,12 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
 
   // Main session builder view
   return (
-    <div className="fixed inset-0 bg-black z-60 flex flex-col">
+    <div className="fixed inset-0 bg-black z-[100] flex flex-col">
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-4 bg-black/95 backdrop-blur-sm border-b border-white/10">
-        <div className="flex items-center gap-3">
+      <header className="flex items-center justify-between px-4 py-4 bg-black/95 backdrop-blur-sm border-b border-white/10 min-h-[64px] flex-shrink-0">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
           <button 
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            className="p-2 hover:bg-white/10 rounded-lg transition-colors flex-shrink-0"
             onClick={onClose}
             aria-label="Close"
           >
@@ -292,21 +292,21 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
-          <h1 className="text-white text-xl font-medium">Session Builder</h1>
+          <h1 className="text-white text-xl font-medium truncate">Session Builder</h1>
         </div>
         
         <button
           onClick={handleSaveSession}
-          className="px-4 py-2 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white rounded-lg transition-colors font-medium"
+          className="px-4 py-2 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white rounded-lg transition-colors font-medium flex-shrink-0 ml-4"
         >
           Save Session
         </button>
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto px-4 py-6">
+      <main className="flex-1 overflow-y-auto overscroll-contain px-4 py-6 min-h-0">
         {/* Session Details */}
-        <div className="mb-6 space-y-4">
+        <div className="mb-6 space-y-4 max-w-full">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Session Name
@@ -336,11 +336,11 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
 
         {/* Exercises Section */}
         <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <h2 className="text-lg font-medium text-white">Exercises</h2>
             <button
               onClick={() => setView('exerciseSelection')}
-              className="px-4 py-2 bg-[#2a2a2a] hover:bg-[#3a3a3a] text-white rounded-lg transition-colors border border-white/10"
+              className="px-4 py-2 bg-[#2a2a2a] hover:bg-[#3a3a3a] text-white rounded-lg transition-colors border border-white/10 flex-shrink-0"
             >
               Add Exercise
             </button>
@@ -366,8 +366,8 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
               {selectedExercises.map((exercise, exerciseIndex) => (
                 <div key={`${exercise.id}-${exerciseIndex}`} className="bg-[#1a1a1a] rounded-xl border border-white/10 p-4">
                   {/* Exercise Header */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
                       {editingExerciseName === exerciseIndex ? (
                         <div className="flex items-center gap-2">
                           <input
@@ -379,7 +379,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
                           />
                           <button
                             onClick={handleSaveExerciseName}
-                            className="p-1 hover:bg-white/10 rounded text-green-400"
+                            className="p-1 hover:bg-white/10 rounded text-green-400 flex-shrink-0"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -387,7 +387,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
                           </button>
                           <button
                             onClick={handleCancelExerciseNameEdit}
-                            className="p-1 hover:bg-white/10 rounded text-red-400"
+                            className="p-1 hover:bg-white/10 rounded text-red-400 flex-shrink-0"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -399,9 +399,9 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
                           onClick={() => handleEditExerciseName(exerciseIndex)}
                           className="text-left hover:bg-white/5 rounded p-1 -m-1 transition-colors w-full"
                         >
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="text-lg font-medium text-white">{exercise.name}</h3>
-                            <span className={`px-2 py-0.5 text-xs rounded-full ${getActivityTypeInfo(exercise.activityType).color} ${getActivityTypeInfo(exercise.activityType).textColor}`}>
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <h3 className="text-lg font-medium text-white break-words">{exercise.name}</h3>
+                            <span className={`px-2 py-0.5 text-xs rounded-full flex-shrink-0 ${getActivityTypeInfo(exercise.activityType).color} ${getActivityTypeInfo(exercise.activityType).textColor}`}>
                               {getActivityTypeInfo(exercise.activityType).label}
                             </span>
                           </div>
@@ -411,7 +411,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
                     </div>
                     
                     {/* Exercise Controls */}
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 flex-shrink-0 ml-2">
                       {/* Move Up */}
                       {exerciseIndex > 0 && (
                         <button

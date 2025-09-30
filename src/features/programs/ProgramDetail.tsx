@@ -1,10 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { Program, ProgramSession } from '@/types/program';
 import { ActivityType } from '@/types/activityTypes';
-import SessionModal from './SessionModal';
 import SessionBuilder from './SessionBuilder';
-import ProgramBuilder from './ProgramBuilder';
-import { PencilIcon, TrashIcon, ChevronDownIcon, CogIcon, ArrowLeftIcon } from '@heroicons/react/outline';
+import { PencilIcon, TrashIcon, ChevronDownIcon, ArrowLeftIcon } from '@heroicons/react/outline';
 import { usePrograms } from '@/context/ProgramsContext';
 import { createSession, deleteSession } from '@/services/programService';
 
@@ -17,13 +15,14 @@ interface Props {
 
 const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMode = false }) => {
   const sessions: ProgramSession[] = program.sessions ?? [];
-  const [showSessionModal, setShowSessionModal] = useState(false);
   const [showSessionBuilder, setShowSessionBuilder] = useState(false);
-  const [showProgramEditor, setShowProgramEditor] = useState(false);
   const [editingSession, setEditingSession] = useState<ProgramSession | null>(null);
   const [expandedSessions, setExpandedSessions] = useState<string[]>([]);
   const [, setIsLoading] = useState(false);
   const [isDeletingProgram, setIsDeletingProgram] = useState(false);
+  const [editingProgram, setEditingProgram] = useState(false);
+  const [tempName, setTempName] = useState(program.name);
+  const [tempDescription, setTempDescription] = useState(program.description || '');
   const { updateSessionInProgram: updateSession, deleteProgram, updateProgram } = usePrograms();
 
   // Helper function to get activity type display info
@@ -92,79 +91,6 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
     }
   }, [program, sessions, onUpdate]);
 
-  const handleSessionSave = useCallback(async (session: ProgramSession) => {
-    try {
-      setIsLoading(true);
-      console.log('[ProgramDetail] Starting session save:', { 
-        sessionId: session.id, 
-        sessionName: session.name, 
-        isEdit: !!editingSession,
-        exerciseCount: session.exercises.length 
-      });
-      
-      if (editingSession) {
-        // Update existing session's exercises
-        console.log('[ProgramDetail] Updating existing session via updateSession service');
-        await updateSession(program.id, session.id, session.exercises);
-        
-        // Update local state, preserving order
-        const updatedSessions = sessions.map(s => 
-          s.id === session.id 
-            ? { ...session, order: s.order } 
-            : s);
-        onUpdate({ ...program, sessions: updatedSessions });
-        console.log('[ProgramDetail] Local state updated for existing session');
-      } else {
-        // Add new session - persist to Firestore first
-        console.log('[ProgramDetail] Creating new session via createSession service');
-        const existingOrders = sessions.map(s => s.order ?? 0);
-        const nextOrder = existingOrders.length > 0 ? Math.max(...existingOrders) + 1 : 0;
-        
-        const sessionToCreate = {
-          name: session.name,
-          exercises: session.exercises.map(ex => ({
-            id: ex.id || undefined,
-            name: ex.name,
-            notes: ex.notes,
-            order: ex.order
-          })),
-          order: nextOrder
-        };
-        
-        // Create session in Firestore
-        const newSessionId = await createSession(program.id, sessionToCreate);
-        console.log('[ProgramDetail] New session created in Firestore with ID:', newSessionId);
-        
-        // Update local state with the new session including the Firestore-generated ID
-        const newSession = {
-          ...session,
-          id: newSessionId,
-          order: nextOrder
-        };
-        
-        // Add session and sort by order
-        const updatedSessions = [...sessions, newSession]
-          .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-          
-        onUpdate({ ...program, sessions: updatedSessions });
-        console.log('[ProgramDetail] Local state updated with new session');
-      }
-      
-      setShowSessionModal(false);
-      setEditingSession(null);
-      
-      // Expand the newly added/edited session
-      if (!expandedSessions.includes(session.id)) {
-        setExpandedSessions(prev => [...prev, session.id]);
-      }
-    } catch (error) {
-      console.error('[ProgramDetail] Error saving session:', error);
-      alert(error instanceof Error ? error.message : 'Failed to save session. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [program, sessions, onUpdate, editingSession, updateSession, expandedSessions]);
-
   const handleDeleteProgram = async () => {
     if (window.confirm(`Are you sure you want to delete the program "${program.name}"? This will delete all sessions and exercises. This action cannot be undone.`)) {
       setIsDeletingProgram(true);
@@ -185,24 +111,38 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
   };
 
   const handleProgramEdit = () => {
-    setShowProgramEditor(true);
+    setEditingProgram(true);
+    setTempName(program.name);
+    setTempDescription(program.description || '');
   };
 
-  const handleProgramUpdate = async (updatedProgram: Omit<Program, 'id' | 'userId'>) => {
+  const handleSaveProgramEdit = async () => {
+    if (!tempName.trim()) {
+      alert('Program name cannot be empty');
+      return;
+    }
+
     try {
       const programToUpdate: Program = {
         ...program,
-        ...updatedProgram,
+        name: tempName.trim(),
+        description: tempDescription.trim(),
         updatedAt: new Date().toISOString()
       };
       
       await updateProgram(program.id, programToUpdate);
       onUpdate(programToUpdate);
-      setShowProgramEditor(false);
+      setEditingProgram(false);
     } catch (error) {
       console.error('[ProgramDetail] Error updating program:', error);
       alert(error instanceof Error ? error.message : 'Failed to update program. Please try again.');
     }
+  };
+
+  const handleCancelProgramEdit = () => {
+    setEditingProgram(false);
+    setTempName(program.name);
+    setTempDescription(program.description || '');
   };
 
   const handleSessionEdit = (session: ProgramSession) => {
@@ -280,47 +220,93 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
     <div className="min-h-screen bg-black/90 text-white">
       <div className="p-6">
       {/* Header - Match LogOptions styling */}
-      <header className="sticky top-0 flex items-center justify-between p-4 bg-[#1a1a1a] border-b border-white/10">
-        <div className="flex items-center space-x-3">
+      <header className="sticky top-0 flex items-start justify-between p-4 bg-[#1a1a1a] border-b border-white/10">
+        <div className="flex items-start space-x-3 flex-1 min-w-0">
           <button
             onClick={onBack}
-            className="p-2 hover:bg-white/10 rounded-xl transition-all duration-200"
+            className="p-2 hover:bg-white/10 rounded-xl transition-all duration-200 flex-shrink-0"
           >
             <ArrowLeftIcon className="w-5 h-5 text-gray-300" />
           </button>
-          <div>
-            <h1 className="text-xl font-semibold text-white">{program.name}</h1>
-            {program.description && (
-              <p className="text-sm text-gray-400 mt-0.5">{program.description}</p>
+          <div className="flex-1 min-w-0">
+            {editingProgram ? (
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  value={tempName}
+                  onChange={(e) => setTempName(e.target.value)}
+                  className="w-full text-xl font-semibold bg-[#2a2a2a] text-white rounded-lg px-3 py-1 border border-white/10 focus:border-[#8B5CF6] focus:outline-none"
+                  autoFocus
+                />
+                <input
+                  type="text"
+                  value={tempDescription}
+                  onChange={(e) => setTempDescription(e.target.value)}
+                  placeholder="Program description (optional)"
+                  className="w-full text-sm bg-[#2a2a2a] text-gray-300 rounded-lg px-3 py-1 border border-white/10 focus:border-[#8B5CF6] focus:outline-none"
+                />
+              </div>
+            ) : (
+              <div>
+                <h1 className="text-xl font-semibold text-white break-words">{program.name}</h1>
+                {program.description && (
+                  <p className="text-sm text-gray-400 mt-0.5 break-words">{program.description}</p>
+                )}
+              </div>
             )}
           </div>
         </div>
         
         {/* Quick Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 ml-4 flex-shrink-0">
           {!selectionMode && (
             <>
-              <button
-                onClick={handleProgramEdit}
-                className="p-2.5 hover:bg-gray-800/60 rounded-xl transition-all duration-200 text-blue-400 hover:text-blue-300"
-                title="Edit program"
-                aria-label={`Edit program ${program.name}`}
-              >
-                <CogIcon className="w-5 h-5" />
-              </button>
-              <button
-                onClick={handleDeleteProgram}
-                disabled={isDeletingProgram}
-                className="p-2.5 hover:bg-gray-800/60 rounded-xl transition-all duration-200 text-red-400 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Delete program"
-                aria-label={`Delete program ${program.name}`}
-              >
-                {isDeletingProgram ? (
-                  <div className="w-5 h-5 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <TrashIcon className="w-5 h-5" />
-                )}
-              </button>
+              {editingProgram ? (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleSaveProgramEdit}
+                    className="p-2.5 hover:bg-gray-800/60 rounded-xl transition-all duration-200 text-green-400 hover:text-green-300"
+                    title="Save changes"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={handleCancelProgramEdit}
+                    className="p-2.5 hover:bg-gray-800/60 rounded-xl transition-all duration-200 text-red-400 hover:text-red-300"
+                    title="Cancel edit"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleProgramEdit}
+                    className="p-2.5 hover:bg-gray-800/60 rounded-xl transition-all duration-200 text-blue-400 hover:text-blue-300"
+                    title="Edit program"
+                    aria-label={`Edit program ${program.name}`}
+                  >
+                    <PencilIcon className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={handleDeleteProgram}
+                    disabled={isDeletingProgram}
+                    className="p-2.5 hover:bg-gray-800/60 rounded-xl transition-all duration-200 text-red-400 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Delete program"
+                    aria-label={`Delete program ${program.name}`}
+                  >
+                    {isDeletingProgram ? (
+                      <div className="w-5 h-5 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <TrashIcon className="w-5 h-5" />
+                    )}
+                  </button>
+                </div>
+              )}
             </>
           )}
         </div>
@@ -435,15 +421,6 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
       </div>
       </main>
 
-      {/* Program Editor Modal */}
-      {showProgramEditor && (
-        <ProgramBuilder
-          onClose={() => setShowProgramEditor(false)}
-          onSave={handleProgramUpdate}
-          initialProgram={program}
-        />
-      )}
-
       {/* Session Builder Modal */}
       {showSessionBuilder && (
         <SessionBuilder
@@ -453,22 +430,6 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
           }}
           onSave={handleSessionBuilderSave}
           initialSession={editingSession || undefined}
-        />
-      )}
-
-      {/* Legacy Session Modal - Keep for backward compatibility if needed */}
-      <SessionModal 
-        isOpen={showSessionModal} 
-        onClose={() => setShowSessionModal(false)} 
-        onSave={handleSessionSave}
-      />
-
-      {editingSession && showSessionModal && (
-        <SessionModal 
-          isOpen={true}
-          onClose={() => setEditingSession(null)}
-          onSave={handleSessionSave}
-          initialData={editingSession}
         />
       )}
       </div>
