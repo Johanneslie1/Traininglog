@@ -3,6 +3,7 @@ import { ExerciseData } from '@/services/exerciseDataService';
 import { getExerciseLogsByDate } from '@/utils/localStorageUtils';
 import { getExercisesByDateRange } from '@/services/firebase/queries';
 import { SearchIcon, XIcon, CheckIcon } from '@heroicons/react/solid';
+import { ActivityType } from '@/types/activityTypes';
 
 interface Props {
   isOpen: boolean;
@@ -72,7 +73,12 @@ const CopyFromPreviousSessionDialog: React.FC<Props> = ({
           sets: exercise.sets,
           timestamp: exercise.timestamp,
           userId: userId,
-          deviceId: exercise.deviceId || ''
+          deviceId: exercise.deviceId || '',
+          ...(exercise.activityType && { 
+            activityType: Object.values(ActivityType).includes(exercise.activityType as ActivityType) 
+              ? exercise.activityType as ActivityType 
+              : ActivityType.RESISTANCE 
+          })
         }));
 
         // Convert local exercises to ExerciseData, excluding those already in Firebase
@@ -84,7 +90,12 @@ const CopyFromPreviousSessionDialog: React.FC<Props> = ({
             sets: exercise.sets,
             timestamp: new Date(exercise.timestamp),
             userId: userId,
-            deviceId: exercise.deviceId || ''
+            deviceId: exercise.deviceId || '',
+            ...(exercise.activityType && { 
+              activityType: Object.values(ActivityType).includes(exercise.activityType as ActivityType) 
+                ? exercise.activityType as ActivityType 
+                : ActivityType.RESISTANCE 
+            })
           }));
 
         // Combine and sort by timestamp
@@ -157,8 +168,16 @@ const CopyFromPreviousSessionDialog: React.FC<Props> = ({
       .filter(ex => typeof ex.id === 'string' && ex.id.length > 0 && selectedExercises.has(ex.id))
       .map(({ id, ...exRest }) => ({
         ...exRest,
-        timestamp: currentDate
+        timestamp: currentDate,
+        id: crypto.randomUUID(), // Generate new ID for the copied exercise
+        deviceId: window.navigator.userAgent // Set current device ID
       }));
+    
+    console.log('🔄 CopyFromPreviousSessionDialog: Copying exercises:', {
+      selectedCount: selectedExercises.size,
+      exercisesToCopy: selectedExercisesList.length,
+      exercises: selectedExercisesList
+    });
     
     if (selectedExercisesList.length > 0) {
       onExercisesSelected(selectedExercisesList);
@@ -167,6 +186,7 @@ const CopyFromPreviousSessionDialog: React.FC<Props> = ({
         onClose();
       }, 1500);
     } else {
+      console.warn('⚠️ No exercises selected for copying');
       onClose();
     }
   };

@@ -18,8 +18,7 @@ import { UnifiedExerciseData } from '@/utils/unifiedExerciseUtils';
 import { useEffect } from 'react';
 import { CreateUniversalExerciseDialog } from '@/components/exercises/CreateUniversalExerciseDialog';
 import { ActivityType } from '@/types/activityTypes';
-
-type ExerciseData = Partial<Exercise & { sets?: ExerciseSet[] }>;
+import { ExerciseData } from '@/services/exerciseDataService';
 
 interface LogOptionsProps {
   onClose: () => void;
@@ -134,23 +133,33 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
     if (!user?.id) return;
 
     try {
+      console.log('🔄 Processing copied exercises:', exercises.length, exercises);
+      
       for (const exercise of exercises) {
-        if (!exercise.name) continue;
+        if (!exercise.exerciseName) {
+          console.warn('⚠️ Skipping exercise without name:', exercise);
+          continue;
+        }
 
+        const exerciseLogData = {
+          exerciseName: exercise.exerciseName,
+          userId: user.id,
+          sets: exercise.sets || [],
+          ...(exercise.activityType && { activityType: exercise.activityType })
+        };
+
+        console.log('💾 Saving copied exercise:', exerciseLogData);
         await addExerciseLog(
-          {
-            exerciseName: exercise.name,
-            userId: user.id,
-            sets: exercise.sets || [],
-          },
+          exerciseLogData,
           selectedDate || new Date()
         );
       }
 
       setView('main');
       onExerciseAdded?.();
+      console.log('✅ Successfully saved all copied exercises');
     } catch (error) {
-      console.error('Error saving copied exercises:', error);
+      console.error('❌ Error saving copied exercises:', error);
       // Here you might want to show an error notification to the user
     }
   };

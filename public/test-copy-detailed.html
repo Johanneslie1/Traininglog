@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Copy From Previous Day Test</title>
+    <style>
+        body { font-family: monospace; margin: 20px; }
+        .test-result { margin: 10px 0; padding: 10px; border-left: 4px solid #ccc; }
+        .success { border-color: #4CAF50; background-color: #f9f9f9; }
+        .error { border-color: #f44336; background-color: #fff5f5; }
+        .info { border-color: #2196F3; background-color: #f0f8ff; }
+        button { padding: 10px 20px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Copy From Previous Day Test</h1>
+    <p>This test checks if the copy from previous day functionality is working correctly.</p>
+    
+    <button onclick="runTest()">Run Test</button>
+    <button onclick="clearResults()">Clear Results</button>
+    <button onclick="checkTodaysData()">Check Today's Data</button>
+    <button onclick="simulateCopyFlow()">Simulate Copy Flow</button>
+    
+    <div id="results"></div>
+
+    <script type="module">
+        window.log = (message, type = 'info') => {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            results.appendChild(div);
+            console.log(message);
+        };
+
+        window.clearResults = () => {
+            document.getElementById('results').innerHTML = '';
+        };
+
+        window.runTest = async () => {
+            clearResults();
+            log('🧪 Starting copy from previous day test...', 'info');
+            
+            try {
+                // Import functions
+                const { addExerciseLog } = await import('/src/services/firebase/exerciseLogs.ts');
+                const { getAllExercisesByDate } = await import('/src/utils/unifiedExerciseUtils.ts');
+                
+                const testUserId = 'test-copy-' + Math.random().toString(36).substr(2, 9);
+                log(`👤 Using test user ID: ${testUserId}`, 'info');
+                
+                // Create yesterday's date
+                const yesterday = new Date();
+                yesterday.setDate(yesterday.getDate() - 1);
+                yesterday.setHours(10, 30, 0, 0);
+                
+                log(`📅 Creating test data for: ${yesterday.toLocaleString()}`, 'info');
+                
+                // Create test exercise
+                const testExercise = {
+                    exerciseName: 'Test Copy Exercise - Bench Press',
+                    userId: testUserId,
+                    sets: [
+                        { reps: 10, weight: 80, restTime: 120, completed: true },
+                        { reps: 8, weight: 85, restTime: 120, completed: true }
+                    ],
+                    activityType: 'resistance'
+                };
+                
+                // Save to yesterday
+                log('💾 Saving test exercise...', 'info');
+                const exerciseId = await addExerciseLog(testExercise, yesterday);
+                log(`✅ Created exercise with ID: ${exerciseId}`, 'success');
+                
+                // Retrieve yesterday's exercises
+                log('📋 Retrieving yesterday\'s exercises...', 'info');
+                const yesterdayExercises = await getAllExercisesByDate(yesterday, testUserId);
+                log(`📊 Found ${yesterdayExercises.length} exercise(s) for yesterday`, 'info');
+                
+                if (yesterdayExercises.length === 0) {
+                    log('❌ No exercises found for yesterday - this indicates a problem', 'error');
+                    return;
+                }
+                
+                // Display exercise data structure
+                const exercise = yesterdayExercises[0];
+                log('🔍 Exercise data structure:', 'info');
+                log(`   - exerciseName: ${exercise.exerciseName}`, 'info');
+                log(`   - sets: ${exercise.sets?.length || 0}`, 'info');
+                log(`   - activityType: ${exercise.activityType}`, 'info');
+                log(`   - hasExerciseName: ${!!exercise.exerciseName}`, 'info');
+                log(`   - hasName prop: ${!!exercise.name}`, 'info');
+                
+                // Test the copy process
+                log('🔄 Testing copy process...', 'info');
+                const today = new Date();
+                today.setHours(14, 0, 0, 0);
+                
+                // This simulates what CopyFromPreviousSessionDialog does
+                const copiedExercise = {
+                    ...exercise,
+                    timestamp: today,
+                    id: undefined // Remove old ID
+                };
+                
+                log('📝 Copying exercise data structure check:', 'info');
+                log(`   - copiedExercise.exerciseName: ${copiedExercise.exerciseName}`, 'info');
+                log(`   - copiedExercise.name: ${copiedExercise.name}`, 'info');
+                
+                // This simulates what handleCopiedExercises does
+                if (!copiedExercise.exerciseName) {
+                    log('❌ ISSUE FOUND: copiedExercise.exerciseName is missing!', 'error');
+                    return;
+                }
+                
+                const exerciseLogData = {
+                    exerciseName: copiedExercise.exerciseName,
+                    userId: testUserId,
+                    sets: copiedExercise.sets || [],
+                    ...(copiedExercise.activityType && { activityType: copiedExercise.activityType })
+                };
+                
+                log('💾 Saving copied exercise...', 'info');
+                const copiedId = await addExerciseLog(exerciseLogData, today);
+                log(`✅ Copied exercise with ID: ${copiedId}`, 'success');
+                
+                // Verify copy worked
+                log('🔍 Verifying copy worked...', 'info');
+                const todayExercises = await getAllExercisesByDate(today, testUserId);
+                log(`📊 Found ${todayExercises.length} exercise(s) for today`, 'info');
+                
+                if (todayExercises.length > 0) {
+                    log('✅ Copy functionality is working correctly!', 'success');
+                    todayExercises.forEach((ex, i) => {
+                        log(`   ${i + 1}. ${ex.exerciseName} (${ex.activityType})`, 'success');
+                    });
+                } else {
+                    log('❌ Copy failed - no exercises found for today', 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ Test failed: ${error.message}`, 'error');
+                console.error('Full error:', error);
+            }
+        };
+
+        window.checkTodaysData = async () => {
+            clearResults();
+            log('📅 Checking today\'s data...', 'info');
+            
+            try {
+                const { getAllExercisesByDate } = await import('/src/utils/unifiedExerciseUtils.ts');
+                
+                const today = new Date();
+                const testUserId = 'any-user'; // Check for any user
+                
+                const exercises = await getAllExercisesByDate(today, testUserId);
+                log(`📊 Found ${exercises.length} exercises for today`, 'info');
+                
+                exercises.forEach((ex, i) => {
+                    log(`${i + 1}. ${ex.exerciseName} (${ex.activityType || 'no-type'})`, 'info');
+                });
+                
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+            }
+        };
+
+        window.simulateCopyFlow = async () => {
+            clearResults();
+            log('🎭 Simulating UI copy flow...', 'info');
+            
+            try {
+                // Import what the dialog uses
+                const { getExerciseLogsByDate } = await import('/src/utils/localStorageUtils.ts');
+                const { getExercisesByDateRange } = await import('/src/services/firebase/queries.ts');
+                
+                const testDate = new Date();
+                testDate.setDate(testDate.getDate() - 1);
+                const userId = 'test-ui-flow';
+                
+                log('📋 Fetching exercises like CopyFromPreviousSessionDialog...', 'info');
+                
+                const start = new Date(testDate);
+                start.setHours(0, 0, 0, 0);
+                const end = new Date(testDate);
+                end.setHours(23, 59, 59, 999);
+                
+                // Get both sources like the dialog does
+                const [firebaseExercises, localExercises] = await Promise.all([
+                    getExercisesByDateRange(userId, start, end),
+                    getExerciseLogsByDate(testDate)
+                ]);
+                
+                log(`📦 Firebase exercises: ${firebaseExercises.length}`, 'info');
+                log(`📦 Local exercises: ${localExercises.length}`, 'info');
+                
+                // Convert like the dialog does
+                const firebaseData = firebaseExercises.map(exercise => ({
+                    id: exercise.id,
+                    exerciseName: exercise.exerciseName,
+                    sets: exercise.sets,
+                    timestamp: exercise.timestamp,
+                    userId: userId,
+                    deviceId: exercise.deviceId || ''
+                }));
+                
+                log(`✅ Converted ${firebaseData.length} Firebase exercises`, 'info');
+                
+                if (firebaseData.length > 0) {
+                    const sampleExercise = firebaseData[0];
+                    log('🔍 Sample exercise structure:', 'info');
+                    log(`   - id: ${sampleExercise.id}`, 'info');
+                    log(`   - exerciseName: ${sampleExercise.exerciseName}`, 'info');
+                    log(`   - sets count: ${sampleExercise.sets?.length || 0}`, 'info');
+                }
+                
+            } catch (error) {
+                log(`❌ Simulation failed: ${error.message}`, 'error');
+            }
+        };
+    </script>
+</body>
+</html>
