@@ -22,15 +22,14 @@ interface ProgramAddExerciseOptionsProps {
   onAddExercises: (items: { exercise: Exercise; sets: ExerciseSet[] }[]) => void;
   onOpenProgramPicker: () => void;
   onOpenCopyPrevious: () => void;
-  onOpenHistory: () => void;
-  onOpenDatabase: () => void;
+  onOpenHistory: () => void; // Still required by interface but no longer shown in UI
+  onOpenDatabase: () => void; // Still required by interface but no longer shown in UI
 }
 
 const helperCategories: Category[] = [
   { id: 'programs', name: 'Add from Program', icon: '📋', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-purple-600', textColor: 'text-white' },
-  { id: 'copyPrevious', name: 'Copy from Previous', icon: '📝', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-blue-600', textColor: 'text-white' },
-  { id: 'history', name: 'From History', icon: '🕒', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-green-600', textColor: 'text-white' },
-  { id: 'database', name: 'Exercise Database', icon: '🗄️', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-orange-600', textColor: 'text-white' }
+  { id: 'copyPrevious', name: 'Copy from Previous', icon: '📝', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-blue-600', textColor: 'text-white' }
+  // Removed: 'From History' and 'Exercise Database' - not needed for program sessions
 ];
 
 const muscleGroups: Category[] = [
@@ -57,8 +56,8 @@ export const ProgramAddExerciseOptions: React.FC<ProgramAddExerciseOptionsProps>
   onAddExercises,
   onOpenProgramPicker,
   onOpenCopyPrevious,
-  onOpenHistory,
-  onOpenDatabase
+  onOpenHistory: _onOpenHistory, // Not shown in UI for program sessions
+  onOpenDatabase: _onOpenDatabase // Not shown in UI for program sessions
 }) => {
   const [view, setView] = useState<ViewState>('main');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
@@ -334,8 +333,6 @@ export const ProgramAddExerciseOptions: React.FC<ProgramAddExerciseOptionsProps>
                   onClick={() => {
                     if (category.id === 'programs') onOpenProgramPicker();
                     else if (category.id === 'copyPrevious') onOpenCopyPrevious();
-                    else if (category.id === 'history') onOpenHistory();
-                    else if (category.id === 'database') onOpenDatabase();
                   }}
                 />
               ))}

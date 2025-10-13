@@ -23,10 +23,11 @@ export interface ProgramSession {
 }
 
 export interface ProgramExercise {
-  id: string;
-  name: string;
-  notes?: string;
+  id: string; // Reference to the exercise in the main exercise database
+  name: string; // Cached name for display (synced from exercise database)
+  exerciseRef?: string; // Firestore document reference path (e.g., 'exercises/abc123')
+  notes?: string; // Session-specific notes for this exercise
   order?: number;
-  activityType?: ActivityType; // New field for exercise type classification
-  // Removed: sets, reps, weight, setsData - these should only be logged during actual workouts
+  activityType?: ActivityType; // Cached activity type (synced from exercise database)
+  // Note: sets, reps, weight, setsData are only stored during actual workout logging, not in programs
 };

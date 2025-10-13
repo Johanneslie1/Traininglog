@@ -92,6 +92,18 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
   }, [currentSessionName, sessionNotes, selectedExercises, setPersistedState]);
   const [editingExerciseName, setEditingExerciseName] = useState<number | null>(null);
   const [tempExerciseName, setTempExerciseName] = useState('');
+  
+  // UserId for CopyFromPreviousSessionDialog - must be at top level to avoid hooks violation
+  const [userId, setUserId] = useState('');
+  
+  // Get userId from Firebase auth
+  useEffect(() => {
+    const getUserId = async () => {
+      const { auth } = await import('@/services/firebase/config');
+      return auth.currentUser?.uid || '';
+    };
+    getUserId().then(setUserId);
+  }, []);
 
   // Exercise selection handlers - extract exercises from the objects
   const handleAddFromHistory = (exercises: { exercise: Exercise; sets: any[] }[]) => {
@@ -200,13 +212,30 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
     }
 
     // Convert exercises to ProgramExercise format (exercise reference only)
-    const exercises: ProgramExercise[] = selectedExercises.map((item, index) => ({
-      id: item.id,
-      name: item.name,
-      order: index,
-      notes: item.description || '',
-      activityType: item.activityType || ActivityType.RESISTANCE // Default to RESISTANCE for backward compatibility
-    }));
+    const exercises: ProgramExercise[] = selectedExercises.map((item, index) => {
+      // Ensure we have a valid exercise ID (not temporary)
+      let exerciseId = item.id;
+      let exerciseRef: string | undefined;
+      
+      // If the ID starts with 'default-', 'imported-', or 'temp-', it's from the static database
+      // In this case, we keep it as-is since these are valid references to the exercise data
+      if (!exerciseId || exerciseId === '') {
+        console.warn('[SessionBuilder] Exercise without ID detected:', item.name);
+        exerciseId = `custom-${Date.now()}-${index}`;
+      } else if (!exerciseId.startsWith('temp-') && !exerciseId.startsWith('default-') && !exerciseId.startsWith('imported-')) {
+        // This is a Firestore document ID - create a reference path
+        exerciseRef = `exercises/${exerciseId}`;
+      }
+      
+      return {
+        id: exerciseId,
+        name: item.name,
+        exerciseRef,
+        order: index,
+        notes: item.description || '',
+        activityType: item.activityType || ActivityType.RESISTANCE // Default to RESISTANCE for backward compatibility
+      };
+    });
 
     const session: Omit<ProgramSession, 'userId'> = {
       id: initialSession?.id || '',
@@ -256,7 +285,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
           setSelectedExercises(prev => [...prev, ...exercisesToAdd]);
           setView('main');
         }}
-        userId=""
+        userId={userId}
       />
     );
   }
@@ -299,8 +328,8 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
         }}
         onOpenProgramPicker={() => setView('programPicker')}
         onOpenCopyPrevious={() => setView('copyPrevious')}
-        onOpenHistory={() => setView('history')}
-        onOpenDatabase={() => setView('database')}
+        onOpenHistory={() => {}} // No longer used
+        onOpenDatabase={() => {}} // No longer used
       />
     );
   }

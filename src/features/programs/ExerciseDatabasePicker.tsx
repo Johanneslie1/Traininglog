@@ -106,6 +106,7 @@ const ExerciseDatabasePicker: React.FC<ExerciseDatabasePickerProps> = ({
     const normalizedExercises: Exercise[] = [
       ...allExercises.map(ex => ({
         ...ex,
+        // Use consistent ID format for default exercises - these IDs are used as database references
         id: `default-${ex.name.replace(/\s+/g, '-').toLowerCase()}`,
         primaryMuscles: (ex.primaryMuscles || []).map(normalizeMuscle),
         secondaryMuscles: [],
@@ -113,6 +114,7 @@ const ExerciseDatabasePicker: React.FC<ExerciseDatabasePickerProps> = ({
       })),
       ...importedExercises.map(ex => ({
         ...ex,
+        // Use consistent ID format for imported exercises - these IDs are used as database references
         id: ex.id || `imported-${ex.name.replace(/\s+/g, '-').toLowerCase()}`,
         primaryMuscles: Array.isArray(ex.primaryMuscles) 
           ? ex.primaryMuscles.map(normalizeMuscle)
@@ -131,6 +133,7 @@ const ExerciseDatabasePicker: React.FC<ExerciseDatabasePickerProps> = ({
       }))
     ];
 
+    // Custom exercises from Firestore have real document IDs that should be preserved
     setCombinedExercises([...normalizedExercises, ...customExercises]);
   }, [customExercises]);
 

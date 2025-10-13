@@ -118,6 +118,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
       sessionId: session.id,
       sessionName: session.name,
       exerciseCount: session.exercises.length,
+      exercises: session.exercises.map(ex => ({ id: ex.id, name: ex.name, exerciseRef: ex.exerciseRef })),
       isEditing: !!editingSession
     });
 
@@ -126,9 +127,13 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
       setSessions(prev => prev.map(s => s.id === editingSession.id ? session : s));
       console.log('[ProgramBuilder] Updated existing session');
     } else {
-      // Add new session
+      // Add new session with a temporary ID that will be replaced on save
+      const sessionWithId = {
+        ...session,
+        id: session.id || `temp-session-${Date.now()}`
+      };
       setSessions(prev => {
-        const newSessions = [...prev, session];
+        const newSessions = [...prev, sessionWithId];
         console.log('[ProgramBuilder] Added new session. Total sessions:', newSessions.length);
         return newSessions;
       });
@@ -234,7 +239,17 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
       totalExercises: analytics.totalExercises,
       activityTypes: analytics.uniqueTypes,
       isBalanced: analytics.isBalanced,
-      sessions: sessions.map(s => ({ id: s.id, name: s.name, exerciseCount: s.exercises.length }))
+      sessions: sessions.map(s => ({ 
+        id: s.id, 
+        name: s.name, 
+        exerciseCount: s.exercises.length,
+        exercises: s.exercises.map(ex => ({
+          id: ex.id,
+          name: ex.name,
+          exerciseRef: ex.exerciseRef,
+          activityType: ex.activityType
+        }))
+      }))
     });
 
     const program: Omit<Program, 'id' | 'userId'> = {

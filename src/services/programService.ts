@@ -83,10 +83,13 @@ function validateProgram(program: Partial<Program>, isNew: boolean = false): voi
       if (!Array.isArray(session.exercises)) {
         throw new ProgramValidationError(`Session ${index + 1} must have an exercises array`);
       }
-      // Validate exercises - only check name and ID
+      // Validate exercises - check name and ID
       session.exercises.forEach((exercise, exIndex) => {
         if (!exercise.name?.trim()) {
           throw new ProgramValidationError(`Exercise ${exIndex + 1} in session ${index + 1} must have a name`);
+        }
+        if (!exercise.id?.trim()) {
+          throw new ProgramValidationError(`Exercise ${exIndex + 1} in session ${index + 1} must have an ID`);
         }
       });
     });
@@ -245,7 +248,7 @@ export const createProgram = async (program: Omit<Program, 'id' | 'createdAt' | 
       sessions.forEach((session, index) => {
         const sessionRef = doc(collection(programRef, 'sessions'));
         
-        // Ensure session has required fields
+        // Ensure session has required fields and properly format exercises
         const sessionData = removeUndefinedFields({
           ...session,
           id: sessionRef.id,
@@ -253,8 +256,15 @@ export const createProgram = async (program: Omit<Program, 'id' | 'createdAt' | 
           programId: programRef.id,
           order: session.order ?? index,
           createdAt: timestamp,
-          // Ensure exercises array exists
-          exercises: session.exercises || []
+          // Ensure exercises array exists and preserve all exercise reference fields
+          exercises: (session.exercises || []).map((ex: any) => ({
+            id: ex.id,
+            name: ex.name,
+            exerciseRef: ex.exerciseRef || undefined,
+            notes: ex.notes || '',
+            order: ex.order ?? 0,
+            activityType: ex.activityType || undefined
+          }))
         });
         
         console.log('[programService] Adding session to batch:', {
@@ -438,17 +448,22 @@ export const createSession = async (programId: string, session: {
       throw new Error('You can only add sessions to your own programs');
     }
 
-    // Process exercises - just store the exercise reference
-    const processedExercises = session.exercises.map(exercise => {
-      const exerciseId = (!exercise.id || exercise.id.startsWith('temp-')) 
-        ? crypto.randomUUID() 
-        : exercise.id;
+    // Process exercises - store exercise reference and minimal data
+    const processedExercises = session.exercises.map((exercise: any) => {
+      // Keep the exercise ID as-is to maintain reference to exercise database
+      // Only generate new ID if completely missing
+      const exerciseId = exercise.id || crypto.randomUUID();
+      
+      // Preserve exerciseRef if it exists
+      const exerciseRef = exercise.exerciseRef;
 
       return {
         id: exerciseId,
         name: exercise.name,
+        exerciseRef: exerciseRef || undefined, // Reference to exercises collection if from Firestore
         notes: exercise.notes || '',
-        order: exercise.order || 0
+        order: exercise.order || 0,
+        activityType: exercise.activityType || undefined // Preserve activity type for filtering/display
       };
     });
 
