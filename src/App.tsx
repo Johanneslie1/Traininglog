@@ -11,6 +11,7 @@ import { Providers } from '@/providers';
 import { store } from '@/store/store';
 import Layout from '@/components/layout/Layout';
 import AppRoutes from '@/routes';
+import { StatePersistence } from '@/utils/statePersistence';
 
 import 'mobile-drag-drop/default.css';
 import '@/styles/dragAndDrop.css';
@@ -63,6 +64,22 @@ navigator.serviceWorker?.addEventListener('message', event => {
 
 const App: React.FC = () => {
   const [isAuthInitialized, setIsAuthInitialized] = useState(false);
+
+  // Initialize state persistence
+  useEffect(() => {
+    console.log('[App] Initializing state persistence...');
+    StatePersistence.initializeAutoSave();
+
+    // Restore previous state on app load
+    const savedState = StatePersistence.restoreState();
+    if (savedState) {
+      console.log('[App] Restoring previous state:', savedState.currentPath);
+      // The router will handle navigation to the saved path
+      if (savedState.scrollPosition) {
+        StatePersistence.restoreScrollPosition(savedState.scrollPosition);
+      }
+    }
+  }, []);
 
   // Initialize auth state
   useEffect(() => {

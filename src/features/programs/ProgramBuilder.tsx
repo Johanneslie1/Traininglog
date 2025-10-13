@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Program, ProgramSession } from '@/types/program';
 import { ActivityType } from '@/types/activityTypes';
 import { PlusIcon, BookmarkIcon, TrashIcon, PencilIcon } from '@heroicons/react/outline';
 import SessionBuilder from './SessionBuilder';
 import { auth } from '@/services/firebase/config';
+import { usePersistedFormState } from '@/hooks/usePersistedState';
 
 interface ProgramBuilderProps {
   onClose: () => void;
@@ -11,17 +12,43 @@ interface ProgramBuilderProps {
   initialProgram?: Partial<Program>;
 }
 
+interface ProgramBuilderState {
+  programName: string;
+  programDescription: string;
+  sessions: ProgramSession[];
+}
+
 const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
   onClose,
   onSave,
   initialProgram
 }) => {
-  const [programName, setProgramName] = useState(initialProgram?.name || '');
-  const [programDescription, setProgramDescription] = useState(initialProgram?.description || '');
-  const [sessions, setSessions] = useState<ProgramSession[]>(initialProgram?.sessions || []);
+  // Use persisted state for the entire form
+  const formId = initialProgram?.id ? `program-builder-${initialProgram.id}` : 'program-builder-new';
+  const [persistedState, setPersistedState, clearPersistedState] = usePersistedFormState<ProgramBuilderState>(
+    formId,
+    {
+      programName: initialProgram?.name || '',
+      programDescription: initialProgram?.description || '',
+      sessions: initialProgram?.sessions || [],
+    }
+  );
+
+  const [programName, setProgramName] = useState(persistedState.programName);
+  const [programDescription, setProgramDescription] = useState(persistedState.programDescription);
+  const [sessions, setSessions] = useState<ProgramSession[]>(persistedState.sessions);
   const [showSessionBuilder, setShowSessionBuilder] = useState(false);
   const [editingSession, setEditingSession] = useState<ProgramSession | null>(null);
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+
+  // Update persisted state whenever form values change
+  useEffect(() => {
+    setPersistedState({
+      programName,
+      programDescription,
+      sessions,
+    });
+  }, [programName, programDescription, sessions, setPersistedState]);
 
   // Helper function to get activity type display info
   const getActivityTypeInfo = (activityType?: ActivityType) => {
@@ -221,6 +248,10 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
       tags: initialProgram?.tags || []
     };
 
+    // Clear persisted form data after successful save
+    clearPersistedState();
+    console.log('[ProgramBuilder] Cleared persisted form data');
+    
     onSave(program);
   };
 
@@ -228,7 +259,19 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
     return sessions.reduce((total, session) => total + session.exercises.length, 0);
   };
 
-
+  const handleClose = () => {
+    // Check if there's unsaved work
+    const hasUnsavedWork = programName.trim() || programDescription.trim() || sessions.length > 0;
+    
+    if (hasUnsavedWork) {
+      const confirmed = window.confirm(
+        'You have unsaved changes. Your progress has been saved automatically and will be restored if you come back. Do you want to close?'
+      );
+      if (!confirmed) return;
+    }
+    
+    onClose();
+  };
 
   return (
     <>
@@ -241,7 +284,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
                 {initialProgram ? 'Edit Program' : 'Create Program'}
               </h2>
               <button 
-                onClick={onClose}
+                onClick={handleClose}
                 className="text-gray-400 hover:text-white text-2xl font-bold w-8 h-8 flex items-center justify-center transition-colors"
               >
                 ×
@@ -440,7 +483,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
               </div>
               <div className="flex gap-3">
                 <button 
-                  onClick={onClose}
+                  onClick={handleClose}
                   className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
                 >
                   Cancel

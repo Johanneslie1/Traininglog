@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Exercise } from '@/types/exercise';
 import { ProgramSession, ProgramExercise } from '@/types/program';
 import { ActivityType } from '@/types/activityTypes';
@@ -8,6 +8,7 @@ import ExerciseDatabasePicker from './ExerciseDatabasePicker';
 import ExerciseSearch from '@/features/exercises/ExerciseSearch';
 import CopyFromPreviousSessionDialog from '@/features/exercises/CopyFromPreviousSessionDialog';
 import ProgramAddExerciseOptions from './ProgramAddExerciseOptions';
+import { usePersistedFormState } from '@/hooks/usePersistedState';
 
 interface SessionBuilderProps {
   onClose: () => void;
@@ -18,12 +19,41 @@ interface SessionBuilderProps {
 
 type ViewState = 'main' | 'exerciseSelection' | 'search' | 'programPicker' | 'copyPrevious' | 'history' | 'database';
 
+interface SessionBuilderState {
+  sessionName: string;
+  sessionNotes: string;
+  exercises: Exercise[];
+}
+
 const SessionBuilder: React.FC<SessionBuilderProps> = ({
   onClose,
   onSave,
   initialSession,
   sessionName = ''
 }) => {
+  // Use persisted state for the session builder
+  const formId = initialSession?.id ? `session-builder-${initialSession.id}` : 'session-builder-new';
+  const [persistedState, setPersistedState, clearPersistedState] = usePersistedFormState<SessionBuilderState>(
+    formId,
+    {
+      sessionName: initialSession?.name || sessionName,
+      sessionNotes: initialSession?.notes || '',
+      exercises: initialSession?.exercises?.map(ex => ({
+        id: ex.id,
+        name: ex.name,
+        type: 'strength' as const,
+        category: 'compound' as const,
+        primaryMuscles: [],
+        secondaryMuscles: [],
+        instructions: [],
+        description: ex.notes || '',
+        defaultUnit: 'kg' as const,
+        metrics: { trackWeight: true, trackReps: true },
+        activityType: ex.activityType || ActivityType.RESISTANCE
+      })) || [],
+    }
+  );
+
   const [view, setView] = useState<ViewState>('main');
 
   // Helper function to get activity type display info
@@ -47,25 +77,19 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
     }
   };
 
-  // Only store exercise references - no sets data
-  const [selectedExercises, setSelectedExercises] = useState<Exercise[]>(
-    initialSession?.exercises?.map(ex => ({
-      id: ex.id,
-      name: ex.name,
-      type: 'strength' as const,
-      category: 'compound' as const,
-      primaryMuscles: [],
-      secondaryMuscles: [],
-      instructions: [],
-      description: ex.notes || '',
-      defaultUnit: 'kg' as const,
-      metrics: { trackWeight: true, trackReps: true },
-      activityType: ex.activityType || ActivityType.RESISTANCE // Use stored activityType or default to RESISTANCE
-    })) || []
-  );
+  // Use persisted state
+  const [selectedExercises, setSelectedExercises] = useState<Exercise[]>(persistedState.exercises);
+  const [currentSessionName, setCurrentSessionName] = useState(persistedState.sessionName);
+  const [sessionNotes, setSessionNotes] = useState(persistedState.sessionNotes);
   
-  const [currentSessionName, setCurrentSessionName] = useState(initialSession?.name || sessionName);
-  const [sessionNotes, setSessionNotes] = useState(initialSession?.notes || '');
+  // Update persisted state whenever these values change
+  useEffect(() => {
+    setPersistedState({
+      sessionName: currentSessionName,
+      sessionNotes: sessionNotes,
+      exercises: selectedExercises,
+    });
+  }, [currentSessionName, sessionNotes, selectedExercises, setPersistedState]);
   const [editingExerciseName, setEditingExerciseName] = useState<number | null>(null);
   const [tempExerciseName, setTempExerciseName] = useState('');
 
@@ -190,6 +214,10 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
       exercises,
       notes: sessionNotes.trim()
     };
+
+    // Clear persisted form data after successful save
+    clearPersistedState();
+    console.log('[SessionBuilder] Cleared persisted form data');
 
     onSave(session);
   };

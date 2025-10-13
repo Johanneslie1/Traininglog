@@ -1,19 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Program } from '@/types/program';
 import { getAuth } from 'firebase/auth';
+import { usePersistedFormState } from '@/hooks/usePersistedState';
 
 interface CreateNewProgramProps {
   onClose: () => void;
   onSave: (program: Omit<Program, 'id' | 'userId'>) => void;
 }
 
+interface CreateProgramFormState {
+  programName: string;
+  programDescription: string;
+}
+
 const CreateNewProgram: React.FC<CreateNewProgramProps> = ({
   onClose,
   onSave
 }) => {
-  const [programName, setProgramName] = useState('');
-  const [programDescription, setProgramDescription] = useState('');
+  const [persistedState, setPersistedState, clearPersistedState] = usePersistedFormState<CreateProgramFormState>(
+    'create-new-program',
+    {
+      programName: '',
+      programDescription: '',
+    }
+  );
+
+  const [programName, setProgramName] = useState(persistedState.programName);
+  const [programDescription, setProgramDescription] = useState(persistedState.programDescription);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Update persisted state when form values change
+  useEffect(() => {
+    setPersistedState({
+      programName,
+      programDescription,
+    });
+  }, [programName, programDescription, setPersistedState]);
 
   const handleSaveProgram = async () => {
     if (!programName.trim()) {
@@ -44,6 +66,11 @@ const CreateNewProgram: React.FC<CreateNewProgramProps> = ({
       };
 
       console.log('[CreateNewProgram] Creating program:', program);
+      
+      // Clear persisted form data after successful save
+      clearPersistedState();
+      console.log('[CreateNewProgram] Cleared persisted form data');
+      
       onSave(program);
     } catch (error) {
       console.error('[CreateNewProgram] Error creating program:', error);
