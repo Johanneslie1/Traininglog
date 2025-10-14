@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
@@ -11,11 +11,52 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [showMenu, setShowMenu] = useState(false);
+  const [hasModals, setHasModals] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   
   const isDarkBackground = ['/'].includes(location.pathname);
+  
+  // Check for modals in the DOM
+  useEffect(() => {
+    const checkForModals = () => {
+      // Check if there are any full-screen fixed elements (modals)
+      const fixedElements = document.querySelectorAll('.fixed');
+      let hasModal = false;
+      
+      fixedElements.forEach(element => {
+        const classes = element.className;
+        // Check if element has both 'fixed' and 'inset-0' classes (full-screen modal indicator)
+        if (classes.includes('fixed') && classes.includes('inset-0')) {
+          // Exclude the menu button itself and auth buttons
+          if (!element.getAttribute('aria-label')?.includes('Menu') && 
+              !element.closest('[class*="auth-buttons"]')) {
+            hasModal = true;
+          }
+        }
+      });
+      
+      setHasModals(hasModal);
+    };
+    
+    // Check immediately and set up observer
+    checkForModals();
+    
+    // Use RAF for smoother updates
+    let rafId: number;
+    const observer = new MutationObserver(() => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(checkForModals);
+    });
+    
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+    
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(rafId);
+    };
+  }, []);
   
   const handleShowWorkoutSummary = () => {
     // TODO: Implement workout summary functionality
@@ -31,11 +72,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     <div className={`min-h-screen flex flex-col ${
       isDarkBackground ? 'bg-bg-primary' : 'bg-bg-secondary'
     }`}>
-      {/* Menu Button - Only show when authenticated */}
-      {isAuthenticated && (
+      {/* Menu Button - Only show when authenticated and no modals are open */}
+      {isAuthenticated && !hasModals && (
         <button
           onClick={() => setShowMenu(true)}
-          className="fixed top-4 left-4 z-30 p-2 rounded-full bg-bg-primary hover:bg-bg-secondary shadow-lg"
+          className="fixed top-4 left-4 z-10 p-2 rounded-full bg-bg-primary hover:bg-bg-secondary shadow-lg"
           aria-label="Open Menu"
         >
           <svg className="w-6 h-6 text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">

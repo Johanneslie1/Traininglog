@@ -3,7 +3,7 @@
  * Usage: const [value, setValue, clearValue] = usePersistedState('formId', initialValue);
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { StatePersistence } from '@/utils/statePersistence';
 
 export function usePersistedFormState<T>(
@@ -20,11 +20,29 @@ export function usePersistedFormState<T>(
     return initialValue;
   });
 
-  // Save to localStorage whenever value changes
+  // Debounce timer ref
+  const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Save to localStorage with debouncing (500ms delay)
   useEffect(() => {
-    if (value !== initialValue || Object.keys(value as any).length > 0) {
-      StatePersistence.saveFormData(formId, value as Record<string, any>);
+    // Clear any existing timer
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
     }
+
+    // Set new timer to save after 500ms of inactivity
+    saveTimerRef.current = setTimeout(() => {
+      if (value !== initialValue || Object.keys(value as any).length > 0) {
+        StatePersistence.saveFormData(formId, value as Record<string, any>);
+      }
+    }, 500);
+
+    // Cleanup on unmount
+    return () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+      }
+    };
   }, [value, formId, initialValue]);
 
   // Wrapper for setValue that also saves to localStorage

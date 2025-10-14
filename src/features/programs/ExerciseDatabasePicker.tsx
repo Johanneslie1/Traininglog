@@ -192,7 +192,7 @@ const ExerciseDatabasePicker: React.FC<ExerciseDatabasePickerProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-70">
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-[120]">
       <div className="bg-[#23272F] rounded-lg w-full max-w-4xl h-5/6 flex flex-col shadow-xl">
         {/* Header */}
         <div className="p-6 border-b border-white/10">

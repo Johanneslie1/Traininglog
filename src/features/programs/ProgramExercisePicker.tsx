@@ -109,7 +109,7 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
   // Render loading state
   if (isLoading) {
     return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-70 flex items-center justify-center">
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[120] flex items-center justify-center">
         <div className="bg-[#23272F] rounded-lg shadow-xl p-6 max-w-lg w-full mx-4">
           <div className="flex flex-col items-center space-y-4">
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
@@ -123,7 +123,7 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
   // Render error state
   if (error) {
     return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-70 flex items-center justify-center">
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[120] flex items-center justify-center">
         <div className="bg-[#23272F] rounded-lg shadow-xl p-6 max-w-lg w-full mx-4">
           <div className="flex flex-col items-center space-y-4">
             <div className="text-red-500 mb-4">
@@ -147,7 +147,7 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
   // Render no programs state
   if (programs.length === 0) {
     return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-70 flex items-center justify-center">
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[120] flex items-center justify-center">
         <div className="bg-[#23272F] rounded-lg shadow-xl p-6 max-w-lg w-full mx-4">
           <div className="flex flex-col items-center space-y-4">
             <div className="text-text-primary mb-4">
@@ -200,7 +200,7 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
       onClose(); 
     }
     return (
-      <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-70">
+      <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-[120]">
         <div className="bg-[#1a1a1a] rounded-xl w-full max-w-5xl max-h-[90vh] flex flex-col relative">
           <div className="absolute top-4 left-4 flex gap-2">
             <button onClick={() => setStep('programs')} className="px-3 py-1 rounded-md bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 text-sm">← Back</button>
@@ -258,7 +258,7 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-start md:items-center justify-center z-70 overflow-y-auto overscroll-contain">
+    <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-start md:items-center justify-center z-[120] overflow-y-auto overscroll-contain">
       <div className="bg-[#1a1a1a] rounded-xl w-full max-w-4xl my-auto flex flex-col relative min-h-0 max-h-[100dvh]">
         {/* Header */}
         <div className="sticky top-0 z-10 bg-[#1a1a1a] p-4 md:p-6 border-b border-white/10">

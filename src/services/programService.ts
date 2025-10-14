@@ -429,6 +429,7 @@ export const deleteSession = async (programId: string, sessionId: string): Promi
 export const createSession = async (programId: string, session: {
   name: string;
   exercises: Array<{ id?: string; name: string; notes?: string; order?: number; }>;
+  notes?: string;
   order?: number;
 }): Promise<string> => {
   try {
@@ -454,33 +455,42 @@ export const createSession = async (programId: string, session: {
       // Only generate new ID if completely missing
       const exerciseId = exercise.id || crypto.randomUUID();
       
-      // Preserve exerciseRef if it exists
-      const exerciseRef = exercise.exerciseRef;
-
-      return {
+      // Build exercise object with only defined fields
+      const exerciseData: any = {
         id: exerciseId,
         name: exercise.name,
-        exerciseRef: exerciseRef || undefined, // Reference to exercises collection if from Firestore
         notes: exercise.notes || '',
-        order: exercise.order || 0,
-        activityType: exercise.activityType || undefined // Preserve activity type for filtering/display
+        order: exercise.order ?? 0
       };
+      
+      // Only add exerciseRef if it exists
+      if (exercise.exerciseRef) {
+        exerciseData.exerciseRef = exercise.exerciseRef;
+      }
+      
+      // Only add activityType if it exists
+      if (exercise.activityType) {
+        exerciseData.activityType = exercise.activityType;
+      }
+
+      return exerciseData;
     });
 
     // Create new session reference in the sessions subcollection
     const sessionsColRef = collection(programRef, 'sessions');
     const sessionRef = doc(sessionsColRef);
     
-    const sessionData = {
+    const sessionData = removeUndefinedFields({
       id: sessionRef.id,
       name: session.name,
       exercises: processedExercises,
+      notes: session.notes || '',
       order: session.order ?? 0,
       userId: user.uid,
       programId: programId,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
-    };
+    });
 
     // Start a batch write
     const batch = writeBatch(db);

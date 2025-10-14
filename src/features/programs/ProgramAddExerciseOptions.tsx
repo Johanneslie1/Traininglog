@@ -70,7 +70,7 @@ export const ProgramAddExerciseOptions: React.FC<ProgramAddExerciseOptionsProps>
     const setUniversalSearchQuery = (_: string) => {};
     
     return (
-      <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex flex-col z-[90]">
+      <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex flex-col z-[110]">
         <header className="sticky top-0 flex items-center justify-between p-4 bg-[#1a1a1a] border-b border-white/10">
           <div className="flex items-center space-x-3">
             <button
@@ -201,7 +201,7 @@ export const ProgramAddExerciseOptions: React.FC<ProgramAddExerciseOptionsProps>
   const renderActivityPicker = (activity: ActivityType, title: string, subtitle: string) => {
     const data = getExercisesByActivityType(activity) as any[];
     return (
-      <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-[90]">
+      <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-[110]">
         <div className="bg-[#1a1a1a] rounded-xl w-full max-w-5xl max-h-[90vh] flex flex-col">
           <button
             onClick={() => setView('main')}
@@ -246,7 +246,7 @@ export const ProgramAddExerciseOptions: React.FC<ProgramAddExerciseOptionsProps>
 
   if (view === 'resistance') {
     return (
-      <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex flex-col z-[90]">
+      <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex flex-col z-[110]">
         <header className="sticky top-0 flex items-center justify-between p-4 bg-[#1a1a1a] border-b border-white/10">
           <div className="flex items-center space-x-3">
             <button
@@ -310,7 +310,7 @@ export const ProgramAddExerciseOptions: React.FC<ProgramAddExerciseOptionsProps>
   }
 
   return (
-    <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex flex-col z-[90]">
+    <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex flex-col z-[110]">
       <header className="sticky top-0 flex items-center justify-between p-4 bg-[#1a1a1a] border-b border-white/10">
         <h2 className="text-xl font-bold text-white">Add Exercise</h2>
         <button
