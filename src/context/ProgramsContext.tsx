@@ -4,6 +4,7 @@ import { Program } from '@/types/program';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import * as programService from '@/services/programService';
 import { logger } from '@/utils/logger';
+import { DEFAULT_PROGRAMS, isDefaultProgram } from '@/config/defaultPrograms';
 
 interface ProgramsContextType {
   programs: Program[];
@@ -38,8 +39,10 @@ export const ProgramsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const fetchPrograms = useCallback(async (force = false) => {
     if (!user) {
-      logger.debug('[ProgramsContext] No user, clearing programs');
-      setPrograms([]);
+      logger.debug('[ProgramsContext] No user, showing only default programs');
+      // Show default programs even when not logged in
+      const defaultPrograms = DEFAULT_PROGRAMS.map(p => ({ ...p, userId: 'system' })) as Program[];
+      setPrograms(defaultPrograms);
       setIsLoading(false);
       return;
     }
@@ -56,14 +59,24 @@ export const ProgramsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     try {
       logger.debug('[ProgramsContext] Fetching programs for user:', user.uid);
-      // Load programs with their sessions
+      // Load user programs with their sessions
       const loadedPrograms = await programService.getPrograms();
-      logger.debug('[ProgramsContext] Fetched programs:', loadedPrograms.length);
-      setPrograms(loadedPrograms);
+      logger.debug('[ProgramsContext] Fetched user programs:', loadedPrograms.length);
+      
+      // Merge default programs with user programs
+      const defaultPrograms = DEFAULT_PROGRAMS.map(p => ({ ...p, userId: user.uid })) as Program[];
+      const allPrograms = [...defaultPrograms, ...loadedPrograms];
+      
+      logger.debug('[ProgramsContext] Total programs (default + user):', allPrograms.length);
+      setPrograms(allPrograms);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch programs';
       console.error('[ProgramsContext] Error fetching programs:', err);
       setError(errorMessage);
+      
+      // Still show default programs on error
+      const defaultPrograms = DEFAULT_PROGRAMS.map(p => ({ ...p, userId: user.uid })) as Program[];
+      setPrograms(defaultPrograms);
     } finally {
       setIsLoading(false);
       setFetchingRef(false);
@@ -75,8 +88,10 @@ export const ProgramsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       console.log('[ProgramsContext] User authenticated, fetching programs');
       fetchPrograms(true); // Force fetch on user change
     } else {
-      console.log('[ProgramsContext] No user, clearing programs');
-      setPrograms([]);
+      console.log('[ProgramsContext] No user, showing default programs only');
+      // Show default programs for non-authenticated users
+      const defaultPrograms = DEFAULT_PROGRAMS.map(p => ({ ...p, userId: 'system' })) as Program[];
+      setPrograms(defaultPrograms);
       setIsLoading(false);
       setFetchingRef(false);
     }
@@ -131,6 +146,10 @@ export const ProgramsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const deleteProgram = async (id: string) => {
+    // Prevent deletion of default programs
+    if (isDefaultProgram(id)) {
+      throw new Error('Cannot delete built-in programs');
+    }
     await programService.deleteProgram(id);
     fetchPrograms(true);
   };
