@@ -336,9 +336,24 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
 
   // Main session builder view
   return (
-    <div className="fixed inset-0 bg-black z-[100] flex flex-col">
+    <div className="fixed inset-0 bg-black z-[80] flex flex-col">
+      {/* Breadcrumb */}
+      <div className="bg-[#0f0f0f] px-4 py-2 border-b border-white/5 flex-shrink-0">
+        <div className="flex items-center gap-2 text-sm text-gray-400">
+          <span>Programs</span>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+          <span>Program</span>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+          <span className="text-white">{initialSession ? 'Edit Session' : 'New Session'}</span>
+        </div>
+      </div>
+
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-4 bg-black/95 backdrop-blur-sm border-b border-white/10 min-h-[64px] flex-shrink-0">
+      <header className="flex items-center justify-between px-4 py-4 bg-black/95 backdrop-blur-sm border-b border-white/10 min-h-[64px] flex-shrink-0 z-10">
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <button 
             className="p-2 hover:bg-white/10 rounded-lg transition-colors flex-shrink-0"
@@ -361,9 +376,9 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto overscroll-contain px-4 py-6 min-h-0">
+      <main className="flex-1 overflow-y-auto overscroll-contain px-4 py-6 min-h-0 bg-black">
         {/* Session Details */}
-        <div className="mb-6 space-y-4 max-w-full">
+        <div className="mb-6 space-y-4 max-w-full max-w-4xl mx-auto">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Session Name

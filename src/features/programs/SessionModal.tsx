@@ -100,7 +100,7 @@ const SessionModal: React.FC<SessionModalProps> = ({ isOpen, onClose, onSave, in
 
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50">
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-[60]">
       <form onSubmit={handleSubmit} className="bg-[#23272F] p-6 rounded-lg w-full max-w-sm shadow-lg">
         <h2 className="text-xl font-bold mb-4 text-white">Add Session</h2>
         <input
@@ -147,7 +147,7 @@ const SessionModal: React.FC<SessionModalProps> = ({ isOpen, onClose, onSave, in
       </form>
       
       {showAddExercise && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 z-60">
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 z-[70]">
           <div className="bg-[#23272F] p-6 rounded-lg w-full max-w-md shadow-lg">
             <SessionExerciseLogOptions
               onSave={handleAddExercise}

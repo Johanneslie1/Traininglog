@@ -114,9 +114,9 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
   };
 
   return (
-    <div className="min-h-screen bg-black/90">
+    <div className="min-h-screen bg-black/90 flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 bg-[#1a1a1a] border-b border-white/10 p-4">
+      <header className="sticky top-0 z-20 bg-[#1a1a1a] border-b border-white/10 p-4 flex-shrink-0">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold text-white">Programs</h2>
           <button
@@ -130,7 +130,8 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
       </header>
 
       {/* Main Content */}
-      <main className="p-4">
+      <main className="flex-1 overflow-y-auto p-4 min-h-0">
+        <div className="max-w-7xl mx-auto">
       {error && (
         <div className="mb-4 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl">
           {error}
@@ -209,6 +210,7 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
       >
         +
       </button>
+        </div>
       </main>
       
       <ProgramModal 

@@ -217,16 +217,29 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
   };
 
   return (
-    <div className="min-h-screen bg-black/90 text-white">
-      <div className="p-6">
+    <div className="min-h-screen bg-black/90 text-white flex flex-col">
+      {/* Breadcrumb */}
+      <div className="bg-[#0f0f0f] px-4 py-2 border-b border-white/5 flex-shrink-0">
+        <div className="flex items-center gap-2 text-sm text-gray-400">
+          <button onClick={onBack} className="hover:text-white transition-colors">
+            Programs
+          </button>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+          <span className="text-white">{program.name}</span>
+        </div>
+      </div>
+
       {/* Header - Match LogOptions styling */}
-      <header className="sticky top-0 flex items-start justify-between p-4 bg-[#1a1a1a] border-b border-white/10">
-        <div className="flex items-start space-x-3 flex-1 min-w-0">
+      <header className="sticky top-0 z-20 flex items-start justify-between p-3 sm:p-4 bg-[#1a1a1a] border-b border-white/10 flex-shrink-0 gap-3">
+        <div className="flex items-start space-x-2 sm:space-x-3 flex-1 min-w-0">
           <button
             onClick={onBack}
-            className="p-2 hover:bg-white/10 rounded-xl transition-all duration-200 flex-shrink-0"
+            className="p-1.5 sm:p-2 hover:bg-white/10 rounded-xl transition-all duration-200 flex-shrink-0"
+            aria-label="Back to programs"
           >
-            <ArrowLeftIcon className="w-5 h-5 text-gray-300" />
+            <ArrowLeftIcon className="w-4 h-4 sm:w-5 sm:h-5 text-gray-300" />
           </button>
           <div className="flex-1 min-w-0">
             {editingProgram ? (
@@ -248,9 +261,9 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
               </div>
             ) : (
               <div>
-                <h1 className="text-xl font-semibold text-white break-words">{program.name}</h1>
+                <h1 className="text-lg sm:text-xl font-semibold text-white break-words">{program.name}</h1>
                 {program.description && (
-                  <p className="text-sm text-gray-400 mt-0.5 break-words">{program.description}</p>
+                  <p className="text-xs sm:text-sm text-gray-400 mt-0.5 break-words">{program.description}</p>
                 )}
               </div>
             )}
@@ -258,51 +271,53 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
         </div>
         
         {/* Quick Actions */}
-        <div className="flex items-center gap-2 ml-4 flex-shrink-0">
+        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
           {!selectionMode && (
             <>
               {editingProgram ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 sm:gap-2">
                   <button
                     onClick={handleSaveProgramEdit}
-                    className="p-2.5 hover:bg-gray-800/60 rounded-xl transition-all duration-200 text-green-400 hover:text-green-300"
+                    className="p-1.5 sm:p-2.5 hover:bg-gray-800/60 rounded-xl transition-all duration-200 text-green-400 hover:text-green-300"
                     title="Save changes"
+                    aria-label="Save changes"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                   </button>
                   <button
                     onClick={handleCancelProgramEdit}
-                    className="p-2.5 hover:bg-gray-800/60 rounded-xl transition-all duration-200 text-red-400 hover:text-red-300"
+                    className="p-1.5 sm:p-2.5 hover:bg-gray-800/60 rounded-xl transition-all duration-200 text-red-400 hover:text-red-300"
                     title="Cancel edit"
+                    aria-label="Cancel edit"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
                 </div>
               ) : (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 sm:gap-2">
                   <button
                     onClick={handleProgramEdit}
-                    className="p-2.5 hover:bg-gray-800/60 rounded-xl transition-all duration-200 text-blue-400 hover:text-blue-300"
+                    className="p-1.5 sm:p-2.5 hover:bg-gray-800/60 rounded-xl transition-all duration-200 text-blue-400 hover:text-blue-300"
                     title="Edit program"
                     aria-label={`Edit program ${program.name}`}
                   >
-                    <PencilIcon className="w-5 h-5" />
+                    <PencilIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
                   <button
                     onClick={handleDeleteProgram}
                     disabled={isDeletingProgram}
-                    className="p-2.5 hover:bg-gray-800/60 rounded-xl transition-all duration-200 text-red-400 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="p-1.5 sm:p-2.5 hover:bg-gray-800/60 rounded-xl transition-all duration-200 text-red-400 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Delete program"
                     aria-label={`Delete program ${program.name}`}
                   >
                     {isDeletingProgram ? (
-                      <div className="w-5 h-5 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+                      <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
                     ) : (
-                      <TrashIcon className="w-5 h-5" />
+                      <TrashIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                     )}
                   </button>
                 </div>
@@ -313,16 +328,15 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto overscroll-contain pb-safe min-h-0 p-6">
-
-      <div className="space-y-3">
+      <main className="flex-1 overflow-y-auto overscroll-contain p-4 min-h-0">
+        <div className="space-y-3 max-w-4xl mx-auto">
         {sessions.length > 0 ? (
           sessions.map((session) => (
             <div key={session.id} className="bg-[#1a1a1a] rounded-2xl overflow-hidden border border-gray-800 hover:border-gray-700 transition-all duration-200">
               {/* Session Header */}
-              <div className="px-5 py-4 flex items-center justify-between border-b border-gray-800/50">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3">
+              <div className="px-4 sm:px-5 py-3 sm:py-4 flex items-center justify-between border-b border-gray-800/50 gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                     <h3 className="text-lg font-semibold text-white">{session.name}</h3>
                     <span className="text-xs font-medium text-gray-400 bg-gray-800/60 px-2.5 py-1 rounded-full">
                       {session.exercises.length} exercises
@@ -330,20 +344,22 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 flex-shrink-0">
                   {!selectionMode && (
                     <>
                       <button
                         onClick={() => handleSessionEdit(session)}
-                        className="p-2 hover:bg-gray-800/60 rounded-xl transition-all duration-200 text-blue-400 hover:text-blue-300"
+                        className="p-1.5 sm:p-2 hover:bg-gray-800/60 rounded-xl transition-all duration-200 text-blue-400 hover:text-blue-300"
                         title="Edit session"
+                        aria-label="Edit session"
                       >
                         <PencilIcon className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteSession(session.id)}
-                        className="p-2 hover:bg-gray-800/60 rounded-xl transition-all duration-200 text-red-400 hover:text-red-300"
+                        className="p-1.5 sm:p-2 hover:bg-gray-800/60 rounded-xl transition-all duration-200 text-red-400 hover:text-red-300"
                         title="Delete session"
+                        aria-label="Delete session"
                       >
                         <TrashIcon className="w-4 h-4" />
                       </button>
@@ -351,8 +367,9 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                   )}
                   <button
                     onClick={() => toggleSession(session.id)}
-                    className="p-2 hover:bg-gray-800/60 rounded-xl transition-all duration-200"
+                    className="p-1.5 sm:p-2 hover:bg-gray-800/60 rounded-xl transition-all duration-200"
                     title={expandedSessions.includes(session.id) ? "Collapse session" : "Expand session"}
+                    aria-label={expandedSessions.includes(session.id) ? "Collapse session" : "Expand session"}
                   >
                     <ChevronDownIcon
                       className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
@@ -418,7 +435,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
             Add New Session
           </button>
         )}
-      </div>
+        </div>
       </main>
 
       {/* Session Builder Modal */}
@@ -432,7 +449,6 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
           initialSession={editingSession || undefined}
         />
       )}
-      </div>
     </div>
   );
 };
