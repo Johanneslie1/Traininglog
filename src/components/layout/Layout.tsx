@@ -18,6 +18,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   
   const isDarkBackground = ['/'].includes(location.pathname);
   
+  // Hide Layout's fixed elements on program routes (they have their own headers)
+  const isProgramRoute = location.pathname.startsWith('/programs') || location.pathname === '/program-selection';
+  
   // Check for modals in the DOM
   useEffect(() => {
     const checkForModals = () => {
@@ -72,8 +75,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     <div className={`min-h-screen flex flex-col ${
       isDarkBackground ? 'bg-bg-primary' : 'bg-bg-secondary'
     }`}>
-      {/* Menu Button - Only show when authenticated and no modals are open */}
-      {isAuthenticated && !hasModals && (
+      {/* Menu Button - Only show when authenticated, no modals, and not on program routes */}
+      {isAuthenticated && !hasModals && !isProgramRoute && (
         <button
           onClick={() => setShowMenu(true)}
           className="fixed top-4 left-4 z-10 p-2 rounded-full bg-bg-primary hover:bg-bg-secondary shadow-lg"
@@ -85,16 +88,24 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </button>
       )}
 
-      {/* Auth Buttons */}
-      <div className={`fixed top-4 z-30 ${isAuthenticated ? 'right-4' : 'left-1/2 transform -translate-x-1/2'}`}>
-        <AuthButtons />
-      </div>
+      {/* Auth Buttons - Hide on program routes */}
+      {!isProgramRoute && (
+        <div className={`fixed top-4 z-30 ${isAuthenticated ? 'right-4' : 'left-1/2 transform -translate-x-1/2'}`}>
+          <AuthButtons />
+        </div>
+      )}
 
       {/* Main Content */}
       <main className="flex-1 relative">
-        <div className="container mx-auto px-4 py-6 pb-20">
-          {children}
-        </div>
+        {isProgramRoute ? (
+          // Program routes handle their own layout (full-screen)
+          children
+        ) : (
+          // Regular routes use container
+          <div className="container mx-auto px-4 py-6 pb-20">
+            {children}
+          </div>
+        )}
       </main>
 
       {/* Side Menu - Only render when authenticated */}

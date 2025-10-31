@@ -5,6 +5,10 @@ import SessionBuilder from './SessionBuilder';
 import { PencilIcon, TrashIcon, ChevronDownIcon, ArrowLeftIcon } from '@heroicons/react/outline';
 import { usePrograms } from '@/context/ProgramsContext';
 import { createSession, deleteSession } from '@/services/programService';
+import { auth } from '@/services/firebase/config';
+import { signOut } from 'firebase/auth';
+import { useNavigate } from 'react-router-dom';
+import SideMenu from '@/components/SideMenu';
 
 interface Props {
   program: Program;
@@ -216,23 +220,53 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
     }
   };
 
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
+  const [showSideMenu, setShowSideMenu] = useState(false);
+
   return (
-    <div className="min-h-screen bg-black/90 text-white flex flex-col">
-      {/* Breadcrumb */}
+    <div className="fixed inset-0 bg-black text-white flex flex-col z-40">
+      {/* Top Bar with Menu and Logout */}
       <div className="bg-[#0f0f0f] px-4 py-2 border-b border-white/5 flex-shrink-0">
-        <div className="flex items-center gap-2 text-sm text-gray-400">
-          <button onClick={onBack} className="hover:text-white transition-colors">
-            Programs
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-sm text-gray-400 min-w-0 flex-1">
+            <button 
+              onClick={() => setShowSideMenu(true)}
+              className="p-1 hover:bg-white/10 rounded-lg transition-colors flex-shrink-0"
+              aria-label="Open Menu"
+            >
+              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            <button onClick={onBack} className="hover:text-white transition-colors flex-shrink-0">
+              Programs
+            </button>
+            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+            <span className="text-white truncate">{program.name}</span>
+          </div>
+          <button
+            onClick={handleLogout}
+            className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition-colors flex-shrink-0"
+          >
+            Logout
           </button>
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-          <span className="text-white">{program.name}</span>
         </div>
       </div>
 
-      {/* Header - Match LogOptions styling */}
-      <header className="sticky top-0 z-20 flex items-start justify-between p-3 sm:p-4 bg-[#1a1a1a] border-b border-white/10 flex-shrink-0 gap-3">
+      {/* Header */}
+      <header className="flex items-start justify-between p-3 sm:p-4 bg-[#1a1a1a] border-b border-white/10 flex-shrink-0 gap-3">
         <div className="flex items-start space-x-2 sm:space-x-3 flex-1 min-w-0">
           <button
             onClick={onBack}
@@ -449,6 +483,16 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
           initialSession={editingSession || undefined}
         />
       )}
+
+      {/* Side Menu */}
+      <SideMenu
+        isOpen={showSideMenu}
+        onClose={() => setShowSideMenu(false)}
+        onShowWorkoutSummary={() => {}}
+        onNavigateToday={() => navigate('/')}
+        onNavigatePrograms={() => navigate('/programs')}
+        onNavigateExercises={() => navigate('/exercises?showCreate=true')}
+      />
     </div>
   );
 };

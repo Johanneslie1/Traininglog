@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { usePrograms } from '@/context/ProgramsContext';
 import ProgramModal from './ProgramModal';
 import CreateNewProgram from './CreateNewProgram';
-import { getAuth } from 'firebase/auth';
+import { getAuth, signOut } from 'firebase/auth';
+import { auth as firebaseAuth } from '@/services/firebase/config';
 import { Program } from '@/types/program';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { TrashIcon, PlusIcon } from '@heroicons/react/outline';
+import SideMenu from '@/components/SideMenu';
 
 const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onSelect }) => {
   const navigate = useNavigate();
@@ -15,6 +17,7 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
   const [showCreateNew, setShowCreateNew] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deletingProgramId, setDeletingProgramId] = useState<string | null>(null);
+  const [showSideMenu, setShowSideMenu] = useState(false);
   const auth = getAuth();
 
   // No need for useEffect to refresh - ProgramsContext handles this automatically
@@ -113,19 +116,47 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await signOut(firebaseAuth);
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-black/90 flex flex-col">
+    <div className="fixed inset-0 bg-black flex flex-col z-40">
       {/* Header */}
-      <header className="sticky top-0 z-20 bg-[#1a1a1a] border-b border-white/10 p-4 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-white">Programs</h2>
-          <button
-            onClick={() => setShowCreateNew(true)}
-            className="px-4 py-2.5 bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white rounded-xl hover:from-[#7C3AED] hover:to-[#6D28D9] transition-all duration-200 flex items-center gap-2 font-medium shadow-lg"
-          >
-            <PlusIcon className="w-4 h-4" />
-            Create Program
-          </button>
+      <header className="bg-[#1a1a1a] border-b border-white/10 p-4 flex-shrink-0">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setShowSideMenu(true)}
+              className="p-1 hover:bg-white/10 rounded-lg transition-colors"
+              aria-label="Open Menu"
+            >
+              <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            <h2 className="text-xl font-semibold text-white">Programs</h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowCreateNew(true)}
+              className="px-4 py-2.5 bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white rounded-xl hover:from-[#7C3AED] hover:to-[#6D28D9] transition-all duration-200 flex items-center gap-2 font-medium shadow-lg"
+            >
+              <PlusIcon className="w-4 h-4" />
+              Create Program
+            </button>
+            <button
+              onClick={handleLogout}
+              className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+            >
+              Logout
+            </button>
+          </div>
         </div>
       </header>
 
@@ -228,6 +259,16 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
           onSave={handleCreateNewSave}
         />
       )}
+
+      {/* Side Menu */}
+      <SideMenu
+        isOpen={showSideMenu}
+        onClose={() => setShowSideMenu(false)}
+        onShowWorkoutSummary={() => {}}
+        onNavigateToday={() => navigate('/')}
+        onNavigatePrograms={() => navigate('/programs')}
+        onNavigateExercises={() => navigate('/exercises?showCreate=true')}
+      />
     </div>
   );
 };
