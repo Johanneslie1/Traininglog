@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState } from 'react'
+import { TrainingTypeSelector } from '@/components/TrainingTypeSelector';
+import { TrainingType } from '@/types/exercise';
 import { Exercise } from '@/types/exercise';
 import { ExerciseSet } from '@/types/sets';
 import { useSelector } from 'react-redux';
@@ -27,7 +29,7 @@ interface LogOptionsProps {
   editingExercise?: UnifiedExerciseData | null; // Add editing exercise prop
 }
 
-type ViewState = 'main' | 'setEditor' | 'programPicker' | 'copyPrevious' | 'sport' | 'stretching' | 'endurance' | 'other' | 'speedAgility' | 'resistance' | 'editExercise';
+type ViewState = 'main' | 'setEditor' | 'programPicker' | 'copyPrevious' | 'sport' | 'stretching' | 'endurance' | 'other' | 'speedAgility' | 'resistance' | 'editExercise' | 'selectType';
 
 const helperCategories: Category[] = [
   { id: 'programs', name: 'Add from Program', icon: '📋', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-purple-600', textColor: 'text-white' },
@@ -97,6 +99,7 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [createDialogActivityType, setCreateDialogActivityType] = useState<ActivityType>(ActivityType.RESISTANCE);
+  
   const user = useSelector((state: RootState) => state.auth.user);
 
   // If we're editing an exercise, go directly to edit view
@@ -106,6 +109,30 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
     }
   }, [editingExercise]);
 
+  const handleTrainingTypeSelected = (type: TrainingType) => {
+    switch(type) {
+      case TrainingType.STRENGTH:
+        setView('resistance');
+        break;
+      case TrainingType.ENDURANCE:
+        setView('endurance');
+        break;
+      case TrainingType.FLEXIBILITY:
+        setView('stretching');
+        break;
+      case TrainingType.SPEED_AGILITY:
+        setView('speedAgility');
+        break;
+      case TrainingType.TEAM_SPORTS:
+        setView('sport');
+        break;
+      case TrainingType.OTHER:
+        setView('other');
+        break;
+      default:
+        setView('main');
+    }
+  };
   const handleProgramSelected = async (exercises: { exercise: Exercise; sets: ExerciseSet[] }[]) => {
     if (!user?.id) return;
 
@@ -165,6 +192,26 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
   };
 
   // Conditional rendering for different views
+
+  // Handle selectType view
+  if (view === 'selectType') {
+    return (
+      <div className="flex flex-col h-full">
+        <div className="flex items-center justify-between mb-4 pb-4 border-b border-white/10">
+          <h2 className="text-xl font-bold text-white">Select Training Type</h2>
+          <button onClick={onClose} className="text-white/60 hover:text-white">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          <TrainingTypeSelector onSelect={handleTrainingTypeSelected} />
+        </div>
+      </div>
+    );
+  }
+
   if (view === 'sport') {
     return (
       <SportActivityPicker
@@ -566,3 +613,10 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
 };
 
 export default LogOptions;
+
+
+
+
+
+
+

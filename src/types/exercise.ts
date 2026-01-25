@@ -1,13 +1,40 @@
 import { ActivityType } from './activityTypes';
 
+// Training type enum for unified system
+export enum TrainingType {
+  STRENGTH = 'strength',
+  ENDURANCE = 'endurance',
+  SPEED_AGILITY = 'speedAgility',
+  FLEXIBILITY = 'flexibility',
+  TEAM_SPORTS = 'teamSports',
+  OTHER = 'other'
+}
+
+export interface MetricsConfig {
+  trackWeight?: boolean;
+  trackReps?: boolean;
+  trackDuration?: boolean;
+  trackDistance?: boolean;
+  trackRPE?: boolean;
+  trackHeartRate?: boolean;
+  trackCalories?: boolean;
+  trackHoldTime?: boolean;
+  trackIntensity?: boolean;
+  trackPace?: boolean;
+  trackElevation?: boolean;
+  trackPerformance?: boolean;
+}
+
 export interface Exercise {
   id: string;
   name: string;
   description: string;
+  trainingType?: TrainingType; // NEW: unified training type
   type?: 'strength' | 'cardio' | 'flexibility' | 'bodyweight' | 'plyometrics' | 'endurance' | 'teamSports' | 'speedAgility' | 'other' | 'speed_agility';
   activityType?: ActivityType;
   category: string; // More flexible category system
   difficulty?: 'beginner' | 'intermediate' | 'advanced';
+  metricsConfig?: MetricsConfig; // NEW: metrics this exercise tracks
   
   // Core muscle/target areas
   primaryMuscles?: MuscleGroup[];
@@ -121,3 +148,4 @@ export enum DifficultyLevel {
   NORMAL = 'medium',
   HARD = 'hard'
 }
+

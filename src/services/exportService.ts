@@ -135,8 +135,8 @@ export const exportData = async (userId: string, options: ExportOptions = {}) =>
             hrZone3: set.hrZone3 || 0,
             hrZone4: set.hrZone4 || 0,
             hrZone5: set.hrZone5 || 0,
-            averageHR: set.averageHR || set.averageHeartRate || 0,
-            maxHR: set.maxHR || set.maxHeartRate || 0,
+            averageHR: set.averageHeartRate || set.averageHeartRate || 0,
+            maxHR: set.maxHeartRate || set.maxHeartRate || 0,
             heartRate: set.heartRate || 0,
             calories: set.calories || 0,
             height: set.height || 0,
@@ -189,3 +189,4 @@ export const downloadCSV = (data: any[], headers: string[], filename: string) =>
   link.click();
   document.body.removeChild(link);
 };
+
