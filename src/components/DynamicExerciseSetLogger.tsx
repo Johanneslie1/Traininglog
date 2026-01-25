@@ -132,7 +132,7 @@ const DynamicExerciseSetLogger: React.FC<DynamicExerciseSetLoggerProps> = ({
         </label>
         <input
           type={type}
-          value={value || ''}
+          value={value instanceof Date ? value.toISOString().split('T')[0] : (value || '')}
           onChange={(e) => updateSet(setIndex, field, type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value)}
           className="w-full px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-[#8B5CF6]"
           placeholder={type === 'number' ? '0' : `Enter ${label.toLowerCase()}`}
@@ -410,3 +410,4 @@ const DynamicExerciseSetLogger: React.FC<DynamicExerciseSetLoggerProps> = ({
 };
 
 export default DynamicExerciseSetLogger;
+
