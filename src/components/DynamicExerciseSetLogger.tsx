@@ -248,7 +248,7 @@ const DynamicExerciseSetLogger: React.FC<DynamicExerciseSetLoggerProps> = ({
                   <label className="block text-xs text-gray-400">{name}</label>
                   <input
                     type="number"
-                    value={sets[setIndex][zone as keyof ExerciseSet] || ''}
+                    value={((sets[setIndex][zone as keyof ExerciseSet] instanceof Date) ? sets[setIndex][zone as keyof ExerciseSet].toISOString().split('T')[0] : (sets[setIndex][zone as keyof ExerciseSet] || '')) as string | number}
                     onChange={(e) => updateSet(setIndex, zone as keyof ExerciseSet, parseFloat(e.target.value) || 0)}
                     className="w-full px-2 py-1 bg-[#2a2a2a] border border-white/10 rounded text-white text-sm focus:outline-none focus:border-[#8B5CF6]"
                     placeholder="0"
@@ -410,4 +410,5 @@ const DynamicExerciseSetLogger: React.FC<DynamicExerciseSetLoggerProps> = ({
 };
 
 export default DynamicExerciseSetLogger;
+
 
