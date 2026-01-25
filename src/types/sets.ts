@@ -2,8 +2,8 @@ import { DifficultyCategory } from './difficulty';
 
 export interface ExerciseSet {
   // Core strength fields (weight + reps)
-  weight?: number;
-  reps?: number;
+  weight: number;
+  reps: number;
   
   // Duration & distance (endurance, flexibility)
   duration?: number; // seconds or minutes
@@ -51,3 +51,4 @@ export interface ExerciseSet {
   // Timestamps (optional, can be on parent log)
   timestamp?: Date;
 }
+
