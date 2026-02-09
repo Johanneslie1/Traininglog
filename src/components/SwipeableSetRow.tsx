@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { useSwipeable } from 'react-swipeable';
+import { useSwipeable, SwipeEventData } from 'react-swipeable';
 
 interface SwipeableSetRowProps {
   children: React.ReactNode;
@@ -21,6 +21,7 @@ export const SwipeableSetRow: React.FC<SwipeableSetRowProps> = ({
   const [offsetX, setOffsetX] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteButton, setShowDeleteButton] = useState(false);
+  const [isHorizontalSwipe, setIsHorizontalSwipe] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleSwipedLeft = useCallback(() => {
@@ -50,11 +51,16 @@ export const SwipeableSetRow: React.FC<SwipeableSetRowProps> = ({
   }, []);
 
   const handlers = useSwipeable({
-    onSwiping: (eventData) => {
+    onSwipeStart: (eventData: SwipeEventData) => {
+      // Determine if this is a horizontal or vertical swipe at the start
+      const isHorizontal = Math.abs(eventData.deltaX) > Math.abs(eventData.deltaY);
+      setIsHorizontalSwipe(isHorizontal);
+    },
+    onSwiping: (eventData: SwipeEventData) => {
       if (disabled) return;
       
-      // Only handle horizontal swipes
-      if (Math.abs(eventData.deltaX) > Math.abs(eventData.deltaY)) {
+      // Only handle horizontal swipes - let vertical swipes pass through for scrolling
+      if (isHorizontalSwipe && Math.abs(eventData.deltaX) > Math.abs(eventData.deltaY)) {
         // Limit swipe to the left only, with some resistance at the end
         const newOffset = Math.max(-150, Math.min(0, eventData.deltaX));
         setOffsetX(newOffset);
@@ -63,26 +69,34 @@ export const SwipeableSetRow: React.FC<SwipeableSetRowProps> = ({
     onSwipedLeft: handleSwipedLeft,
     onSwipedRight: handleSwipedRight,
     onTouchEndOrOnMouseUp: () => {
-      if (disabled) return;
-      
-      // If not past threshold, snap to button visibility or reset
-      if (Math.abs(offsetX) >= deleteThreshold) {
-        setIsDeleting(true);
-        setTimeout(() => {
-          onDelete();
-        }, 200);
-      } else if (Math.abs(offsetX) > 40) {
-        setShowDeleteButton(true);
-        setOffsetX(-80);
-      } else {
-        setOffsetX(0);
-        setShowDeleteButton(false);
+      if (disabled) {
+        setIsHorizontalSwipe(false);
+        return;
       }
+      
+      // Only process if we were doing a horizontal swipe
+      if (isHorizontalSwipe) {
+        // If not past threshold, snap to button visibility or reset
+        if (Math.abs(offsetX) >= deleteThreshold) {
+          setIsDeleting(true);
+          setTimeout(() => {
+            onDelete();
+          }, 200);
+        } else if (Math.abs(offsetX) > 40) {
+          setShowDeleteButton(true);
+          setOffsetX(-80);
+        } else {
+          setOffsetX(0);
+          setShowDeleteButton(false);
+        }
+      }
+      
+      setIsHorizontalSwipe(false);
     },
     trackMouse: false,
     trackTouch: true,
-    delta: 10,
-    preventScrollOnSwipe: true,
+    delta: 15, // Increase threshold to better distinguish swipe direction
+    preventScrollOnSwipe: false, // Allow vertical scrolling
   });
 
   const handleDeleteClick = (e: React.MouseEvent) => {
