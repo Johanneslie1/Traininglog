@@ -241,8 +241,7 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
                       <div
                         ref={provided.innerRef}
                         {...provided.draggableProps}
-                        {...provided.dragHandleProps}
-                        className={`transition-all duration-200 touch-manipulation ${
+                        className={`transition-all duration-200 ${
                           snapshot.isDragging 
                             ? 'scale-105 shadow-2xl z-50 rotate-1' 
                             : isDropTarget 
@@ -250,6 +249,17 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
                               : ''
                         }`}
                       >
+                        {/* Drag handle - small bar at the top of each exercise */}
+                        <div
+                          {...provided.dragHandleProps}
+                          className="flex justify-center py-1 cursor-grab active:cursor-grabbing touch-manipulation"
+                          aria-label={`Hold and drag to reorder exercise ${groupIndex + 1}`}
+                        >
+                          <div className={`w-10 h-1 rounded-full transition-colors ${
+                            snapshot.isDragging ? 'bg-[#8B5CF6]' : 'bg-gray-500'
+                          }`} />
+                        </div>
+                        
                         {group.superset ? (
                           // More integrated superset styling
                           <div className="relative bg-[#1a1a1a] border-l-4 border-[#2196F3] rounded-lg p-3 shadow-md mb-4">
