@@ -3,6 +3,7 @@ import { ExerciseSet } from '../types/sets';
 import { UnifiedExerciseData } from '../utils/unifiedExerciseUtils';
 import { ActivityType } from '../types/activityTypes';
 import { useSupersets } from '../context/SupersetContext';
+import { getActivityTypeInfo } from './ActivityExerciseCard';
 
 interface ExerciseCardProps {
   exercise: UnifiedExerciseData;
@@ -82,8 +83,8 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
             <div className="flex items-center gap-2">
               {/* Activity type badge if applicable */}
               {exercise.activityType && exercise.activityType !== ActivityType.RESISTANCE && (
-                <span className="px-2 py-1 bg-blue-600/20 text-blue-300 text-xs rounded-full">
-                  {exercise.activityType.charAt(0).toUpperCase() + exercise.activityType.slice(1)}
+                <span className={`px-2 py-1 ${getActivityTypeInfo(exercise.activityType).color} ${getActivityTypeInfo(exercise.activityType).textColor} text-xs rounded-full`}>
+                  {getActivityTypeInfo(exercise.activityType).label}
                 </span>
               )}
               <span className="text-gray-400">
@@ -134,8 +135,8 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
         <div className="text-sm text-gray-300">
           {/* Activity type badge */}
           <div className="flex items-center gap-2 mb-2">
-            <span className="px-2 py-1 bg-blue-600/20 text-blue-300 text-xs rounded-full">
-              {(exercise.activityType || 'Unknown').charAt(0).toUpperCase() + (exercise.activityType || 'Unknown').slice(1)} Activity
+            <span className={`px-2 py-1 ${getActivityTypeInfo(exercise.activityType).color} ${getActivityTypeInfo(exercise.activityType).textColor} text-xs rounded-full`}>
+              {getActivityTypeInfo(exercise.activityType).icon} {getActivityTypeInfo(exercise.activityType).label}
             </span>
             <span className="text-xs text-gray-400">
               {exercise.sets?.length || 0} set{(exercise.sets?.length || 0) !== 1 ? 's' : ''}
@@ -156,9 +157,11 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
                   // Note: We don't exclude zero values as they might be legitimate (e.g., 0 calories)
                 };
                 
+                const typeInfo = getActivityTypeInfo(exercise.activityType);
+                
                 return (
-                  <div key={setIndex} className="bg-gray-800/30 rounded-lg p-3 border-l-2 border-blue-500/50">
-                    <div className="text-xs text-blue-300 mb-2 font-medium">
+                  <div key={setIndex} className={`bg-gray-800/30 rounded-lg p-3 border-l-2 ${typeInfo.borderColor}`}>
+                    <div className={`text-xs ${typeInfo.textColor} mb-2 font-medium`}>
                       Set {setIndex + 1}
                     </div>
                     

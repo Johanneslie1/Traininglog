@@ -453,6 +453,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
                 e.stopPropagation();
               }}
               className="resistance-input resistance-input-control flex-1 min-w-0 px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white text-center focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors"
+              inputMode={step && step < 1 ? 'decimal' : 'numeric'}
               min={min}
               step={step}
               placeholder={placeholder}
@@ -484,8 +485,8 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
       case 'bodyweight':
         fields.push(
           <div key="sets-reps" className="space-y-4 sm:grid sm:grid-cols-2 sm:gap-4 sm:space-y-0">
-            {renderField('reps', 'Reps *', 'number', 1, 1, undefined, true)}
-            {renderField('weight', 'Weight (kg)', 'number', 0, 0.5, undefined, true)}
+            {renderField('reps', 'Reps *', 'number', 1, 1, '1-999', true)}
+            {renderField('weight', 'Weight (kg)', 'number', 0, 0.5, '0-999.9', true)}
           </div>
         );
         fields.push(
@@ -519,18 +520,18 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
       case 'endurance':
         fields.push(
           <div key="duration-distance" className="grid grid-cols-2 gap-4">
-            {renderField('duration', 'Duration (minutes) *', 'number', 0.1, 0.1)}
-            {renderField('distance', 'Distance (km)', 'number', 0, 0.1)}
+            {renderField('duration', 'Duration (minutes) *', 'number', 0.1, 0.1, '0.1-1440')}
+            {renderField('distance', 'Distance (km)', 'number', 0, 0.1, '0-500')}
           </div>
         );
-        fields.push(renderField('calories', 'Calories', 'number', 0));
+        fields.push(renderField('calories', 'Calories', 'number', 0, 1, '0-9999'));
         fields.push(
           <div key="hr-avg-max" className="grid grid-cols-2 gap-4">
-            {renderField('averageHeartRate', 'Average HR (bpm)', 'number', 40, 1)}
-            {renderField('maxHeartRate', 'Max HR (bpm)', 'number', 60, 1)}
+            {renderField('averageHeartRate', 'Average HR (bpm)', 'number', 40, 1, '40-250')}
+            {renderField('maxHeartRate', 'Max HR (bpm)', 'number', 60, 1, '60-250')}
           </div>
         );
-        fields.push(renderField('elevation', 'Elevation Gain (m)', 'number', 0));
+        fields.push(renderField('elevation', 'Elevation Gain (m)', 'number', 0, 1, '0-9999'));
         
         // Heart Rate Zones (collapsible)
         fields.push(
@@ -568,8 +569,8 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
             </div>          </div>
         );
         break;      case 'flexibility':
-        fields.push(renderField('reps', 'Repetitions', 'number', 1));
-        fields.push(renderField('holdTime', 'Hold Time (seconds)', 'number', 1));
+        fields.push(renderField('reps', 'Repetitions', 'number', 1, 1, '1-99'));
+        fields.push(renderField('holdTime', 'Hold Time (seconds)', 'number', 1, 1, '1-600'));
         
         // Intensity dropdown like RPE
         fields.push(
@@ -623,9 +624,9 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
           </div>
         );
         break;      case 'sport':
-        fields.push(renderField('duration', 'Duration (minutes) *', 'number', 1));
-        fields.push(renderField('distance', 'Distance (km)', 'number', 0, 0.1));
-        fields.push(renderField('calories', 'Calories', 'number', 0));
+        fields.push(renderField('duration', 'Duration (minutes) *', 'number', 1, 1, '1-1440'));
+        fields.push(renderField('distance', 'Distance (km)', 'number', 0, 0.1, '0-500'));
+        fields.push(renderField('calories', 'Calories', 'number', 0, 1, '0-9999'));
         
         // Performance-focused fields only
         fields.push(
@@ -635,6 +636,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
             </label>
             <input
               type="number"
+              inputMode="numeric"
               min="1"
               max="10"
               value={sets[setIndex]?.performance !== undefined ? sets[setIndex].performance : ''}
@@ -645,34 +647,35 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
                   updateSet(setIndex, 'performance', undefined);
                 } else {
                   const numValue = Number(value);
-                  if (!isNaN(numValue)) {
-                    updateSet(setIndex, 'performance', value);
+                  if (!isNaN(numValue) && numValue >= 1 && numValue <= 10) {
+                    updateSet(setIndex, 'performance', numValue);
                   }
                 }
               }}
               className="w-full px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500"
-              placeholder="Rate your performance"
+              placeholder="1-10"
             />
           </div>
         );
         break;      case 'speed_agility':
-        fields.push(renderField('reps', 'Reps per Set', 'number', 1));
+        fields.push(renderField('reps', 'Reps per Set', 'number', 1, 1, '1-999'));
         
         // Distance and Height fields (both optional and independently editable)
         fields.push(
           <div key="distance-height" className="grid grid-cols-2 gap-4">
-            {renderField('distance', 'Distance (meters)', 'number', 0, 0.1)}
-            {renderField('height', 'Height (cm)', 'number', 0, 1)}
+            {renderField('distance', 'Distance (meters)', 'number', 0, 0.1, '0-1000')}
+            {renderField('height', 'Height (cm)', 'number', 0, 1, '0-400')}
           </div>
         );
         
-        fields.push(renderField('restTime', 'Rest Between Sets (seconds)', 'number', 0));
+        fields.push(renderField('restTime', 'Rest Between Sets (seconds)', 'number', 0, 1, '0-600'));
         break;
-        break;      case 'other':
+
+      case 'other':
       default:
-        fields.push(renderField('duration', 'Duration (minutes) *', 'number', 0.1, 0.1));
-        fields.push(renderField('distance', 'Distance (km)', 'number', 0, 0.1));
-        fields.push(renderField('calories', 'Calories', 'number', 0));
+        fields.push(renderField('duration', 'Duration (minutes) *', 'number', 0.1, 0.1, '0.1-1440'));
+        fields.push(renderField('distance', 'Distance (km)', 'number', 0, 0.1, '0-500'));
+        fields.push(renderField('calories', 'Calories', 'number', 0, 1, '0-9999'));
         break;
     }
 
