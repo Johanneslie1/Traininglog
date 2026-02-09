@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { Exercise } from '@/types/exercise';
 import type { ExerciseSet } from '@/types/sets';
 import { SetEditorDialog } from '@/components/SetEditorDialog';
 import { UniversalSetLogger } from '@/components/UniversalSetLogger';
+import { SwipeableSetRow } from '@/components/SwipeableSetRow';
+import { InlineEditableValue } from '@/components/InlineEditableValue';
 import { DifficultyCategory } from '@/types/difficulty';
 import { ActivityType } from '@/types/activityTypes';
+import { toast } from 'react-hot-toast';
 
 interface ExerciseSetLoggerProps {
   exercise: Partial<Exercise> & { 
@@ -91,6 +94,8 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
   
   const [isAddingSet, setIsAddingSet] = useState(!isEditing);
   const [editingSetIndex, setEditingSetIndex] = useState<number | null>(null);
+  const [lastAddedIndex, setLastAddedIndex] = useState<number | null>(null);
+  const setsListRef = useRef<HTMLDivElement>(null);
 
   // Get the appropriate previous set based on context
   const getPreviousSet = (currentIndex?: number): ExerciseSet | undefined => {
@@ -129,14 +134,77 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
     if (typeof index === 'number') {
       setSets(sets.map((s, i) => i === index ? editedSet : s));
       setEditingSetIndex(null);
+      toast.success(`Set ${index + 1} updated`, {
+        duration: 1500,
+        style: {
+          background: '#2a2a2a',
+          color: '#fff',
+        },
+      });
     } else {
+      const newIndex = sets.length;
       setSets([...sets, editedSet]);
+      setLastAddedIndex(newIndex);
+      
+      toast.success(`Set ${newIndex + 1} added`, {
+        duration: 1500,
+        icon: '✓',
+        style: {
+          background: '#2a2a2a',
+          color: '#fff',
+          border: '1px solid rgba(139, 92, 246, 0.5)',
+        },
+      });
+      
+      // Scroll to the new set
+      setTimeout(() => {
+        if (setsListRef.current) {
+          setsListRef.current.scrollTo({
+            top: setsListRef.current.scrollHeight,
+            behavior: 'smooth',
+          });
+        }
+      }, 100);
+      
+      // Clear animation state after animation completes
+      setTimeout(() => {
+        setLastAddedIndex(null);
+      }, 600);
     }
     setIsAddingSet(false);
   };
 
   const handleSetDelete = (index: number) => {
-    setSets(sets.filter((_, i) => i !== index));
+    if (sets.length > 1) {
+      setSets(sets.filter((_, i) => i !== index));
+      
+      // Adjust editing index if needed
+      if (editingSetIndex !== null) {
+        if (editingSetIndex === index) {
+          setEditingSetIndex(null);
+        } else if (editingSetIndex > index) {
+          setEditingSetIndex(editingSetIndex - 1);
+        }
+      }
+      
+      toast.success(`Set ${index + 1} removed`, {
+        duration: 1500,
+        icon: '🗑️',
+        style: {
+          background: '#2a2a2a',
+          color: '#fff',
+        },
+      });
+    } else {
+      toast.error('Cannot remove the last set', {
+        duration: 1500,
+      });
+    }
+  };
+  
+  // Inline update for quick edits without opening the full dialog
+  const handleInlineUpdate = (index: number, field: keyof ExerciseSet, value: number | string) => {
+    setSets(sets.map((s, i) => i === index ? { ...s, [field]: value } : s));
   };
 
   const handleSaveAndClose = () => {
@@ -152,36 +220,86 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
     }
   };
 
-  const renderSetSummary = (set: ExerciseSet, index: number) => (
-    <div 
-      key={index}
-      className="flex items-center justify-between p-4 bg-[#2a2a2a] rounded-lg mb-2 cursor-pointer hover:bg-[#3a3a3a]"
-      onClick={() => setEditingSetIndex(index)}
-    >
-      <div className="flex items-center space-x-4">
-        <span className="text-gray-400">Set {index + 1}</span>
-        <span className="text-white font-medium">{set.weight}kg × {set.reps}</span>
-      </div>
-      <div className="flex items-center space-x-2">
-        <span className={`px-3 py-1 rounded text-sm ${
-          set.difficulty === DifficultyCategory.WARMUP ? 'bg-gray-600' :
-          set.difficulty === DifficultyCategory.EASY ? 'bg-green-600' :
-          set.difficulty === DifficultyCategory.NORMAL ? 'bg-blue-600' :
-          set.difficulty === DifficultyCategory.HARD ? 'bg-red-600' :
-          set.difficulty === DifficultyCategory.DROP ? 'bg-purple-600' :
-          'bg-gray-600'
-        }`}>
-          {set.difficulty}
-        </span>
-      </div>
-    </div>
-  );
+  const renderSetSummary = (set: ExerciseSet, index: number) => {
+    const isNewlyAdded = lastAddedIndex === index;
+    
+    return (
+      <SwipeableSetRow
+        key={index}
+        onDelete={() => handleSetDelete(index)}
+        disabled={sets.length <= 1}
+      >
+        <div 
+          className={`
+            flex items-center justify-between p-4 bg-[#2a2a2a] rounded-lg 
+            cursor-pointer hover:bg-[#3a3a3a] transition-colors
+            ${isNewlyAdded ? 'set-added-animation' : ''}
+          `}
+        >
+          <div className="flex items-center space-x-4 flex-1 min-w-0">
+            <span className="text-gray-400 shrink-0">Set {index + 1}</span>
+            
+            {/* Inline editable weight and reps */}
+            <div className="flex items-center gap-1">
+              <InlineEditableValue
+                value={set.weight}
+                onSave={(val) => handleInlineUpdate(index, 'weight', val)}
+                type="number"
+                min={0}
+                step={0.5}
+                unit="kg"
+                displayClassName="text-white font-medium"
+                formatDisplay={(v) => `${v ?? 0}kg`}
+              />
+              <span className="text-gray-500">×</span>
+              <InlineEditableValue
+                value={set.reps}
+                onSave={(val) => handleInlineUpdate(index, 'reps', val)}
+                type="number"
+                min={0}
+                step={1}
+                displayClassName="text-white font-medium"
+                formatDisplay={(v) => `${v ?? 0}`}
+              />
+            </div>
+          </div>
+          
+          <div className="flex items-center space-x-2 shrink-0">
+            <span className={`px-2 py-1 rounded text-xs sm:text-sm ${
+              set.difficulty === DifficultyCategory.WARMUP ? 'bg-gray-600' :
+              set.difficulty === DifficultyCategory.EASY ? 'bg-green-600' :
+              set.difficulty === DifficultyCategory.NORMAL ? 'bg-blue-600' :
+              set.difficulty === DifficultyCategory.HARD ? 'bg-red-600' :
+              set.difficulty === DifficultyCategory.DROP ? 'bg-purple-600' :
+              'bg-gray-600'
+            }`}>
+              {set.difficulty}
+            </span>
+            
+            {/* Edit button to open full dialog */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setEditingSetIndex(index);
+              }}
+              className="p-2 text-gray-400 hover:text-white transition-colors"
+              aria-label="Edit set details"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </SwipeableSetRow>
+    );
+  };
 
 
 
   return (
     <div className="flex flex-col h-full bg-[#1a1a1a]">
-      <div className="flex-1 p-4">
+      <div ref={setsListRef} className="flex-1 p-4 overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold text-white">
             {isEditing ? 'Edit' : 'Log'} {exercise.name}
@@ -189,7 +307,16 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
           <span className="text-gray-400">{sets.length} sets</span>
         </div>
 
-        {sets.map((set, index) => renderSetSummary(set, index))}
+        <div className="space-y-2">
+          {sets.map((set, index) => renderSetSummary(set, index))}
+        </div>
+        
+        {/* Swipe hint - only show on mobile when there are multiple sets */}
+        {sets.length > 1 && (
+          <p className="text-xs text-gray-500 text-center mt-3 sm:hidden">
+            💡 Swipe left on a set to delete, or tap values to edit inline
+          </p>
+        )}
 
         {/* Set Editor Dialog */}
         {(isAddingSet || editingSetIndex !== null) && (

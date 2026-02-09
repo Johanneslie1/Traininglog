@@ -1,5 +1,5 @@
 import React, { useCallback, useState, useEffect } from 'react';
-import { Exercise } from '@/types/exercise';
+import { Exercise, MuscleGroup } from '@/types/exercise';
 import { ExerciseSet } from '@/types/sets';
 import { allExercises } from '@/data/exercises';
 import { importedExercises } from '@/data/importedExercises';
@@ -18,8 +18,8 @@ interface SessionExerciseLogOptionsProps {
   onSave: (exercise: ExerciseWithSets) => void;
 }
 
-const normalizeMuscle = (muscle: string) => {
-  const muscleMap: Record<string, string> = {
+const normalizeMuscle = (muscle: string): MuscleGroup => {
+  const muscleMap: Record<string, MuscleGroup> = {
     'chest': 'chest',
     'pectorals': 'chest',
     'back': 'back',
@@ -46,7 +46,6 @@ const SessionExerciseLogOptions: React.FC<SessionExerciseLogOptionsProps> = ({ o
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  // customExercises moved inline into useEffect
 
   // Load custom and default exercises
   useEffect(() => {
@@ -72,15 +71,14 @@ const SessionExerciseLogOptions: React.FC<SessionExerciseLogOptionsProps> = ({ o
               defaultUnit: data.defaultUnit,
             } as Exercise);
           });
-
         }
 
         // Combine default + imported + custom exercises
-        const normalizedExercises = [
+        const normalizedExercises: Exercise[] = [
           ...allExercises.map(ex => ({
             ...ex,
             id: `default-${ex.name.replace(/\s+/g, '-').toLowerCase()}`,
-            primaryMuscles: ((ex.primaryMuscles || []) as string[]).map(normalizeMuscle) as any,
+            primaryMuscles: (ex.primaryMuscles || []).map(normalizeMuscle),
             secondaryMuscles: [],
             customExercise: false
           })),
@@ -137,7 +135,7 @@ const SessionExerciseLogOptions: React.FC<SessionExerciseLogOptionsProps> = ({ o
           defaultUnit: data.defaultUnit,
         } as Exercise;
 
-
+        setExercises(prev => [...prev, newExercise]);
         handleSelectExercise(newExercise);
         setShowCreateDialog(false);
       }

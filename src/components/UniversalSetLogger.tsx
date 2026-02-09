@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import type { Exercise } from '@/types/exercise';
 import type { ExerciseSet } from '@/types/sets';
 import { ActivityType } from '@/types/activityTypes';
 import { DifficultyCategory } from '@/types/difficulty';
 import { toast } from 'react-hot-toast';
+import { SwipeableSetRow } from './SwipeableSetRow';
 
 interface UniversalSetLoggerProps {
   exercise: Exercise;
@@ -225,9 +226,14 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
   const exerciseType = getExerciseType(exercise);
   const [sets, setSets] = useState<ExerciseSet[]>([]);
   const [showRPEHelper, setShowRPEHelper] = useState(false);
+  const [expandedSetIndex, setExpandedSetIndex] = useState<number | null>(null);
+  const [lastAddedIndex, setLastAddedIndex] = useState<number | null>(null);
   
   // Track unique IDs for sets to prevent key issues
   const [setIds, setSetIds] = useState<string[]>([]);
+  
+  // Ref for scrolling to new sets
+  const setListRef = useRef<HTMLDivElement>(null);
 
   // Initialize sets
   useEffect(() => {
@@ -248,17 +254,69 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
   const addSet = useCallback(() => {
     const lastSet = sets[sets.length - 1];
     const newSet = lastSet ? { ...lastSet } : getDefaultSet(exerciseType);
-    const newId = `set-${exercise.name}-${sets.length}`;
+    const newId = `set-${exercise.name}-${sets.length}-${Date.now()}`;
+    const newIndex = sets.length;
+    
     setSets(prev => [...prev, newSet]);
     setSetIds(prev => [...prev, newId]);
+    setLastAddedIndex(newIndex);
+    setExpandedSetIndex(newIndex); // Expand the newly added set for editing
+    
+    // Show toast notification
+    toast.success(`Set ${newIndex + 1} added`, {
+      duration: 1500,
+      icon: '✓',
+      style: {
+        background: '#2a2a2a',
+        color: '#fff',
+        border: '1px solid rgba(139, 92, 246, 0.5)',
+      },
+    });
+    
+    // Scroll to the new set after a short delay
+    setTimeout(() => {
+      if (setListRef.current) {
+        setListRef.current.scrollTo({
+          top: setListRef.current.scrollHeight,
+          behavior: 'smooth',
+        });
+      }
+    }, 100);
+    
+    // Clear animation state after animation completes
+    setTimeout(() => {
+      setLastAddedIndex(null);
+    }, 600);
   }, [sets, exerciseType, exercise.name]);
 
   const removeSet = useCallback((index: number) => {
     if (sets.length > 1) {
       setSets(prev => prev.filter((_, i) => i !== index));
       setSetIds(prev => prev.filter((_, i) => i !== index));
+      
+      // Adjust expanded set index if needed
+      if (expandedSetIndex !== null) {
+        if (expandedSetIndex === index) {
+          setExpandedSetIndex(null);
+        } else if (expandedSetIndex > index) {
+          setExpandedSetIndex(expandedSetIndex - 1);
+        }
+      }
+      
+      toast.success(`Set ${index + 1} removed`, {
+        duration: 1500,
+        icon: '🗑️',
+        style: {
+          background: '#2a2a2a',
+          color: '#fff',
+        },
+      });
+    } else {
+      toast.error('Cannot remove the last set', {
+        duration: 1500,
+      });
     }
-  }, [sets]);
+  }, [sets.length, expandedSetIndex]);
 
   const updateSet = useCallback((index: number, field: keyof ExerciseSet, value: any) => {
     setSets(prev => {
@@ -705,38 +763,114 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
       </div>
 
       {/* Sets List */}
-      <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4">
-        {sets.map((_, index) => (
-          <div key={setIds[index] || `set-${index}`} className="bg-[#1a1a1a] rounded-lg p-3 sm:p-4 border border-white/10">
-            <div className="flex items-center justify-between mb-3 sm:mb-4">
-              <h3 className="text-base sm:text-lg font-medium text-white">
-                {getSetLabel()} {index + 1}
-              </h3>
-              <div className="flex items-center gap-2">
-                {index > 0 && (
-                  <button
-                    onClick={() => copyPreviousSet(index)}
-                    className="px-2 py-1 sm:px-3 sm:py-1 text-xs sm:text-sm bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors touch-manipulation"
-                  >
-                    Copy Previous
-                  </button>
-                )}
-                {sets.length > 1 && (
-                  <button
-                    onClick={() => removeSet(index)}
-                    className="px-2 py-1 sm:px-3 sm:py-1 text-xs sm:text-sm bg-red-600 hover:bg-red-700 text-white rounded transition-colors touch-manipulation"
-                  >
-                    Remove
-                  </button>
+      <div ref={setListRef} className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4">
+        {sets.map((set, index) => {
+          const isExpanded = expandedSetIndex === index;
+          const isNewlyAdded = lastAddedIndex === index;
+          
+          return (
+            <SwipeableSetRow
+              key={setIds[index] || `set-${index}`}
+              onDelete={() => removeSet(index)}
+              disabled={sets.length <= 1}
+            >
+              <div 
+                className={`
+                  bg-[#1a1a1a] rounded-lg border border-white/10 overflow-hidden
+                  ${isNewlyAdded ? 'set-added-animation' : ''}
+                `}
+              >
+                {/* Collapsed/Summary View - always visible */}
+                <div 
+                  className={`
+                    flex items-center justify-between p-3 sm:p-4 cursor-pointer 
+                    hover:bg-white/5 transition-colors
+                    ${isExpanded ? 'border-b border-white/10' : ''}
+                  `}
+                  onClick={() => setExpandedSetIndex(isExpanded ? null : index)}
+                >
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <span className="text-gray-400 font-medium shrink-0">
+                      {getSetLabel()} {index + 1}
+                    </span>
+                    
+                    {/* Compact set summary based on exercise type */}
+                    {!isExpanded && (
+                      <div className="flex items-center gap-2 text-white font-medium truncate">
+                        {exerciseType === 'strength' || exerciseType === 'bodyweight' ? (
+                          <span>{set.weight || 0}kg × {set.reps || 0}</span>
+                        ) : exerciseType === 'endurance' ? (
+                          <span>
+                            {set.duration || 0} min
+                            {set.distance ? ` • ${set.distance} km` : ''}
+                          </span>
+                        ) : exerciseType === 'flexibility' ? (
+                          <span>
+                            {set.holdTime || 0}s hold
+                            {set.reps ? ` × ${set.reps}` : ''}
+                          </span>
+                        ) : exerciseType === 'speed_agility' ? (
+                          <span>
+                            {set.reps || 0} reps
+                            {set.distance ? ` • ${set.distance}m` : ''}
+                            {set.height ? ` • ${set.height}cm` : ''}
+                          </span>
+                        ) : (
+                          <span>{set.duration || 0} min</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex items-center gap-2 shrink-0">
+                    {/* Expand/Collapse indicator */}
+                    <svg 
+                      className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+                
+                {/* Expanded Form View */}
+                {isExpanded && (
+                  <div className="p-3 sm:p-4 space-y-4">
+                    <div className="flex items-center justify-end gap-2 mb-2">
+                      {index > 0 && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            copyPreviousSet(index);
+                          }}
+                          className="px-2 py-1 sm:px-3 sm:py-1 text-xs sm:text-sm bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors touch-manipulation"
+                        >
+                          Copy Previous
+                        </button>
+                      )}
+                      {sets.length > 1 && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeSet(index);
+                          }}
+                          className="px-2 py-1 sm:px-3 sm:py-1 text-xs sm:text-sm bg-red-600 hover:bg-red-700 text-white rounded transition-colors touch-manipulation"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                    <div className="space-y-4">
+                      {renderFieldsForSet(index)}
+                    </div>
+                  </div>
                 )}
               </div>
-            </div>
-
-            <div className="space-y-4">
-              {renderFieldsForSet(index)}
-            </div>
-          </div>
-        ))}
+            </SwipeableSetRow>
+          );
+        })}
 
         {/* Add Set Button */}
         <button
@@ -745,6 +879,13 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
         >
           + Add {getSetLabel()}
         </button>
+        
+        {/* Swipe hint - only show on mobile when there are multiple sets */}
+        {sets.length > 1 && (
+          <p className="text-xs text-gray-500 text-center mt-2 sm:hidden">
+            💡 Swipe left on a set to delete, or tap to expand/collapse
+          </p>
+        )}
       </div>
 
       {/* RPE Helper Modal */}
