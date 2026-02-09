@@ -46,7 +46,7 @@ const SessionExerciseLogOptions: React.FC<SessionExerciseLogOptionsProps> = ({ o
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [customExercises, setCustomExercises] = useState<Exercise[]>([]);
+  // customExercises moved inline into useEffect
 
   // Load custom and default exercises
   useEffect(() => {
@@ -72,15 +72,15 @@ const SessionExerciseLogOptions: React.FC<SessionExerciseLogOptionsProps> = ({ o
               defaultUnit: data.defaultUnit,
             } as Exercise);
           });
-          setCustomExercises(userCustomExercises);
+
         }
 
         // Combine default + imported + custom exercises
-        const normalizedExercises: Exercise[] = [
+        const normalizedExercises = [
           ...allExercises.map(ex => ({
             ...ex,
             id: `default-${ex.name.replace(/\s+/g, '-').toLowerCase()}`,
-            primaryMuscles: (ex.primaryMuscles || []).map(normalizeMuscle),
+            primaryMuscles: ((ex.primaryMuscles || []) as string[]).map(normalizeMuscle) as any,
             secondaryMuscles: [],
             customExercise: false
           })),
@@ -137,7 +137,7 @@ const SessionExerciseLogOptions: React.FC<SessionExerciseLogOptionsProps> = ({ o
           defaultUnit: data.defaultUnit,
         } as Exercise;
 
-        setCustomExercises(prev => [...prev, newExercise]);
+
         handleSelectExercise(newExercise);
         setShowCreateDialog(false);
       }

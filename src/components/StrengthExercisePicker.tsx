@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Exercise } from '@/types/exercise';
+// @ts-ignore - CSS Module
 import styles from './StrengthExercisePicker.module.css';
 
 interface StrengthExercisePickerProps {
