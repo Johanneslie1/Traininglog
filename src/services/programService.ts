@@ -135,18 +135,21 @@ export const getPrograms = async (): Promise<Program[]> => {
               return {
                 id: sessionDoc.id,
                 name: sessionData.name,
-                exercises: (sessionData.exercises || []).map((ex: any) => ({
-                  id: ex.id || crypto.randomUUID(),
-                  name: ex.name,
-                  sets: ex.sets || 3,
-                  reps: ex.reps || 10,
-                  weight: ex.weight || 0,
-                  setsData: ex.setsData || Array(ex.sets || 3).fill({
+                exercises: (sessionData.exercises || [])
+                  .map((ex: any, exIndex: number) => ({
+                    id: ex.id || crypto.randomUUID(),
+                    name: ex.name,
+                    sets: ex.sets || 3,
                     reps: ex.reps || 10,
                     weight: ex.weight || 0,
-                    difficulty: 'MODERATE'
-                  })
-                })),
+                    order: ex.order ?? exIndex,
+                    setsData: ex.setsData || Array(ex.sets || 3).fill({
+                      reps: ex.reps || 10,
+                      weight: ex.weight || 0,
+                      difficulty: 'MODERATE'
+                    })
+                  }))
+                  .sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0)),
                 userId: user.uid,
                 order: sessionData.order ?? 0
               };
@@ -257,12 +260,13 @@ export const createProgram = async (program: Omit<Program, 'id' | 'createdAt' | 
           order: session.order ?? index,
           createdAt: timestamp,
           // Ensure exercises array exists and preserve all exercise reference fields
-          exercises: (session.exercises || []).map((ex: any) => ({
+          // Assign order based on array index to maintain insertion order
+          exercises: (session.exercises || []).map((ex: any, exIndex: number) => ({
             id: ex.id,
             name: ex.name,
             exerciseRef: ex.exerciseRef || undefined,
             notes: ex.notes || '',
-            order: ex.order ?? 0,
+            order: ex.order ?? exIndex,
             activityType: ex.activityType || undefined
           }))
         });
@@ -325,10 +329,16 @@ export const replaceProgram = async (programId: string, program: Program): Promi
     // Create new sessions
     sessions.forEach((session, index) => {
       const sessionRef = doc(collection(programRef, 'sessions'));
+      // Process exercises with proper order
+      const processedExercises = (session.exercises || []).map((ex: any, exIndex: number) => ({
+        ...ex,
+        order: ex.order ?? exIndex
+      }));
       batch.set(sessionRef, {
         ...session,
         id: sessionRef.id,
         order: session.order ?? index,
+        exercises: processedExercises,
         userId: user.uid,
         programId
       });
@@ -450,7 +460,8 @@ export const createSession = async (programId: string, session: {
     }
 
     // Process exercises - store exercise reference and minimal data
-    const processedExercises = session.exercises.map((exercise: any) => {
+    // Assign order based on array index to maintain insertion order
+    const processedExercises = session.exercises.map((exercise: any, exIndex: number) => {
       // Keep the exercise ID as-is to maintain reference to exercise database
       // Only generate new ID if completely missing
       const exerciseId = exercise.id || crypto.randomUUID();
@@ -460,7 +471,7 @@ export const createSession = async (programId: string, session: {
         id: exerciseId,
         name: exercise.name,
         notes: exercise.notes || '',
-        order: exercise.order ?? 0
+        order: exercise.order ?? exIndex
       };
       
       // Only add exerciseRef if it exists
@@ -550,7 +561,8 @@ export const updateSession = async (programId: string, sessionId: string, exerci
     }
 
     // Process exercises to ensure correct format and data integrity
-    const processedExercises = exercises.map(exercise => {
+    // Assign order based on array index to maintain insertion order
+    const processedExercises = exercises.map((exercise, exIndex) => {
       // Ensure valid exercise ID
       const exerciseId = (!exercise.id || exercise.id.startsWith('temp-')) 
         ? crypto.randomUUID() 
@@ -575,7 +587,8 @@ export const updateSession = async (programId: string, sessionId: string, exerci
         sets: setsData.length,
         reps: setsData[0]?.reps || exercise.reps || 10,
         weight: setsData[0]?.weight || exercise.weight || 0,
-        setsData: setsData
+        setsData: setsData,
+        order: exIndex
       };
     });
 

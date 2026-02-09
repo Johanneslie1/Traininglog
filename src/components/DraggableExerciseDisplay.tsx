@@ -21,23 +21,6 @@ const triggerHapticFeedback = (intensity: 'light' | 'medium' | 'heavy' = 'light'
   }
 };
 
-// Grip dots icon component for drag handle
-const GripDotsIcon: React.FC<{ className?: string }> = ({ className = '' }) => (
-  <svg 
-    className={className} 
-    viewBox="0 0 24 24" 
-    fill="currentColor"
-    aria-hidden="true"
-  >
-    <circle cx="8" cy="6" r="2" />
-    <circle cx="16" cy="6" r="2" />
-    <circle cx="8" cy="12" r="2" />
-    <circle cx="16" cy="12" r="2" />
-    <circle cx="8" cy="18" r="2" />
-    <circle cx="16" cy="18" r="2" />
-  </svg>
-);
-
 interface DraggableExerciseDisplayProps {
   exercises: UnifiedExerciseData[];
   onEditExercise: (exercise: UnifiedExerciseData) => void;
@@ -258,7 +241,8 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
                       <div
                         ref={provided.innerRef}
                         {...provided.draggableProps}
-                        className={`transition-all duration-200 ${
+                        {...provided.dragHandleProps}
+                        className={`transition-all duration-200 touch-manipulation ${
                           snapshot.isDragging 
                             ? 'scale-105 shadow-2xl z-50 rotate-1' 
                             : isDropTarget 
@@ -266,37 +250,6 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
                               : ''
                         }`}
                       >
-                        {/* Enhanced drag handle with grip dots icon */}
-                        <div
-                          {...provided.dragHandleProps}
-                          className="mb-2 flex items-center justify-center gap-2 py-2 px-4 -mx-2 rounded-lg touch-manipulation select-none cursor-grab active:cursor-grabbing hover:bg-white/5 transition-colors group"
-                          style={{ minHeight: '44px' }} // Touch-friendly minimum size
-                          aria-label={`Drag to reorder exercise ${groupIndex + 1}`}
-                        >
-                          {/* Position number badge - updates during drag */}
-                          <div className={`
-                            flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold
-                            transition-all duration-200
-                            ${snapshot.isDragging 
-                              ? 'bg-[#8B5CF6] text-white scale-110' 
-                              : 'bg-gray-700 text-gray-300 group-hover:bg-gray-600'
-                            }
-                          `}>
-                            {groupIndex + 1}
-                          </div>
-                          
-                          {/* Grip dots icon */}
-                          <GripDotsIcon 
-                            className={`
-                              w-5 h-5 transition-colors duration-200
-                              ${snapshot.isDragging 
-                                ? 'text-[#8B5CF6]' 
-                                : 'text-gray-400 group-hover:text-gray-300'
-                              }
-                            `}
-                          />
-                        </div>
-                        
                         {group.superset ? (
                           // More integrated superset styling
                           <div className="relative bg-[#1a1a1a] border-l-4 border-[#2196F3] rounded-lg p-3 shadow-md mb-4">
