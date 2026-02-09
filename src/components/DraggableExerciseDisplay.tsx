@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { DragDropContext, Droppable, Draggable, DropResult, DragStart, DragUpdate } from 'react-beautiful-dnd';
 import { ExerciseData } from '../services/exerciseDataService';
 import { UnifiedExerciseData } from '../utils/unifiedExerciseUtils';
 import { SupersetGroup } from '../types/session';
@@ -11,6 +11,32 @@ import {
 } from '../utils/hiddenExercisesStorage';
 import ExerciseCard from './ExerciseCard';
 import SupersetActionsButton from './SupersetActionsButton';
+import toast from 'react-hot-toast';
+
+// Haptic feedback utility
+const triggerHapticFeedback = (intensity: 'light' | 'medium' | 'heavy' = 'light') => {
+  if ('vibrate' in navigator) {
+    const durations = { light: 10, medium: 25, heavy: 50 };
+    navigator.vibrate(durations[intensity]);
+  }
+};
+
+// Grip dots icon component for drag handle
+const GripDotsIcon: React.FC<{ className?: string }> = ({ className = '' }) => (
+  <svg 
+    className={className} 
+    viewBox="0 0 24 24" 
+    fill="currentColor"
+    aria-hidden="true"
+  >
+    <circle cx="8" cy="6" r="2" />
+    <circle cx="16" cy="6" r="2" />
+    <circle cx="8" cy="12" r="2" />
+    <circle cx="16" cy="12" r="2" />
+    <circle cx="8" cy="18" r="2" />
+    <circle cx="16" cy="18" r="2" />
+  </svg>
+);
 
 interface DraggableExerciseDisplayProps {
   exercises: UnifiedExerciseData[];
@@ -29,14 +55,52 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
   
   // Initialize hidden exercises from localStorage
   const [hiddenExercises, setHiddenExercises] = useState<Set<string>>(loadHiddenExercises);
+  
+  // Drag state for visual feedback
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  
+  // Store previous order for undo functionality
+  const previousOrderRef = useRef<UnifiedExerciseData[] | null>(null);
+  const [canUndo, setCanUndo] = useState(false);
+
+  // Handle drag start
+  const handleDragStart = (_start: DragStart) => {
+    setIsDragging(true);
+    // Store current order before drag
+    previousOrderRef.current = [...exercises];
+    // Trigger haptic feedback on drag start
+    triggerHapticFeedback('medium');
+  };
+
+  // Handle drag update for drop zone highlighting
+  const handleDragUpdate = (update: DragUpdate) => {
+    if (update.destination) {
+      setDragOverIndex(update.destination.index);
+    } else {
+      setDragOverIndex(null);
+    }
+  };
 
   // Handle drag end event
   const handleDragEnd = (result: DropResult) => {
+    setIsDragging(false);
+    setDragOverIndex(null);
+    
     if (!result.destination) return;
+    
+    // Skip if dropped in same position
+    if (result.source.index === result.destination.index) {
+      previousOrderRef.current = null;
+      return;
+    }
     
     const items = Array.from(exercises);
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
+    
+    // Trigger haptic feedback on successful drop
+    triggerHapticFeedback('heavy');
     
     // Call the parent component's reorder handler
     onReorderExercises(items);
@@ -44,7 +108,34 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
     // Update exercise order in the superset context
     const exerciseIds = items.map(exercise => exercise.id || '').filter(id => id !== '');
     updateExerciseOrder(exerciseIds);
+    
+    // Enable undo
+    setCanUndo(true);
   };
+
+  // Undo last reorder
+  const handleUndo = useCallback(() => {
+    if (previousOrderRef.current) {
+      onReorderExercises(previousOrderRef.current);
+      const exerciseIds = previousOrderRef.current.map(exercise => exercise.id || '').filter(id => id !== '');
+      updateExerciseOrder(exerciseIds);
+      previousOrderRef.current = null;
+      setCanUndo(false);
+      toast.success('Reorder undone');
+      triggerHapticFeedback('light');
+    }
+  }, [onReorderExercises, updateExerciseOrder]);
+  
+  // Auto-hide undo after 10 seconds
+  useEffect(() => {
+    if (canUndo) {
+      const timer = setTimeout(() => {
+        setCanUndo(false);
+        previousOrderRef.current = null;
+      }, 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [canUndo]);
 
   // Toggle exercise visibility
   const toggleExerciseVisibility = (exerciseId: string) => {
@@ -124,104 +215,158 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
       </div>
     );
   }  return (
-    <DragDropContext onDragEnd={handleDragEnd}>
-      <Droppable droppableId="exercises">
-        {(provided) => (
-          <div 
-            {...provided.droppableProps}
-            ref={provided.innerRef}
-            className="space-y-6"
+    <>
+      {/* Undo button - shows after reorder */}
+      {canUndo && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 animate-fade-in">
+          <button
+            onClick={handleUndo}
+            className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] border border-gray-600 text-white rounded-full shadow-lg hover:bg-gray-800 transition-all"
           >
-            {groupedExercises.map((group, groupIndex) => (
-              <Draggable
-                key={group.exercises[0].id || `group-${groupIndex}`}
-                draggableId={group.exercises[0].id || `group-${groupIndex}`}
-                index={groupIndex}
-              >
-                {(provided, snapshot) => (
-                  <div
-                    ref={provided.innerRef}
-                    {...provided.draggableProps}
-                    className={`transition-all duration-200 ${
-                      snapshot.isDragging ? 'scale-105 shadow-2xl' : ''
-                    }`}
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+            </svg>
+            <span className="text-sm">Undo reorder</span>
+          </button>
+        </div>
+      )}
+      
+      <DragDropContext 
+        onDragStart={handleDragStart}
+        onDragUpdate={handleDragUpdate}
+        onDragEnd={handleDragEnd}
+      >
+        <Droppable droppableId="exercises">
+          {(provided, droppableSnapshot) => (
+            <div 
+              {...provided.droppableProps}
+              ref={provided.innerRef}
+              className={`space-y-6 transition-colors duration-200 ${
+                droppableSnapshot.isDraggingOver ? 'bg-[#8B5CF6]/5 rounded-lg' : ''
+              }`}
+            >
+              {groupedExercises.map((group, groupIndex) => {
+                const isDropTarget = isDragging && dragOverIndex === groupIndex;
+                
+                return (
+                  <Draggable
+                    key={group.exercises[0].id || `group-${groupIndex}`}
+                    draggableId={group.exercises[0].id || `group-${groupIndex}`}
+                    index={groupIndex}
                   >
-                    {/* Drag handle without hashtag number */}
-                    <div
-                      {...provided.dragHandleProps}
-                      className="mb-2 flex justify-center relative"
-                    >
-                      <div className="w-12 h-1 bg-gray-400 rounded-full hover:bg-gray-300 cursor-grab active:cursor-grabbing"></div>
-                    </div>
-                    
-                    {group.superset ? (
-                      // More integrated superset styling
-                      <div className="relative bg-[#1a1a1a] border-l-4 border-[#2196F3] rounded-lg p-3 shadow-md mb-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 bg-[#2196F3] rounded-full"></div>
-                            <h3 className="text-sm font-medium text-white flex items-center">
-                              <span className="text-[#2196F3]">Superset:</span>
-                              <span className="ml-1">{group.superset.name}</span>
-                              <span className="ml-2 text-xs text-[#2196F3]/70">
-                                ({group.exercises.length})
-                              </span>
-                            </h3>
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        className={`transition-all duration-200 ${
+                          snapshot.isDragging 
+                            ? 'scale-105 shadow-2xl z-50 rotate-1' 
+                            : isDropTarget 
+                              ? 'border-t-2 border-[#8B5CF6] pt-2' 
+                              : ''
+                        }`}
+                      >
+                        {/* Enhanced drag handle with grip dots icon */}
+                        <div
+                          {...provided.dragHandleProps}
+                          className="mb-2 flex items-center justify-center gap-2 py-2 px-4 -mx-2 rounded-lg touch-manipulation select-none cursor-grab active:cursor-grabbing hover:bg-white/5 transition-colors group"
+                          style={{ minHeight: '44px' }} // Touch-friendly minimum size
+                          aria-label={`Drag to reorder exercise ${groupIndex + 1}`}
+                        >
+                          {/* Position number badge - updates during drag */}
+                          <div className={`
+                            flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold
+                            transition-all duration-200
+                            ${snapshot.isDragging 
+                              ? 'bg-[#8B5CF6] text-white scale-110' 
+                              : 'bg-gray-700 text-gray-300 group-hover:bg-gray-600'
+                            }
+                          `}>
+                            {groupIndex + 1}
                           </div>
-                          {group.exercises[0]?.id && (
-                            <div className="flex items-center">
-                              <SupersetActionsButton exerciseId={group.exercises[0].id} />
-                            </div>
-                          )}
+                          
+                          {/* Grip dots icon */}
+                          <GripDotsIcon 
+                            className={`
+                              w-5 h-5 transition-colors duration-200
+                              ${snapshot.isDragging 
+                                ? 'text-[#8B5CF6]' 
+                                : 'text-gray-400 group-hover:text-gray-300'
+                              }
+                            `}
+                          />
                         </div>
                         
-                        <div className="space-y-3">
-                          {group.exercises.map((exercise, exerciseIndex) => (
-                            <div key={exercise.id || exerciseIndex} className="relative">
-                              {/* Simpler connection line */}
-                              {exerciseIndex < group.exercises.length - 1 && (
-                                <div className="absolute -bottom-2 left-4 h-3 w-0.5 bg-[#2196F3]/40"></div>
-                              )}
-                              
-                              <div className="transition-all duration-200 hover:bg-black/20 rounded-lg">
-                                <ExerciseCard
-                                  exercise={exercise}
-                                  exerciseNumber={groupIndex + 1}
-                                  subNumber={exerciseIndex + 1}
-                                  onEdit={() => onEditExercise(exercise)}
-                                  onDelete={() => onDeleteExercise(exercise)}
-                                  showActions={true}
-                                  isHidden={hiddenExercises.has(exercise.id || '')}
-                                  onToggleVisibility={() => toggleExerciseVisibility(exercise.id || '')}
-                                />
+                        {group.superset ? (
+                          // More integrated superset styling
+                          <div className="relative bg-[#1a1a1a] border-l-4 border-[#2196F3] rounded-lg p-3 shadow-md mb-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 bg-[#2196F3] rounded-full"></div>
+                                <h3 className="text-sm font-medium text-white flex items-center">
+                                  <span className="text-[#2196F3]">Superset:</span>
+                                  <span className="ml-1">{group.superset.name}</span>
+                                  <span className="ml-2 text-xs text-[#2196F3]/70">
+                                    ({group.exercises.length})
+                                  </span>
+                                </h3>
                               </div>
+                              {group.exercises[0]?.id && (
+                                <div className="flex items-center">
+                                  <SupersetActionsButton exerciseId={group.exercises[0].id} />
+                                </div>
+                              )}
                             </div>
-                          ))}
-                        </div>
-                      </div>
-                    ) : (
-                      // Individual exercise with simpler styling
-                      <div className="border-l-4 border-white/20 rounded-lg shadow-sm mb-4">
-                        <ExerciseCard
-                          exercise={group.exercises[0]}
-                          exerciseNumber={groupIndex + 1}
-                          onEdit={() => onEditExercise(group.exercises[0])}
-                          onDelete={() => onDeleteExercise(group.exercises[0])}
-                          showActions={true}
-                          isHidden={hiddenExercises.has(group.exercises[0].id || '')}
-                          onToggleVisibility={() => toggleExerciseVisibility(group.exercises[0].id || '')}
-                        />
+                            
+                            <div className="space-y-3">
+                              {group.exercises.map((exercise, exerciseIndex) => (
+                                <div key={exercise.id || exerciseIndex} className="relative">
+                                  {/* Simpler connection line */}
+                                  {exerciseIndex < group.exercises.length - 1 && (
+                                    <div className="absolute -bottom-2 left-4 h-3 w-0.5 bg-[#2196F3]/40"></div>
+                                  )}
+                                  
+                                  <div className="transition-all duration-200 hover:bg-black/20 rounded-lg">
+                                    <ExerciseCard
+                                      exercise={exercise}
+                                      exerciseNumber={groupIndex + 1}
+                                      subNumber={exerciseIndex + 1}
+                                      onEdit={() => onEditExercise(exercise)}
+                                      onDelete={() => onDeleteExercise(exercise)}
+                                      showActions={true}
+                                      isHidden={hiddenExercises.has(exercise.id || '')}
+                                      onToggleVisibility={() => toggleExerciseVisibility(exercise.id || '')}
+                                    />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          // Individual exercise with simpler styling
+                          <div className="border-l-4 border-white/20 rounded-lg shadow-sm mb-4">
+                            <ExerciseCard
+                              exercise={group.exercises[0]}
+                              exerciseNumber={groupIndex + 1}
+                              onEdit={() => onEditExercise(group.exercises[0])}
+                              onDelete={() => onDeleteExercise(group.exercises[0])}
+                              showActions={true}
+                              isHidden={hiddenExercises.has(group.exercises[0].id || '')}
+                              onToggleVisibility={() => toggleExerciseVisibility(group.exercises[0].id || '')}
+                            />
+                          </div>
+                        )}
                       </div>
                     )}
-                  </div>
-                )}
-              </Draggable>
-            ))}
-            {provided.placeholder}
-          </div>
-        )}
-      </Droppable>
-    </DragDropContext>
+                  </Draggable>
+                );
+              })}
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
+      </DragDropContext>
+    </>
   );
 };
 
