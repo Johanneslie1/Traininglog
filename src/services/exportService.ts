@@ -1,13 +1,15 @@
 import { db } from './firebase/config';
-import { collection, query, getDocs, orderBy } from 'firebase/firestore';
+import { collection, query, getDocs, orderBy, where, Timestamp } from 'firebase/firestore';
 import { getUserWorkouts } from './firebase/workouts';
 import { ExerciseLog } from '@/types/exercise';
 import { DifficultyCategory } from '@/types/difficulty';
 
-interface ExportOptions {
+export interface ExportOptions {
   includeSessions?: boolean;
   includeExerciseLogs?: boolean;
   includeSets?: boolean;
+  startDate?: Date;
+  endDate?: Date;
 }
 
 // Helper function to safely convert date to ISO string
@@ -24,7 +26,9 @@ export const exportData = async (userId: string, options: ExportOptions = {}) =>
   const {
     includeSessions = true,
     includeExerciseLogs = true,
-    includeSets = true
+    includeSets = true,
+    startDate,
+    endDate
   } = options;
 
   const results = {
@@ -36,7 +40,18 @@ export const exportData = async (userId: string, options: ExportOptions = {}) =>
   try {
     // Export sessions
     if (includeSessions) {
-      const sessions = await getUserWorkouts(userId);
+      let sessions = await getUserWorkouts(userId);
+      
+      // Filter by date range if provided
+      if (startDate || endDate) {
+        sessions = sessions.filter(session => {
+          const sessionDate = new Date(session.date);
+          if (startDate && sessionDate < startDate) return false;
+          if (endDate && sessionDate > endDate) return false;
+          return true;
+        });
+      }
+      
       results.sessions = sessions.map(session => ({
         userId: session.userId,
         sessionId: session.id,
@@ -56,10 +71,35 @@ export const exportData = async (userId: string, options: ExportOptions = {}) =>
 
     // Export exercise logs
     if (includeExerciseLogs || includeSets) {
-      const exerciseLogsQuery = query(
-        collection(db, 'users', userId, 'exercises'),
-        orderBy('timestamp', 'desc')
-      );
+      // Build query with optional date range filtering
+      const exercisesRef = collection(db, 'users', userId, 'exercises');
+      let exerciseLogsQuery;
+      
+      if (startDate && endDate) {
+        exerciseLogsQuery = query(
+          exercisesRef,
+          where('timestamp', '>=', Timestamp.fromDate(startDate)),
+          where('timestamp', '<=', Timestamp.fromDate(endDate)),
+          orderBy('timestamp', 'desc')
+        );
+      } else if (startDate) {
+        exerciseLogsQuery = query(
+          exercisesRef,
+          where('timestamp', '>=', Timestamp.fromDate(startDate)),
+          orderBy('timestamp', 'desc')
+        );
+      } else if (endDate) {
+        exerciseLogsQuery = query(
+          exercisesRef,
+          where('timestamp', '<=', Timestamp.fromDate(endDate)),
+          orderBy('timestamp', 'desc')
+        );
+      } else {
+        exerciseLogsQuery = query(
+          exercisesRef,
+          orderBy('timestamp', 'desc')
+        );
+      }
 
       const exerciseLogsSnapshot = await getDocs(exerciseLogsQuery);
       const exerciseLogs: ExerciseLog[] = [];
@@ -158,6 +198,36 @@ export const exportData = async (userId: string, options: ExportOptions = {}) =>
     console.error('Export error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     throw new Error(`Failed to export data: ${errorMessage}`);
+  }
+};
+
+export interface ExportPreview {
+  sessionCount: number;
+  exerciseCount: number;
+  setCount: number;
+}
+
+/**
+ * Get a preview of how much data will be exported for the given date range
+ */
+export const getExportPreview = async (userId: string, startDate?: Date, endDate?: Date): Promise<ExportPreview> => {
+  try {
+    const data = await exportData(userId, {
+      includeSessions: true,
+      includeExerciseLogs: true,
+      includeSets: true,
+      startDate,
+      endDate
+    });
+
+    return {
+      sessionCount: data.sessions.length,
+      exerciseCount: data.exerciseLogs.length,
+      setCount: data.sets.length
+    };
+  } catch (error) {
+    console.error('Error getting export preview:', error);
+    return { sessionCount: 0, exerciseCount: 0, setCount: 0 };
   }
 };
 

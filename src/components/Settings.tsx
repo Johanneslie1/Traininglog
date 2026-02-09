@@ -1,7 +1,47 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
-import { exportData, downloadCSV } from '@/services/exportService';
+import { exportData, downloadCSV, getExportPreview, ExportPreview, ExportOptions } from '@/services/exportService';
+
+type DateRangePreset = 'last7days' | 'last30days' | 'thisMonth' | 'lastMonth' | 'allTime' | 'custom';
+
+interface DateRange {
+  startDate: Date | null;
+  endDate: Date | null;
+  preset: DateRangePreset;
+}
+
+const getDateRangeFromPreset = (preset: DateRangePreset): { startDate: Date | null; endDate: Date | null } => {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+  
+  switch (preset) {
+    case 'last7days': {
+      const start = new Date(today);
+      start.setDate(start.getDate() - 6);
+      start.setHours(0, 0, 0, 0);
+      return { startDate: start, endDate: today };
+    }
+    case 'last30days': {
+      const start = new Date(today);
+      start.setDate(start.getDate() - 29);
+      start.setHours(0, 0, 0, 0);
+      return { startDate: start, endDate: today };
+    }
+    case 'thisMonth': {
+      const start = new Date(now.getFullYear(), now.getMonth(), 1);
+      return { startDate: start, endDate: today };
+    }
+    case 'lastMonth': {
+      const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const end = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+      return { startDate: start, endDate: end };
+    }
+    case 'allTime':
+    default:
+      return { startDate: null, endDate: null };
+  }
+};
 
 interface SettingsProps {
   isOpen: boolean;
@@ -19,6 +59,63 @@ interface Setting {
 const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
   const { user } = useSelector((state: RootState) => state.auth);
   const [isExporting, setIsExporting] = useState(false);
+  const [dateRange, setDateRange] = useState<DateRange>({
+    startDate: null,
+    endDate: null,
+    preset: 'allTime'
+  });
+  const [exportPreview, setExportPreview] = useState<ExportPreview | null>(null);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+
+  // Fetch export preview when date range changes
+  const fetchPreview = useCallback(async () => {
+    if (!user?.id || !isOpen) return;
+    
+    setIsLoadingPreview(true);
+    try {
+      const preview = await getExportPreview(
+        user.id,
+        dateRange.startDate || undefined,
+        dateRange.endDate || undefined
+      );
+      setExportPreview(preview);
+    } catch (error) {
+      console.error('Failed to get export preview:', error);
+      setExportPreview(null);
+    } finally {
+      setIsLoadingPreview(false);
+    }
+  }, [user?.id, dateRange.startDate, dateRange.endDate, isOpen]);
+
+  // Fetch preview when modal opens or date range changes
+  useEffect(() => {
+    if (isOpen && user?.id) {
+      fetchPreview();
+    }
+  }, [isOpen, user?.id, dateRange.startDate?.getTime(), dateRange.endDate?.getTime()]); // Use getTime() to avoid object reference issues
+
+  const handlePresetChange = (preset: DateRangePreset) => {
+    const { startDate, endDate } = getDateRangeFromPreset(preset);
+    setDateRange({ startDate, endDate, preset });
+  };
+
+  const handleCustomDateChange = (field: 'startDate' | 'endDate', value: string) => {
+    const date = value ? new Date(value) : null;
+    if (field === 'endDate' && date) {
+      date.setHours(23, 59, 59, 999);
+    }
+    setDateRange(prev => ({
+      ...prev,
+      [field]: date,
+      preset: 'custom'
+    }));
+  };
+
+  const formatDateForInput = (date: Date | null): string => {
+    if (!date) return '';
+    return date.toISOString().split('T')[0];
+  };
+
   const handleExport = async () => {
     if (!user?.id) {
       alert('Please log in to export your data.');
@@ -27,7 +124,12 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
     
     setIsExporting(true);
     try {
-      const data = await exportData(user.id);
+      const exportOptions: ExportOptions = {
+        startDate: dateRange.startDate || undefined,
+        endDate: dateRange.endDate || undefined
+      };
+      
+      const data = await exportData(user.id, exportOptions);
       
       if (data.sessions.length > 0) {
         downloadCSV(
@@ -152,16 +254,93 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                 </div>
               ))}
               
-              {/* Export Data Button */}
-              <div className="pt-4 border-t border-border">
+              {/* Export Data Section */}
+              <div className="pt-4 border-t border-border space-y-4">
+                <h3 className="text-lg font-medium text-text-primary">Export Data</h3>
+                
+                {/* Date Range Preset Buttons */}
+                <div className="space-y-2">
+                  <label className="text-sm text-text-secondary">Date Range</label>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { key: 'last7days' as DateRangePreset, label: 'Last 7 days' },
+                      { key: 'last30days' as DateRangePreset, label: 'Last 30 days' },
+                      { key: 'thisMonth' as DateRangePreset, label: 'This month' },
+                      { key: 'lastMonth' as DateRangePreset, label: 'Last month' },
+                      { key: 'allTime' as DateRangePreset, label: 'All time' }
+                    ].map(({ key, label }) => (
+                      <button
+                        key={key}
+                        onClick={() => handlePresetChange(key)}
+                        className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                          dateRange.preset === key
+                            ? 'bg-accent-primary text-white'
+                            : 'bg-bg-tertiary text-text-secondary hover:bg-bg-secondary'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Custom Date Inputs */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm text-text-secondary mb-1">Start Date</label>
+                    <input
+                      type="date"
+                      value={formatDateForInput(dateRange.startDate)}
+                      onChange={(e) => handleCustomDateChange('startDate', e.target.value)}
+                      className="w-full bg-bg-tertiary text-text-primary px-3 py-2 rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-accent-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-text-secondary mb-1">End Date</label>
+                    <input
+                      type="date"
+                      value={formatDateForInput(dateRange.endDate)}
+                      onChange={(e) => handleCustomDateChange('endDate', e.target.value)}
+                      className="w-full bg-bg-tertiary text-text-primary px-3 py-2 rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-accent-primary"
+                    />
+                  </div>
+                </div>
+
+                {/* Export Preview */}
+                {user?.id && (
+                  <div className="bg-bg-secondary rounded-md p-3">
+                    {isLoadingPreview ? (
+                      <p className="text-sm text-text-secondary">Loading preview...</p>
+                    ) : exportPreview ? (
+                      <div className="text-sm text-text-secondary">
+                        <span className="font-medium text-text-primary">
+                          {exportPreview.sessionCount} sessions
+                        </span>
+                        {', '}
+                        <span className="font-medium text-text-primary">
+                          {exportPreview.exerciseCount} exercises
+                        </span>
+                        {', '}
+                        <span className="font-medium text-text-primary">
+                          {exportPreview.setCount} sets
+                        </span>
+                        {' in selected range'}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-text-secondary">No data in selected range</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Export Button */}
                 <button
                   onClick={handleExport}
-                  disabled={isExporting || !user?.id}
+                  disabled={isExporting || !user?.id || (exportPreview !== null && exportPreview.sessionCount === 0 && exportPreview.exerciseCount === 0)}
                   className="w-full bg-accent-primary text-white py-3 px-4 rounded-md hover:bg-accent-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {isExporting ? 'Exporting...' : !user?.id ? 'Login Required' : 'Export Data'}
                 </button>
-                <p className="text-sm text-text-secondary mt-2">
+                <p className="text-sm text-text-secondary">
                   {!user?.id 
                     ? 'Please log in to export your training data.'
                     : 'Download your training data as CSV files for analysis in Excel, Google Sheets, or other tools.'

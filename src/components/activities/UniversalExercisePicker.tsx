@@ -163,7 +163,7 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
   const selectedList = multiSelect ? enriched.filter(e => selectedMap[e.id]) : [];
 
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden min-h-0">
+    <div className="w-full h-full flex flex-col min-h-0">
       {/* Header */}
       <div className="flex items-center justify-between p-6 border-b border-gray-700">
         <div>
