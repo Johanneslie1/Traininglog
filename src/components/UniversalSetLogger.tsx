@@ -5,6 +5,8 @@ import { ActivityType } from '@/types/activityTypes';
 import { DifficultyCategory } from '@/types/difficulty';
 import { toast } from 'react-hot-toast';
 import { SwipeableSetRow } from './SwipeableSetRow';
+import { useExerciseHistory } from '@/hooks/useExerciseHistory';
+import { ExerciseHistorySummary } from './ExerciseHistorySummary';
 
 interface UniversalSetLoggerProps {
   exercise: Exercise;
@@ -225,6 +227,9 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
 }) => {
   const exerciseType = getExerciseType(exercise);
   const [sets, setSets] = useState<ExerciseSet[]>([]);
+  
+  // Fetch exercise history for progressive overload context
+  const exerciseHistory = useExerciseHistory(exercise.name);
   const [showRPEHelper, setShowRPEHelper] = useState(false);
   const [expandedSetIndex, setExpandedSetIndex] = useState<number | null>(null);
   const [lastAddedIndex, setLastAddedIndex] = useState<number | null>(null);
@@ -342,6 +347,21 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
       toast.success('Copied previous set values');
     }
   }, [sets]);
+
+  // Handle copying last values from exercise history
+  const handleCopyLastHistoryValues = useCallback((historySets: ExerciseSet[]) => {
+    if (historySets.length > 0) {
+      // Replace current sets with history sets
+      setSets(historySets);
+      // Generate new IDs for the copied sets
+      const newIds = historySets.map((_, index) => `set-${exercise.name}-${index}-${Date.now()}`);
+      setSetIds(newIds);
+      toast.success(`Copied ${historySets.length} set${historySets.length > 1 ? 's' : ''} from last session`, {
+        duration: 2000,
+        icon: '📋',
+      });
+    }
+  }, [exercise.name]);
 
   const handleSave = () => {
     // Option 3: Relaxed validation - only require at least one field per set
@@ -763,6 +783,18 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
         <div className="text-xs sm:text-sm text-gray-400 mt-1">
           {exerciseType.charAt(0).toUpperCase() + exerciseType.slice(1)} Exercise
         </div>
+        
+        {/* Exercise History Summary - helps with progressive overload */}
+        {!isEditing && (
+          <div className="mt-3">
+            <ExerciseHistorySummary
+              exerciseName={exercise.name}
+              historyData={exerciseHistory}
+              onCopyLastValues={handleCopyLastHistoryValues}
+              compact={false}
+            />
+          </div>
+        )}
       </div>
 
       {/* Sets List */}

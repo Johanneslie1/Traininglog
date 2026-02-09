@@ -8,6 +8,8 @@ import { InlineEditableValue } from '@/components/InlineEditableValue';
 import { DifficultyCategory } from '@/types/difficulty';
 import { ActivityType } from '@/types/activityTypes';
 import { toast } from 'react-hot-toast';
+import { useExerciseHistory } from '@/hooks/useExerciseHistory';
+import { ExerciseHistorySummary } from '@/components/ExerciseHistorySummary';
 
 interface ExerciseSetLoggerProps {
   exercise: Partial<Exercise> & { 
@@ -96,6 +98,20 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
   const [editingSetIndex, setEditingSetIndex] = useState<number | null>(null);
   const [lastAddedIndex, setLastAddedIndex] = useState<number | null>(null);
   const setsListRef = useRef<HTMLDivElement>(null);
+  
+  // Fetch exercise history for progressive overload context
+  const exerciseHistory = useExerciseHistory(exercise.name);
+
+  // Handle copying last values from exercise history
+  const handleCopyLastHistoryValues = (historySets: ExerciseSet[]) => {
+    if (historySets.length > 0) {
+      setSets(historySets);
+      toast.success(`Copied ${historySets.length} set${historySets.length > 1 ? 's' : ''} from last session`, {
+        duration: 2000,
+        icon: '📋',
+      });
+    }
+  };
 
   // Get the appropriate previous set based on context
   const getPreviousSet = (currentIndex?: number): ExerciseSet | undefined => {
@@ -300,12 +316,22 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
   return (
     <div className="flex flex-col h-full bg-[#1a1a1a]">
       <div ref={setsListRef} className="flex-1 p-4 overflow-y-auto">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-white">
             {isEditing ? 'Edit' : 'Log'} {exercise.name}
           </h2>
           <span className="text-gray-400">{sets.length} sets</span>
         </div>
+        
+        {/* Exercise History Summary - helps with progressive overload */}
+        {!isEditing && (
+          <ExerciseHistorySummary
+            exerciseName={exercise.name}
+            historyData={exerciseHistory}
+            onCopyLastValues={handleCopyLastHistoryValues}
+            compact={false}
+          />
+        )}
 
         <div className="space-y-2">
           {sets.map((set, index) => renderSetSummary(set, index))}
