@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
-import { exportData, downloadCSV, getExportPreview, ExportPreview, ExportOptions } from '@/services/exportService';
+import { exportData, downloadCSV, downloadActivityCSVs, getExportPreview, ExportPreview, ExportOptions } from '@/services/exportService';
 
 type DateRangePreset = 'last7days' | 'last30days' | 'thisMonth' | 'lastMonth' | 'allTime' | 'custom';
 
@@ -59,6 +59,7 @@ interface Setting {
 const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
   const { user } = useSelector((state: RootState) => state.auth);
   const [isExporting, setIsExporting] = useState(false);
+  const [separateByActivityType, setSeparateByActivityType] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange>({
     startDate: null,
     endDate: null,
@@ -126,44 +127,52 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
     try {
       const exportOptions: ExportOptions = {
         startDate: dateRange.startDate || undefined,
-        endDate: dateRange.endDate || undefined
+        endDate: dateRange.endDate || undefined,
+        separateByActivityType
       };
       
-      const data = await exportData(user.id, exportOptions);
-      
-      if (data.sessions.length > 0) {
-        downloadCSV(
-          data.sessions,
-          ['userId', 'sessionId', 'sessionDate', 'startTime', 'endTime', 'notes', 'totalVolume', 'sessionRPE', 'exerciseCount', 'setCount', 'durationMinutes', 'createdAt', 'updatedAt'],
-          'sessions.csv'
-        );
-      }
-      
-      if (data.exerciseLogs.length > 0) {
-        downloadCSV(
-          data.exerciseLogs,
-          ['userId', 'sessionId', 'exerciseLogId', 'exerciseId', 'exerciseName', 'category', 'type', 'setCount', 'totalReps', 'maxWeight', 'totalVolume', 'averageRPE', 'notes', 'createdAt'],
-          'exercise_logs.csv'
-        );
-      }
-      
-      if (data.sets.length > 0) {
-        downloadCSV(
-          data.sets,
-          ['userId', 'sessionId', 'exerciseLogId', 'exerciseName', 'exerciseType', 'activityType', 'loggedDate', 'loggedTimestamp', 'setNumber', 'reps', 'weight', 'durationSec', 'distanceMeters', 'rpe', 'rir', 'restTimeSec', 'isWarmup', 'setVolume', 'comment', 'notes', 'hrZone1', 'hrZone2', 'hrZone3', 'hrZone4', 'hrZone5', 'averageHR', 'maxHR', 'heartRate', 'calories', 'height', 'explosivePower', 'reactivePower', 'time', 'performance', 'stretchType', 'intensity', 'bodyPart', 'holdTime', 'flexibility', 'pace', 'elevation'],
-          'exercise_sets.csv'
-        );
-      }
-      
-      const exportedFiles = [];
-      if (data.sessions.length > 0) exportedFiles.push('sessions.csv');
-      if (data.exerciseLogs.length > 0) exportedFiles.push('exercise_logs.csv');
-      if (data.sets.length > 0) exportedFiles.push('exercise_sets.csv');
-      
-      if (exportedFiles.length > 0) {
-        alert(`Export completed! Downloaded: ${exportedFiles.join(', ')}\nCheck your downloads folder.`);
+      if (separateByActivityType) {
+        // Use the new activity-specific export
+        const fileCount = await downloadActivityCSVs(user.id, exportOptions);
+        alert(`Export completed! Downloaded ${fileCount} activity-specific CSV file(s).\nCheck your downloads folder.`);
       } else {
-        alert('No data found to export. Try logging some workouts first.');
+        // Use the original all-in-one export
+        const data = await exportData(user.id, exportOptions);
+        
+        if (data.sessions.length > 0) {
+          downloadCSV(
+            data.sessions,
+            ['userId', 'sessionId', 'sessionDate', 'startTime', 'endTime', 'notes', 'totalVolume', 'sessionRPE', 'exerciseCount', 'setCount', 'durationMinutes', 'createdAt', 'updatedAt'],
+            'sessions.csv'
+          );
+        }
+        
+        if (data.exerciseLogs.length > 0) {
+          downloadCSV(
+            data.exerciseLogs,
+            ['userId', 'sessionId', 'exerciseLogId', 'exerciseId', 'exerciseName', 'category', 'type', 'setCount', 'totalReps', 'maxWeight', 'totalVolume', 'averageRPE', 'notes', 'createdAt'],
+            'exercise_logs.csv'
+          );
+        }
+        
+        if (data.sets.length > 0) {
+          downloadCSV(
+            data.sets,
+            ['userId', 'sessionId', 'exerciseLogId', 'exerciseName', 'exerciseType', 'activityType', 'loggedDate', 'loggedTimestamp', 'setNumber', 'reps', 'weight', 'durationSec', 'distanceMeters', 'rpe', 'rir', 'restTimeSec', 'isWarmup', 'setVolume', 'comment', 'notes', 'hrZone1', 'hrZone2', 'hrZone3', 'hrZone4', 'hrZone5', 'averageHR', 'maxHR', 'heartRate', 'calories', 'height', 'explosivePower', 'reactivePower', 'time', 'performance', 'stretchType', 'intensity', 'bodyPart', 'holdTime', 'flexibility', 'pace', 'elevation'],
+            'exercise_sets.csv'
+          );
+        }
+        
+        const exportedFiles = [];
+        if (data.sessions.length > 0) exportedFiles.push('sessions.csv');
+        if (data.exerciseLogs.length > 0) exportedFiles.push('exercise_logs.csv');
+        if (data.sets.length > 0) exportedFiles.push('exercise_sets.csv');
+        
+        if (exportedFiles.length > 0) {
+          alert(`Export completed! Downloaded: ${exportedFiles.join(', ')}\nCheck your downloads folder.`);
+        } else {
+          alert('No data found to export. Try logging some workouts first.');
+        }
       }
     } catch (error) {
       console.error('Export failed:', error);
@@ -332,6 +341,28 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                   </div>
                 )}
 
+                {/* Export Format Toggle */}
+                <div className="flex items-center justify-between p-3 bg-bg-secondary rounded-md">
+                  <div>
+                    <label className="text-sm font-medium text-text-primary">Export separate files per activity type</label>
+                    <p className="text-xs text-text-secondary mt-1">
+                      Creates focused CSV files with only relevant columns for each activity
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setSeparateByActivityType(!separateByActivityType)}
+                    className={`ml-4 w-12 h-6 rounded-full transition-colors flex-shrink-0 ${
+                      separateByActivityType ? 'bg-accent-primary' : 'bg-bg-tertiary'
+                    }`}
+                  >
+                    <div
+                      className={`w-5 h-5 rounded-full bg-white transform transition-transform ${
+                        separateByActivityType ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+
                 {/* Export Button */}
                 <button
                   onClick={handleExport}
@@ -343,6 +374,8 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                 <p className="text-sm text-text-secondary">
                   {!user?.id 
                     ? 'Please log in to export your training data.'
+                    : separateByActivityType
+                    ? 'Download activity-specific CSV files (resistance, endurance, speed/agility, stretching, sport) with only relevant columns for each type.'
                     : 'Download your training data as CSV files for analysis in Excel, Google Sheets, or other tools.'
                   }
                 </p>
