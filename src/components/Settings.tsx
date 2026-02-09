@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { exportData, downloadCSV, downloadActivityCSVs, getExportPreview, ExportPreview, ExportOptions } from '@/services/exportService';
+import { exportFullBackup, downloadBackupJson } from '@/services/backupService';
 
 type DateRangePreset = 'last7days' | 'last30days' | 'thisMonth' | 'lastMonth' | 'allTime' | 'custom';
 
@@ -59,6 +60,7 @@ interface Setting {
 const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
   const { user } = useSelector((state: RootState) => state.auth);
   const [isExporting, setIsExporting] = useState(false);
+  const [isExportingJson, setIsExportingJson] = useState(false);
   const [separateByActivityType, setSeparateByActivityType] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange>({
     startDate: null,
@@ -182,6 +184,39 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
       setIsExporting(false);
     }
   };
+
+  const handleExportJson = async () => {
+    if (!user?.id) {
+      alert('Please log in to export your data.');
+      return;
+    }
+
+    setIsExportingJson(true);
+    try {
+      const backupData = await exportFullBackup(user.id);
+      downloadBackupJson(backupData);
+
+      const exerciseCount = backupData.exercises.length;
+      const programCount = backupData.programs.length;
+      const totalSets = backupData.exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
+
+      alert(
+        `JSON Backup completed!\n\n` +
+        `Exported:\n` +
+        `• ${exerciseCount} exercise logs (${totalSets} total sets)\n` +
+        `• ${programCount} programs\n` +
+        `• App settings\n\n` +
+        `Check your downloads folder.`
+      );
+    } catch (error) {
+      console.error('JSON export failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      alert(`JSON export failed: ${errorMessage}`);
+    } finally {
+      setIsExportingJson(false);
+    }
+  };
+
   const [settings, setSettings] = useState<Setting[]>([
     {
       id: 'darkMode',
@@ -369,7 +404,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                   disabled={isExporting || !user?.id || (exportPreview !== null && exportPreview.sessionCount === 0 && exportPreview.exerciseCount === 0)}
                   className="w-full bg-accent-primary text-white py-3 px-4 rounded-md hover:bg-accent-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  {isExporting ? 'Exporting...' : !user?.id ? 'Login Required' : 'Export Data'}
+                  {isExporting ? 'Exporting...' : !user?.id ? 'Login Required' : 'Export as CSV'}
                 </button>
                 <p className="text-sm text-text-secondary">
                   {!user?.id 
@@ -379,6 +414,23 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                     : 'Download your training data as CSV files for analysis in Excel, Google Sheets, or other tools.'
                   }
                 </p>
+
+                {/* JSON Backup Export */}
+                <div className="pt-4 border-t border-border space-y-3">
+                  <div>
+                    <h4 className="text-sm font-medium text-text-primary mb-1">Complete Backup (JSON)</h4>
+                    <p className="text-xs text-text-secondary">
+                      Export all your data including exercises, programs, and settings in JSON format for complete backup and future restore capability.
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleExportJson}
+                    disabled={isExportingJson || !user?.id}
+                    className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {isExportingJson ? 'Exporting JSON...' : !user?.id ? 'Login Required' : 'Export as JSON'}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
