@@ -9,6 +9,7 @@ import { Program } from '@/types/program';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { TrashIcon, PlusIcon, DuplicateIcon } from '@heroicons/react/outline';
 import SideMenu from '@/components/SideMenu';
+import Settings from '@/components/Settings';
 
 const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onSelect }) => {
   const navigate = useNavigate();
@@ -19,6 +20,7 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
   const [deletingProgramId, setDeletingProgramId] = useState<string | null>(null);
   const [duplicatingProgramId, setDuplicatingProgramId] = useState<string | null>(null);
   const [showSideMenu, setShowSideMenu] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const auth = getAuth();
 
   // No need for useEffect to refresh - ProgramsContext handles this automatically
@@ -307,8 +309,14 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
         onNavigateExercises={() => navigate('/exercises?showCreate=true')}
         onOpenSettings={() => {
           setShowSideMenu(false);
-          navigate('/');
+          setShowSettings(true);
         }}
+      />
+
+      {/* Settings Modal */}
+      <Settings
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
       />
     </div>
   );

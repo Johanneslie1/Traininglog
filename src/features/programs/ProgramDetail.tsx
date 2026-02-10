@@ -9,6 +9,7 @@ import { auth } from '@/services/firebase/config';
 import { signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import SideMenu from '@/components/SideMenu';
+import Settings from '@/components/Settings';
 
 interface Props {
   program: Program;
@@ -28,6 +29,8 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
   const [tempName, setTempName] = useState(program.name);
   const [tempDescription, setTempDescription] = useState(program.description || '');
   const [duplicatingSessionId, setDuplicatingSessionId] = useState<string | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showSideMenu, setShowSideMenu] = useState(false);
   const { updateSessionInProgram: updateSession, deleteProgram, updateProgram, duplicateSession } = usePrograms();
 
   // Helper function to get activity type display info
@@ -253,8 +256,6 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
       console.error('Logout error:', error);
     }
   };
-
-  const [showSideMenu, setShowSideMenu] = useState(false);
 
   return (
     <div className="fixed inset-0 bg-black text-white flex flex-col z-40">
@@ -530,8 +531,14 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
         onNavigateExercises={() => navigate('/exercises?showCreate=true')}
         onOpenSettings={() => {
           setShowSideMenu(false);
-          navigate('/');
+          setShowSettings(true);
         }}
+      />
+
+      {/* Settings Modal */}
+      <Settings
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
       />
     </div>
   );

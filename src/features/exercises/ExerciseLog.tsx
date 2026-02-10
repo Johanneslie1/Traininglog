@@ -81,6 +81,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(() => normalizeDate(new Date()));
   const [exercises, setExercises] = useState<UnifiedExerciseData[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<ExerciseData | null>(null);
   const [editingExercise, setEditingExercise] = useState<UnifiedExerciseData | null>(null); // Add editing state
 
@@ -530,8 +531,14 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
         onNavigateExercises={() => { navigate('/exercises'); }}
         onOpenSettings={() => {
           updateUiState('showMenu', false);
-          navigate('/');
+          setShowSettings(true);
         }}
+      />
+
+      {/* Settings Modal */}
+      <Settings
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
       />
 
       {/* Log Options Modal */}
