@@ -234,38 +234,84 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
         )}
         <p className="text-[11px] text-text-tertiary">Showing <span className="text-yellow-400 font-semibold">{advancedFiltered.length}</span> of {enriched.length} exercises</p>
       </div>
-      {/* Exercise List */}
-      <div className="flex-1 overflow-y-auto p-6">
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {/* Exercise List - Compact View */}
+      <div className="flex-1 overflow-y-auto px-4 py-2">
+        <div className="space-y-1">
           {advancedFiltered.map(ex => {
             const active = multiSelect ? !!selectedMap[ex.id] : false;
             return (
               <div
                 key={ex.id}
                 onClick={() => handleCardClick(ex)}
-                className={`relative bg-bg-tertiary rounded-lg p-4 cursor-pointer hover:bg-bg-tertiary hover:opacity-90 transition-colors border ${active ? 'border-yellow-400 ring-2 ring-yellow-400' : 'border-border'}`}
+                className={`relative flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer transition-all border ${
+                  active 
+                    ? 'bg-yellow-500/10 border-yellow-500 shadow-sm' 
+                    : 'bg-bg-tertiary/50 border-transparent hover:bg-bg-tertiary hover:border-border'
+                }`}
+                role="button"
+                tabIndex={0}
+                aria-pressed={active}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleCardClick(ex);
+                  }
+                }}
               >
                 {renderCard ? renderCard(ex, active) : (
                   <>
-                    <h3 className="text-lg font-semibold text-text-primary mb-1">{ex.name}</h3>
-                    {ex.description && (
-                      <p className="text-text-tertiary text-xs mb-2 line-clamp-3">{ex.description}</p>
+                    {/* Selection indicator */}
+                    {multiSelect && (
+                      <div className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center ${
+                        active ? 'bg-yellow-500 border-yellow-500' : 'border-border bg-bg-secondary'
+                      }`}>
+                        {active && (
+                          <svg className="w-3 h-3 text-black" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </div>
                     )}
-                    <div className="flex flex-wrap gap-1">
-                      {ex.category && (
-                        <span className="px-2 py-0.5 bg-yellow-600 text-text-primary text-[10px] rounded">{ex.category}</span>
+                    
+                    {/* Main content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h3 className={`font-semibold truncate ${active ? 'text-yellow-400' : 'text-text-primary'}`}>
+                          {ex.name}
+                        </h3>
+                        {/* Primary badge only */}
+                        {(ex.category || ex.type) && (
+                          <span className="flex-shrink-0 px-2 py-0.5 bg-bg-secondary border border-border text-text-tertiary text-[10px] rounded uppercase tracking-wide">
+                            {ex.category || ex.type}
+                          </span>
+                        )}
+                      </div>
+                      {/* Optional: Show description on hover or in a tooltip */}
+                      {ex.description && (
+                        <p className="text-text-tertiary text-xs mt-0.5 line-clamp-1">{ex.description}</p>
                       )}
-                      {ex.type && (
-                        <span className="px-2 py-0.5 bg-blue-600 text-text-primary text-[10px] rounded">{ex.type}</span>
-                      )}
-                      {ex.difficulty && (
-                        <span className="px-2 py-0.5 bg-orange-600 text-text-primary text-[10px] rounded">{ex.difficulty}</span>
-                      )}
-                      {Array.isArray(ex.tags) && ex.tags.slice(0,3).map((t: string) => (
-                        <span key={t} className="px-2 py-0.5 bg-bg-tertiary hover:opacity-90 text-gray-200 text-[10px] rounded">{t}</span>
-                      ))}
                     </div>
-                    {active && <div className="absolute top-2 right-2 bg-yellow-500 text-black text-[10px] font-bold px-2 py-0.5 rounded">✓</div>}
+
+                    {/* Difficulty indicator */}
+                    {ex.difficulty && (
+                      <div className="flex-shrink-0">
+                        <span className={`text-[10px] px-2 py-1 rounded ${
+                          ex.difficulty === 'beginner' ? 'bg-green-600/20 text-green-400' :
+                          ex.difficulty === 'intermediate' ? 'bg-yellow-600/20 text-yellow-400' :
+                          ex.difficulty === 'advanced' ? 'bg-red-600/20 text-red-400' :
+                          'bg-bg-secondary text-text-tertiary'
+                        }`}>
+                          {ex.difficulty}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Right arrow indicator for single select */}
+                    {!multiSelect && (
+                      <svg className="flex-shrink-0 w-5 h-5 text-text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    )}
                   </>
                 )}
               </div>
