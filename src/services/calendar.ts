@@ -1,5 +1,13 @@
 import { ExerciseLog } from '@/types/exercise';
 import { getExerciseLogsByDate, saveExerciseLog } from '@/utils/localStorageUtils';
+import { getAllExercisesByDate } from '@/utils/unifiedExerciseUtils';
+import { startOfWeek, endOfWeek } from 'date-fns';
+import { getAuth } from 'firebase/auth';
+
+const getCurrentUserId = (): string | null => {
+  const auth = getAuth();
+  return auth.currentUser?.uid || null;
+};
 
 export const getWorkoutsByDate = async (date: Date): Promise<ExerciseLog[]> => {
   try {
@@ -15,6 +23,9 @@ export const getWorkoutsByDate = async (date: Date): Promise<ExerciseLog[]> => {
 };
 
 export const getWorkoutDays = async (month: Date): Promise<Date[]> => {
+  const userId = getCurrentUserId();
+  if (!userId) return [];
+  
   const startDate = new Date(month.getFullYear(), month.getMonth(), 1);
   const endDate = new Date(month.getFullYear(), month.getMonth() + 1, 0);
   
@@ -22,8 +33,8 @@ export const getWorkoutDays = async (month: Date): Promise<Date[]> => {
   const currentDate = new Date(startDate);
   
   while (currentDate <= endDate) {
-    const workouts = await getExerciseLogsByDate(currentDate);
-    if (workouts.length > 0) {
+    const exercises = await getAllExercisesByDate(new Date(currentDate), userId);
+    if (exercises.length > 0) {
       days.push(new Date(currentDate));
     }
     currentDate.setDate(currentDate.getDate() + 1);
@@ -53,4 +64,25 @@ export const copyWorkoutFromDate = async (sourceDate: Date, targetDate: Date): P
     console.error('Error copying workout:', error);
     return false;
   }
+};
+
+export const getWorkoutDaysForWeek = async (weekStartDate: Date): Promise<Date[]> => {
+  const userId = getCurrentUserId();
+  if (!userId) return [];
+  
+  const weekStart = startOfWeek(weekStartDate, { weekStartsOn: 1 }); // Monday
+  const weekEnd = endOfWeek(weekStartDate, { weekStartsOn: 1 });
+  
+  const days: Date[] = [];
+  const currentDate = new Date(weekStart);
+  
+  while (currentDate <= weekEnd) {
+    const exercises = await getAllExercisesByDate(new Date(currentDate), userId);
+    if (exercises.length > 0) {
+      days.push(new Date(currentDate));
+    }
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  
+  return days;
 };

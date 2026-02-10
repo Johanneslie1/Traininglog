@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import SideMenu from '../SideMenu';
 import Settings from '../Settings';
+import WeeklyCalendarHeader from '../WeeklyCalendarHeader';
+import Calendar from '../Calendar';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -12,7 +14,8 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [hasModals, setHasModals] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showMonthlyCalendar, setShowMonthlyCalendar] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
@@ -22,45 +25,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   // Hide Layout's fixed elements on program routes (they have their own headers)
   const isProgramRoute = location.pathname.startsWith('/programs') || location.pathname === '/program-selection';
   
-  // Check for modals in the DOM
-  useEffect(() => {
-    const checkForModals = () => {
-      // Check if there are any full-screen fixed elements (modals)
-      const fixedElements = document.querySelectorAll('.fixed');
-      let hasModal = false;
-      
-      fixedElements.forEach(element => {
-        const classes = element.className;
-        // Check if element has both 'fixed' and 'inset-0' classes (full-screen modal indicator)
-        if (classes.includes('fixed') && classes.includes('inset-0')) {
-          // Exclude the menu button itself and auth buttons
-          if (!element.getAttribute('aria-label')?.includes('Menu') && 
-              !element.closest('[class*="auth-buttons"]')) {
-            hasModal = true;
-          }
-        }
-      });
-      
-      setHasModals(hasModal);
-    };
-    
-    // Check immediately and set up observer
-    checkForModals();
-    
-    // Use RAF for smoother updates
-    let rafId: number;
-    const observer = new MutationObserver(() => {
-      cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(checkForModals);
-    });
-    
-    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
-    
-    return () => {
-      observer.disconnect();
-      cancelAnimationFrame(rafId);
-    };
-  }, []);
+  // Only show weekly calendar on specific routes
+  const showWeeklyCalendar = isAuthenticated && 
+    !isProgramRoute && 
+    (location.pathname === '/' || location.pathname === '/exercises');
   
   const handleShowWorkoutSummary = () => {
     // TODO: Implement workout summary functionality
@@ -76,17 +44,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     <div className={`min-h-screen flex flex-col ${
       isDarkBackground ? 'bg-bg-primary' : 'bg-bg-secondary'
     }`}>
-      {/* Menu Button - Only show when authenticated, no modals, and not on program routes */}
-      {isAuthenticated && !hasModals && !isProgramRoute && (
-        <button
-          onClick={() => setShowMenu(true)}
-          className="fixed top-4 left-4 z-10 p-2 rounded-full bg-bg-primary hover:bg-bg-secondary shadow-lg"
-          aria-label="Open Menu"
-        >
-          <svg className="w-6 h-6 text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
+      {/* Weekly Calendar Header - Only show on specific routes */}
+      {showWeeklyCalendar && (
+        <WeeklyCalendarHeader
+          selectedDate={selectedDate}
+          onDateSelect={setSelectedDate}
+          onCalendarIconClick={() => setShowMonthlyCalendar(true)}
+          onMenuClick={() => setShowMenu(true)}
+        />
       )}
 
       {/* Main Content */}
@@ -124,6 +89,30 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           isOpen={showSettings}
           onClose={() => setShowSettings(false)}
         />
+      )}
+
+      {/* Monthly Calendar Modal */}
+      {showMonthlyCalendar && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="relative max-w-2xl w-full">
+            <button
+              onClick={() => setShowMonthlyCalendar(false)}
+              className="absolute -top-4 -right-4 z-10 p-2 bg-bg-secondary hover:bg-bg-tertiary rounded-full shadow-lg transition-colors"
+              aria-label="Close calendar"
+            >
+              <svg className="w-6 h-6 text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <Calendar
+              selectedDate={selectedDate}
+              onDayClick={(date) => {
+                setSelectedDate(date);
+                setShowMonthlyCalendar(false);
+              }}
+            />
+          </div>
+        </div>
       )}
     </div>
   );

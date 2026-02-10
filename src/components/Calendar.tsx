@@ -41,30 +41,32 @@ const Calendar: React.FC<CalendarProps> = ({ onDayClick, selectedDate }) => {
   /* Copy feature to be implemented later */
 
   return (
-    <div className="bg-bg-secondary rounded-lg p-4 shadow-lg">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold text-text-primary">
+    <div className="bg-bg-secondary rounded-xl p-6 shadow-xl border border-border">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold text-text-primary">
           {format(currentMonth, 'MMMM yyyy')}
         </h2>
         <div className="flex gap-2">
           <button
             onClick={() => setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1))}
-            className="p-2 hover:bg-bg-tertiary rounded transition-colors"
+            className="p-3 hover:bg-bg-tertiary rounded-lg transition-all duration-200 text-text-primary font-bold hover:text-accent-primary"
+            aria-label="Previous month"
           >
             ←
           </button>
           <button
             onClick={() => setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1))}
-            className="p-2 hover:bg-bg-tertiary rounded transition-colors"
+            className="p-3 hover:bg-bg-tertiary rounded-lg transition-all duration-200 text-text-primary font-bold hover:text-accent-primary"
+            aria-label="Next month"
           >
             →
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-2">
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-          <div key={day} className="text-center text-gray-400 font-medium py-2">
+          <div key={day} className="text-center text-text-tertiary font-semibold text-xs py-2">
             {day}
           </div>
         ))}
@@ -78,16 +80,23 @@ const Calendar: React.FC<CalendarProps> = ({ onDayClick, selectedDate }) => {
               onClick={() => handleDayClick(day)}
               className={`
                 aspect-square p-2 rounded-lg text-center relative
-                ${isSelected ? 'bg-accent-primary text-text-primary' : 'hover:bg-bg-tertiary'}
-                ${isWorkoutDay ? 'font-bold' : 'text-gray-400'}
+                transition-all duration-200 ease-in-out
+                font-semibold text-sm
+                ${isWorkoutDay 
+                  ? 'bg-status-success text-white shadow-lg shadow-status-success/30 hover:brightness-110 scale-100' 
+                  : 'text-text-tertiary hover:bg-bg-tertiary hover:text-text-secondary'
+                }
+                ${isSelected && !isWorkoutDay 
+                  ? 'ring-2 ring-accent-primary ring-offset-2 ring-offset-bg-secondary' 
+                  : ''
+                }
+                ${isSelected && isWorkoutDay 
+                  ? 'ring-2 ring-accent-primary ring-offset-2 ring-offset-bg-secondary scale-105' 
+                  : ''
+                }
               `}
             >
               {format(day, 'd')}
-              {isWorkoutDay && (
-                <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2">
-                  <div className="w-1 h-1 rounded-full bg-green-500"></div>
-                </div>
-              )}
             </button>
           );
         })}
@@ -95,15 +104,15 @@ const Calendar: React.FC<CalendarProps> = ({ onDayClick, selectedDate }) => {
 
       {/* Selected Day Workouts */}
       {selectedWorkout.length > 0 && (
-        <div className="mt-4 border-t border-[#2a2a2a] pt-4">
-          <h3 className="text-text-primary font-medium mb-2">
+        <div className="mt-6 border-t border-border pt-6">
+          <h3 className="text-text-primary font-semibold text-lg mb-3">
             {format(selectedDate!, 'MMMM d, yyyy')} Workouts
           </h3>
           <div className="space-y-2">
             {selectedWorkout.map(workout => (
-              <div key={workout.id} className="bg-bg-tertiary p-3 rounded">
-                <div className="text-text-primary">{workout.exerciseName}</div>
-                <div className="text-sm text-gray-400">
+              <div key={workout.id} className="bg-bg-tertiary p-4 rounded-lg hover:bg-bg-quaternary transition-colors duration-200 border border-border">
+                <div className="text-text-primary font-medium">{workout.exerciseName}</div>
+                <div className="text-sm text-text-secondary mt-1">
                   {workout.sets.length} sets
                 </div>
               </div>

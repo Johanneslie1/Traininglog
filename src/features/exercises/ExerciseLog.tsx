@@ -10,7 +10,6 @@ import { ErrorBoundary } from '../../components/ErrorBoundary';
 import ProgramModal from '../../features/programs/ProgramModal';
 import { v4 as uuidv4 } from 'uuid';
 import LogOptions from './LogOptions';
-import { Calendar } from './Calendar';
 import { ExerciseSetLogger } from './ExerciseSetLogger';
 import WorkoutSummary from './WorkoutSummary';
 import { db } from '../../services/firebase/config';
@@ -53,7 +52,6 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   
   type UIState = {
     showLogOptions: boolean;
-    showCalendar: boolean;
     showSetLogger: boolean;
     showWorkoutSummary: boolean;
     showMenu: boolean;
@@ -63,7 +61,6 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   // State management
   const [uiState, setUiState] = useState<UIState>({
     showLogOptions: false,
-    showCalendar: false,
     showSetLogger: false,
     showWorkoutSummary: false,
     showMenu: false,
@@ -73,10 +70,6 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   const updateUiState = useCallback((key: keyof UIState, value: boolean) => {
     setUiState((prev: UIState) => ({ ...prev, [key]: value }));
   }, []);
-
-  const toggleCalendar = useCallback((show?: boolean) => {
-    updateUiState('showCalendar', show ?? !uiState.showCalendar);
-  }, [uiState.showCalendar, updateUiState]);
 
   // Exercise data loading
   const [selectedDate, setSelectedDate] = useState<Date>(() => normalizeDate(new Date()));
@@ -181,33 +174,12 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     }
   }, [selectedDate]);
   
-  // Calendar handlers
-  const handleDateSelect = useCallback(async (date: Date) => {
-    const normalized = normalizeDate(date);
-    if (!normalized) return;
-    
-    // Set loading state immediately to prevent flickering
-    setLoading(true);
-    setSelectedDate(normalized);
-    
-    // Load exercises for the new date
-    await loadExercises(normalized);
-    toggleCalendar(false);
-  }, [normalizeDate, loadExercises, toggleCalendar]);
-
   // Automatic initialization and data loading when user changes
   useEffect(() => {
     if (user?.id) {
       loadExercises(selectedDate);
     }
   }, [user?.id, loadExercises, selectedDate]);
-
-  // Handle exercise select from calendar - now unused but kept for compatibility
-  const handleExerciseSelect = useCallback((_selectedExercises: ExerciseData[]) => {
-    // No longer set exercises here to avoid race condition
-    // The loadExercises function will handle data loading
-    toggleCalendar(false);
-  }, [toggleCalendar]);
 
   const handleCloseSetLogger = useCallback(() => {
     setSelectedExercise(null);
@@ -368,14 +340,6 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     console.log('✅ Exercise order saved');
   }, [selectedDate, user, saveSupersetsForDate]);
 
-  const formatDate = useCallback((date: Date | null) => {
-    if (!date) return '';
-    return date.toLocaleDateString('no-NO', { 
-      day: 'numeric',
-      month: 'long'
-    }).toLowerCase();
-  }, []);
-
   // Load exercises when date or user changes
   useEffect(() => {
     if (user?.id && selectedDate) {
@@ -413,50 +377,9 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
 
   return (
     <div className="relative min-h-screen bg-bg-primary">
-      {/* Header */}
-      <header className="flex items-center justify-between px-4 py-4 bg-bg-primary/95 backdrop-blur-sm fixed top-0 left-0 right-0 z-50 border-b border-border">
-        <div className="flex items-center gap-3">
-          <button 
-            className="p-2 hover:bg-hover-overlay rounded-lg transition-colors"
-            onClick={() => setUiState(prev => ({ ...prev, showMenu: true }))}
-            aria-label="Open menu"
-          >
-            <svg className="w-6 h-6 text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
-          <h1 className="text-text-primary text-xl font-medium">{formatDate(selectedDate)}</h1>
-        </div>
-        
-        <div className="flex items-center">          <button 
-            onClick={() => toggleCalendar()} 
-            className={`p-2 rounded-lg transition-colors ${uiState.showCalendar ? 'bg-hover-overlay' : 'hover:bg-hover-overlay'}`}
-            aria-label="Open calendar"
-            aria-expanded={uiState.showCalendar}
-          >
-            <svg className="w-6 h-6 text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-          </button>
-        </div>
-      </header>
-
       {/* Main Content */}
-      <main className="px-4 pb-24 pt-20">
+      <main className="px-4 pb-24 pt-4">
         <div className="relative flex flex-col h-full">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold text-text-primary">
-              Exercise Log - {selectedDate.toLocaleDateString()}
-            </h2>
-            <button
-              onClick={() => toggleCalendar()}
-              className="px-4 py-2 text-text-primary rounded-lg transition-colors"
-              aria-label="Toggle calendar"
-              aria-expanded={uiState.showCalendar}
-            >
-              {uiState.showCalendar ? 'Hide Calendar' : 'Show Calendar'}
-            </button>
-          </div>
           <div className="flex-grow">
             {loading ? (
               <div className="flex justify-center items-center h-32">
@@ -486,17 +409,6 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
           </div>
         </div>
       </main>
-
-      {/* Calendar */}
-      {uiState.showCalendar && (
-        <div className="fixed inset-0 bg-bg-primary/90 z-50">          <Calendar 
-            onClose={() => toggleCalendar(false)}
-            onSelectExercises={handleExerciseSelect}
-            onDateSelect={handleDateSelect}
-            selectedDate={selectedDate}
-          />
-        </div>
-      )}
 
       {/* Add Button */}
       <div className="fixed bottom-6 right-6 z-50">
