@@ -18,6 +18,7 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 import { getExerciseLogsByDate, saveExerciseLog } from '../../utils/localStorageUtils';
 import { addExerciseLog } from '../../services/firebase/exerciseLogs';
 import SideMenu from '../../components/SideMenu';
+import Settings from '../../components/Settings';
 import DraggableExerciseDisplay from '../../components/DraggableExerciseDisplay';
 import FloatingSupersetControls from '../../components/FloatingSupersetControls';
 import { getAllExercisesByDate, UnifiedExerciseData, deleteExercise } from '../../utils/unifiedExerciseUtils';
