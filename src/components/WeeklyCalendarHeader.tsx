@@ -56,15 +56,15 @@ const WeeklyCalendarHeader: React.FC<WeeklyCalendarHeaderProps> = ({
         sticky top-0 z-40 
         bg-bg-secondary border-b border-border
         transition-all duration-300 ease-in-out
-        ${isCollapsed ? 'h-14 py-2' : 'h-22 py-4'}
       `}
     >
-      <div className="flex items-center justify-center relative px-4">
+      {/* Top Bar - Menu and Calendar Icons */}
+      <div className="flex items-center justify-between px-4 py-2 border-b border-border/50">
         {/* Menu Button */}
         {onMenuClick && (
           <button
             onClick={onMenuClick}
-            className="absolute left-2 p-2 hover:bg-bg-tertiary rounded-lg transition-colors"
+            className="p-2 hover:bg-bg-tertiary rounded-lg transition-colors"
             aria-label="Open menu"
           >
             <svg className="w-6 h-6 text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -73,93 +73,15 @@ const WeeklyCalendarHeader: React.FC<WeeklyCalendarHeaderProps> = ({
           </button>
         )}
 
-        {/* Previous Week Arrow */}
-        <button
-          onClick={handlePreviousWeek}
-          className="absolute left-14 p-2 hover:bg-bg-tertiary rounded-lg transition-colors"
-          aria-label="Previous week"
-        >
-          <svg className="w-5 h-5 text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
-
-        {/* Days Grid */}
-        <div className="flex justify-center items-center gap-2">
-          {weekDays.map(day => {
-            const isWorkoutDay = workoutDays.some(workoutDay => isSameDay(workoutDay, day));
-            const isTodayDay = isToday(day);
-            const isSelected = isSameDay(selectedDate, day);
-
-            return (
-              <button
-                key={day.toString()}
-                onClick={() => handleDayClick(day)}
-                className={`
-                  flex flex-col items-center
-                  transition-all duration-200
-                  ${isCollapsed ? 'gap-0' : 'gap-1'}
-                `}
-              >
-                {/* Day Name */}
-                <span className={`
-                  font-semibold
-                  ${isCollapsed ? 'text-xs' : 'text-sm'}
-                  ${isWorkoutDay ? 'text-white' : 'text-text-tertiary'}
-                  transition-all duration-200
-                `}>
-                  {isCollapsed ? format(day, 'EEEEE') : format(day, 'EEE')}
-                </span>
-                
-                {/* Date Number with Background */}
-                <div className={`
-                  rounded-full flex items-center justify-center
-                  font-semibold
-                  ${isCollapsed ? 'w-8 h-8 text-sm' : 'w-10 h-10 text-base'}
-                  ${isWorkoutDay 
-                    ? 'bg-status-success text-white shadow-lg shadow-status-success/30 hover:brightness-110' 
-                    : 'text-text-tertiary hover:bg-bg-tertiary hover:text-text-secondary'
-                  }
-                  ${isTodayDay && !isWorkoutDay
-                    ? 'ring-2 ring-accent-primary ring-offset-2 ring-offset-bg-secondary' 
-                    : ''
-                  }
-                  ${isTodayDay && isWorkoutDay
-                    ? 'ring-2 ring-accent-primary ring-offset-2 ring-offset-bg-secondary' 
-                    : ''
-                  }
-                  ${isSelected && !isTodayDay && isWorkoutDay 
-                    ? 'scale-105 ring-2 ring-accent-primary ring-offset-2 ring-offset-bg-secondary' 
-                    : ''
-                  }
-                  ${isSelected && !isTodayDay && !isWorkoutDay 
-                    ? 'ring-2 ring-accent-primary ring-offset-2 ring-offset-bg-secondary' 
-                    : ''
-                  }
-                  transition-all duration-200
-                `}>
-                  {format(day, 'd')}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Next Week Arrow */}
-        <button
-          onClick={handleNextWeek}
-          className="absolute right-14 p-2 hover:bg-bg-tertiary rounded-lg transition-colors"
-          aria-label="Next week"
-        >
-          <svg className="w-5 h-5 text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
+        {/* Title/Date */}
+        <h1 className="text-text-primary text-base font-medium">
+          {format(selectedDate, 'MMMM yyyy')}
+        </h1>
 
         {/* Calendar Icon Button */}
         <button
           onClick={onCalendarIconClick}
-          className="absolute right-2 p-2 hover:bg-bg-tertiary rounded-lg transition-colors group"
+          className="p-2 hover:bg-bg-tertiary rounded-lg transition-colors group"
           aria-label="Open monthly calendar"
         >
           <svg 
@@ -174,6 +96,93 @@ const WeeklyCalendarHeader: React.FC<WeeklyCalendarHeaderProps> = ({
               strokeWidth={2} 
               d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" 
             />
+          </svg>
+        </button>
+      </div>
+
+      {/* Week Navigation */}
+      <div className={`flex items-center justify-between px-2 ${isCollapsed ? 'py-2' : 'py-3'} transition-all duration-300`}>
+        {/* Previous Week Arrow */}
+        <button
+          onClick={handlePreviousWeek}
+          className="p-1.5 hover:bg-bg-tertiary rounded-lg transition-colors flex-shrink-0"
+          aria-label="Previous week"
+        >
+          <svg className="w-5 h-5 text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+
+        {/* Days Grid */}
+        <div className="flex justify-center items-center gap-1 flex-1 overflow-x-auto px-1">
+          {weekDays.map(day => {
+            const isWorkoutDay = workoutDays.some(workoutDay => isSameDay(workoutDay, day));
+            const isTodayDay = isToday(day);
+            const isSelected = isSameDay(selectedDate, day);
+
+            return (
+              <button
+                key={day.toString()}
+                onClick={() => handleDayClick(day)}
+                className={`
+                  flex flex-col items-center justify-center
+                  transition-all duration-200
+                  flex-shrink-0
+                  ${isCollapsed ? 'gap-0 min-w-[36px]' : 'gap-0.5 min-w-[40px]'}
+                `}
+              >
+                {/* Day Name */}
+                <span className={`
+                  font-medium
+                  ${isCollapsed ? 'text-[10px]' : 'text-xs'}
+                  ${isWorkoutDay ? 'text-text-secondary' : 'text-text-tertiary'}
+                  transition-all duration-200
+                `}>
+                  {format(day, 'EEE')[0]}
+                </span>
+                
+                {/* Date Number with Background */}
+                <div className={`
+                  rounded-full flex items-center justify-center
+                  font-semibold
+                  ${isCollapsed ? 'w-7 h-7 text-xs' : 'w-9 h-9 text-sm'}
+                  ${isWorkoutDay 
+                    ? 'bg-status-success text-white shadow-md shadow-status-success/20' 
+                    : 'text-text-tertiary hover:bg-bg-tertiary hover:text-text-secondary'
+                  }
+                  ${isTodayDay && !isWorkoutDay
+                    ? 'ring-2 ring-accent-primary' 
+                    : ''
+                  }
+                  ${isTodayDay && isWorkoutDay
+                    ? 'ring-2 ring-accent-primary' 
+                    : ''
+                  }
+                  ${isSelected && !isTodayDay && isWorkoutDay 
+                    ? 'scale-105 ring-2 ring-accent-primary' 
+                    : ''
+                  }
+                  ${isSelected && !isTodayDay && !isWorkoutDay 
+                    ? 'ring-2 ring-accent-primary' 
+                    : ''
+                  }
+                  transition-all duration-200
+                `}>
+                  {format(day, 'd')}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Next Week Arrow */}
+        <button
+          onClick={handleNextWeek}
+          className="p-1.5 hover:bg-bg-tertiary rounded-lg transition-colors flex-shrink-0"
+          aria-label="Next week"
+        >
+          <svg className="w-5 h-5 text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </button>
       </div>
