@@ -246,8 +246,8 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50">
-      <div className="fixed inset-y-0 right-0 max-w-sm w-full bg-bg-primary animate-slide-in-right">
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-[60]">
+      <div className="fixed inset-y-0 right-0 max-w-sm w-full bg-bg-primary animate-slide-in-right z-[60]">
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="p-4 border-b border-border">

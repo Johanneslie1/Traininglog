@@ -105,7 +105,10 @@ const SideMenu: React.FC<SideMenuProps> = ({
             </button>
 
             <button
-              onClick={() => setShowSettings(true)}
+              onClick={() => {
+                setShowSettings(true);
+                onClose(); // Close the side menu when opening settings
+              }}
               className="w-full flex items-center gap-3 px-4 py-3 text-text-primary hover:bg-bg-secondary rounded-lg transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
