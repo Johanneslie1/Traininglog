@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { logoutUser } from '@/services/firebase/auth';
 import { logout } from '@/features/auth/authSlice';
 import { RootState } from '@/store/store';
-import Settings from './Settings';
 import SupersetGuide from './SupersetGuide';
 
 interface SideMenuProps {
@@ -14,6 +13,7 @@ interface SideMenuProps {
   onNavigateToday: () => void;
   onNavigatePrograms: () => void;
   onNavigateExercises: () => void;
+  onOpenSettings: () => void;
 }
 
 const SideMenu: React.FC<SideMenuProps> = ({
@@ -22,9 +22,9 @@ const SideMenu: React.FC<SideMenuProps> = ({
   onShowWorkoutSummary,
   onNavigateToday,
   onNavigatePrograms,
-  onNavigateExercises
+  onNavigateExercises,
+  onOpenSettings
 }) => {
-  const [showSettings, setShowSettings] = useState(false);
   const [showSupersetGuide, setShowSupersetGuide] = useState(false);
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
@@ -105,10 +105,7 @@ const SideMenu: React.FC<SideMenuProps> = ({
             </button>
 
             <button
-              onClick={() => {
-                setShowSettings(true);
-                onClose(); // Close the side menu when opening settings
-              }}
+              onClick={onOpenSettings}
               className="w-full flex items-center gap-3 px-4 py-3 text-text-primary hover:bg-bg-secondary rounded-lg transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -190,12 +187,6 @@ const SideMenu: React.FC<SideMenuProps> = ({
           )}
         </div>
       </div>
-
-      {/* Settings Modal */}
-      <Settings
-        isOpen={showSettings}
-        onClose={() => setShowSettings(false)}
-      />
 
       {/* Superset Guide Modal */}
       <SupersetGuide

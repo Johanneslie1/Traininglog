@@ -246,16 +246,16 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-[60]">
-      <div className="fixed inset-y-0 right-0 max-w-sm w-full bg-bg-primary animate-slide-in-right z-[60]">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center" onClick={onClose}>
+      <div className="bg-[#1a1a1a] rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl mx-4" onClick={(e) => e.stopPropagation()}>
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="p-4 border-b border-border">
+          <div className="p-6 border-b border-white/10">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-text-primary">Settings</h2>
+              <h2 className="text-2xl font-bold text-white">Settings</h2>
               <button
                 onClick={onClose}
-                className="p-2 hover:bg-bg-secondary rounded-full transition-colors"
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -265,7 +265,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
           </div>
 
           {/* Settings List */}
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 overflow-y-auto p-6">
             <div className="space-y-4">
               {settings.map((setting) => (
                 <div key={setting.id} className="flex items-center justify-between">

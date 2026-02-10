@@ -9,6 +9,8 @@ import ExerciseSearch from '@/features/exercises/ExerciseSearch';
 import CopyFromPreviousSessionDialog from '@/features/exercises/CopyFromPreviousSessionDialog';
 import ProgramAddExerciseOptions from './ProgramAddExerciseOptions';
 import { usePersistedFormState } from '@/hooks/usePersistedState';
+import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
+import toast from 'react-hot-toast';
 
 interface SessionBuilderProps {
   onClose: () => void;
@@ -92,6 +94,10 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
   }, [currentSessionName, sessionNotes, selectedExercises, setPersistedState]);
   const [editingExerciseName, setEditingExerciseName] = useState<number | null>(null);
   const [tempExerciseName, setTempExerciseName] = useState('');
+  const [lastAction, setLastAction] = useState<{
+    type: 'reorder';
+    data: Exercise[];
+  } | null>(null);
   
   // UserId for CopyFromPreviousSessionDialog - must be at top level to avoid hooks violation
   const [userId, setUserId] = useState('');
@@ -139,13 +145,43 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
   };
 
   const moveExercise = (index: number, direction: 'up' | 'down') => {
+    const previousExercises = [...selectedExercises];
     const result = [...selectedExercises];
     if (direction === 'up' && index > 0) {
       [result[index], result[index - 1]] = [result[index - 1], result[index]];
     } else if (direction === 'down' && index < result.length - 1) {
       [result[index], result[index + 1]] = [result[index + 1], result[index]];
     }
+    setLastAction({ type: 'reorder', data: previousExercises });
     setSelectedExercises(result);
+  };
+
+  const handleExerciseDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+
+    const sourceIndex = result.source.index;
+    const destIndex = result.destination.index;
+
+    if (sourceIndex === destIndex) return;
+
+    const previousExercises = [...selectedExercises];
+    const newExercises = Array.from(selectedExercises);
+    const [removed] = newExercises.splice(sourceIndex, 1);
+    newExercises.splice(destIndex, 0, removed);
+
+    setLastAction({ type: 'reorder', data: previousExercises });
+    setSelectedExercises(newExercises);
+    toast.success('Exercise reordered');
+  };
+
+  const handleUndo = () => {
+    if (!lastAction) return;
+
+    if (lastAction.type === 'reorder') {
+      setSelectedExercises(lastAction.data);
+      setLastAction(null);
+      toast.success('Undo successful');
+    }
   };
 
   const handleEditExerciseName = (exerciseIndex: number) => {
@@ -409,7 +445,21 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
         {/* Exercises Section */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-            <h2 className="text-lg font-medium text-white">Exercises</h2>
+            <div className="flex items-center gap-3">
+              <h2 className="text-lg font-medium text-white">Exercises</h2>
+              {lastAction && (
+                <button
+                  onClick={handleUndo}
+                  className="px-3 py-1.5 bg-yellow-600 hover:bg-yellow-700 text-white text-sm rounded-lg transition-colors flex items-center gap-2"
+                  title="Undo last action"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                  </svg>
+                  Undo
+                </button>
+              )}
+            </div>
             <button
               onClick={() => setView('exerciseSelection')}
               className="px-4 py-2 bg-[#2a2a2a] hover:bg-[#3a3a3a] text-white rounded-lg transition-colors border border-white/10 flex-shrink-0"
@@ -434,108 +484,144 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
               </button>
             </div>
           ) : (
-            <div className="space-y-3">
-              {selectedExercises.map((exercise, exerciseIndex) => (
-                <div key={`${exercise.id}-${exerciseIndex}`} className="bg-[#1a1a1a] rounded-xl border border-white/10 p-4">
-                  {/* Exercise Header */}
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      {editingExerciseName === exerciseIndex ? (
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="text"
-                            value={tempExerciseName}
-                            onChange={(e) => setTempExerciseName(e.target.value)}
-                            className="flex-1 px-2 py-1 bg-[#2a2a2a] border border-white/10 rounded text-white text-lg font-medium focus:outline-none focus:border-[#8B5CF6]"
-                            autoFocus
-                          />
-                          <button
-                            onClick={handleSaveExerciseName}
-                            className="p-1 hover:bg-white/10 rounded text-green-400 flex-shrink-0"
+            <DragDropContext onDragEnd={handleExerciseDragEnd}>
+              <Droppable droppableId="exercises">
+                {(provided, snapshot) => (
+                  <div
+                    {...provided.droppableProps}
+                    ref={provided.innerRef}
+                    className={`space-y-3 transition-colors ${
+                      snapshot.isDraggingOver ? 'bg-purple-500/5 rounded-xl p-2' : ''
+                    }`}
+                  >
+                    {selectedExercises.map((exercise, exerciseIndex) => (
+                      <Draggable key={`${exercise.id}-${exerciseIndex}`} draggableId={`${exercise.id}-${exerciseIndex}`} index={exerciseIndex}>
+                        {(provided, snapshot) => (
+                          <div 
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            className={`bg-[#1a1a1a] rounded-xl border p-4 transition-all ${
+                              snapshot.isDragging
+                                ? 'border-purple-500 shadow-2xl shadow-purple-500/20 scale-102'
+                                : 'border-white/10'
+                            }`}
                           >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                          </button>
-                          <button
-                            onClick={handleCancelExerciseNameEdit}
-                            className="p-1 hover:bg-white/10 rounded text-red-400 flex-shrink-0"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => handleEditExerciseName(exerciseIndex)}
-                          className="text-left hover:bg-white/5 rounded p-1 -m-1 transition-colors w-full"
-                        >
-                          <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <h3 className="text-lg font-medium text-white break-words">{exercise.name}</h3>
-                            <span className={`px-2 py-0.5 text-xs rounded-full flex-shrink-0 ${getActivityTypeInfo(exercise.activityType).color} ${getActivityTypeInfo(exercise.activityType).textColor}`}>
-                              {getActivityTypeInfo(exercise.activityType).label}
-                            </span>
+                            {/* Exercise Header */}
+                            <div className="flex items-start justify-between gap-3">
+                              {/* Drag Handle + Exercise Info */}
+                              <div 
+                                {...provided.dragHandleProps}
+                                className="flex items-start gap-3 flex-1 min-w-0 cursor-move group"
+                              >
+                                <div className="p-2 rounded-lg bg-white/5 group-hover:bg-white/10 transition-colors flex-shrink-0 mt-1">
+                                  <svg className="w-5 h-5 text-gray-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+                                  </svg>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  {editingExerciseName === exerciseIndex ? (
+                                    <div className="flex items-center gap-2">
+                                      <input
+                                        type="text"
+                                        value={tempExerciseName}
+                                        onChange={(e) => setTempExerciseName(e.target.value)}
+                                        className="flex-1 px-2 py-1 bg-[#2a2a2a] border border-white/10 rounded text-white text-lg font-medium focus:outline-none focus:border-[#8B5CF6]"
+                                        autoFocus
+                                      />
+                                      <button
+                                        onClick={handleSaveExerciseName}
+                                        className="p-1 hover:bg-white/10 rounded text-green-400 flex-shrink-0"
+                                      >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                      </button>
+                                      <button
+                                        onClick={handleCancelExerciseNameEdit}
+                                        className="p-1 hover:bg-white/10 rounded text-red-400 flex-shrink-0"
+                                      >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <button
+                                      onClick={() => handleEditExerciseName(exerciseIndex)}
+                                      className="text-left hover:bg-white/5 rounded p-1 -m-1 transition-colors w-full"
+                                    >
+                                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                        <h3 className="text-lg font-medium text-white break-words">{exercise.name}</h3>
+                                        <span className={`px-2 py-0.5 text-xs rounded-full flex-shrink-0 ${getActivityTypeInfo(exercise.activityType).color} ${getActivityTypeInfo(exercise.activityType).textColor}`}>
+                                          {getActivityTypeInfo(exercise.activityType).label}
+                                        </span>
+                                      </div>
+                                      <p className="text-sm text-gray-400">Sets and reps will be logged during workout</p>
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              {/* Exercise Controls */}
+                              <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+                                {/* Move Up */}
+                                {exerciseIndex > 0 && (
+                                  <button
+                                    onClick={() => moveExercise(exerciseIndex, 'up')}
+                                    className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white"
+                                    title="Move up"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                                    </svg>
+                                  </button>
+                                )}
+                                
+                                {/* Move Down */}
+                                {exerciseIndex < selectedExercises.length - 1 && (
+                                  <button
+                                    onClick={() => moveExercise(exerciseIndex, 'down')}
+                                    className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white"
+                                    title="Move down"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                  </button>
+                                )}
+                                
+                                {/* Duplicate */}
+                                <button
+                                  onClick={() => handleDuplicateExercise(exerciseIndex)}
+                                  className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white"
+                                  title="Duplicate exercise"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                  </svg>
+                                </button>
+                                
+                                {/* Delete */}
+                                <button
+                                  onClick={() => handleRemoveExercise(exerciseIndex)}
+                                  className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-red-400"
+                                  title="Remove exercise"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
                           </div>
-                          <p className="text-sm text-gray-400">Sets and reps will be logged during workout</p>
-                        </button>
-                      )}
-                    </div>
-                    
-                    {/* Exercise Controls */}
-                    <div className="flex items-center gap-1 flex-shrink-0 ml-2">
-                      {/* Move Up */}
-                      {exerciseIndex > 0 && (
-                        <button
-                          onClick={() => moveExercise(exerciseIndex, 'up')}
-                          className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white"
-                          title="Move up"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                          </svg>
-                        </button>
-                      )}
-                      
-                      {/* Move Down */}
-                      {exerciseIndex < selectedExercises.length - 1 && (
-                        <button
-                          onClick={() => moveExercise(exerciseIndex, 'down')}
-                          className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white"
-                          title="Move down"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </button>
-                      )}
-                      
-                      {/* Duplicate */}
-                      <button
-                        onClick={() => handleDuplicateExercise(exerciseIndex)}
-                        className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white"
-                        title="Duplicate exercise"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                        </svg>
-                      </button>
-                      
-                      {/* Delete */}
-                      <button
-                        onClick={() => handleRemoveExercise(exerciseIndex)}
-                        className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-red-400"
-                        title="Remove exercise"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    </div>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
                   </div>
-                </div>
-              ))}
-            </div>
+                )}
+              </Droppable>
+            </DragDropContext>
           )}
         </div>
       </main>

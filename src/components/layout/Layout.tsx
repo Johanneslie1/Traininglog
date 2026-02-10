@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import SideMenu from '../SideMenu';
 import AuthButtons from '../AuthButtons';
+import Settings from '../Settings';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -11,6 +12,7 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [showMenu, setShowMenu] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [hasModals, setHasModals] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -117,6 +119,18 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           onNavigateToday={() => handleNavigate('/')}
           onNavigatePrograms={() => handleNavigate('/programs')}
           onNavigateExercises={() => handleNavigate('/exercises?showCreate=true')}
+          onOpenSettings={() => {
+            setShowMenu(false);
+            setShowSettings(true);
+          }}
+        />
+      )}
+
+      {/* Settings Modal - Rendered at layout level, independent of SideMenu */}
+      {isAuthenticated && (
+        <Settings
+          isOpen={showSettings}
+          onClose={() => setShowSettings(false)}
         />
       )}
     </div>

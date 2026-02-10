@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Program, ProgramSession } from '@/types/program';
 import { ActivityType } from '@/types/activityTypes';
-import { PlusIcon, BookmarkIcon, TrashIcon, PencilIcon } from '@heroicons/react/outline';
+import { PlusIcon, BookmarkIcon, TrashIcon, PencilIcon, MenuIcon } from '@heroicons/react/outline';
 import SessionBuilder from './SessionBuilder';
 import { auth } from '@/services/firebase/config';
 import { usePersistedFormState } from '@/hooks/usePersistedState';
+import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
+import toast from 'react-hot-toast';
 
 interface ProgramBuilderProps {
   onClose: () => void;
@@ -40,6 +42,10 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
   const [showSessionBuilder, setShowSessionBuilder] = useState(false);
   const [editingSession, setEditingSession] = useState<ProgramSession | null>(null);
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+  const [lastAction, setLastAction] = useState<{
+    type: 'reorderSessions' | 'moveExercise';
+    data: any;
+  } | null>(null);
 
   // Update persisted state whenever form values change
   useEffect(() => {
@@ -150,6 +156,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
   };
 
   const moveSession = (index: number, direction: 'up' | 'down') => {
+    const previousSessions = [...sessions];
     const newSessions = [...sessions];
     if (direction === 'up' && index > 0) {
       [newSessions[index - 1], newSessions[index]] = [newSessions[index], newSessions[index - 1]];
@@ -162,7 +169,41 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
       session.order = idx;
     });
     
+    setLastAction({ type: 'reorderSessions', data: previousSessions });
     setSessions(newSessions);
+  };
+
+  const handleSessionDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+
+    const sourceIndex = result.source.index;
+    const destIndex = result.destination.index;
+
+    if (sourceIndex === destIndex) return;
+
+    const previousSessions = [...sessions];
+    const newSessions = Array.from(sessions);
+    const [removed] = newSessions.splice(sourceIndex, 1);
+    newSessions.splice(destIndex, 0, removed);
+
+    // Update order property
+    newSessions.forEach((session, idx) => {
+      session.order = idx;
+    });
+
+    setLastAction({ type: 'reorderSessions', data: previousSessions });
+    setSessions(newSessions);
+    toast.success('Session reordered');
+  };
+
+  const handleUndo = () => {
+    if (!lastAction) return;
+
+    if (lastAction.type === 'reorderSessions') {
+      setSessions(lastAction.data);
+      setLastAction(null);
+      toast.success('Undo successful');
+    }
   };
 
   const saveAsTemplate = () => {
@@ -369,85 +410,134 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
                   <h3 className="text-xl font-semibold text-white">
                     Program Sessions ({sessions.length})
                   </h3>
-                  <div className="text-sm text-gray-400">
-                    {getTotalExercises()} exercises
+                  <div className="flex items-center gap-3">
+                    <div className="text-sm text-gray-400">
+                      {getTotalExercises()} exercises
+                    </div>
+                    {lastAction && (
+                      <button
+                        onClick={handleUndo}
+                        className="px-3 py-1.5 bg-yellow-600 hover:bg-yellow-700 text-white text-sm rounded-lg transition-colors flex items-center gap-2"
+                        title="Undo last action"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                        </svg>
+                        Undo
+                      </button>
+                    )}
                   </div>
                 </div>
                 
-                {sessions.map((session, index) => (
-                  <div key={session.id} className="bg-[#181A20] rounded-xl p-5 border border-white/10 hover:border-white/20 transition-colors">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex-1">
-                        <h4 className="text-white font-semibold text-lg">{session.name}</h4>
-                        <div className="text-sm text-gray-400 mt-1">
-                          {session.exercises.length} exercise{session.exercises.length !== 1 ? 's' : ''} • 
-                          {session.exercises.length} exercises
-                          {session.notes && (
-                            <span className="ml-2 text-gray-500">• {session.notes}</span>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => moveSession(index, 'up')}
-                          disabled={index === 0}
-                          className="p-2 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                          title="Move up"
-                        >
-                          ↑
-                        </button>
-                        <button
-                          onClick={() => moveSession(index, 'down')}
-                          disabled={index === sessions.length - 1}
-                          className="p-2 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                          title="Move down"
-                        >
-                          ↓
-                        </button>
-                        <button
-                          onClick={() => handleEditSession(session)}
-                          className="p-2 text-blue-400 hover:text-blue-300 transition-colors"
-                          title="Edit session"
-                        >
-                          <PencilIcon className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteSession(session.id)}
-                          className="p-2 text-red-400 hover:text-red-300 transition-colors"
-                          title="Delete session"
-                        >
-                          <TrashIcon className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
+                <DragDropContext onDragEnd={handleSessionDragEnd}>
+                  <Droppable droppableId="sessions">
+                    {(provided, snapshot) => (
+                      <div
+                        {...provided.droppableProps}
+                        ref={provided.innerRef}
+                        className={`space-y-3 transition-colors ${
+                          snapshot.isDraggingOver ? 'bg-blue-500/5 rounded-xl p-2' : ''
+                        }`}
+                      >
+                        {sessions.map((session, index) => (
+                          <Draggable key={session.id} draggableId={session.id} index={index}>
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                className={`bg-[#181A20] rounded-xl p-5 border transition-all ${
+                                  snapshot.isDragging
+                                    ? 'border-blue-500 shadow-2xl shadow-blue-500/20 scale-102'
+                                    : 'border-white/10 hover:border-white/20'
+                                }`}
+                              >
+                                <div className="flex items-center justify-between mb-4">
+                                  {/* Drag Handle */}
+                                  <div 
+                                    {...provided.dragHandleProps}
+                                    className="flex items-center gap-3 flex-1 cursor-move group"
+                                  >
+                                    <div className="p-2 rounded-lg bg-white/5 group-hover:bg-white/10 transition-colors">
+                                      <MenuIcon className="w-5 h-5 text-gray-400 group-hover:text-white" />
+                                    </div>
+                                    <div className="flex-1">
+                                      <h4 className="text-white font-semibold text-lg">{session.name}</h4>
+                                      <div className="text-sm text-gray-400 mt-1">
+                                        {session.exercises.length} exercise{session.exercises.length !== 1 ? 's' : ''}
+                                        {session.notes && (
+                                          <span className="ml-2 text-gray-500">• {session.notes}</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      onClick={() => moveSession(index, 'up')}
+                                      disabled={index === 0}
+                                      className="p-2 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                      title="Move up"
+                                    >
+                                      ↑
+                                    </button>
+                                    <button
+                                      onClick={() => moveSession(index, 'down')}
+                                      disabled={index === sessions.length - 1}
+                                      className="p-2 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                      title="Move down"
+                                    >
+                                      ↓
+                                    </button>
+                                    <button
+                                      onClick={() => handleEditSession(session)}
+                                      className="p-2 text-blue-400 hover:text-blue-300 transition-colors"
+                                      title="Edit session"
+                                    >
+                                      <PencilIcon className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteSession(session.id)}
+                                      className="p-2 text-red-400 hover:text-red-300 transition-colors"
+                                      title="Delete session"
+                                    >
+                                      <TrashIcon className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </div>
 
-                    {/* Exercise Preview */}
-                    {session.exercises.length > 0 && (
-                      <div className="mt-4 p-4 bg-[#23272F] rounded-lg border border-white/5">
-                        <div className="text-xs font-medium text-gray-400 mb-3">EXERCISES:</div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                          {session.exercises.slice(0, 6).map((exercise, idx) => (
-                            <div key={`${session.id}-exercise-${idx}-${exercise.name}`} className="text-sm text-gray-300 flex items-center gap-2">
-                              <span className={`w-2 h-2 rounded-full flex-shrink-0 ${getActivityTypeInfo(exercise.activityType).color}`}></span>
-                              <span className="truncate flex-1">
-                                {exercise.name}
-                              </span>
-                              <span className={`px-1.5 py-0.5 text-xs rounded ${getActivityTypeInfo(exercise.activityType).color} ${getActivityTypeInfo(exercise.activityType).textColor}`}>
-                                {getActivityTypeInfo(exercise.activityType).label}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                        {session.exercises.length > 6 && (
-                          <div className="text-xs text-gray-500 mt-3 text-center">
-                            +{session.exercises.length - 6} more exercises...
-                          </div>
-                        )}
+                                {/* Exercise Preview */}
+                                {session.exercises.length > 0 && (
+                                  <div className="mt-4 p-4 bg-[#23272F] rounded-lg border border-white/5">
+                                    <div className="text-xs font-medium text-gray-400 mb-3">EXERCISES:</div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                      {session.exercises.slice(0, 6).map((exercise, idx) => (
+                                        <div key={`${session.id}-exercise-${idx}-${exercise.name}`} className="text-sm text-gray-300 flex items-center gap-2">
+                                          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${getActivityTypeInfo(exercise.activityType).color}`}></span>
+                                          <span className="truncate flex-1">
+                                            {exercise.name}
+                                          </span>
+                                          <span className={`px-1.5 py-0.5 text-xs rounded ${getActivityTypeInfo(exercise.activityType).color} ${getActivityTypeInfo(exercise.activityType).textColor}`}>
+                                            {getActivityTypeInfo(exercise.activityType).label}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                    {session.exercises.length > 6 && (
+                                      <div className="text-xs text-gray-500 mt-3 text-center">
+                                        +{session.exercises.length - 6} more exercises...
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
                       </div>
                     )}
-                  </div>
-                ))}
+                  </Droppable>
+                </DragDropContext>
 
                 {/* Add Session Button */}
                 <div className="mt-8 text-center">
