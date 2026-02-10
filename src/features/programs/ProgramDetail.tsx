@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { Program, ProgramSession } from '@/types/program';
 import { ActivityType } from '@/types/activityTypes';
 import SessionBuilder from './SessionBuilder';
-import { PencilIcon, TrashIcon, ChevronDownIcon, ArrowLeftIcon } from '@heroicons/react/outline';
+import { PencilIcon, TrashIcon, ChevronDownIcon, ArrowLeftIcon, DuplicateIcon } from '@heroicons/react/outline';
 import { usePrograms } from '@/context/ProgramsContext';
 import { createSession, deleteSession } from '@/services/programService';
 import { auth } from '@/services/firebase/config';
@@ -27,7 +27,8 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
   const [editingProgram, setEditingProgram] = useState(false);
   const [tempName, setTempName] = useState(program.name);
   const [tempDescription, setTempDescription] = useState(program.description || '');
-  const { updateSessionInProgram: updateSession, deleteProgram, updateProgram } = usePrograms();
+  const [duplicatingSessionId, setDuplicatingSessionId] = useState<string | null>(null);
+  const { updateSessionInProgram: updateSession, deleteProgram, updateProgram, duplicateSession } = usePrograms();
 
   // Helper function to get activity type display info
   const getActivityTypeInfo = (activityType?: ActivityType) => {
@@ -94,6 +95,28 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
       }
     }
   }, [program, sessions, onUpdate]);
+
+  const handleDuplicateSession = useCallback(async (sessionId: string, _sessionName: string, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent session expansion toggle
+    
+    setDuplicatingSessionId(sessionId);
+    
+    try {
+      console.log('[ProgramDetail] Duplicating session:', sessionId);
+      await duplicateSession(program.id, sessionId);
+      console.log('[ProgramDetail] Session duplicated successfully');
+      
+      // The duplicateSession in context will refresh programs, 
+      // but we need to get the updated program to update local state
+      // For now, we'll just trigger a re-render via the context refresh
+      // The parent component should handle the program update
+    } catch (error) {
+      console.error('Error duplicating session:', error);
+      alert(error instanceof Error ? error.message : 'Failed to duplicate session. Please try again.');
+    } finally {
+      setDuplicatingSessionId(null);
+    }
+  }, [program.id, duplicateSession]);
 
   const handleDeleteProgram = async () => {
     if (window.confirm(`Are you sure you want to delete the program "${program.name}"? This will delete all sessions and exercises. This action cannot be undone.`)) {
@@ -381,6 +404,19 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                 <div className="flex items-center gap-1 flex-shrink-0">
                   {!selectionMode && (
                     <>
+                      <button
+                        onClick={(e) => handleDuplicateSession(session.id, session.name, e)}
+                        disabled={duplicatingSessionId === session.id}
+                        className="p-1.5 sm:p-2 hover:bg-gray-800/60 rounded-xl transition-all duration-200 text-blue-400 hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Duplicate session"
+                        aria-label="Duplicate session"
+                      >
+                        {duplicatingSessionId === session.id ? (
+                          <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <DuplicateIcon className="w-4 h-4" />
+                        )}
+                      </button>
                       <button
                         onClick={() => handleSessionEdit(session)}
                         className="p-1.5 sm:p-2 hover:bg-gray-800/60 rounded-xl transition-all duration-200 text-blue-400 hover:text-blue-300"

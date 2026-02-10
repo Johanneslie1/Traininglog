@@ -1,4 +1,4 @@
-import type { Program } from '@/types/program';
+import type { Program, ProgramSession } from '@/types/program';
 import { db } from './firebase/firebase';
 import {
   collection,
@@ -630,6 +630,173 @@ export const updateSession = async (programId: string, sessionId: string, exerci
     });
   } catch (err) {
     console.error('[programService] Error updating session exercises:', err);
+    throw err;
+  }
+};
+
+// Duplicate a program with all its sessions and exercises
+export const duplicateProgram = async (programId: string): Promise<Program> => {
+  try {
+    const user = await ensureAuth();
+    console.log('[programService] Duplicating program:', programId);
+
+    // Get the original program
+    const programRef = doc(db, PROGRAMS_COLLECTION, programId);
+    const programDoc = await getDoc(programRef);
+
+    if (!programDoc.exists()) {
+      throw new Error('Program not found');
+    }
+
+    const programData = programDoc.data();
+    if (programData.userId !== user.uid) {
+      throw new Error('You can only duplicate your own programs');
+    }
+
+    // Fetch all sessions from the original program
+    const sessionsRef = collection(programRef, 'sessions');
+    const sessionsSnapshot = await getDocs(sessionsRef);
+    
+    const sessions = sessionsSnapshot.docs.map(sessionDoc => {
+      const sessionData = sessionDoc.data();
+      return {
+        id: crypto.randomUUID(), // Generate new ID for duplicate
+        name: sessionData.name,
+        exercises: (sessionData.exercises || []).map((ex: any) => ({
+          id: crypto.randomUUID(), // Generate new ID for each exercise
+          name: ex.name,
+          exerciseRef: ex.exerciseRef,
+          notes: ex.notes || '',
+          order: ex.order,
+          activityType: ex.activityType
+        })),
+        notes: sessionData.notes || '',
+        order: sessionData.order ?? 0,
+        userId: user.uid
+      };
+    });
+
+    // Create the duplicated program with "(Copy)" suffix
+    const duplicatedProgram = {
+      name: `${programData.name} (Copy)`,
+      description: programData.description || '',
+      createdBy: user.uid,
+      userId: user.uid,
+      sessions,
+      isPublic: false,
+      tags: programData.tags || []
+    };
+
+    console.log('[programService] Creating duplicate program:', {
+      originalName: programData.name,
+      newName: duplicatedProgram.name,
+      sessionCount: sessions.length
+    });
+
+    // Create the new program
+    await createProgram(duplicatedProgram);
+
+    // Fetch and return the newly created program
+    const programs = await getPrograms();
+    const newProgram = programs.find(p => 
+      p.name === duplicatedProgram.name && 
+      p.userId === user.uid &&
+      p.createdBy === user.uid
+    );
+
+    if (!newProgram) {
+      throw new Error('Failed to retrieve duplicated program');
+    }
+
+    console.log('[programService] Program duplicated successfully:', newProgram.id);
+    return newProgram;
+  } catch (err) {
+    console.error('[programService] Error duplicating program:', err);
+    throw err;
+  }
+};
+
+// Duplicate a session within a program
+export const duplicateSession = async (programId: string, sessionId: string): Promise<ProgramSession> => {
+  try {
+    const user = await ensureAuth();
+    console.log('[programService] Duplicating session:', { programId, sessionId });
+
+    // Get program reference and verify ownership
+    const programRef = doc(db, PROGRAMS_COLLECTION, programId);
+    const programDoc = await getDoc(programRef);
+
+    if (!programDoc.exists()) {
+      throw new Error('Program not found');
+    }
+
+    const programData = programDoc.data();
+    if (programData.userId !== user.uid) {
+      throw new Error('You can only duplicate sessions in your own programs');
+    }
+
+    // Get the original session
+    const sessionRef = doc(collection(programRef, 'sessions'), sessionId);
+    const sessionDoc = await getDoc(sessionRef);
+
+    if (!sessionDoc.exists()) {
+      throw new Error('Session not found');
+    }
+
+    const sessionData = sessionDoc.data();
+
+    // Get all sessions to determine the new order
+    const sessionsSnapshot = await getDocs(collection(programRef, 'sessions'));
+    const maxOrder = Math.max(0, ...sessionsSnapshot.docs.map(doc => doc.data().order ?? 0));
+
+    // Create duplicated session with new IDs and "(Copy)" suffix
+    const duplicatedExercises = (sessionData.exercises || []).map((ex: any) => ({
+      id: crypto.randomUUID(), // Generate new ID for each exercise
+      name: ex.name,
+      exerciseRef: ex.exerciseRef,
+      notes: ex.notes || '',
+      order: ex.order,
+      activityType: ex.activityType
+    }));
+
+    const newSessionData = {
+      name: `${sessionData.name} (Copy)`,
+      exercises: duplicatedExercises,
+      notes: sessionData.notes || '',
+      order: maxOrder + 1
+    };
+
+    console.log('[programService] Creating duplicate session:', {
+      originalName: sessionData.name,
+      newName: newSessionData.name,
+      exerciseCount: duplicatedExercises.length
+    });
+
+    // Create the new session
+    const newSessionId = await createSession(programId, newSessionData);
+
+    // Fetch and return the newly created session
+    const newSessionRef = doc(collection(programRef, 'sessions'), newSessionId);
+    const newSessionDoc = await getDoc(newSessionRef);
+
+    if (!newSessionDoc.exists()) {
+      throw new Error('Failed to retrieve duplicated session');
+    }
+
+    const newSessionDocData = newSessionDoc.data();
+    const duplicatedSession: ProgramSession = {
+      id: newSessionDoc.id,
+      name: newSessionDocData.name,
+      exercises: newSessionDocData.exercises || [],
+      notes: newSessionDocData.notes,
+      order: newSessionDocData.order,
+      userId: user.uid
+    };
+
+    console.log('[programService] Session duplicated successfully:', duplicatedSession.id);
+    return duplicatedSession;
+  } catch (err) {
+    console.error('[programService] Error duplicating session:', err);
     throw err;
   }
 };

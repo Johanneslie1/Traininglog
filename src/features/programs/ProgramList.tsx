@@ -7,16 +7,17 @@ import { getAuth, signOut } from 'firebase/auth';
 import { auth as firebaseAuth } from '@/services/firebase/config';
 import { Program } from '@/types/program';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { TrashIcon, PlusIcon } from '@heroicons/react/outline';
+import { TrashIcon, PlusIcon, DuplicateIcon } from '@heroicons/react/outline';
 import SideMenu from '@/components/SideMenu';
 
 const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onSelect }) => {
   const navigate = useNavigate();
-  const { programs, addProgram: create, refresh, deleteProgram } = usePrograms();
+  const { programs, addProgram: create, refresh, deleteProgram, duplicateProgram } = usePrograms();
   const [showModal, setShowModal] = useState(false);
   const [showCreateNew, setShowCreateNew] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deletingProgramId, setDeletingProgramId] = useState<string | null>(null);
+  const [duplicatingProgramId, setDuplicatingProgramId] = useState<string | null>(null);
   const [showSideMenu, setShowSideMenu] = useState(false);
   const auth = getAuth();
 
@@ -116,6 +117,27 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
     }
   };
 
+  const handleDuplicateProgram = async (programId: string, _programName: string, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent card click navigation
+    
+    setDuplicatingProgramId(programId);
+    setError(null);
+    
+    try {
+      console.log('[ProgramList] Duplicating program:', programId);
+      const duplicatedProgram = await duplicateProgram(programId);
+      console.log('[ProgramList] Program duplicated successfully:', duplicatedProgram.id);
+      // Navigate to the duplicated program
+      navigate(`/programs/${duplicatedProgram.id}`);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to duplicate program';
+      console.error('[ProgramList] Error duplicating program:', err);
+      setError(errorMessage);
+    } finally {
+      setDuplicatingProgramId(null);
+    }
+  };
+
   const handleLogout = async () => {
     try {
       await signOut(firebaseAuth);
@@ -196,20 +218,35 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
                 <span role="img" aria-label="kettlebell">🏋️‍♂️</span>
               </div>
               
-              {/* Delete button */}
-              <button
-                onClick={(e) => handleDeleteProgram(program.id, program.name, e)}
-                disabled={deletingProgramId === program.id}
-                className="absolute top-3 left-3 p-2 bg-red-600/90 hover:bg-red-500 text-white rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-200 z-20 disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Delete program"
-                aria-label={`Delete program ${program.name}`}
-              >
-                {deletingProgramId === program.id ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <TrashIcon className="w-4 h-4" />
-                )}
-              </button>
+              {/* Action buttons */}
+              <div className="absolute top-3 left-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-200 z-20">
+                <button
+                  onClick={(e) => handleDuplicateProgram(program.id, program.name, e)}
+                  disabled={duplicatingProgramId === program.id}
+                  className="p-2 bg-blue-600/90 hover:bg-blue-500 text-white rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Duplicate program"
+                  aria-label={`Duplicate program ${program.name}`}
+                >
+                  {duplicatingProgramId === program.id ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <DuplicateIcon className="w-4 h-4" />
+                  )}
+                </button>
+                <button
+                  onClick={(e) => handleDeleteProgram(program.id, program.name, e)}
+                  disabled={deletingProgramId === program.id}
+                  className="p-2 bg-red-600/90 hover:bg-red-500 text-white rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Delete program"
+                  aria-label={`Delete program ${program.name}`}
+                >
+                  {deletingProgramId === program.id ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <TrashIcon className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
 
               <div className="flex flex-col justify-between h-full z-10">
                 <div>

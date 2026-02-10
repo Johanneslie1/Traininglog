@@ -14,6 +14,8 @@ interface ProgramsContextType {
   updateProgram: (id: string, updated: Partial<Program>) => Promise<void>;
   updateSessionInProgram: (programId: string, sessionId: string, exercises: any[]) => Promise<void>;
   deleteProgram: (id: string) => Promise<void>;
+  duplicateProgram: (id: string) => Promise<Program>;
+  duplicateSession: (programId: string, sessionId: string) => Promise<void>;
 }
 
 // Export type alias for compatibility
@@ -135,8 +137,47 @@ export const ProgramsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     fetchPrograms(true);
   };
 
+  const duplicateProgram = async (id: string): Promise<Program> => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      logger.debug('[ProgramsContext] Duplicating program:', id);
+      const duplicatedProgram = await programService.duplicateProgram(id);
+      logger.debug('[ProgramsContext] Program duplicated successfully:', duplicatedProgram.id);
+      await fetchPrograms(true); // Refresh to show the new program
+      return duplicatedProgram;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to duplicate program';
+      console.error('[ProgramsContext] Error duplicating program:', err);
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const duplicateSession = async (programId: string, sessionId: string) => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      logger.debug('[ProgramsContext] Duplicating session:', { programId, sessionId });
+      await programService.duplicateSession(programId, sessionId);
+      logger.debug('[ProgramsContext] Session duplicated successfully');
+      await fetchPrograms(true); // Refresh to show the new session
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to duplicate session';
+      console.error('[ProgramsContext] Error duplicating session:', err);
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <ProgramsContext.Provider value={{ programs, isLoading, error, refresh: () => fetchPrograms(true), addProgram, updateProgram, updateSessionInProgram, deleteProgram }}>
+    <ProgramsContext.Provider value={{ programs, isLoading, error, refresh: () => fetchPrograms(true), addProgram, updateProgram, updateSessionInProgram, deleteProgram, duplicateProgram, duplicateSession }}>
       {children}
     </ProgramsContext.Provider>
   );
