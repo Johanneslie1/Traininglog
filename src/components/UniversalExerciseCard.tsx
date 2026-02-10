@@ -68,26 +68,26 @@ export const UniversalExerciseCard: React.FC<UniversalExerciseCardProps> = ({
   };
 
   return (
-    <div className="bg-gray-900/50 rounded-lg p-4 border border-gray-700 hover:border-gray-600 transition-colors">
+    <div className="bg-bg-tertiary rounded-lg p-4 border border-border hover:border-border-hover transition-colors">
       {/* Header */}
       <div className="flex items-start justify-between mb-2">
         <div className="flex-1">
-          <h3 className="text-white font-semibold">
+          <h3 className="text-text-primary font-semibold">
             {config.icon} {exercise.exerciseName}
           </h3>
-          <p className="text-xs text-gray-500">{config.label}</p>
+          <p className="text-xs text-text-tertiary">{config.label}</p>
         </div>
       </div>
 
       {/* Summary Metric */}
-      <div className="text-sm text-purple-400 font-medium mb-3">
+      <div className="text-sm text-accent-primary font-medium mb-3">
         {getSummaryMetric()}
       </div>
 
       {/* Set Details */}
       <div className="space-y-1 text-xs text-gray-400 mb-3">
         {exercise.sets.slice(0, 3).map((set, idx) => (
-          <div key={idx} className="text-gray-500">
+          <div key={idx} className="text-text-tertiary">
             Set {idx + 1}: {formatSetSummary(idx, set)}
           </div>
         ))}
@@ -100,7 +100,7 @@ export const UniversalExerciseCard: React.FC<UniversalExerciseCardProps> = ({
 
       {/* Notes */}
       {exercise.notes && (
-        <div className="text-xs text-gray-500 mb-3 italic">
+        <div className="text-xs text-text-tertiary mb-3 italic">
           "{exercise.notes}"
         </div>
       )}
@@ -133,3 +133,4 @@ export const UniversalExerciseCard: React.FC<UniversalExerciseCardProps> = ({
 };
 
 export default UniversalExerciseCard;
+

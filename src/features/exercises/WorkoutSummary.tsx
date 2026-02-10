@@ -58,10 +58,10 @@ export const WorkoutSummary: React.FC<WorkoutSummaryProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
-      <div className="w-full max-w-md mx-4 bg-[#1a1a1a] rounded-lg max-h-[90vh] overflow-hidden">
+      <div className="w-full max-w-md mx-4 bg-bg-secondary rounded-lg max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="bg-green-600 p-4 text-center">
-          <div className="text-white text-lg font-bold mb-1">Workout Complete!</div>
+          <div className="text-text-primary text-lg font-bold mb-1">Workout Complete!</div>
           <div className="text-green-100 text-sm">
             {formatDate(new Date(exercises[0]?.timestamp || Date.now()))}
           </div>
@@ -71,16 +71,16 @@ export const WorkoutSummary: React.FC<WorkoutSummaryProps> = ({
         <div className="p-4 border-b border-gray-700">
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
-              <div className="text-white text-xl font-bold">{exercises.length}</div>
-              <div className="text-gray-400 text-sm">Exercises</div>
+              <div className="text-text-primary text-xl font-bold">{exercises.length}</div>
+              <div className="text-text-tertiary text-sm">Exercises</div>
             </div>
             <div>
-              <div className="text-white text-xl font-bold">{getTotalSets()}</div>
-              <div className="text-gray-400 text-sm">Sets</div>
+              <div className="text-text-primary text-xl font-bold">{getTotalSets()}</div>
+              <div className="text-text-tertiary text-sm">Sets</div>
             </div>
             <div>
-              <div className="text-white text-xl font-bold">{getTotalVolume().toLocaleString()}</div>
-              <div className="text-gray-400 text-sm">Total kg</div>
+              <div className="text-text-primary text-xl font-bold">{getTotalVolume().toLocaleString()}</div>
+              <div className="text-text-tertiary text-sm">Total kg</div>
             </div>
           </div>
         </div>
@@ -90,13 +90,13 @@ export const WorkoutSummary: React.FC<WorkoutSummaryProps> = ({
           {exercises.map((exercise) => (
             <div key={exercise.id} className="flex items-center p-4 border-b border-gray-800">
               {/* Exercise Icon */}
-              <div className="w-12 h-12 bg-[#333] rounded-lg flex items-center justify-center mr-4">
+              <div className="w-12 h-12 bg-bg-tertiary rounded-lg flex items-center justify-center mr-4">
                 <span className="text-2xl">{getExerciseIcon(exercise.exerciseName)}</span>
               </div>
 
               {/* Exercise Details */}
               <div className="flex-1">
-                <h3 className="text-white font-medium text-base mb-1">
+                <h3 className="text-text-primary font-medium text-base mb-1">
                   {exercise.exerciseName}
                 </h3>
                 
@@ -118,7 +118,7 @@ export const WorkoutSummary: React.FC<WorkoutSummaryProps> = ({
                     return (
                       <div
                         key={setIndex}
-                        className={`${bgColor} text-white text-xs px-2 py-1 rounded`}
+                        className={`${bgColor} text-text-primary text-xs px-2 py-1 rounded`}
                       >
                         {set.weight ? `${set.weight}kg × ` : ''}{set.reps} {!set.weight ? 'reps' : ''}
                       </div>
@@ -127,13 +127,13 @@ export const WorkoutSummary: React.FC<WorkoutSummaryProps> = ({
                 </div>
 
                 {/* Exercise Volume */}
-                <div className="text-gray-400 text-sm mt-1">
+                <div className="text-text-tertiary text-sm mt-1">
                   {exercise.sets.reduce((total, set) => total + ((set.weight || 0) * (set.reps || 0)), 0).toLocaleString()} kg total
                 </div>
               </div>
 
               {/* Set Count */}
-              <div className="text-gray-400 text-sm">
+              <div className="text-text-tertiary text-sm">
                 {exercise.sets.length} set{exercise.sets.length !== 1 ? 's' : ''}
               </div>
             </div>
@@ -144,7 +144,7 @@ export const WorkoutSummary: React.FC<WorkoutSummaryProps> = ({
         <div className="p-4">
           <button
             onClick={onClose}
-            className="w-full bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors"
+            className="w-full bg-green-600 text-text-primary py-3 rounded-lg font-medium hover:bg-green-700 transition-colors"
           >
             Done
           </button>

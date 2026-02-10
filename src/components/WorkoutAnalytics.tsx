@@ -42,8 +42,8 @@ const WorkoutAnalytics: React.FC<WorkoutAnalyticsProps> = ({
 
   if (totalExercises === 0) {
     return (
-      <div className={`p-4 bg-gray-100 dark:bg-gray-800 rounded-lg ${className}`}>
-        <div className="text-center text-gray-500 dark:text-gray-400">
+      <div className={`p-4 bg-bg-tertiary rounded-lg ${className}`}>
+        <div className="text-center text-text-tertiary">
           <span className="text-2xl">💪</span>
           <p className="mt-2 text-sm">Add exercises to see analytics</p>
         </div>
@@ -52,22 +52,22 @@ const WorkoutAnalytics: React.FC<WorkoutAnalyticsProps> = ({
   }
 
   return (
-    <div className={`p-4 bg-white dark:bg-[#181A20] rounded-lg border border-gray-200 dark:border-white/10 ${className}`}>
-      <div className="text-sm text-gray-600 dark:text-gray-400 mb-3 font-medium">{title}</div>
+    <div className={`p-4 bg-bg-secondary rounded-lg border border-border ${className}`}>
+      <div className="text-sm text-text-tertiary mb-3 font-medium">{title}</div>
       
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
         <div className="space-y-1">
-          <div className="text-lg font-semibold text-gray-900 dark:text-white">{totalExercises}</div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">Exercises</div>
+          <div className="text-lg font-semibold text-text-primary">{totalExercises}</div>
+          <div className="text-xs text-text-tertiary">Exercises</div>
         </div>
         
         <div className="space-y-1">
-          <div className="text-lg font-semibold text-gray-900 dark:text-white">{totalSets}</div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">Total Sets</div>
+          <div className="text-lg font-semibold text-text-primary">{totalSets}</div>
+          <div className="text-xs text-text-tertiary">Total Sets</div>
         </div>
         
         <div className="space-y-1">
-          <div className="text-lg font-semibold text-gray-900 dark:text-white">
+          <div className="text-lg font-semibold text-text-primary">
             {totalVolume >= 1000 ? `${Math.round(totalVolume / 1000)}k` : totalVolume}
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-400">Volume (kg)</div>
@@ -80,7 +80,7 @@ const WorkoutAnalytics: React.FC<WorkoutAnalyticsProps> = ({
       </div>
 
       {/* Additional Metrics Row */}
-      <div className="mt-4 pt-3 border-t border-gray-200 dark:border-white/10">
+      <div className="mt-4 pt-3 border-t border-gray-200 dark:border-border">
         <div className="grid grid-cols-2 gap-4 text-center text-xs">
           <div className="space-y-1">
             <div className="text-sm font-medium text-gray-900 dark:text-white">{estimatedDuration}min</div>
@@ -98,7 +98,7 @@ const WorkoutAnalytics: React.FC<WorkoutAnalyticsProps> = ({
 
       {/* Exercise Breakdown (if space allows) */}
       {exercises.length <= 5 && (
-        <div className="mt-4 pt-3 border-t border-gray-200 dark:border-white/10">
+        <div className="mt-4 pt-3 border-t border-gray-200 dark:border-border">
           <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">Exercise Breakdown:</div>
           <div className="space-y-1">
             {exercises.map((item, idx) => (

@@ -258,31 +258,31 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
   };
 
   return (
-    <div className="fixed inset-0 bg-black text-white flex flex-col z-40">
+    <div className="fixed inset-0 bg-bg-primary text-text-primary flex flex-col z-40">
       {/* Top Bar with Menu and Logout */}
-      <div className="bg-[#0f0f0f] px-4 py-2 border-b border-white/5 flex-shrink-0">
+      <div className="bg-bg-primary px-4 py-2 border-b border-border flex-shrink-0">
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 text-sm text-gray-400 min-w-0 flex-1">
+          <div className="flex items-center gap-2 text-sm text-text-tertiary min-w-0 flex-1">
             <button 
               onClick={() => setShowSideMenu(true)}
-              className="p-1 hover:bg-white/10 rounded-lg transition-colors flex-shrink-0"
+              className="p-1 hover:bg-hover-overlay rounded-lg transition-colors flex-shrink-0"
               aria-label="Open Menu"
             >
-              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <button onClick={onBack} className="hover:text-white transition-colors flex-shrink-0">
+            <button onClick={onBack} className="hover:text-text-primary transition-colors flex-shrink-0">
               Programs
             </button>
             <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-            <span className="text-white truncate">{program.name}</span>
+            <span className="text-text-primary truncate">{program.name}</span>
           </div>
           <button
             onClick={handleLogout}
-            className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition-colors flex-shrink-0"
+            className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-text-primary text-sm rounded-lg transition-colors flex-shrink-0"
           >
             Logout
           </button>
@@ -290,14 +290,14 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
       </div>
 
       {/* Header */}
-      <header className="flex items-start justify-between p-3 sm:p-4 bg-[#1a1a1a] border-b border-white/10 flex-shrink-0 gap-3">
+      <header className="flex items-start justify-between p-3 sm:p-4 bg-bg-secondary border-b border-border flex-shrink-0 gap-3">
         <div className="flex items-start space-x-2 sm:space-x-3 flex-1 min-w-0">
           <button
             onClick={onBack}
-            className="p-1.5 sm:p-2 hover:bg-white/10 rounded-xl transition-all duration-200 flex-shrink-0"
+            className="p-1.5 sm:p-2 hover:bg-hover-overlay rounded-xl transition-all duration-200 flex-shrink-0"
             aria-label="Back to programs"
           >
-            <ArrowLeftIcon className="w-4 h-4 sm:w-5 sm:h-5 text-gray-300" />
+            <ArrowLeftIcon className="w-4 h-4 sm:w-5 sm:h-5 text-text-secondary" />
           </button>
           <div className="flex-1 min-w-0">
             {editingProgram ? (
@@ -306,7 +306,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                   type="text"
                   value={tempName}
                   onChange={(e) => setTempName(e.target.value)}
-                  className="w-full text-xl font-semibold bg-[#2a2a2a] text-white rounded-lg px-3 py-1 border border-white/10 focus:border-[#8B5CF6] focus:outline-none"
+                  className="w-full text-xl font-semibold bg-bg-tertiary text-text-primary rounded-lg px-3 py-1 border border-border focus:border-accent-primary focus:outline-none"
                   autoFocus
                 />
                 <input
@@ -314,14 +314,14 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                   value={tempDescription}
                   onChange={(e) => setTempDescription(e.target.value)}
                   placeholder="Program description (optional)"
-                  className="w-full text-sm bg-[#2a2a2a] text-gray-300 rounded-lg px-3 py-1 border border-white/10 focus:border-[#8B5CF6] focus:outline-none"
+                  className="w-full text-sm bg-bg-tertiary text-text-secondary rounded-lg px-3 py-1 border border-border focus:border-accent-primary focus:outline-none"
                 />
               </div>
             ) : (
               <div>
-                <h1 className="text-lg sm:text-xl font-semibold text-white break-words">{program.name}</h1>
+                <h1 className="text-lg sm:text-xl font-semibold text-text-primary break-words">{program.name}</h1>
                 {program.description && (
-                  <p className="text-xs sm:text-sm text-gray-400 mt-0.5 break-words">{program.description}</p>
+                  <p className="text-xs sm:text-sm text-text-tertiary mt-0.5 break-words">{program.description}</p>
                 )}
               </div>
             )}
@@ -336,7 +336,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                 <div className="flex items-center gap-1 sm:gap-2">
                   <button
                     onClick={handleSaveProgramEdit}
-                    className="p-1.5 sm:p-2.5 hover:bg-gray-800/60 rounded-xl transition-all duration-200 text-green-400 hover:text-green-300"
+                    className="p-1.5 sm:p-2.5 hover:bg-bg-tertiary/60 rounded-xl transition-all duration-200 text-green-400 hover:text-green-300"
                     title="Save changes"
                     aria-label="Save changes"
                   >
@@ -346,7 +346,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                   </button>
                   <button
                     onClick={handleCancelProgramEdit}
-                    className="p-1.5 sm:p-2.5 hover:bg-gray-800/60 rounded-xl transition-all duration-200 text-red-400 hover:text-red-300"
+                    className="p-1.5 sm:p-2.5 hover:bg-bg-tertiary/60 rounded-xl transition-all duration-200 text-red-400 hover:text-red-300"
                     title="Cancel edit"
                     aria-label="Cancel edit"
                   >
@@ -359,7 +359,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                 <div className="flex items-center gap-1 sm:gap-2">
                   <button
                     onClick={handleProgramEdit}
-                    className="p-1.5 sm:p-2.5 hover:bg-gray-800/60 rounded-xl transition-all duration-200 text-blue-400 hover:text-blue-300"
+                    className="p-1.5 sm:p-2.5 hover:bg-bg-tertiary/60 rounded-xl transition-all duration-200 text-blue-400 hover:text-blue-300"
                     title="Edit program"
                     aria-label={`Edit program ${program.name}`}
                   >
@@ -368,7 +368,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                   <button
                     onClick={handleDeleteProgram}
                     disabled={isDeletingProgram}
-                    className="p-1.5 sm:p-2.5 hover:bg-gray-800/60 rounded-xl transition-all duration-200 text-red-400 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="p-1.5 sm:p-2.5 hover:bg-bg-tertiary/60 rounded-xl transition-all duration-200 text-red-400 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Delete program"
                     aria-label={`Delete program ${program.name}`}
                   >
@@ -390,13 +390,13 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
         <div className="space-y-3 max-w-4xl mx-auto">
         {sessions.length > 0 ? (
           sessions.map((session) => (
-            <div key={session.id} className="bg-[#1a1a1a] rounded-2xl overflow-hidden border border-gray-800 hover:border-gray-700 transition-all duration-200">
+            <div key={session.id} className="bg-bg-secondary rounded-2xl overflow-hidden border border-gray-800 hover:border-gray-700 transition-all duration-200">
               {/* Session Header */}
               <div className="px-4 sm:px-5 py-3 sm:py-4 flex items-center justify-between border-b border-gray-800/50 gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                    <h3 className="text-lg font-semibold text-white">{session.name}</h3>
-                    <span className="text-xs font-medium text-gray-400 bg-gray-800/60 px-2.5 py-1 rounded-full">
+                    <h3 className="text-lg font-semibold text-text-primary">{session.name}</h3>
+                    <span className="text-xs font-medium text-text-tertiary bg-bg-tertiary/60 px-2.5 py-1 rounded-full">
                       {session.exercises.length} exercises
                     </span>
                   </div>
@@ -408,7 +408,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                       <button
                         onClick={(e) => handleDuplicateSession(session.id, session.name, e)}
                         disabled={duplicatingSessionId === session.id}
-                        className="p-1.5 sm:p-2 hover:bg-gray-800/60 rounded-xl transition-all duration-200 text-blue-400 hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="p-1.5 sm:p-2 hover:bg-bg-tertiary/60 rounded-xl transition-all duration-200 text-blue-400 hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Duplicate session"
                         aria-label="Duplicate session"
                       >
@@ -420,7 +420,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                       </button>
                       <button
                         onClick={() => handleSessionEdit(session)}
-                        className="p-1.5 sm:p-2 hover:bg-gray-800/60 rounded-xl transition-all duration-200 text-blue-400 hover:text-blue-300"
+                        className="p-1.5 sm:p-2 hover:bg-bg-tertiary/60 rounded-xl transition-all duration-200 text-blue-400 hover:text-blue-300"
                         title="Edit session"
                         aria-label="Edit session"
                       >
@@ -428,7 +428,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                       </button>
                       <button
                         onClick={() => handleDeleteSession(session.id)}
-                        className="p-1.5 sm:p-2 hover:bg-gray-800/60 rounded-xl transition-all duration-200 text-red-400 hover:text-red-300"
+                        className="p-1.5 sm:p-2 hover:bg-bg-tertiary/60 rounded-xl transition-all duration-200 text-red-400 hover:text-red-300"
                         title="Delete session"
                         aria-label="Delete session"
                       >
@@ -438,12 +438,12 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                   )}
                   <button
                     onClick={() => toggleSession(session.id)}
-                    className="p-1.5 sm:p-2 hover:bg-gray-800/60 rounded-xl transition-all duration-200"
+                    className="p-1.5 sm:p-2 hover:bg-bg-tertiary/60 rounded-xl transition-all duration-200"
                     title={expandedSessions.includes(session.id) ? "Collapse session" : "Expand session"}
                     aria-label={expandedSessions.includes(session.id) ? "Collapse session" : "Expand session"}
                   >
                     <ChevronDownIcon
-                      className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
+                      className={`w-4 h-4 text-text-tertiary transition-transform duration-200 ${
                         expandedSessions.includes(session.id) ? 'rotate-180' : ''
                       }`}
                     />
@@ -457,19 +457,19 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                   {session.exercises.map((exercise, index) => (
                     <div 
                       key={exercise.id}
-                      className={`px-4 py-3 hover:bg-gray-800/40 transition-all duration-200 rounded-xl mx-1 ${
+                      className={`px-4 py-3 hover:bg-bg-tertiary/40 transition-all duration-200 rounded-xl mx-1 ${
                         index !== session.exercises.length - 1 ? 'mb-1' : ''
                       }`}
                     >
                       <div className="flex items-center justify-between">
                         <div>
                           <div className="flex items-center gap-2 mb-1">
-                            <h4 className="text-base font-medium text-white">{exercise.name}</h4>
+                            <h4 className="text-base font-medium text-text-primary">{exercise.name}</h4>
                             <span className={`px-2 py-0.5 text-xs rounded-full ${getActivityTypeInfo(exercise.activityType).color} ${getActivityTypeInfo(exercise.activityType).textColor}`}>
                               {getActivityTypeInfo(exercise.activityType).label}
                             </span>
                           </div>
-                          <div className="text-sm text-gray-400">
+                          <div className="text-sm text-text-tertiary">
                             Sets and reps will be logged during workout
                           </div>
                         </div>
@@ -482,13 +482,13 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
           ))
         ) : (
           <div className="text-center py-12">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gray-800/50 flex items-center justify-center">
-              <svg className="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-bg-tertiary/50 flex items-center justify-center">
+              <svg className="w-8 h-8 text-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
               </svg>
             </div>
-            <h3 className="text-lg font-medium text-white mb-2">No sessions yet</h3>
-            <p className="text-gray-400 text-sm mb-6">Create your first training session to get started</p>
+            <h3 className="text-lg font-medium text-text-primary mb-2">No sessions yet</h3>
+            <p className="text-text-tertiary text-sm mb-6">Create your first training session to get started</p>
           </div>
         )}
         
@@ -498,7 +498,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
               setEditingSession(null);
               setShowSessionBuilder(true);
             }} 
-            className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 flex items-center justify-center gap-3 font-medium shadow-lg hover:shadow-xl border border-blue-500/20"
+            className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-text-primary rounded-2xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 flex items-center justify-center gap-3 font-medium shadow-lg hover:shadow-xl border border-blue-500/20"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -545,3 +545,4 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
 };
 
 export default ProgramDetail;
+

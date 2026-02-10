@@ -12,6 +12,7 @@ import { store } from '@/store/store';
 import Layout from '@/components/layout/Layout';
 import AppRoutes from '@/routes';
 import { StatePersistence } from '@/utils/statePersistence';
+import { ThemeProvider } from '@/context/ThemeContext';
 
 import 'mobile-drag-drop/default.css';
 import '@/styles/dragAndDrop.css';
@@ -140,23 +141,25 @@ const App: React.FC = () => {
 
   return (
     <ErrorBoundary fallback={
-      <div className="flex flex-col items-center justify-center min-h-screen bg-[#1a1a1a] text-white p-4">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-bg-primary text-text-primary p-4">
         <h1 className="text-2xl font-bold mb-4">Something went wrong</h1>
-        <p className="text-gray-400 mb-4">Please refresh the page or try again later.</p>
+        <p className="text-text-tertiary mb-4">Please refresh the page or try again later.</p>
         <button 
           onClick={() => window.location.reload()} 
-          className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          className="px-4 py-2 bg-accent-primary text-text-inverse rounded-lg hover:bg-accent-secondary transition-colors"
         >
           Refresh Page
         </button>
       </div>
     }>
-      <Providers>
-        <UpdateNotification />
-        <Layout>
-          <AppRoutes />
-        </Layout>
-      </Providers>
+      <ThemeProvider>
+        <Providers>
+          <UpdateNotification />
+          <Layout>
+            <AppRoutes />
+          </Layout>
+        </Providers>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 };

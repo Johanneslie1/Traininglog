@@ -81,15 +81,15 @@ const CreateNewProgram: React.FC<CreateNewProgramProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center">
-      <div className="bg-[#23272F] rounded-xl w-full max-w-md mx-4 shadow-2xl">
+    <div className="fixed inset-0 bg-bg-primary bg-opacity-70 z-50 flex items-center justify-center">
+      <div className="bg-bg-secondary rounded-xl w-full max-w-md mx-4 shadow-2xl">
         {/* Header */}
-        <div className="p-6 border-b border-white/10">
+        <div className="p-6 border-b border-border">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-white">Create New Program</h2>
+            <h2 className="text-2xl font-bold text-text-primary">Create New Program</h2>
             <button 
               onClick={onClose}
-              className="text-gray-400 hover:text-white text-2xl"
+              className="text-text-tertiary hover:text-text-primary text-2xl"
             >
               ×
             </button>
@@ -107,7 +107,7 @@ const CreateNewProgram: React.FC<CreateNewProgramProps> = ({
               placeholder="e.g., Push/Pull/Legs, Upper/Lower Split"
               value={programName}
               onChange={(e) => setProgramName(e.target.value)}
-              className="w-full px-4 py-3 bg-[#181A20] text-white rounded-lg border border-white/10 focus:border-[#8B5CF6] focus:outline-none"
+              className="w-full px-4 py-3 bg-bg-secondary text-text-primary rounded-lg border border-border focus:border-accent-primary focus:outline-none"
               autoFocus
             />
           </div>
@@ -120,17 +120,17 @@ const CreateNewProgram: React.FC<CreateNewProgramProps> = ({
               placeholder="Describe your program goals, frequency, and notes..."
               value={programDescription}
               onChange={(e) => setProgramDescription(e.target.value)}
-              className="w-full px-4 py-3 bg-[#181A20] text-white rounded-lg border border-white/10 focus:border-[#8B5CF6] focus:outline-none resize-none"
+              className="w-full px-4 py-3 bg-bg-secondary text-text-primary rounded-lg border border-border focus:border-accent-primary focus:outline-none resize-none"
               rows={4}
             />
           </div>
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-white/10 flex gap-3 justify-end">
+        <div className="p-6 border-t border-border flex gap-3 justify-end">
           <button 
             onClick={onClose}
-            className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            className="px-6 py-3 bg-bg-tertiary text-text-primary rounded-lg hover:bg-bg-tertiary hover:opacity-90 transition-colors"
             disabled={isSubmitting}
           >
             Cancel
@@ -138,7 +138,7 @@ const CreateNewProgram: React.FC<CreateNewProgramProps> = ({
           <button 
             onClick={handleSaveProgram}
             disabled={!programName.trim() || isSubmitting}
-            className="px-6 py-3 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-3 bg-accent-primary hover:bg-accent-secondary text-text-primary rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? 'Creating...' : 'Create Program'}
           </button>

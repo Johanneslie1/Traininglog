@@ -197,14 +197,14 @@ export const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
   return (
     <div className="fixed inset-0 bg-black flex flex-col">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-[#121212] border-b border-[#2a2a2a]">
+      <div className="sticky top-0 z-10 bg-bg-primary border-b border-border">
         <div className="flex items-center p-4">
           <button
             onClick={onClose}
-            className="mr-4 p-2 rounded-full hover:bg-[#2a2a2a] transition-colors"
+            className="mr-4 p-2 rounded-full hover:bg-bg-tertiary transition-colors"
             aria-label="Close search"
           >
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6 text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
@@ -215,7 +215,7 @@ export const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder={`Search ${category ? category.name.toLowerCase() : 'exercises'}...`}
-              className="w-full bg-[#1a1a1a] text-white px-4 py-3 rounded-xl border border-[#2a2a2a] focus:outline-none focus:border-blue-600 transition-colors"
+              className="w-full bg-bg-secondary text-text-primary px-4 py-3 rounded-xl border border-border focus:outline-none focus:border-blue-600 transition-colors"
             />
           </div>
         </div>
@@ -233,23 +233,23 @@ export const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
               <button
                 key={exercise.id}
                 onClick={() => onSelectExercise(exercise)}
-                className="w-full text-left p-4 bg-[#1a1a1a] rounded-xl hover:bg-[#222] transition-colors"
+                className="w-full text-left p-4 bg-bg-secondary rounded-xl hover:bg-bg-tertiary transition-colors"
               >
-                <h3 className="text-white font-medium">{exercise.name}</h3>
-                <p className="text-gray-400 text-sm mt-1">
+                <h3 className="text-text-primary font-medium">{exercise.name}</h3>
+                <p className="text-text-tertiary text-sm mt-1">
                   {(exercise.primaryMuscles || []).join(', ') || 'No muscles specified'}
                 </p>
               </button>
             ))
           ) : (
             <div className="flex flex-col items-center justify-center py-8 px-4 space-y-4">
-              <div className="text-center">
-                <p className="text-white/60 text-lg mb-2">No exercises found</p>
-                <p className="text-white/40">Can't find what you're looking for?</p>
+              <div className="text-center py-12">
+                <p className="text-text-secondary text-lg mb-2">No exercises found</p>
+                <p className="text-text-tertiary">Can't find what you're looking for?</p>
               </div>
               <button
                 onClick={handleCreateExercise}
-                className="flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-purple-600 text-white font-medium hover:bg-purple-700 transition-colors min-h-[44px]"
+                className="flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-purple-600 text-text-primary font-medium hover:bg-purple-700 transition-colors min-h-[44px]"
               >
                 <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 102 0v-5h5a1 1 0 100-2h-5V4a1 1 0 00-1-1z" clipRule="evenodd" />

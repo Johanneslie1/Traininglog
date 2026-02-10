@@ -27,11 +27,11 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSave }
 
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50">
-      <form onSubmit={handleSubmit} className="bg-[#23272F] p-6 rounded-lg w-full max-w-sm shadow-lg">
-        <h2 className="text-xl font-bold mb-4 text-white">Add Exercise</h2>
+    <div className="fixed inset-0 flex items-center justify-center bg-bg-primary bg-opacity-60 z-50">
+      <form onSubmit={handleSubmit} className="bg-bg-secondary p-6 rounded-lg w-full max-w-sm shadow-lg">
+        <h2 className="text-xl font-bold mb-4 text-text-primary">Add Exercise</h2>
         <input
-          className="w-full mb-3 px-3 py-2 rounded bg-[#181A20] text-white border border-white/10"
+          className="w-full mb-3 px-3 py-2 rounded bg-bg-secondary text-text-primary border border-border"
           placeholder="Exercise Name"
           value={name}
           onChange={e => setName(e.target.value)}
@@ -40,7 +40,7 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSave }
         <div className="flex gap-2 mb-3">
           <input
             type="number"
-            className="w-1/2 px-3 py-2 rounded bg-[#181A20] text-white border border-white/10"
+            className="w-1/2 px-3 py-2 rounded bg-bg-secondary text-text-primary border border-border"
             placeholder="Sets"
             value={sets}
             min={1}
@@ -49,7 +49,7 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSave }
           />
           <input
             type="number"
-            className="w-1/2 px-3 py-2 rounded bg-[#181A20] text-white border border-white/10"
+            className="w-1/2 px-3 py-2 rounded bg-bg-secondary text-text-primary border border-border"
             placeholder="Reps"
             value={reps}
             min={1}
@@ -59,27 +59,27 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSave }
         </div>
         <input
           type="number"
-          className="w-full mb-3 px-3 py-2 rounded bg-[#181A20] text-white border border-white/10"
+          className="w-full mb-3 px-3 py-2 rounded bg-bg-secondary text-text-primary border border-border"
           placeholder="Weight (kg)"
           value={weight ?? ''}
           onChange={e => setWeight(Number(e.target.value) || undefined)}
         />
         <input
           type="number"
-          className="w-full mb-3 px-3 py-2 rounded bg-[#181A20] text-white border border-white/10"
+          className="w-full mb-3 px-3 py-2 rounded bg-bg-secondary text-text-primary border border-border"
           placeholder="Rest Time (sec)"
           value={restTime ?? ''}
           onChange={e => setRestTime(Number(e.target.value) || undefined)}
         />
         <textarea
-          className="w-full mb-4 px-3 py-2 rounded bg-[#181A20] text-white border border-white/10"
+          className="w-full mb-4 px-3 py-2 rounded bg-bg-secondary text-text-primary border border-border"
           placeholder="Notes"
           value={notes}
           onChange={e => setNotes(e.target.value)}
         />
         <div className="flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-700 text-white rounded-lg">Cancel</button>
-          <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg">Add</button>
+          <button type="button" onClick={onClose} className="px-4 py-2 bg-bg-tertiary hover:opacity-90 text-text-primary rounded-lg">Cancel</button>
+          <button type="submit" className="px-4 py-2 bg-blue-600 text-text-primary rounded-lg">Add</button>
         </div>
       </form>
     </div>
@@ -87,3 +87,4 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ isOpen, onClose, onSave }
 };
 
 export default ExerciseModal;
+

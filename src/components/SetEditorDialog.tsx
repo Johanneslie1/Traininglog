@@ -82,15 +82,15 @@ export const SetEditorDialog: React.FC<SetEditorDialogProps> = ({
   return (
     <div className="fixed inset-0 bg-black/95 flex flex-col z-50 max-w-[100vw] overflow-x-hidden">
       {/* Header */}
-      <header className="px-4 py-3 border-b border-white/10 shrink-0">
+      <header className="px-4 py-3 border-b border-border shrink-0">
         <div className="flex items-center justify-between mb-1">
-          <h2 className="text-xl font-bold text-white truncate flex-1">
+          <h2 className="text-xl font-bold text-text-primary truncate flex-1">
             {exerciseName}
           </h2>
           {previousSet && (
             <button
               onClick={handleCopyPreviousSet}
-              className="ml-2 w-[44px] h-[44px] rounded-lg bg-white/5 hover:bg-white/10 text-white flex items-center justify-center shrink-0 group relative"
+              className="ml-2 w-[44px] h-[44px] rounded-lg bg-white/5 hover:bg-white/10 text-text-primary flex items-center justify-center shrink-0 group relative"
               aria-label={`Copy values from previous set (${previousSet.weight}kg × ${previousSet.reps})`}
               title={`Copy previous set: ${previousSet.weight}kg × ${previousSet.reps}`}
             >
@@ -105,10 +105,10 @@ export const SetEditorDialog: React.FC<SetEditorDialogProps> = ({
           )}
         </div>
         <div className="flex justify-between items-center">
-          <span className="text-lg text-white/90">
+          <span className="text-lg text-text-primary">
             Set №{setNumber} of {totalSets}
           </span>
-          <span className="text-sm text-white/60 ml-2">
+          <span className="text-sm text-text-tertiary ml-2">
             {format(new Date(), 'dd. MMM, HH:mm')}
           </span>
         </div>
@@ -118,11 +118,11 @@ export const SetEditorDialog: React.FC<SetEditorDialogProps> = ({
       <main className="flex-1 overflow-y-auto px-4 py-6 space-y-6 max-w-full">
         {/* Weight Input */}
         <div className="space-y-2 max-w-full">
-          <label className="text-lg text-white/90">Weight (kg)</label>
+          <label className="text-lg text-text-primary">Weight (kg)</label>
           <div className="flex items-center gap-2 w-full">
             <button
               onClick={() => handleWeightChange(-2.5)}
-              className="w-[44px] h-[44px] rounded-full bg-[#2a2a2a] text-white/90 text-2xl flex items-center justify-center active:bg-[#333] shrink-0"
+              className="w-[44px] h-[44px] rounded-full bg-bg-tertiary text-text-primary text-2xl flex items-center justify-center active:bg-bg-tertiary shrink-0"
               aria-label="Decrease weight"
             >
               −
@@ -133,13 +133,13 @@ export const SetEditorDialog: React.FC<SetEditorDialogProps> = ({
                 value={set.weight || ''}
                 onChange={(e) => handleNumberInput(e, 'weight')}
                 step="2.5"
-                className="w-full bg-transparent text-center text-2xl sm:text-3xl font-semibold text-white border-b-2 border-white/20 focus:border-purple-500 focus:outline-none"
+                className="w-full bg-transparent text-center text-2xl sm:text-3xl font-semibold text-text-primary border-b-2 border-white/20 focus:border-purple-500 focus:outline-none"
                 inputMode="decimal"
               />
             </div>
             <button
               onClick={() => handleWeightChange(2.5)}
-              className="w-[44px] h-[44px] rounded-full bg-[#2a2a2a] text-white/90 text-2xl flex items-center justify-center active:bg-[#333] shrink-0"
+              className="w-[44px] h-[44px] rounded-full bg-bg-tertiary text-text-primary text-2xl flex items-center justify-center active:bg-bg-tertiary shrink-0"
               aria-label="Increase weight"
             >
               +
@@ -149,11 +149,11 @@ export const SetEditorDialog: React.FC<SetEditorDialogProps> = ({
 
         {/* Reps Input */}
         <div className="space-y-2 max-w-full">
-          <label className="text-lg text-white/90">Reps</label>
+          <label className="text-lg text-text-primary">Reps</label>
           <div className="flex items-center gap-2 w-full">
             <button
               onClick={() => handleRepsChange(-1)}
-              className="w-[44px] h-[44px] rounded-full bg-[#2a2a2a] text-white/90 text-2xl flex items-center justify-center active:bg-[#333] shrink-0"
+              className="w-[44px] h-[44px] rounded-full bg-bg-tertiary text-text-primary text-2xl flex items-center justify-center active:bg-bg-tertiary shrink-0"
               aria-label="Decrease reps"
             >
               −
@@ -163,13 +163,13 @@ export const SetEditorDialog: React.FC<SetEditorDialogProps> = ({
                 type="number"
                 value={set.reps || ''}
                 onChange={(e) => handleNumberInput(e, 'reps')}
-                className="w-full bg-transparent text-center text-2xl sm:text-3xl font-semibold text-white border-b-2 border-white/20 focus:border-purple-500 focus:outline-none"
+                className="w-full bg-transparent text-center text-2xl sm:text-3xl font-semibold text-text-primary border-b-2 border-white/20 focus:border-purple-500 focus:outline-none"
                 inputMode="numeric"
               />
             </div>
             <button
               onClick={() => handleRepsChange(1)}
-              className="w-[44px] h-[44px] rounded-full bg-[#2a2a2a] text-white/90 text-2xl flex items-center justify-center active:bg-[#333] shrink-0"
+              className="w-[44px] h-[44px] rounded-full bg-bg-tertiary text-text-primary text-2xl flex items-center justify-center active:bg-bg-tertiary shrink-0"
               aria-label="Increase reps"
             >
               +
@@ -179,7 +179,7 @@ export const SetEditorDialog: React.FC<SetEditorDialogProps> = ({
 
         {/* Difficulty Selector */}
         <div className="space-y-2 max-w-full">
-          <label className="text-lg text-white/90">How was the set?</label>
+          <label className="text-lg text-text-primary">How was the set?</label>
           <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
             {Object.values(DifficultyCategory).map((difficulty) => (
               <button
@@ -187,8 +187,8 @@ export const SetEditorDialog: React.FC<SetEditorDialogProps> = ({
                 onClick={() => setSet(prev => ({ ...prev, difficulty }))}
                 className={`min-h-[44px] rounded-lg ${
                   set.difficulty === difficulty 
-                    ? 'bg-purple-600 text-white' 
-                    : 'bg-[#2a2a2a] text-white/70'
+                    ? 'bg-purple-600 text-text-primary' 
+                    : 'bg-bg-tertiary text-text-secondary'
                 } text-sm font-medium transition-colors`}
               >
                 {difficulty}
@@ -199,18 +199,18 @@ export const SetEditorDialog: React.FC<SetEditorDialogProps> = ({
 
         {/* Notes */}
         <div className="space-y-2 max-w-full">
-          <label className="text-lg text-white/90">Notes (optional)</label>
+          <label className="text-lg text-text-primary">Notes (optional)</label>
           <textarea
             value={set.comment || ''}
             onChange={(e) => setSet(prev => ({ ...prev, comment: e.target.value }))}
             placeholder="Add a note..."
-            className="w-full h-24 px-4 py-3 rounded-lg bg-[#2a2a2a] text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="w-full h-24 px-4 py-3 rounded-lg bg-bg-tertiary text-text-primary placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500"
           />
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="px-4 py-3 border-t border-white/10 shrink-0">
+      <footer className="px-4 py-3 border-t border-border shrink-0">
         <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-3">
           {onDelete && (
             <button
@@ -223,13 +223,13 @@ export const SetEditorDialog: React.FC<SetEditorDialogProps> = ({
           <div className="flex items-stretch sm:items-center gap-3 flex-1 w-full sm:w-auto justify-end">
             <button
               onClick={onClose}
-              className="flex-1 sm:flex-initial px-6 py-3 rounded-lg bg-white/10 text-white font-medium min-h-[44px]"
+              className="flex-1 sm:flex-initial px-6 py-3 rounded-lg bg-white/10 text-text-primary font-medium min-h-[44px]"
             >
               Cancel
             </button>
             <button
               onClick={() => onSave(set)}
-              className="flex-1 sm:flex-initial px-8 py-3 rounded-lg bg-purple-600 text-white font-medium min-h-[44px]"
+              className="flex-1 sm:flex-initial px-8 py-3 rounded-lg bg-purple-600 text-text-primary font-medium min-h-[44px]"
             >
               Save
             </button>

@@ -57,7 +57,7 @@ export const InlineSetRow: React.FC<InlineSetRowProps> = ({
               min={0}
               step={0.5}
               unit="kg"
-              displayClassName="text-white font-medium"
+              displayClassName="text-text-primary font-medium"
               formatDisplay={(v) => `${v ?? 0}kg`}
             />
             <span className="text-gray-500">×</span>
@@ -67,7 +67,7 @@ export const InlineSetRow: React.FC<InlineSetRowProps> = ({
               type="number"
               min={0}
               step={1}
-              displayClassName="text-white font-medium"
+              displayClassName="text-text-primary font-medium"
               formatDisplay={(v) => `${v ?? 0}`}
             />
           </div>
@@ -92,7 +92,7 @@ export const InlineSetRow: React.FC<InlineSetRowProps> = ({
               min={0}
               step={1}
               unit="min"
-              displayClassName="text-white font-medium"
+              displayClassName="text-text-primary font-medium"
               formatDisplay={(v) => `${v ?? 0} min`}
             />
             {set.distance !== undefined && set.distance > 0 && (
@@ -105,7 +105,7 @@ export const InlineSetRow: React.FC<InlineSetRowProps> = ({
                   min={0}
                   step={0.1}
                   unit="km"
-                  displayClassName="text-white font-medium"
+                  displayClassName="text-text-primary font-medium"
                   formatDisplay={(v) => `${v ?? 0} km`}
                 />
               </>
@@ -131,7 +131,7 @@ export const InlineSetRow: React.FC<InlineSetRowProps> = ({
               type="number"
               min={0}
               step={5}
-              displayClassName="text-white font-medium"
+              displayClassName="text-text-primary font-medium"
               formatDisplay={(v) => `${v ?? 0}s hold`}
             />
             {set.reps && set.reps > 0 && (
@@ -143,7 +143,7 @@ export const InlineSetRow: React.FC<InlineSetRowProps> = ({
                   type="number"
                   min={0}
                   step={1}
-                  displayClassName="text-white font-medium"
+                  displayClassName="text-text-primary font-medium"
                   formatDisplay={(v) => `${v ?? 0} reps`}
                 />
               </>
@@ -169,7 +169,7 @@ export const InlineSetRow: React.FC<InlineSetRowProps> = ({
               type="number"
               min={0}
               step={1}
-              displayClassName="text-white font-medium"
+              displayClassName="text-text-primary font-medium"
               formatDisplay={(v) => `${v ?? 0} min`}
             />
             {set.calories && set.calories > 0 && (
@@ -201,7 +201,7 @@ export const InlineSetRow: React.FC<InlineSetRowProps> = ({
               type="number"
               min={0}
               step={1}
-              displayClassName="text-white font-medium"
+              displayClassName="text-text-primary font-medium"
               formatDisplay={(v) => `${v ?? 0} reps`}
             />
             {set.distance && set.distance > 0 && (
@@ -213,7 +213,7 @@ export const InlineSetRow: React.FC<InlineSetRowProps> = ({
                   type="number"
                   min={0}
                   step={1}
-                  displayClassName="text-white font-medium"
+                  displayClassName="text-text-primary font-medium"
                   formatDisplay={(v) => `${v ?? 0}m`}
                 />
               </>
@@ -227,7 +227,7 @@ export const InlineSetRow: React.FC<InlineSetRowProps> = ({
                   type="number"
                   min={0}
                   step={1}
-                  displayClassName="text-white font-medium"
+                  displayClassName="text-text-primary font-medium"
                   formatDisplay={(v) => `${v ?? 0}cm`}
                 />
               </>
@@ -245,7 +245,7 @@ export const InlineSetRow: React.FC<InlineSetRowProps> = ({
               type="number"
               min={0}
               step={1}
-              displayClassName="text-white font-medium"
+              displayClassName="text-text-primary font-medium"
               formatDisplay={(v) => `${v ?? 0} min`}
             />
           </div>
@@ -259,8 +259,8 @@ export const InlineSetRow: React.FC<InlineSetRowProps> = ({
   const content = (
     <div
       className={`
-        flex items-center justify-between p-3 sm:p-4 bg-[#2a2a2a] rounded-lg
-        ${onEdit ? 'cursor-pointer hover:bg-[#333]' : ''}
+        flex items-center justify-between p-3 sm:p-4 bg-bg-tertiary rounded-lg
+        ${onEdit ? 'cursor-pointer hover:bg-bg-tertiary' : ''}
         transition-colors
       `}
       onClick={handleRowClick}

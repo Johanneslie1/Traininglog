@@ -4,7 +4,9 @@
 
 @layer base {
   body {
-    @apply bg-gymkeeper-dark text-gray-100;
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 }
 
@@ -14,15 +16,28 @@
   }
   
   .btn-secondary {
-    @apply bg-gray-800 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors;
+    background-color: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+    @apply font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors hover:opacity-90;
   }
 
   .card {
-    @apply bg-gymkeeper-light rounded-lg shadow-sm p-4;
+    background-color: var(--color-bg-secondary);
+    @apply rounded-lg shadow-sm p-4;
   }
 
   .input {
-    @apply w-full px-3 py-2 border border-gray-700 bg-gymkeeper-light text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-gymkeeper-purple focus:border-transparent;
+    background-color: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-border);
+    @apply w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent;
+  }
+
+  .input-secondary {
+    background-color: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-border);
+    @apply px-3 py-2 rounded-lg focus:outline-none focus:border-purple-500;
   }
 
   .purple-gradient {

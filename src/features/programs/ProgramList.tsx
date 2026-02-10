@@ -150,33 +150,33 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
   };
 
   return (
-    <div className="fixed inset-0 bg-black flex flex-col z-40">
+    <div className="fixed inset-0 bg-bg-primary flex flex-col z-40">
       {/* Header */}
-      <header className="bg-[#1a1a1a] border-b border-white/10 p-4 flex-shrink-0">
+      <header className="bg-bg-secondary border-b border-border p-4 flex-shrink-0">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3">
             <button 
               onClick={() => setShowSideMenu(true)}
-              className="p-1 hover:bg-white/10 rounded-lg transition-colors"
+              className="p-1 hover:bg-hover-overlay rounded-lg transition-colors"
               aria-label="Open Menu"
             >
-              <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-6 h-6 text-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <h2 className="text-xl font-semibold text-white">Programs</h2>
+            <h2 className="text-xl font-semibold text-text-primary">Programs</h2>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowCreateNew(true)}
-              className="px-4 py-2.5 bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white rounded-xl hover:from-[#7C3AED] hover:to-[#6D28D9] transition-all duration-200 flex items-center gap-2 font-medium shadow-lg"
+              className="px-4 py-2.5 bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-text-primary rounded-xl hover:from-[#7C3AED] hover:to-[#6D28D9] transition-all duration-200 flex items-center gap-2 font-medium shadow-lg"
             >
               <PlusIcon className="w-4 h-4" />
               Create Program
             </button>
             <button
               onClick={handleLogout}
-              className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+              className="px-3 py-2 bg-red-600 hover:bg-red-700 text-text-primary rounded-lg transition-colors"
             >
               Logout
             </button>
@@ -194,16 +194,16 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
       )}
       {programs.length === 0 ? (
         <div className="text-center py-16">
-          <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gray-800/50 flex items-center justify-center">
-            <svg className="w-10 h-10 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-bg-tertiary/50 flex items-center justify-center">
+            <svg className="w-10 h-10 text-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
             </svg>
           </div>
-          <h3 className="text-xl font-medium text-white mb-3">No programs yet</h3>
-          <p className="text-gray-400 text-sm mb-8">Create your first training program to get started</p>
+          <h3 className="text-xl font-medium text-text-primary mb-3">No programs yet</h3>
+          <p className="text-text-tertiary text-sm mb-8">Create your first training program to get started</p>
           <button
             onClick={() => setShowCreateNew(true)}
-            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 font-medium shadow-lg"
+            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-text-primary rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 font-medium shadow-lg"
           >
             Create Program
           </button>
@@ -213,7 +213,7 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
           {programs.map((program: Program) => (
             <div
               key={program.id}
-              className="relative bg-[#1a1a1a] rounded-2xl p-5 flex flex-col justify-between min-h-[140px] cursor-pointer overflow-hidden group border border-gray-800 hover:border-gray-700 transition-all duration-200 hover:shadow-xl"
+              className="relative bg-bg-secondary rounded-2xl p-5 flex flex-col justify-between min-h-[140px] cursor-pointer overflow-hidden group border border-gray-800 hover:border-gray-700 transition-all duration-200 hover:shadow-xl"
               onClick={() => (onSelect ? onSelect(program.id) : navigate(`/programs/${program.id}`))}
             >
               <div className="absolute right-4 top-4 opacity-10 text-4xl pointer-events-none select-none">
@@ -225,7 +225,7 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
                 <button
                   onClick={(e) => handleDuplicateProgram(program.id, program.name, e)}
                   disabled={duplicatingProgramId === program.id}
-                  className="p-2 bg-blue-600/90 hover:bg-blue-500 text-white rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-2 bg-blue-600/90 hover:bg-blue-500 text-text-primary rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Duplicate program"
                   aria-label={`Duplicate program ${program.name}`}
                 >
@@ -238,7 +238,7 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
                 <button
                   onClick={(e) => handleDeleteProgram(program.id, program.name, e)}
                   disabled={deletingProgramId === program.id}
-                  className="p-2 bg-red-600/90 hover:bg-red-500 text-white rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-2 bg-red-600/90 hover:bg-red-500 text-text-primary rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Delete program"
                   aria-label={`Delete program ${program.name}`}
                 >
@@ -252,29 +252,29 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
 
               <div className="flex flex-col justify-between h-full z-10">
                 <div>
-                  <h3 className="font-semibold text-lg text-white mb-2">{program.name}</h3>
+                  <h3 className="font-semibold text-lg text-text-primary mb-2">{program.name}</h3>
                   {program.description && (
-                    <p className="text-sm text-gray-400 mb-3 line-clamp-2">{program.description}</p>
+                    <p className="text-sm text-text-tertiary mb-3 line-clamp-2">{program.description}</p>
                   )}
                 </div>
                 
                 <div className="flex items-center justify-between">
                   {program.sessions && program.sessions.length > 0 && (
-                    <span className="text-gray-400 text-xs font-medium">
+                    <span className="text-text-tertiary text-xs font-medium">
                       {program.sessions.length} session{program.sessions.length !== 1 ? 's' : ''}
                     </span>
                   )}
                 </div>
               </div>
               {program.description && (
-                <div className="text-gray-400 text-xs mt-2 z-10 line-clamp-2">{program.description}</div>
+                <div className="text-text-tertiary text-xs mt-2 z-10 line-clamp-2">{program.description}</div>
               )}
             </div>
           ))}
         </div>
       )}
       <button
-        className="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-500 text-white rounded-full w-14 h-14 flex items-center justify-center text-3xl shadow-lg z-50"
+        className="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-500 text-text-primary rounded-full w-14 h-14 flex items-center justify-center text-3xl shadow-lg z-50"
         onClick={() => setShowModal(true)}
         aria-label="Add Program"
       >
@@ -324,10 +324,11 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
 
 const ProgramList: React.FC<{ onSelect?: (id: string) => void }> = (props) => {
   return (
-    <ErrorBoundary fallback={<div className="text-white p-4">Error loading programs. Please try again.</div>}>
+    <ErrorBoundary fallback={<div className="text-text-primary p-4">Error loading programs. Please try again.</div>}>
       <ProgramListContent {...props} />
     </ErrorBoundary>
   );
 };
 
 export default ProgramList;
+

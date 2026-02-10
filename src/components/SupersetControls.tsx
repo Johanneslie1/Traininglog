@@ -44,7 +44,7 @@ const SupersetControls: React.FC<SupersetControlsProps> = ({ className = '' }) =
       <div className={`flex items-center gap-2 ${className}`}>
         <button
           onClick={startCreating}
-          className="flex items-center gap-2 px-4 py-2 bg-[#8B5CF6] text-white rounded-lg hover:bg-[#7C3AED] transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-accent-primary text-text-primary rounded-lg hover:bg-accent-secondary transition-colors"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.1a3 3 0 004.24-4.24l-1.1-1.102z" />
@@ -59,9 +59,9 @@ const SupersetControls: React.FC<SupersetControlsProps> = ({ className = '' }) =
     <div className={`space-y-4 ${className}`}>
       {/* Superset Creation Controls */}
       {state.isCreating && (
-        <div className="bg-[#1a1a1a] border border-[#8B5CF6] rounded-lg p-4">
+        <div className="bg-bg-secondary border border-accent-primary rounded-lg p-4">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-medium text-white">Create Superset</h3>
+            <h3 className="text-lg font-medium text-text-primary">Create Superset</h3>
             <span className="text-sm text-gray-400">
               {state.selectedExercises.length} exercise{state.selectedExercises.length !== 1 ? 's' : ''} selected
             </span>
@@ -79,7 +79,7 @@ const SupersetControls: React.FC<SupersetControlsProps> = ({ className = '' }) =
                 placeholder="Superset name (optional)"
                 value={supersetName}
                 onChange={(e) => setSupersetName(e.target.value)}
-                className="w-full px-3 py-2 bg-[#2a2a2a] text-white rounded-lg border border-gray-600 focus:border-[#8B5CF6] focus:outline-none"
+                className="w-full px-3 py-2 bg-bg-tertiary text-text-primary rounded-lg border border-border focus:border-accent-primary focus:outline-none"
                 maxLength={30}
               />
             </div>
@@ -89,7 +89,7 @@ const SupersetControls: React.FC<SupersetControlsProps> = ({ className = '' }) =
             <button
               onClick={handleCreateSuperset}
               disabled={state.selectedExercises.length < 2}
-              className="flex items-center gap-2 px-4 py-2 bg-[#8B5CF6] text-white rounded-lg hover:bg-[#7C3AED] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-4 py-2 bg-accent-primary text-text-primary rounded-lg hover:bg-accent-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -98,7 +98,7 @@ const SupersetControls: React.FC<SupersetControlsProps> = ({ className = '' }) =
             </button>
             <button
               onClick={showNameInput ? handleCancelNaming : cancelCreating}
-              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              className="px-4 py-2 bg-gray-600 text-text-primary rounded-lg hover:bg-gray-700 transition-colors"
             >
               {showNameInput ? 'Back' : 'Cancel'}
             </button>
@@ -109,13 +109,13 @@ const SupersetControls: React.FC<SupersetControlsProps> = ({ className = '' }) =
       {/* Existing Supersets */}
       {state.supersets.length > 0 && (
         <div className="space-y-3">
-          <h3 className="text-lg font-medium text-white">Active Supersets</h3>
+          <h3 className="text-lg font-medium text-text-primary">Active Supersets</h3>
           {state.supersets.map((superset) => (
-            <div key={superset.id} className="bg-[#1a1a1a] border border-[#2196F3] rounded-lg p-4">
+            <div key={superset.id} className="bg-bg-secondary border border-[#2196F3] rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-[#2196F3] rounded-full"></div>
-                  <span className="text-white font-medium">{superset.name}</span>
+                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                  <span className="text-text-primary font-medium">{superset.name}</span>
                 </div>
                 <button
                   onClick={() => breakSuperset(superset.id)}
@@ -139,7 +139,7 @@ const SupersetControls: React.FC<SupersetControlsProps> = ({ className = '' }) =
       {!state.isCreating && state.supersets.length > 0 && (
         <button
           onClick={startCreating}
-          className="flex items-center gap-2 px-4 py-2 bg-[#8B5CF6] text-white rounded-lg hover:bg-[#7C3AED] transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-accent-primary text-text-primary rounded-lg hover:bg-accent-secondary transition-colors"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />

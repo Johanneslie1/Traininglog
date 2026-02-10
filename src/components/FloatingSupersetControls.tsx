@@ -45,10 +45,10 @@ const FloatingSupersetControls: React.FC<FloatingSupersetControlsProps> = () => 
   };
   
   return (
-    <div className="fixed bottom-20 left-1/2 transform -translate-x-1/2 z-50 bg-[#1a1a1a] rounded-lg border border-[#8B5CF6] shadow-lg shadow-[#8B5CF6]/20 p-4 w-11/12 max-w-md">
+    <div className="fixed bottom-20 left-1/2 transform -translate-x-1/2 z-50 bg-bg-secondary rounded-lg border border-accent-primary shadow-lg shadow-[#8B5CF6]/20 p-4 w-11/12 max-w-md">
       <div className="mb-3 flex justify-between items-center">
-        <h3 className="text-lg font-medium text-white">Create Superset</h3>
-        <span className="text-sm bg-[#8B5CF6]/20 text-[#8B5CF6] px-2 py-1 rounded-full">
+        <h3 className="text-lg font-medium text-text-primary">Create Superset</h3>
+        <span className="text-sm bg-accent-primary/20 text-[#8B5CF6] px-2 py-1 rounded-full">
           {state.selectedExercises.length} selected
         </span>
       </div>
@@ -60,7 +60,7 @@ const FloatingSupersetControls: React.FC<FloatingSupersetControlsProps> = () => 
             placeholder="Superset name (optional)"
             value={supersetName}
             onChange={(e) => setSupersetName(e.target.value)}
-            className="w-full px-3 py-2 bg-[#2a2a2a] text-white rounded-lg border border-gray-600 focus:border-[#8B5CF6] focus:outline-none"
+            className="w-full px-3 py-2 bg-bg-tertiary text-text-primary rounded-lg border border-border focus:border-accent-primary focus:outline-none"
             maxLength={30}
             autoFocus
           />
@@ -75,7 +75,7 @@ const FloatingSupersetControls: React.FC<FloatingSupersetControlsProps> = () => 
         <button
           onClick={handleCreateSuperset}
           disabled={state.selectedExercises.length < 2}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-[#8B5CF6] text-white rounded-lg hover:bg-[#7C3AED] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-accent-primary text-text-primary rounded-lg hover:bg-accent-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -84,7 +84,7 @@ const FloatingSupersetControls: React.FC<FloatingSupersetControlsProps> = () => 
         </button>
         <button
           onClick={handleCancel}
-          className="flex items-center justify-center gap-2 px-4 py-2 bg-[#2a2a2a] text-white rounded-lg hover:bg-[#3a3a3a] transition-colors"
+          className="flex items-center justify-center gap-2 px-4 py-2 bg-bg-tertiary text-text-primary rounded-lg hover:bg-bg-tertiary hover:opacity-90 transition-colors"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

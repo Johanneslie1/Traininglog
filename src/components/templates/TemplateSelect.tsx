@@ -85,7 +85,7 @@ export const TemplateSelect: React.FC<TemplateSelectProps> = ({
                 className={`p-3 rounded-lg border-2 transition-all text-left ${
                   selectedTemplateId === template.id
                     ? 'border-blue-500 bg-blue-500/20'
-                    : 'border-gray-600 bg-[#2a2a2a] hover:border-gray-500'
+                    : 'border-border bg-bg-tertiary hover:border-border-hover'
                 }`}
               >
                 <div className="flex items-center space-x-3">
@@ -112,7 +112,7 @@ export const TemplateSelect: React.FC<TemplateSelectProps> = ({
           id="template-select"
           value={selectedTemplateId || ''}
           onChange={(e) => handleTemplateChange(e.target.value)}
-          className="block w-full rounded-md border-gray-600 bg-[#2a2a2a] text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+          className="block w-full rounded-md border-border bg-bg-tertiary text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
         >
           <option value="">Select a template...</option>
           {Object.entries(groupedTemplates).map(([type, templates]) => (
@@ -129,7 +129,7 @@ export const TemplateSelect: React.FC<TemplateSelectProps> = ({
 
       {/* Template details */}
       {selectedTemplateId && (
-        <div className="bg-[#2a2a2a] rounded-lg p-4 border border-gray-600">
+        <div className="bg-bg-tertiary rounded-lg p-4 border border-border">
           {(() => {
             const template = availableTemplates.find(t => t.id === selectedTemplateId);
             if (!template) return null;
@@ -153,7 +153,7 @@ export const TemplateSelect: React.FC<TemplateSelectProps> = ({
                         className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
                           field.required 
                             ? 'bg-blue-600/20 text-blue-400 border border-blue-600/30' 
-                            : 'bg-gray-600/20 text-gray-400 border border-gray-600/30'
+                            : 'bg-gray-600/20 text-gray-400 border border-border/30'
                         }`}
                       >
                         {field.label}
@@ -173,7 +173,7 @@ export const TemplateSelect: React.FC<TemplateSelectProps> = ({
       {showCreateNew && (
         <button
           onClick={() => {/* TODO: Open template creation modal */}}
-          className="w-full p-3 border-2 border-dashed border-gray-600 rounded-lg text-gray-400 hover:border-gray-500 hover:text-gray-300 transition-colors"
+          className="w-full p-3 border-2 border-dashed border-border rounded-lg text-gray-400 hover:border-border-hover hover:text-gray-300 transition-colors"
         >
           <div className="flex items-center justify-center space-x-2">
             <span className="text-xl">➕</span>

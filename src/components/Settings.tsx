@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { exportData, downloadCSV, downloadActivityCSVs, getExportPreview, ExportPreview, ExportOptions } from '@/services/exportService';
 import { exportFullBackup, downloadBackupJson } from '@/services/backupService';
+import { useTheme, Theme } from '@/context/ThemeContext';
 
 type DateRangePreset = 'last7days' | 'last30days' | 'thisMonth' | 'lastMonth' | 'allTime' | 'custom';
 
@@ -217,13 +218,9 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
     }
   };
 
+  const { theme, setTheme } = useTheme();
+
   const [settings, setSettings] = useState<Setting[]>([
-    {
-      id: 'darkMode',
-      label: 'Dark Mode',
-      type: 'switch',
-      value: true
-    },
     {
       id: 'defaultIncrements',
       label: 'Default Weight Increments',
@@ -243,19 +240,23 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
     ));
   };
 
+  const handleThemeChange = (newTheme: Theme) => {
+    setTheme(newTheme);
+  };
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center" onClick={onClose}>
-      <div className="bg-[#1a1a1a] rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl mx-4" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-bg-primary rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl mx-4" onClick={(e) => e.stopPropagation()}>
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="p-6 border-b border-white/10">
+          <div className="p-6 border-b border-border">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-white">Settings</h2>
+              <h2 className="text-2xl font-bold text-text-primary">Settings</h2>
               <button
                 onClick={onClose}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white"
+                className="p-2 hover:bg-bg-tertiary rounded-lg transition-colors text-text-secondary hover:text-text-primary"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -267,6 +268,20 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
           {/* Settings List */}
           <div className="flex-1 overflow-y-auto p-6">
             <div className="space-y-4">
+              {/* Theme Setting */}
+              <div className="flex items-center justify-between">
+                <span className="text-text-primary">Theme</span>
+                <select
+                  value={theme}
+                  onChange={(e) => handleThemeChange(e.target.value as Theme)}
+                  className="bg-bg-tertiary text-text-primary px-3 py-2 rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-accent-primary cursor-pointer"
+                >
+                  <option value="light">Light</option>
+                  <option value="dark">Dark</option>
+                  <option value="system">System</option>
+                </select>
+              </div>
+              
               {settings.map((setting) => (
                 <div key={setting.id} className="flex items-center justify-between">
                   <span className="text-text-primary">{setting.label}</span>

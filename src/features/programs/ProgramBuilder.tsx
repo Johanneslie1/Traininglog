@@ -331,17 +331,17 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
 
   return (
     <>
-      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 z-50">
-        <div className="bg-[#23272F] rounded-xl w-full max-w-6xl h-5/6 flex flex-col shadow-2xl">
+      <div className="fixed inset-0 flex items-center justify-center bg-bg-primary bg-opacity-70 z-50">
+        <div className="bg-bg-secondary rounded-xl w-full max-w-6xl h-5/6 flex flex-col shadow-2xl">
           {/* Header */}
-          <div className="p-6 border-b border-white/10">
+          <div className="p-6 border-b border-border">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-3xl font-bold text-white">
+              <h2 className="text-3xl font-bold text-text-primary">
                 {initialProgram ? 'Edit Program' : 'Create Program'}
               </h2>
               <button 
                 onClick={handleClose}
-                className="text-gray-400 hover:text-white text-2xl font-bold w-8 h-8 flex items-center justify-center transition-colors"
+                className="text-text-tertiary hover:text-text-primary text-2xl font-bold w-8 h-8 flex items-center justify-center transition-colors"
               >
                 ×
               </button>
@@ -350,7 +350,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
             {/* Program Details */}
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-text-secondary mb-2">
                   Program Name *
                 </label>
                 <input
@@ -358,7 +358,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
                   placeholder="e.g., Push/Pull/Legs, Upper/Lower Split"
                   value={programName}
                   onChange={(e) => setProgramName(e.target.value)}
-                  className="w-full px-4 py-3 bg-[#181A20] text-white rounded-lg border border-white/10 focus:border-blue-500 focus:outline-none text-lg"
+                  className="w-full px-4 py-3 bg-bg-secondary text-text-primary rounded-lg border border-border focus:border-blue-500 focus:outline-none text-lg"
                   autoFocus
                 />
               </div>
@@ -367,7 +367,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
                 <button
                   onClick={() => setShowSaveTemplate(true)}
                   disabled={sessions.length === 0}
-                  className="px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+                  className="px-4 py-3 bg-green-600 text-text-primary rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
                 >
                   <BookmarkIcon className="w-4 h-4" />
                   Save as Template
@@ -375,14 +375,14 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-text-secondary mb-2">
                   Program Description (Optional)
                 </label>
                 <textarea
                   placeholder="Describe your program goals, frequency, and notes..."
                   value={programDescription}
                   onChange={(e) => setProgramDescription(e.target.value)}
-                  className="w-full px-4 py-3 bg-[#181A20] text-white rounded-lg border border-white/10 focus:border-blue-500 focus:outline-none resize-none"
+                  className="w-full px-4 py-3 bg-bg-secondary text-text-primary rounded-lg border border-border focus:border-blue-500 focus:outline-none resize-none"
                   rows={3}
                 />
               </div>
@@ -392,13 +392,13 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
           {/* Sessions List */}
           <div className="flex-1 overflow-y-auto p-6">
             {sessions.length === 0 ? (
-              <div className="text-center text-gray-400 py-16">
+              <div className="text-center text-text-tertiary py-16">
                 <PlusIcon className="w-16 h-16 mx-auto mb-4 opacity-50" />
                 <h3 className="text-xl font-medium mb-2">No sessions added yet</h3>
-                <p className="text-gray-500 mb-6">Create sessions like "Push Day", "Pull Day", "Leg Day" etc.</p>
+                <p className="text-text-tertiary mb-6">Create sessions like "Push Day", "Pull Day", "Leg Day" etc.</p>
                 <button
                   onClick={handleAddSession}
-                  className="px-8 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 mx-auto text-lg font-medium transition-colors"
+                  className="px-8 py-4 bg-blue-600 text-text-primary rounded-lg hover:bg-blue-700 flex items-center gap-2 mx-auto text-lg font-medium transition-colors"
                 >
                   <PlusIcon className="w-5 h-5" />
                   Create First Session
@@ -407,17 +407,17 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
             ) : (
               <div className="space-y-4">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-semibold text-white">
+                  <h3 className="text-xl font-semibold text-text-primary">
                     Program Sessions ({sessions.length})
                   </h3>
                   <div className="flex items-center gap-3">
-                    <div className="text-sm text-gray-400">
+                    <div className="text-sm text-text-tertiary">
                       {getTotalExercises()} exercises
                     </div>
                     {lastAction && (
                       <button
                         onClick={handleUndo}
-                        className="px-3 py-1.5 bg-yellow-600 hover:bg-yellow-700 text-white text-sm rounded-lg transition-colors flex items-center gap-2"
+                        className="px-3 py-1.5 bg-yellow-600 hover:bg-yellow-700 text-text-primary text-sm rounded-lg transition-colors flex items-center gap-2"
                         title="Undo last action"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -445,10 +445,10 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
                               <div
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
-                                className={`bg-[#181A20] rounded-xl p-5 border transition-all ${
+                                className={`bg-bg-secondary rounded-xl p-5 border transition-all ${
                                   snapshot.isDragging
                                     ? 'border-blue-500 shadow-2xl shadow-blue-500/20 scale-102'
-                                    : 'border-white/10 hover:border-white/20'
+                                    : 'border-border hover:border-white/20'
                                 }`}
                               >
                                 <div className="flex items-center justify-between mb-4">
@@ -457,15 +457,15 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
                                     {...provided.dragHandleProps}
                                     className="flex items-center gap-3 flex-1 cursor-move group"
                                   >
-                                    <div className="p-2 rounded-lg bg-white/5 group-hover:bg-white/10 transition-colors">
-                                      <MenuIcon className="w-5 h-5 text-gray-400 group-hover:text-white" />
+                                    <div className="p-2 rounded-lg bg-white/5 group-hover:bg-hover-overlay transition-colors">
+                                      <MenuIcon className="w-5 h-5 text-text-tertiary group-hover:text-text-primary" />
                                     </div>
                                     <div className="flex-1">
-                                      <h4 className="text-white font-semibold text-lg">{session.name}</h4>
-                                      <div className="text-sm text-gray-400 mt-1">
+                                      <h4 className="text-text-primary font-semibold text-lg">{session.name}</h4>
+                                      <div className="text-sm text-text-tertiary mt-1">
                                         {session.exercises.length} exercise{session.exercises.length !== 1 ? 's' : ''}
                                         {session.notes && (
-                                          <span className="ml-2 text-gray-500">• {session.notes}</span>
+                                          <span className="ml-2 text-text-tertiary">• {session.notes}</span>
                                         )}
                                       </div>
                                     </div>
@@ -475,7 +475,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
                                     <button
                                       onClick={() => moveSession(index, 'up')}
                                       disabled={index === 0}
-                                      className="p-2 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                      className="p-2 text-text-tertiary hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                                       title="Move up"
                                     >
                                       ↑
@@ -483,7 +483,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
                                     <button
                                       onClick={() => moveSession(index, 'down')}
                                       disabled={index === sessions.length - 1}
-                                      className="p-2 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                      className="p-2 text-text-tertiary hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                                       title="Move down"
                                     >
                                       ↓
@@ -507,11 +507,11 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
 
                                 {/* Exercise Preview */}
                                 {session.exercises.length > 0 && (
-                                  <div className="mt-4 p-4 bg-[#23272F] rounded-lg border border-white/5">
-                                    <div className="text-xs font-medium text-gray-400 mb-3">EXERCISES:</div>
+                                  <div className="mt-4 p-4 bg-bg-secondary rounded-lg border border-border">
+                                    <div className="text-xs font-medium text-text-tertiary mb-3">EXERCISES:</div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                       {session.exercises.slice(0, 6).map((exercise, idx) => (
-                                        <div key={`${session.id}-exercise-${idx}-${exercise.name}`} className="text-sm text-gray-300 flex items-center gap-2">
+                                        <div key={`${session.id}-exercise-${idx}-${exercise.name}`} className="text-sm text-text-secondary flex items-center gap-2">
                                           <span className={`w-2 h-2 rounded-full flex-shrink-0 ${getActivityTypeInfo(exercise.activityType).color}`}></span>
                                           <span className="truncate flex-1">
                                             {exercise.name}
@@ -523,7 +523,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
                                       ))}
                                     </div>
                                     {session.exercises.length > 6 && (
-                                      <div className="text-xs text-gray-500 mt-3 text-center">
+                                      <div className="text-xs text-text-tertiary mt-3 text-center">
                                         +{session.exercises.length - 6} more exercises...
                                       </div>
                                     )}
@@ -543,7 +543,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
                 <div className="mt-8 text-center">
                   <button
                     onClick={handleAddSession}
-                    className="px-8 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 mx-auto text-lg font-medium transition-colors"
+                    className="px-8 py-4 bg-blue-600 text-text-primary rounded-lg hover:bg-blue-700 flex items-center gap-2 mx-auto text-lg font-medium transition-colors"
                   >
                     <PlusIcon className="w-5 h-5" />
                     Add Another Session
@@ -554,9 +554,9 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
           </div>
 
           {/* Footer */}
-          <div className="p-6 border-t border-white/10 bg-[#1A1D23]">
+          <div className="p-6 border-t border-border bg-bg-secondary">
             <div className="flex items-center justify-between">
-              <div className="text-gray-400 text-sm">
+              <div className="text-text-tertiary text-sm">
                 <div className="font-medium">
                   {sessions.length} session{sessions.length !== 1 ? 's' : ''} • {getProgramAnalytics().totalExercises} exercises
                 </div>
@@ -577,7 +577,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
                     })}
                   </div>
                 )}
-                <div className="text-xs text-gray-500 mt-1">
+                <div className="text-xs text-text-tertiary mt-1">
                   {getProgramAnalytics().isBalanced 
                     ? '🎯 Well-balanced program with multiple activity types'
                     : getProgramAnalytics().resistanceOnly 
@@ -589,14 +589,14 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
               <div className="flex gap-3">
                 <button 
                   onClick={handleClose}
-                  className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                  className="px-6 py-3 bg-gray-600 text-text-primary rounded-lg hover:bg-bg-tertiary transition-colors"
                 >
                   Cancel
                 </button>
                 <button 
                   onClick={handleSaveProgram}
                   disabled={sessions.length === 0 || !programName.trim()}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                  className="px-6 py-3 bg-blue-600 text-text-primary rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
                 >
                   {initialProgram ? 'Update Program' : 'Save Program'}
                 </button>
@@ -621,22 +621,22 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
 
       {/* Save Template Modal */}
       {showSaveTemplate && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 z-60">
-          <div className="bg-[#23272F] p-6 rounded-lg max-w-md w-full">
-            <h3 className="text-white text-lg font-bold mb-4">Save as Template</h3>
-            <p className="text-gray-400 text-sm mb-4">
+        <div className="fixed inset-0 flex items-center justify-center bg-bg-primary bg-opacity-70 z-60">
+          <div className="bg-bg-secondary p-6 rounded-lg max-w-md w-full">
+            <h3 className="text-text-primary text-lg font-bold mb-4">Save as Template</h3>
+            <p className="text-text-tertiary text-sm mb-4">
               This will save the entire program with all sessions as a reusable template.
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowSaveTemplate(false)}
-                className="flex-1 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+                className="flex-1 px-4 py-2 bg-gray-600 text-text-primary rounded hover:bg-bg-tertiary"
               >
                 Cancel
               </button>
               <button
                 onClick={saveAsTemplate}
-                className="flex-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                className="flex-1 px-4 py-2 bg-green-600 text-text-primary rounded hover:bg-green-700"
               >
                 Save Template
               </button>
@@ -649,3 +649,4 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
 };
 
 export default ProgramBuilder;
+

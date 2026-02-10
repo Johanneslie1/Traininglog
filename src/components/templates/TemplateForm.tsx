@@ -90,8 +90,8 @@ export const TemplateForm: React.FC<TemplateFormProps> = ({
     const fieldId = `${template.id}-${field.fieldId}`;
 
     const baseInputClasses = compact
-      ? "block w-full rounded-md border-gray-600 bg-[#2a2a2a] text-white text-sm px-2 py-1 focus:border-blue-500 focus:ring-blue-500"
-      : "block w-full rounded-md border-gray-600 bg-[#2a2a2a] text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm";
+      ? "block w-full rounded-md border-border bg-bg-tertiary text-white text-sm px-2 py-1 focus:border-blue-500 focus:ring-blue-500"
+      : "block w-full rounded-md border-border bg-bg-tertiary text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm";
 
     const errorClasses = error ? "border-red-500 ring-red-500" : "";
 

@@ -170,7 +170,7 @@ export const TemplatedExerciseLogger: React.FC<TemplatedExerciseLoggerProps> = (
   };
 
   return (
-    <div className="bg-[#1a1a1a] min-h-screen text-white p-4">
+    <div className="bg-bg-secondary min-h-screen text-white p-4">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -202,7 +202,7 @@ export const TemplatedExerciseLogger: React.FC<TemplatedExerciseLoggerProps> = (
                 setCurrentActivityName(e.target.value);
               }
             }}
-            className="block w-full rounded-md border-gray-600 bg-[#2a2a2a] text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            className="block w-full rounded-md border-border bg-bg-tertiary text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
             placeholder={`Enter ${selectedTemplate?.type === 'strength' || selectedTemplate?.type === 'plyometrics' ? 'exercise' : 'activity'} name...`}
           />
         </div>
@@ -245,7 +245,7 @@ export const TemplatedExerciseLogger: React.FC<TemplatedExerciseLoggerProps> = (
             </div>
 
             {sets.map((set, index) => (
-              <div key={index} className="bg-[#2a2a2a] rounded-lg p-4 border border-gray-600">
+              <div key={index} className="bg-bg-tertiary rounded-lg p-4 border border-border">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-medium">
                     {selectedTemplate.type === 'strength' || selectedTemplate.type === 'plyometrics' 
@@ -281,7 +281,7 @@ export const TemplatedExerciseLogger: React.FC<TemplatedExerciseLoggerProps> = (
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={3}
-                className="block w-full rounded-md border-gray-600 bg-[#2a2a2a] text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                className="block w-full rounded-md border-border bg-bg-tertiary text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 placeholder="Any additional notes about this session..."
               />
             </div>

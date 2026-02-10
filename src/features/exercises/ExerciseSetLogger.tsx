@@ -247,13 +247,13 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
       >
         <div 
           className={`
-            flex items-center justify-between p-4 bg-[#2a2a2a] rounded-lg 
-            cursor-pointer hover:bg-[#3a3a3a] transition-colors
+            flex items-center justify-between p-4 bg-bg-tertiary rounded-lg 
+            cursor-pointer hover:bg-bg-tertiary transition-colors
             ${isNewlyAdded ? 'set-added-animation' : ''}
           `}
         >
           <div className="flex items-center space-x-4 flex-1 min-w-0">
-            <span className="text-gray-400 shrink-0">Set {index + 1}</span>
+            <span className="text-text-tertiary shrink-0">Set {index + 1}</span>
             
             {/* Inline editable weight and reps */}
             <div className="flex items-center gap-1">
@@ -264,7 +264,7 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
                 min={0}
                 step={0.5}
                 unit="kg"
-                displayClassName="text-white font-medium"
+                displayClassName="text-text-primary font-medium"
                 formatDisplay={(v) => `${v ?? 0}kg`}
               />
               <span className="text-gray-500">×</span>
@@ -274,7 +274,7 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
                 type="number"
                 min={0}
                 step={1}
-                displayClassName="text-white font-medium"
+                displayClassName="text-text-primary font-medium"
                 formatDisplay={(v) => `${v ?? 0}`}
               />
             </div>
@@ -298,7 +298,7 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
                 e.stopPropagation();
                 setEditingSetIndex(index);
               }}
-              className="p-2 text-gray-400 hover:text-white transition-colors"
+              className="p-2 text-text-tertiary hover:text-text-primary transition-colors"
               aria-label="Edit set details"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -314,13 +314,13 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
 
 
   return (
-    <div className="flex flex-col h-full bg-[#1a1a1a]">
+    <div className="flex flex-col h-full bg-bg-secondary">
       <div ref={setsListRef} className="flex-1 p-4 overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-white">
+          <h2 className="text-xl font-bold text-text-primary">
             {isEditing ? 'Edit' : 'Log'} {exercise.name}
           </h2>
-          <span className="text-gray-400">{sets.length} sets</span>
+          <span className="text-text-tertiary">{sets.length} sets</span>
         </div>
         
         {/* Exercise History Summary - helps with progressive overload */}
@@ -365,7 +365,7 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
         {!isAddingSet && editingSetIndex === null && (
           <button
             onClick={() => setIsAddingSet(true)}
-            className="w-full py-4 mt-4 rounded-lg bg-white/5 hover:bg-white/10 text-white font-medium transition-colors"
+            className="w-full py-4 mt-4 rounded-lg bg-white/5 hover:bg-white/10 text-text-primary font-medium transition-colors"
           >
             Add Set
           </button>
@@ -373,17 +373,17 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
       </div>
 
       {/* Bottom Actions */}
-      <div className="p-4 border-t border-white/10">
+      <div className="p-4 border-t border-border">
         <div className="flex gap-4">
           <button
             onClick={handleSaveAndClose}
-            className="flex-1 py-3 rounded-lg bg-[#8B5CF6] text-white font-medium hover:bg-[#7C3AED] transition-colors"
+            className="flex-1 py-3 rounded-lg bg-accent-primary text-text-primary font-medium hover:bg-accent-secondary transition-colors"
           >
             {isEditing ? 'Update' : 'Save'}
           </button>
           <button
             onClick={onCancel}
-            className="flex-1 py-3 rounded-lg bg-white/5 text-white font-medium hover:bg-white/10 transition-colors"
+            className="flex-1 py-3 rounded-lg bg-white/5 text-text-primary font-medium hover:bg-white/10 transition-colors"
           >
             Cancel
           </button>

@@ -82,19 +82,19 @@ export const Calendar: React.FC<CalendarProps> = ({
   };
 
   return (
-    <div className="bg-[#1a1a1a] w-full h-screen p-4">
+    <div className="bg-bg-secondary w-full h-screen p-4">
       {/* Header with Navigation */}
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-2">
           <button 
             onClick={onClose}
-            className="text-gray-400 hover:text-white"
+            className="text-text-tertiary hover:text-text-primary"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
-          <h2 className="text-xl text-white">Select Date</h2>
+          <h2 className="text-xl text-text-primary">Select Date</h2>
         </div>
       </div>
 
@@ -103,19 +103,19 @@ export const Calendar: React.FC<CalendarProps> = ({
         <div className="flex items-center gap-2">
           <button
             onClick={goToPreviousYear}
-            className="p-1 text-gray-400 hover:text-white transition-colors"
+            className="p-1 text-text-tertiary hover:text-text-primary transition-colors"
             aria-label={`Go to year ${currentDate.getFullYear() - 1}`}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7M4 12h16" />
             </svg>
           </button>
-          <span className="text-white font-medium min-w-[4ch] text-center" aria-label="Current year">
+          <span className="text-text-primary font-medium min-w-[4ch] text-center" aria-label="Current year">
             {currentDate.getFullYear()}
           </span>
           <button
             onClick={goToNextYear}
-            className="p-1 text-gray-400 hover:text-white transition-colors"
+            className="p-1 text-text-tertiary hover:text-text-primary transition-colors"
             aria-label={`Go to year ${currentDate.getFullYear() + 1}`}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -126,7 +126,7 @@ export const Calendar: React.FC<CalendarProps> = ({
         <div className="flex items-center gap-2">
           <button
             onClick={goToPreviousMonth}
-            className="p-1 text-gray-400 hover:text-white transition-colors"
+            className="p-1 text-text-tertiary hover:text-text-primary transition-colors"
             aria-label={`Go to ${monthNames[(currentDate.getMonth() + 11) % 12]}`}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -134,14 +134,14 @@ export const Calendar: React.FC<CalendarProps> = ({
             </svg>
           </button>
           <span 
-            className="text-white font-medium min-w-[100px] text-center"
+            className="text-text-primary font-medium min-w-[100px] text-center"
             aria-label="Current month"
           >
             {monthNames[currentDate.getMonth()]}
           </span>
           <button
             onClick={goToNextMonth}
-            className="p-1 text-gray-400 hover:text-white transition-colors"
+            className="p-1 text-text-tertiary hover:text-text-primary transition-colors"
             aria-label={`Go to ${monthNames[(currentDate.getMonth() + 1) % 12]}`}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -156,7 +156,7 @@ export const Calendar: React.FC<CalendarProps> = ({
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
           <div 
             key={day}
-            className="text-center text-gray-400 text-sm py-2"
+            className="text-center text-text-tertiary text-sm py-2"
           >
             {day}
           </div>
@@ -195,7 +195,7 @@ export const Calendar: React.FC<CalendarProps> = ({
               disabled={isLoading}
               className={`
                 h-10 rounded-lg text-sm font-medium relative
-                ${isSelected ? 'bg-[#8B5CF6] text-white' : 'text-gray-400'}
+                ${isSelected ? 'bg-[#8B5CF6] text-text-primary' : 'text-text-tertiary'}
                 ${isCurrentMonth ? 'hover:bg-white/10' : 'opacity-50'}
                 ${isLoading ? 'cursor-wait' : 'cursor-pointer'}
                 disabled:cursor-wait disabled:opacity-50
@@ -220,3 +220,4 @@ export const Calendar: React.FC<CalendarProps> = ({
 };
 
 export default Calendar;
+

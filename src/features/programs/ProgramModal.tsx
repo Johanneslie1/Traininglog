@@ -53,9 +53,9 @@ const ProgramModal: React.FC<ProgramModalProps> = ({ isOpen, onClose, onSave }) 
 
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50">
-      <form onSubmit={handleSubmit} className="bg-[#23272F] p-6 rounded-lg w-full max-w-sm shadow-lg">
-        <h2 className="text-xl font-bold mb-4 text-white">Add Program</h2>
+    <div className="fixed inset-0 flex items-center justify-center bg-bg-primary bg-opacity-60 z-50">
+      <form onSubmit={handleSubmit} className="bg-bg-secondary p-6 rounded-lg w-full max-w-sm shadow-lg">
+        <h2 className="text-xl font-bold mb-4 text-text-primary">Add Program</h2>
         
         {error && (
           <div className="mb-4 p-3 bg-red-900/50 border border-red-500 rounded text-red-200 text-sm">
@@ -64,7 +64,7 @@ const ProgramModal: React.FC<ProgramModalProps> = ({ isOpen, onClose, onSave }) 
         )}
 
         <input
-          className="w-full mb-3 px-3 py-2 rounded bg-[#181A20] text-white border border-white/10"
+          className="w-full mb-3 px-3 py-2 rounded bg-bg-tertiary text-text-primary border border-border"
           placeholder="Program Name"
           value={name}
           onChange={e => setName(e.target.value)}
@@ -75,7 +75,7 @@ const ProgramModal: React.FC<ProgramModalProps> = ({ isOpen, onClose, onSave }) 
         />
         
         <textarea
-          className="w-full mb-4 px-3 py-2 rounded bg-[#181A20] text-white border border-white/10"
+          className="w-full mb-4 px-3 py-2 rounded bg-bg-tertiary text-text-primary border border-border"
           placeholder="Description"
           value={description}
           onChange={e => setDescription(e.target.value)}
@@ -89,14 +89,14 @@ const ProgramModal: React.FC<ProgramModalProps> = ({ isOpen, onClose, onSave }) 
             type="button" 
             onClick={onClose}
             disabled={isSubmitting}
-            className="px-4 py-2 bg-gray-700 text-white rounded-lg disabled:opacity-50"
+            className="px-4 py-2 bg-bg-tertiary text-text-primary rounded-lg disabled:opacity-50"
           >
             Cancel
           </button>
           <button 
             type="submit"
             disabled={isSubmitting} 
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg disabled:opacity-50 flex items-center gap-2"
+            className="px-4 py-2 bg-blue-600 text-text-primary rounded-lg disabled:opacity-50 flex items-center gap-2"
           >
             {isSubmitting ? (
               <>
@@ -114,3 +114,4 @@ const ProgramModal: React.FC<ProgramModalProps> = ({ isOpen, onClose, onSave }) 
 };
 
 export default ProgramModal;
+

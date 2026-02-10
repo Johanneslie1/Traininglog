@@ -83,7 +83,7 @@ const SupersetActionsButton: React.FC<SupersetActionsButtonProps> = ({ exerciseI
           e.stopPropagation();
           setShowActions(!showActions);
         }}
-        className="flex items-center gap-1 px-2 py-1 text-xs text-[#2196F3] bg-[#2196F3]/10 rounded-full hover:bg-[#2196F3]/20 transition-colors"
+        className="flex items-center gap-1 px-2 py-1 text-xs text-blue-500 bg-blue-500/10 rounded-full hover:bg-blue-500/20 transition-colors"
         aria-label="Superset Actions"
       >
         <span>{superset?.name || 'Superset'}</span>
@@ -93,7 +93,7 @@ const SupersetActionsButton: React.FC<SupersetActionsButtonProps> = ({ exerciseI
       </button>
       
       {showActions && (
-        <div className="absolute z-20 mt-1 right-0 bg-[#1a1a1a] border border-white/10 rounded-lg shadow-xl p-2 min-w-[180px]">
+        <div className="absolute z-20 mt-1 right-0 bg-bg-secondary border border-border rounded-lg shadow-xl p-2 min-w-[180px]">
           {isRenaming ? (
             <div className="p-2">
               <input
@@ -101,7 +101,7 @@ const SupersetActionsButton: React.FC<SupersetActionsButtonProps> = ({ exerciseI
                 type="text"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
-                className="w-full px-2 py-1 bg-[#2a2a2a] text-white rounded border border-[#8B5CF6] focus:outline-none"
+                className="w-full px-2 py-1 bg-bg-tertiary text-text-primary rounded border border-accent-primary focus:outline-none"
                 placeholder="Superset name"
                 maxLength={30}
                 onKeyDown={(e) => {
@@ -118,7 +118,7 @@ const SupersetActionsButton: React.FC<SupersetActionsButtonProps> = ({ exerciseI
                     e.stopPropagation();
                     setIsRenaming(false);
                   }}
-                  className="text-xs text-gray-400 hover:text-white px-2 py-1 rounded transition-colors"
+                  className="text-xs text-gray-400 hover:text-text-primary px-2 py-1 rounded transition-colors"
                 >
                   Cancel
                 </button>
@@ -127,7 +127,7 @@ const SupersetActionsButton: React.FC<SupersetActionsButtonProps> = ({ exerciseI
                     e.stopPropagation();
                     handleRenameSuperset();
                   }}
-                  className="text-xs bg-[#8B5CF6] text-white px-2 py-1 rounded hover:bg-[#7C3AED] transition-colors"
+                  className="text-xs bg-accent-primary text-text-primary px-2 py-1 rounded hover:bg-accent-secondary transition-colors"
                 >
                   Save
                 </button>
@@ -140,7 +140,7 @@ const SupersetActionsButton: React.FC<SupersetActionsButtonProps> = ({ exerciseI
                   e.stopPropagation();
                   handleBreakSuperset();
                 }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-white hover:bg-white/10 rounded transition-colors text-left"
+                className="flex w-full items-center gap-2 px-3 py-2 text-text-primary hover:bg-white/10 rounded transition-colors text-left"
               >
                 <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -150,7 +150,7 @@ const SupersetActionsButton: React.FC<SupersetActionsButtonProps> = ({ exerciseI
               
               <button
                 onClick={handleRenameClick}
-                className="flex w-full items-center gap-2 px-3 py-2 text-white hover:bg-white/10 rounded transition-colors text-left"
+                className="flex w-full items-center gap-2 px-3 py-2 text-text-primary hover:bg-white/10 rounded transition-colors text-left"
               >
                 <svg className="w-4 h-4 text-[#8B5CF6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />

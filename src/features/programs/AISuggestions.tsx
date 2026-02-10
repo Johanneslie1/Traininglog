@@ -260,7 +260,7 @@ const AISuggestions: React.FC<AISuggestionsProps> = ({
       case 'complementary': return 'bg-blue-600';
       case 'progression': return 'bg-purple-600';
       case 'recovery': return 'bg-green-600';
-      default: return 'bg-gray-600';
+      default: return 'bg-bg-tertiary';
     }
   };
 
@@ -275,8 +275,8 @@ const AISuggestions: React.FC<AISuggestionsProps> = ({
 
   if (selectedExercises.length === 0) {
     return (
-      <div className="bg-[#181A20] rounded-lg p-6 border border-white/10">
-        <div className="text-center text-gray-400">
+      <div className="bg-bg-secondary rounded-lg p-6 border border-border">
+        <div className="text-center text-text-tertiary">
           <LightBulbIcon className="w-8 h-8 mx-auto mb-2 opacity-50" />
           <p>Add exercises to see AI suggestions</p>
         </div>
@@ -285,21 +285,21 @@ const AISuggestions: React.FC<AISuggestionsProps> = ({
   }
 
   return (
-    <div className="bg-[#181A20] rounded-lg p-6 border border-white/10">
+    <div className="bg-bg-secondary rounded-lg p-6 border border-border">
       <div className="flex items-center gap-2 mb-4">
         <SparklesIcon className="w-5 h-5 text-blue-400" />
-        <h3 className="text-white font-medium">AI Session Suggestions</h3>
+        <h3 className="text-text-primary font-medium">AI Session Suggestions</h3>
         {loading && (
           <div className="w-4 h-4 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin ml-2"></div>
         )}
       </div>
 
       {loading ? (
-        <div className="text-gray-400 text-sm">
+        <div className="text-text-tertiary text-sm">
           Analyzing your workout...
         </div>
       ) : suggestions.length === 0 ? (
-        <div className="text-gray-400 text-sm">
+        <div className="text-text-tertiary text-sm">
           Your workout looks complete! 💪
         </div>
       ) : (
@@ -307,28 +307,28 @@ const AISuggestions: React.FC<AISuggestionsProps> = ({
           {suggestions.map((suggestion) => (
             <div
               key={suggestion.id}
-              className="bg-[#23272F] rounded-lg p-4 border border-white/5"
+              className="bg-bg-secondary rounded-lg p-4 border border-border"
             >
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center gap-2 flex-1">
                   <span className="text-lg">{getSuggestionTypeIcon(suggestion.type)}</span>
                   <div>
-                    <h4 className="text-white font-medium text-sm">{suggestion.title}</h4>
-                    <p className="text-gray-400 text-xs">{suggestion.description}</p>
+                    <h4 className="text-text-primary font-medium text-sm">{suggestion.title}</h4>
+                    <p className="text-text-tertiary text-xs">{suggestion.description}</p>
                   </div>
                 </div>
-                <span className={`px-2 py-1 rounded text-xs text-white ${getSuggestionTypeColor(suggestion.type)}`}>
+                <span className={`px-2 py-1 rounded text-xs text-text-primary ${getSuggestionTypeColor(suggestion.type)}`}>
                   {suggestion.type}
                 </span>
               </div>
 
-              <div className="text-xs text-gray-400 mb-3">
+              <div className="text-xs text-text-tertiary mb-3">
                 Suggested exercises: {suggestion.exercises.map(item => item.exercise.name).join(', ')}
               </div>
 
               <button
                 onClick={() => onAddSuggestion(suggestion.exercises)}
-                className="w-full px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
+                className="w-full px-3 py-2 bg-blue-600 text-text-primary rounded text-sm hover:bg-blue-700 transition-colors"
               >
                 Add to Session
               </button>

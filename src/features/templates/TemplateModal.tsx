@@ -16,10 +16,10 @@ const TemplateModal: React.FC<TemplateModalProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-      <div className="bg-[#23272F] p-8 rounded-lg shadow-lg w-full max-w-md">
+      <div className="bg-bg-secondary p-8 rounded-lg shadow-lg w-full max-w-md">
         <h2 className="text-xl font-bold mb-4">Session Template Feature Removed</h2>
         <p className="mb-4">The session template feature has been removed from this app version.</p>
-        <button className="px-4 py-2 bg-gray-700 text-white rounded-lg" onClick={onClose}>Close</button>
+        <button className="px-4 py-2 bg-bg-tertiary hover:opacity-90 text-text-primary rounded-lg" onClick={onClose}>Close</button>
       </div>
     </div>
   );

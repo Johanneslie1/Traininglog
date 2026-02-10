@@ -210,7 +210,7 @@ const UniversalActivityLogger: React.FC<UniversalActivityLoggerProps> = ({
     switch (field.type) {      case 'duration':
         return (
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-text-secondary mb-2">
               {field.label} {field.required && <span className="text-red-400">*</span>}
             </label>
             <input
@@ -234,20 +234,20 @@ const UniversalActivityLogger: React.FC<UniversalActivityLoggerProps> = ({
                   }
                 }
               }}
-              className="w-full p-3 bg-[#2a2a2a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-blue-500"
+              className="w-full p-3 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:outline-none focus:border-blue-500"
               min={field.min}
               max={field.max}
               step={field.step}
               placeholder={field.placeholder}
               required={field.required}
             />
-            {field.unit && <span className="text-sm text-gray-400 mt-1 block">{field.unit}</span>}          </div>
+            {field.unit && <span className="text-sm text-text-tertiary mt-1 block">{field.unit}</span>}          </div>
         );
 
       case 'distance':
         return (
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-text-secondary mb-2">
               {field.label} {field.required && <span className="text-red-400">*</span>}
             </label>
             <input
@@ -271,14 +271,14 @@ const UniversalActivityLogger: React.FC<UniversalActivityLoggerProps> = ({
                   }
                 }
               }}
-              className="w-full p-3 bg-[#2a2a2a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-blue-500"
+              className="w-full p-3 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:outline-none focus:border-blue-500"
               min={field.min}
               max={field.max}
               step={field.step}
               placeholder={field.placeholder}
               required={field.required}
             />
-            {field.unit && <span className="text-sm text-gray-400 mt-1 block">{field.unit}</span>}
+            {field.unit && <span className="text-sm text-text-tertiary mt-1 block">{field.unit}</span>}
           </div>
         );
 
@@ -287,7 +287,7 @@ const UniversalActivityLogger: React.FC<UniversalActivityLoggerProps> = ({
       case 'rpe':
         return (
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-text-secondary mb-2">
               {field.label} {field.required && <span className="text-red-400">*</span>}
             </label>
             <input
@@ -311,21 +311,21 @@ const UniversalActivityLogger: React.FC<UniversalActivityLoggerProps> = ({
                   }
                 }
               }}
-              className="w-full p-3 bg-[#2a2a2a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-blue-500"
+              className="w-full p-3 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:outline-none focus:border-blue-500"
               min={field.min}
               max={field.max}
               step={field.step}
               placeholder={field.placeholder}
               required={field.required}
             />
-            {field.unit && <span className="text-sm text-gray-400 mt-1 block">{field.unit}</span>}
+            {field.unit && <span className="text-sm text-text-tertiary mt-1 block">{field.unit}</span>}
           </div>
         );
 
       case 'intensity':
         return (
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-text-secondary mb-2">
               {field.label} {field.required && <span className="text-red-400">*</span>}
             </label>
             <input
@@ -340,14 +340,14 @@ const UniversalActivityLogger: React.FC<UniversalActivityLoggerProps> = ({
               }))}
               className="w-full"
             />
-            <div className="text-center text-white mt-1">{value}/{field.max || 10}</div>
+            <div className="text-center text-text-primary mt-1">{value}/{field.max || 10}</div>
           </div>
         );
 
       case 'select':
         return (
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-text-secondary mb-2">
               {field.label} {field.required && <span className="text-red-400">*</span>}
             </label>
             <select
@@ -356,7 +356,7 @@ const UniversalActivityLogger: React.FC<UniversalActivityLoggerProps> = ({
                 ...prev, 
                 [field.fieldId]: e.target.value 
               }))}
-              className="w-full p-3 bg-[#2a2a2a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-blue-500"
+              className="w-full p-3 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:outline-none focus:border-blue-500"
               required={field.required}
             >
               {field.options?.map(option => (
@@ -369,7 +369,7 @@ const UniversalActivityLogger: React.FC<UniversalActivityLoggerProps> = ({
       case 'string':
         return (
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-text-secondary mb-2">
               {field.label} {field.required && <span className="text-red-400">*</span>}
             </label>
             <textarea
@@ -378,7 +378,7 @@ const UniversalActivityLogger: React.FC<UniversalActivityLoggerProps> = ({
                 ...prev, 
                 [field.fieldId]: e.target.value 
               }))}
-              className="w-full p-3 bg-[#2a2a2a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-blue-500 min-h-[100px]"
+              className="w-full p-3 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:outline-none focus:border-blue-500 min-h-[100px]"
               placeholder={field.placeholder}
               required={field.required}
             />
@@ -397,7 +397,7 @@ const UniversalActivityLogger: React.FC<UniversalActivityLoggerProps> = ({
               }))}
               className="mr-2"
             />
-            <label className="text-sm font-medium text-gray-300">
+            <label className="text-sm font-medium text-text-secondary">
               {field.label} {field.required && <span className="text-red-400">*</span>}
             </label>
           </div>
@@ -410,18 +410,18 @@ const UniversalActivityLogger: React.FC<UniversalActivityLoggerProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50">
-      <div className="bg-[#1a1a1a] rounded-xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+      <div className="bg-bg-secondary rounded-xl w-full max-w-3xl max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="p-6 border-b border-white/10">
+        <div className="p-6 border-b border-border">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-white">{activityName}</h2>
-              <p className="text-gray-400">{template.description}</p>
+              <h2 className="text-2xl font-bold text-text-primary">{activityName}</h2>
+              <p className="text-text-tertiary">{template.description}</p>
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={onBack}
-                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+                className="px-4 py-2 bg-bg-tertiary hover:bg-bg-tertiary hover:opacity-90 text-text-primary rounded-lg transition-colors"
               >
                 Change Activity
               </button>
@@ -429,7 +429,7 @@ const UniversalActivityLogger: React.FC<UniversalActivityLoggerProps> = ({
                 onClick={onClose}
                 className="p-2 hover:bg-white/10 rounded-lg transition-colors"
               >
-                <span className="text-white text-xl">×</span>
+                <span className="text-text-primary text-xl">×</span>
               </button>
             </div>
           </div>
@@ -438,7 +438,7 @@ const UniversalActivityLogger: React.FC<UniversalActivityLoggerProps> = ({
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
           <div className="mb-6">
-            <h3 className="text-lg font-semibold text-white mb-4">Log Session #{sessions.length + 1}</h3>
+            <h3 className="text-lg font-semibold text-text-primary mb-4">Log Session #{sessions.length + 1}</h3>
             
             <div className="space-y-4">
               {template.fields.map(field => (
@@ -451,7 +451,7 @@ const UniversalActivityLogger: React.FC<UniversalActivityLoggerProps> = ({
             <button
               onClick={handleAddSession}
               disabled={!currentSession.duration || (template.fields.some(f => f.required && !currentSession[f.fieldId]))}
-              className="w-full mt-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+              className="w-full mt-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-bg-tertiary disabled:cursor-not-allowed text-text-primary rounded-lg font-medium transition-colors"
             >
               Add Session
             </button>
@@ -460,11 +460,11 @@ const UniversalActivityLogger: React.FC<UniversalActivityLoggerProps> = ({
           {/* Sessions List */}
           {sessions.length > 0 && (
             <div className="mb-6">
-              <h4 className="text-md font-medium text-white mb-3">Logged Sessions ({sessions.length})</h4>
+              <h4 className="text-md font-medium text-text-primary mb-3">Logged Sessions ({sessions.length})</h4>
               <div className="space-y-2">
                 {sessions.map((session, index) => (
-                  <div key={index} className="p-3 bg-[#2a2a2a] rounded-lg flex justify-between items-center">
-                    <div className="text-white">
+                  <div key={index} className="p-3 bg-bg-tertiary rounded-lg flex justify-between items-center">
+                    <div className="text-text-primary">
                       <span className="font-medium">Session {session.setNumber}: </span>
                       {session.duration}min
                       {session.distance && ` • ${session.distance}m`}
@@ -486,17 +486,17 @@ const UniversalActivityLogger: React.FC<UniversalActivityLoggerProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-white/10 flex gap-3">
+        <div className="p-6 border-t border-border flex gap-3">
           <button
             onClick={onBack}
-            className="flex-1 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
+            className="flex-1 py-3 bg-bg-tertiary hover:bg-bg-tertiary hover:opacity-90 text-text-primary rounded-lg font-medium transition-colors"
           >
             Back to Activities
           </button>
           <button
             onClick={handleSaveActivity}
             disabled={loading || sessions.length === 0}
-            className="flex-1 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+            className="flex-1 py-3 bg-green-600 hover:bg-green-700 disabled:bg-bg-tertiary disabled:cursor-not-allowed text-text-primary rounded-lg font-medium transition-colors"
           >
             {loading ? 'Saving...' : `Save Activity (${sessions.length} sessions)`}
           </button>

@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -31,18 +32,19 @@ export default {
           DEFAULT: '#8B5CF6', // Add default value
         },
         // Theme system colors using CSS variables
-        theme: {
-          'bg-primary': 'var(--color-bg-primary)',
-          'bg-secondary': 'var(--color-bg-secondary)',
-          'bg-tertiary': 'var(--color-bg-tertiary)',
-          'accent-primary': 'var(--color-accent-primary)',
-          'accent-secondary': 'var(--color-accent-secondary)',
-          'text-primary': 'var(--color-text-primary)',
-          'text-secondary': 'var(--color-text-secondary)',
-          'text-tertiary': 'var(--color-text-tertiary)',
-          'border': 'var(--color-border)',
-          DEFAULT: 'var(--color-bg-primary)',
-        },
+        'bg-primary': 'var(--color-bg-primary)',
+        'bg-secondary': 'var(--color-bg-secondary)',
+        'bg-tertiary': 'var(--color-bg-tertiary)',
+        'bg-quaternary': 'var(--color-bg-quaternary)',
+        'accent-primary': 'var(--color-accent-primary)',
+        'accent-secondary': 'var(--color-accent-secondary)',
+        'text-primary': 'var(--color-text-primary)',
+        'text-secondary': 'var(--color-text-secondary)',
+        'text-tertiary': 'var(--color-text-tertiary)',
+        'text-muted': 'var(--color-text-muted)',
+        'text-inverse': 'var(--color-text-inverse)',
+        'border': 'var(--color-border)',
+        'border-hover': 'var(--color-border-hover)',
         // Status colors
         status: {
           success: 'var(--color-success)',
@@ -58,7 +60,21 @@ export default {
           hard: 'var(--color-hard)',
           failure: 'var(--color-failure)',
           drop: 'var(--color-drop)',
-        }
+        },
+        // Status Indicator colors
+        'status-heart-bg': 'var(--color-status-heart-bg)',
+        'status-heart-text': 'var(--color-status-heart-text)',
+        'status-heart-border': 'var(--color-status-heart-border)',
+        'status-intensity-bg': 'var(--color-status-intensity-bg)',
+        'status-intensity-text': 'var(--color-status-intensity-text)',
+        'status-intensity-border': 'var(--color-status-intensity-border)',
+        'status-performance-bg': 'var(--color-status-performance-bg)',
+        'status-performance-text': 'var(--color-status-performance-text)',
+        'status-performance-border': 'var(--color-status-performance-border)',
+        // Data field colors
+        'data-field-bg': 'var(--color-data-field-bg)',
+        'data-field-text': 'var(--color-data-field-text)',
+        'data-field-label': 'var(--color-data-field-label)',
       },
       // Add animation classes
       animation: {

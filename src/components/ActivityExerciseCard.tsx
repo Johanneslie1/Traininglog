@@ -64,10 +64,10 @@ export const getActivityTypeInfo = (activityType?: ActivityType) => {
     case ActivityType.OTHER:
       return { 
         label: 'Other', 
-        color: 'bg-gray-600', 
+        color: 'bg-bg-tertiary', 
         textColor: 'text-gray-100',
         borderColor: 'border-gray-500',
-        bgLight: 'bg-gray-600/10',
+        bgLight: 'bg-bg-tertiary/10',
         icon: '📋'
       };
     default:
@@ -158,17 +158,17 @@ const ActivityExerciseCard: React.FC<ActivityExerciseCardProps> = ({
 
   // Render compact summary based on activity type
   const renderCompactSummary = () => {
-    if (!metrics) return <span className="text-gray-400">No data</span>;
+    if (!metrics) return <span className="text-text-tertiary">No data</span>;
 
     switch (activityType) {
       case ActivityType.RESISTANCE:
         return (
           <div className="flex items-center gap-3 text-sm">
-            <span className="text-white font-medium">
+            <span className="text-text-primary font-medium">
               {metrics.setCount}×{Math.round((metrics as any).totalReps / metrics.setCount)}
               {(metrics as any).avgWeight > 0 && ` @ ${Math.round((metrics as any).avgWeight)}kg`}
             </span>
-            <span className="text-gray-400">
+            <span className="text-text-tertiary">
               {(metrics as any).totalVolume.toLocaleString()}kg vol
             </span>
           </div>
@@ -177,9 +177,9 @@ const ActivityExerciseCard: React.FC<ActivityExerciseCardProps> = ({
         return (
           <div className="flex items-center gap-3 text-sm">
             {(metrics as any).totalDistance > 0 && (
-              <span className="text-white font-medium">{(metrics as any).totalDistance.toFixed(1)}km</span>
+              <span className="text-text-primary font-medium">{(metrics as any).totalDistance.toFixed(1)}km</span>
             )}
-            <span className="text-gray-400">{(metrics as any).totalDuration}min</span>
+            <span className="text-text-tertiary">{(metrics as any).totalDuration}min</span>
             {(metrics as any).avgPace > 0 && (
               <span className="text-orange-300">{formatPace((metrics as any).avgPace)}</span>
             )}
@@ -188,9 +188,9 @@ const ActivityExerciseCard: React.FC<ActivityExerciseCardProps> = ({
       case ActivityType.SPEED_AGILITY:
         return (
           <div className="flex items-center gap-3 text-sm">
-            <span className="text-white font-medium">{(metrics as any).totalReps} reps</span>
+            <span className="text-text-primary font-medium">{(metrics as any).totalReps} reps</span>
             {(metrics as any).totalTime > 0 && (
-              <span className="text-gray-400">{(metrics as any).totalTime}s</span>
+              <span className="text-text-tertiary">{(metrics as any).totalTime}s</span>
             )}
             {(metrics as any).maxHeight > 0 && (
               <span className="text-red-300">{(metrics as any).maxHeight}cm</span>
@@ -200,9 +200,9 @@ const ActivityExerciseCard: React.FC<ActivityExerciseCardProps> = ({
       case ActivityType.STRETCHING:
         return (
           <div className="flex items-center gap-3 text-sm">
-            <span className="text-white font-medium">{(metrics as any).totalHoldTime}s hold</span>
+            <span className="text-text-primary font-medium">{(metrics as any).totalHoldTime}s hold</span>
             {(metrics as any).totalReps > 0 && (
-              <span className="text-gray-400">×{(metrics as any).totalReps}</span>
+              <span className="text-text-tertiary">×{(metrics as any).totalReps}</span>
             )}
             {(metrics as any).avgIntensity > 0 && (
               <span className="text-purple-300">{Math.round((metrics as any).avgIntensity)}/10</span>
@@ -212,18 +212,18 @@ const ActivityExerciseCard: React.FC<ActivityExerciseCardProps> = ({
       case ActivityType.SPORT:
         return (
           <div className="flex items-center gap-3 text-sm">
-            <span className="text-white font-medium">{(metrics as any).totalDuration}min</span>
+            <span className="text-text-primary font-medium">{(metrics as any).totalDuration}min</span>
             {(metrics as any).avgPerformance > 0 && (
               <span className="text-green-300">★ {(metrics as any).avgPerformance.toFixed(1)}</span>
             )}
             {(metrics as any).totalCalories > 0 && (
-              <span className="text-gray-400">{(metrics as any).totalCalories}kcal</span>
+              <span className="text-text-tertiary">{(metrics as any).totalCalories}kcal</span>
             )}
           </div>
         );
       default:
         return (
-          <span className="text-gray-400 text-sm">
+          <span className="text-text-tertiary text-sm">
             {metrics.setCount} set{metrics.setCount !== 1 ? 's' : ''}
           </span>
         );
@@ -242,7 +242,7 @@ const ActivityExerciseCard: React.FC<ActivityExerciseCardProps> = ({
             className={`p-2 rounded-lg ${typeInfo.bgLight} border-l-2 ${typeInfo.borderColor}`}
           >
             <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-400">Set {index + 1}</span>
+              <span className="text-xs text-text-tertiary">Set {index + 1}</span>
               {renderSetDetails(set)}
             </div>
           </div>
@@ -251,7 +251,7 @@ const ActivityExerciseCard: React.FC<ActivityExerciseCardProps> = ({
         {/* Summary row */}
         {metrics && (
           <div className={`p-2 rounded-lg ${typeInfo.color}/20 border ${typeInfo.borderColor}/30`}>
-            <div className="text-xs text-gray-300 mb-1">Summary</div>
+            <div className="text-xs text-text-secondary mb-1">Summary</div>
             {renderMetricsSummary()}
           </div>
         )}
@@ -265,51 +265,51 @@ const ActivityExerciseCard: React.FC<ActivityExerciseCardProps> = ({
       case ActivityType.RESISTANCE:
         return (
           <div className="flex items-center gap-2 text-sm">
-            <span className="text-white font-medium">{set.weight}kg × {set.reps}</span>
-            {set.rir !== undefined && <span className="text-blue-300">RIR {set.rir}</span>}
-            {set.rpe !== undefined && <span className="text-yellow-300">RPE {set.rpe}</span>}
+            <span className="text-text-primary font-medium">{set.weight}kg × {set.reps}</span>
+            {set.rir !== undefined && <span className="text-text-secondary">RIR {set.rir}</span>}
+            {set.rpe !== undefined && <span className="text-text-secondary">RPE {set.rpe}</span>}
           </div>
         );
       case ActivityType.ENDURANCE:
         return (
           <div className="flex items-center gap-2 text-sm">
-            {set.duration && <span className="text-white">{set.duration}min</span>}
-            {set.distance && <span className="text-orange-300">{set.distance}km</span>}
-            {set.averageHeartRate && <span className="text-red-300">♥ {set.averageHeartRate}</span>}
-            {set.calories && <span className="text-gray-400">{set.calories}kcal</span>}
+            {set.duration && <span className="text-text-primary">{set.duration}min</span>}
+            {set.distance && <span className="text-text-secondary">{set.distance}km</span>}
+            {set.averageHeartRate && <span className="text-text-secondary">♥ {set.averageHeartRate}</span>}
+            {set.calories && <span className="text-text-tertiary">{set.calories}kcal</span>}
           </div>
         );
       case ActivityType.SPEED_AGILITY:
         return (
           <div className="flex items-center gap-2 text-sm">
-            {set.reps && <span className="text-white">{set.reps} reps</span>}
-            {set.duration && <span className="text-red-300">{set.duration}s</span>}
-            {set.distance && <span className="text-gray-400">{set.distance}m</span>}
-            {set.height && <span className="text-yellow-300">{set.height}cm</span>}
+            {set.reps && <span className="text-text-primary">{set.reps} reps</span>}
+            {set.duration && <span className="text-text-secondary">{set.duration}s</span>}
+            {set.distance && <span className="text-text-tertiary">{set.distance}m</span>}
+            {set.height && <span className="text-text-secondary">{set.height}cm</span>}
           </div>
         );
       case ActivityType.STRETCHING:
         return (
           <div className="flex items-center gap-2 text-sm">
-            {set.holdTime && <span className="text-white">{set.holdTime}s</span>}
+            {set.holdTime && <span className="text-text-primary">{set.holdTime}s</span>}
             {set.reps && <span className="text-purple-300">×{set.reps}</span>}
-            {set.intensity && <span className="text-gray-400">{set.intensity}/10</span>}
+            {set.intensity && <span className="text-text-tertiary">{set.intensity}/10</span>}
             {set.stretchType && <span className="text-purple-200 text-xs">{set.stretchType}</span>}
           </div>
         );
       case ActivityType.SPORT:
         return (
           <div className="flex items-center gap-2 text-sm">
-            {set.duration && <span className="text-white">{set.duration}min</span>}
+            {set.duration && <span className="text-text-primary">{set.duration}min</span>}
             {set.performance && <span className="text-green-300">★ {set.performance}</span>}
-            {set.calories && <span className="text-gray-400">{set.calories}kcal</span>}
+            {set.calories && <span className="text-text-tertiary">{set.calories}kcal</span>}
           </div>
         );
       default:
         return (
           <div className="flex items-center gap-2 text-sm">
-            {set.duration && <span className="text-white">{set.duration}min</span>}
-            {set.reps && <span className="text-gray-400">{set.reps} reps</span>}
+            {set.duration && <span className="text-text-primary">{set.duration}min</span>}
+            {set.reps && <span className="text-text-tertiary">{set.reps} reps</span>}
           </div>
         );
     }
@@ -324,16 +324,16 @@ const ActivityExerciseCard: React.FC<ActivityExerciseCardProps> = ({
         return (
           <div className="grid grid-cols-3 gap-2 text-xs">
             <div>
-              <span className="text-gray-400">Volume</span>
-              <div className="text-white font-medium">{(metrics as any).totalVolume.toLocaleString()}kg</div>
+              <span className="text-text-tertiary">Volume</span>
+              <div className="text-text-primary font-medium">{(metrics as any).totalVolume.toLocaleString()}kg</div>
             </div>
             <div>
-              <span className="text-gray-400">Max</span>
-              <div className="text-white font-medium">{(metrics as any).maxWeight}kg</div>
+              <span className="text-text-tertiary">Max</span>
+              <div className="text-text-primary font-medium">{(metrics as any).maxWeight}kg</div>
             </div>
             <div>
-              <span className="text-gray-400">Reps</span>
-              <div className="text-white font-medium">{(metrics as any).totalReps}</div>
+              <span className="text-text-tertiary">Reps</span>
+              <div className="text-text-primary font-medium">{(metrics as any).totalReps}</div>
             </div>
           </div>
         );
@@ -341,16 +341,16 @@ const ActivityExerciseCard: React.FC<ActivityExerciseCardProps> = ({
         return (
           <div className="grid grid-cols-3 gap-2 text-xs">
             <div>
-              <span className="text-gray-400">Distance</span>
-              <div className="text-white font-medium">{(metrics as any).totalDistance.toFixed(1)}km</div>
+              <span className="text-text-tertiary">Distance</span>
+              <div className="text-text-primary font-medium">{(metrics as any).totalDistance.toFixed(1)}km</div>
             </div>
             <div>
-              <span className="text-gray-400">Time</span>
-              <div className="text-white font-medium">{(metrics as any).totalDuration}min</div>
+              <span className="text-text-tertiary">Time</span>
+              <div className="text-text-primary font-medium">{(metrics as any).totalDuration}min</div>
             </div>
             <div>
-              <span className="text-gray-400">Pace</span>
-              <div className="text-white font-medium">{formatPace((metrics as any).avgPace)}</div>
+              <span className="text-text-tertiary">Pace</span>
+              <div className="text-text-primary font-medium">{formatPace((metrics as any).avgPace)}</div>
             </div>
           </div>
         );
@@ -358,17 +358,17 @@ const ActivityExerciseCard: React.FC<ActivityExerciseCardProps> = ({
         return (
           <div className="grid grid-cols-3 gap-2 text-xs">
             <div>
-              <span className="text-gray-400">Total Reps</span>
-              <div className="text-white font-medium">{(metrics as any).totalReps}</div>
+              <span className="text-text-tertiary">Total Reps</span>
+              <div className="text-text-primary font-medium">{(metrics as any).totalReps}</div>
             </div>
             <div>
-              <span className="text-gray-400">Time</span>
-              <div className="text-white font-medium">{(metrics as any).totalTime}s</div>
+              <span className="text-text-tertiary">Time</span>
+              <div className="text-text-primary font-medium">{(metrics as any).totalTime}s</div>
             </div>
             {(metrics as any).maxHeight > 0 && (
               <div>
-                <span className="text-gray-400">Max Height</span>
-                <div className="text-white font-medium">{(metrics as any).maxHeight}cm</div>
+                <span className="text-text-tertiary">Max Height</span>
+                <div className="text-text-primary font-medium">{(metrics as any).maxHeight}cm</div>
               </div>
             )}
           </div>
@@ -377,17 +377,17 @@ const ActivityExerciseCard: React.FC<ActivityExerciseCardProps> = ({
         return (
           <div className="grid grid-cols-3 gap-2 text-xs">
             <div>
-              <span className="text-gray-400">Hold Time</span>
-              <div className="text-white font-medium">{(metrics as any).totalHoldTime}s</div>
+              <span className="text-text-tertiary">Hold Time</span>
+              <div className="text-text-primary font-medium">{(metrics as any).totalHoldTime}s</div>
             </div>
             <div>
-              <span className="text-gray-400">Reps</span>
-              <div className="text-white font-medium">{(metrics as any).totalReps}</div>
+              <span className="text-text-tertiary">Reps</span>
+              <div className="text-text-primary font-medium">{(metrics as any).totalReps}</div>
             </div>
             {(metrics as any).avgIntensity > 0 && (
               <div>
-                <span className="text-gray-400">Avg Intensity</span>
-                <div className="text-white font-medium">{Math.round((metrics as any).avgIntensity)}/10</div>
+                <span className="text-text-tertiary">Avg Intensity</span>
+                <div className="text-text-primary font-medium">{Math.round((metrics as any).avgIntensity)}/10</div>
               </div>
             )}
           </div>
@@ -396,26 +396,26 @@ const ActivityExerciseCard: React.FC<ActivityExerciseCardProps> = ({
         return (
           <div className="grid grid-cols-3 gap-2 text-xs">
             <div>
-              <span className="text-gray-400">Duration</span>
-              <div className="text-white font-medium">{(metrics as any).totalDuration}min</div>
+              <span className="text-text-tertiary">Duration</span>
+              <div className="text-text-primary font-medium">{(metrics as any).totalDuration}min</div>
             </div>
             {(metrics as any).totalCalories > 0 && (
               <div>
-                <span className="text-gray-400">Calories</span>
-                <div className="text-white font-medium">{(metrics as any).totalCalories}kcal</div>
+                <span className="text-text-tertiary">Calories</span>
+                <div className="text-text-primary font-medium">{(metrics as any).totalCalories}kcal</div>
               </div>
             )}
             {(metrics as any).avgPerformance > 0 && (
               <div>
-                <span className="text-gray-400">Performance</span>
-                <div className="text-white font-medium">{(metrics as any).avgPerformance.toFixed(1)}/10</div>
+                <span className="text-text-tertiary">Performance</span>
+                <div className="text-text-primary font-medium">{(metrics as any).avgPerformance.toFixed(1)}/10</div>
               </div>
             )}
           </div>
         );
       default:
         return (
-          <div className="text-xs text-gray-400">
+          <div className="text-xs text-text-tertiary">
             {metrics.setCount} set{metrics.setCount !== 1 ? 's' : ''} recorded
           </div>
         );
@@ -425,9 +425,9 @@ const ActivityExerciseCard: React.FC<ActivityExerciseCardProps> = ({
   return (
     <div 
       className={`
-        bg-[#1a1a1a] rounded-lg overflow-hidden transition-all duration-200
+        bg-bg-secondary rounded-lg overflow-hidden transition-all duration-200
         border-l-4 ${typeInfo.borderColor}
-        hover:bg-[#222]
+        hover:bg-bg-tertiary
       `}
     >
       {/* Header */}
@@ -436,7 +436,7 @@ const ActivityExerciseCard: React.FC<ActivityExerciseCardProps> = ({
           <div className="flex items-center gap-2 flex-1 min-w-0">
             {/* Exercise number */}
             {exerciseNumber && (
-              <div className={`flex items-center justify-center min-w-6 h-6 ${typeInfo.color} text-white text-xs font-bold rounded-full px-1.5`}>
+              <div className={`flex items-center justify-center min-w-6 h-6 ${typeInfo.color} text-text-primary text-xs font-bold rounded-full px-1.5`}>
                 {exerciseNumber}
               </div>
             )}
@@ -445,7 +445,7 @@ const ActivityExerciseCard: React.FC<ActivityExerciseCardProps> = ({
             <span className="text-lg">{typeInfo.icon}</span>
             
             {/* Exercise name */}
-            <h3 className="text-base font-medium text-white truncate">{exercise.exerciseName}</h3>
+            <h3 className="text-base font-medium text-text-primary truncate">{exercise.exerciseName}</h3>
             
             {/* Activity type badge */}
             <span className={`px-2 py-0.5 text-xs rounded-full ${typeInfo.color} ${typeInfo.textColor} flex-shrink-0`}>
@@ -462,7 +462,7 @@ const ActivityExerciseCard: React.FC<ActivityExerciseCardProps> = ({
               aria-label={isExpanded ? "Collapse details" : "Expand details"}
             >
               <svg
-                className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+                className={`w-4 h-4 text-text-tertiary transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -479,7 +479,7 @@ const ActivityExerciseCard: React.FC<ActivityExerciseCardProps> = ({
                     className="p-2 hover:bg-white/10 rounded-lg transition-colors"
                     aria-label="Edit exercise"
                   >
-                    <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-5 h-5 text-text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
                   </button>

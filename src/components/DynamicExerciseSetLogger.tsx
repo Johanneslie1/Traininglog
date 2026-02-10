@@ -114,7 +114,7 @@ const DynamicExerciseSetLogger: React.FC<DynamicExerciseSetLoggerProps> = ({
           <select
             value={value as string || ''}
             onChange={(e) => updateSet(setIndex, field, e.target.value)}
-            className="w-full px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-[#8B5CF6]"
+            className="w-full px-3 py-2 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:outline-none focus:border-accent-primary"
           >
             <option value="">Select {label}</option>
             {options.map(option => (
@@ -134,7 +134,7 @@ const DynamicExerciseSetLogger: React.FC<DynamicExerciseSetLoggerProps> = ({
           type={type}
           value={value instanceof Date ? value.toISOString().split('T')[0] : (value || '')}
           onChange={(e) => updateSet(setIndex, field, type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value)}
-          className="w-full px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-[#8B5CF6]"
+          className="w-full px-3 py-2 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:outline-none focus:border-accent-primary"
           placeholder={type === 'number' ? '0' : `Enter ${label.toLowerCase()}`}
           min={type === 'number' ? 0 : undefined}
           step={field === 'weight' ? 0.5 : field === 'distance' ? 0.1 : 1}
@@ -166,7 +166,7 @@ const DynamicExerciseSetLogger: React.FC<DynamicExerciseSetLoggerProps> = ({
             <select
               value={sets[setIndex].rir || ''}
               onChange={(e) => updateSet(setIndex, 'rir', parseInt(e.target.value))}
-              className="w-full px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-[#8B5CF6]"
+              className="w-full px-3 py-2 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:outline-none focus:border-accent-primary"
             >
               <option value="">Select RIR</option>
               {Object.entries(RIR_SCALE).map(([value, { label }]) => (
@@ -196,7 +196,7 @@ const DynamicExerciseSetLogger: React.FC<DynamicExerciseSetLoggerProps> = ({
             <select
               value={sets[setIndex].rpe || ''}
               onChange={(e) => updateSet(setIndex, 'rpe', parseInt(e.target.value))}
-              className="w-full px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-[#8B5CF6]"
+              className="w-full px-3 py-2 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:outline-none focus:border-accent-primary"
             >
               <option value="">Select RPE</option>
               {Object.entries(RPE_SCALE).map(([value, { label }]) => (
@@ -228,7 +228,7 @@ const DynamicExerciseSetLogger: React.FC<DynamicExerciseSetLoggerProps> = ({
             <select
               value={sets[setIndex].rpe || ''}
               onChange={(e) => updateSet(setIndex, 'rpe', parseInt(e.target.value))}
-              className="w-full px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-[#8B5CF6]"
+              className="w-full px-3 py-2 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:outline-none focus:border-accent-primary"
             >
               <option value="">Select RPE</option>
               {Object.entries(RPE_SCALE).map(([value, { label }]) => (
@@ -250,7 +250,7 @@ const DynamicExerciseSetLogger: React.FC<DynamicExerciseSetLoggerProps> = ({
                     type="number"
                     value={((sets[setIndex]?.[zone as keyof ExerciseSet] instanceof Date) ? (sets[setIndex]?.[zone as keyof ExerciseSet] as Date).toISOString().split('T')[0] : (sets[setIndex]?.[zone as keyof ExerciseSet] || '')) as string | number}
                     onChange={(e) => updateSet(setIndex, zone as keyof ExerciseSet, parseFloat(e.target.value) || 0)}
-                    className="w-full px-2 py-1 bg-[#2a2a2a] border border-white/10 rounded text-white text-sm focus:outline-none focus:border-[#8B5CF6]"
+                    className="w-full px-2 py-1 bg-bg-tertiary border border-border rounded text-text-primary text-sm focus:outline-none focus:border-accent-primary"
                     placeholder="0"
                     min="0"
                     step="1"
@@ -276,18 +276,18 @@ const DynamicExerciseSetLogger: React.FC<DynamicExerciseSetLoggerProps> = ({
   };
 
   return (
-    <div className="bg-[#1a1a1a] rounded-lg w-full h-full flex flex-col">
+    <div className="bg-bg-primary rounded-lg w-full h-full flex flex-col">
       {/* Header */}
-      <div className="p-6 border-b border-white/10">
+      <div className="p-6 border-b border-border">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-xl font-medium text-white">{exercise.name}</h2>
+            <h2 className="text-xl font-medium text-text-primary">{exercise.name}</h2>
             <p className="text-sm text-gray-400 mt-1">
               {config.displayName} • {config.description}
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <span className={`px-2 py-1 rounded text-xs text-white ${config.color}`}>
+            <span className={`px-2 py-1 rounded text-xs text-text-primary ${config.color}`}>
               {config.icon} {config.displayName}
             </span>
             <button
@@ -295,7 +295,7 @@ const DynamicExerciseSetLogger: React.FC<DynamicExerciseSetLoggerProps> = ({
               className="p-2 hover:bg-white/10 rounded-lg transition-colors"
               aria-label="Close"
             >
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -306,19 +306,19 @@ const DynamicExerciseSetLogger: React.FC<DynamicExerciseSetLoggerProps> = ({
       {/* Helper Modals */}
       {showRPEHelper && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowRPEHelper(false)}>
-          <div className="bg-[#2a2a2a] rounded-lg p-6 max-w-md w-full mx-4" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-medium text-white mb-4">RPE Scale (Rate of Perceived Exertion)</h3>
+          <div className="bg-bg-tertiary rounded-lg p-6 max-w-md w-full mx-4" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-medium text-text-primary mb-4">RPE Scale (Rate of Perceived Exertion)</h3>
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {Object.entries(RPE_SCALE).map(([value, { label, description }]) => (
                 <div key={value} className="flex justify-between text-sm">
-                  <span className="text-white">{value} - {label}</span>
+                  <span className="text-text-primary">{value} - {label}</span>
                   <span className="text-gray-400">{description}</span>
                 </div>
               ))}
             </div>
             <button
               onClick={() => setShowRPEHelper(false)}
-              className="mt-4 px-4 py-2 bg-[#8B5CF6] text-white rounded-lg hover:bg-[#7C3AED] transition-colors"
+              className="mt-4 px-4 py-2 bg-accent-primary text-text-primary rounded-lg hover:bg-accent-secondary transition-colors"
             >
               Close
             </button>
@@ -328,19 +328,19 @@ const DynamicExerciseSetLogger: React.FC<DynamicExerciseSetLoggerProps> = ({
 
       {showRIRHelper && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowRIRHelper(false)}>
-          <div className="bg-[#2a2a2a] rounded-lg p-6 max-w-md w-full mx-4" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-medium text-white mb-4">RIR Scale (Reps in Reserve)</h3>
+          <div className="bg-bg-tertiary rounded-lg p-6 max-w-md w-full mx-4" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-medium text-text-primary mb-4">RIR Scale (Reps in Reserve)</h3>
             <div className="space-y-2">
               {Object.entries(RIR_SCALE).map(([value, { label, description }]) => (
                 <div key={value} className="flex justify-between text-sm">
-                  <span className="text-white">{label}</span>
+                  <span className="text-text-primary">{label}</span>
                   <span className="text-gray-400">{description}</span>
                 </div>
               ))}
             </div>
             <button
               onClick={() => setShowRIRHelper(false)}
-              className="mt-4 px-4 py-2 bg-[#8B5CF6] text-white rounded-lg hover:bg-[#7C3AED] transition-colors"
+              className="mt-4 px-4 py-2 bg-accent-primary text-text-primary rounded-lg hover:bg-accent-secondary transition-colors"
             >
               Close
             </button>
@@ -352,9 +352,9 @@ const DynamicExerciseSetLogger: React.FC<DynamicExerciseSetLoggerProps> = ({
       <div className="flex-1 overflow-y-auto p-6">
         <div className="space-y-6">
           {sets.map((_, index) => (
-            <div key={index} className="border border-white/10 rounded-lg p-4">
+            <div key={index} className="border border-border rounded-lg p-4">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-medium text-white">
+                <h3 className="text-lg font-medium text-text-primary">
                   {exerciseType === 'strength' || exerciseType === 'plyometrics' ? `Set ${index + 1}` : `Session ${index + 1}`}
                 </h3>
                 {sets.length > 1 && (
@@ -382,24 +382,24 @@ const DynamicExerciseSetLogger: React.FC<DynamicExerciseSetLoggerProps> = ({
 
         <button
           onClick={addSet}
-          className="mt-4 w-full py-3 border-2 border-dashed border-white/20 rounded-lg text-gray-400 hover:border-white/40 hover:text-white transition-colors"
+          className="mt-4 w-full py-3 border-2 border-dashed border-border rounded-lg text-text-secondary hover:border-border-hover hover:text-text-primary transition-colors"
         >
           + Add {exerciseType === 'strength' || exerciseType === 'plyometrics' ? 'Set' : 'Session'}
         </button>
       </div>
 
       {/* Footer */}
-      <div className="p-6 border-t border-white/10">
+      <div className="p-6 border-t border-border">
         <div className="flex justify-end gap-3">
           <button
             onClick={onCancel}
-            className="px-6 py-3 bg-[#2a2a2a] text-white rounded-xl hover:bg-[#3a3a3a] transition-colors"
+            className="px-6 py-3 bg-bg-tertiary text-text-primary rounded-xl hover:bg-bg-tertiary hover:opacity-90 transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={validateAndSave}
-            className="px-6 py-3 bg-[#8B5CF6] text-white rounded-xl hover:bg-[#7C3AED] transition-colors"
+            className="px-6 py-3 bg-accent-primary text-text-primary rounded-xl hover:bg-accent-secondary transition-colors"
           >
             {isEditing ? 'Update' : 'Save'} {config.displayName}
           </button>

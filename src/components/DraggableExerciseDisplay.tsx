@@ -193,7 +193,7 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
 
   if (exercises.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-400">
+      <div className="text-center py-8 text-text-tertiary">
         <p>No exercises logged yet. Start by adding your first exercise!</p>
       </div>
     );
@@ -204,7 +204,7 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
         <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 animate-fade-in">
           <button
             onClick={handleUndo}
-            className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] border border-gray-600 text-white rounded-full shadow-lg hover:bg-gray-800 transition-all"
+            className="flex items-center gap-2 px-4 py-2 bg-bg-secondary border border-border text-text-primary rounded-full shadow-lg hover:bg-bg-tertiary transition-all"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
@@ -225,7 +225,7 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
               {...provided.droppableProps}
               ref={provided.innerRef}
               className={`space-y-6 transition-colors duration-200 ${
-                droppableSnapshot.isDraggingOver ? 'bg-[#8B5CF6]/5 rounded-lg' : ''
+                droppableSnapshot.isDraggingOver ? 'bg-accent-primary/5 rounded-lg' : ''
               }`}
             >
               {groupedExercises.map((group, groupIndex) => {
@@ -245,7 +245,7 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
                           snapshot.isDragging 
                             ? 'scale-105 shadow-2xl z-50 rotate-1' 
                             : isDropTarget 
-                              ? 'border-t-2 border-[#8B5CF6] pt-2' 
+                              ? 'border-t-2 border-accent-primary pt-2' 
                               : ''
                         }`}
                       >
@@ -256,17 +256,17 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
                           aria-label={`Hold and drag to reorder exercise ${groupIndex + 1}`}
                         >
                           <div className={`w-10 h-1 rounded-full transition-colors ${
-                            snapshot.isDragging ? 'bg-[#8B5CF6]' : 'bg-gray-500'
+                            snapshot.isDragging ? 'bg-accent-primary' : 'bg-gray-500'
                           }`} />
                         </div>
                         
                         {group.superset ? (
                           // More integrated superset styling
-                          <div className="relative bg-[#1a1a1a] border-l-4 border-[#2196F3] rounded-lg p-3 shadow-md mb-4">
+                          <div className="relative bg-bg-secondary border-l-4 border-[#2196F3] rounded-lg p-3 shadow-md mb-4">
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 bg-[#2196F3] rounded-full"></div>
-                                <h3 className="text-sm font-medium text-white flex items-center">
+                                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                <h3 className="text-sm font-medium text-text-primary flex items-center">
                                   <span className="text-[#2196F3]">Superset:</span>
                                   <span className="ml-1">{group.superset.name}</span>
                                   <span className="ml-2 text-xs text-[#2196F3]/70">
@@ -286,7 +286,7 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
                                 <div key={exercise.id || exerciseIndex} className="relative">
                                   {/* Simpler connection line */}
                                   {exerciseIndex < group.exercises.length - 1 && (
-                                    <div className="absolute -bottom-2 left-4 h-3 w-0.5 bg-[#2196F3]/40"></div>
+                                    <div className="absolute -bottom-2 left-4 h-3 w-0.5 bg-blue-500/40"></div>
                                   )}
                                   
                                   <div className="transition-all duration-200 hover:bg-black/20 rounded-lg">
@@ -307,7 +307,7 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
                           </div>
                         ) : (
                           // Individual exercise with simpler styling
-                          <div className="border-l-4 border-white/20 rounded-lg shadow-sm mb-4">
+                          <div className="border-l-4 border-border rounded-lg shadow-sm mb-4">
                             <ExerciseCard
                               exercise={group.exercises[0]}
                               exerciseNumber={groupIndex + 1}

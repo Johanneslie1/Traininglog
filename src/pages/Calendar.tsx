@@ -33,7 +33,7 @@ const CalendarPage: React.FC = () => {
   };
 
   return (
-    <div className="p-4 bg-black min-h-screen text-white">
+    <div className="p-4 bg-bg-primary min-h-screen text-text-primary">
       <h1 className="text-2xl font-bold mb-6">Calendar</h1>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -42,7 +42,7 @@ const CalendarPage: React.FC = () => {
         </div>
         
         <div>
-          <div className="bg-[#1a1a1a] rounded-lg p-4 shadow-lg">
+          <div className="bg-bg-secondary rounded-lg p-4 shadow-lg">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold">
                 {format(selectedDate, 'MMMM d, yyyy')}
@@ -50,7 +50,7 @@ const CalendarPage: React.FC = () => {
               {workouts.length > 0 && (
                 <button
                   onClick={handleCopyToDayClick}
-                  className="bg-[#8B5CF6] text-white px-4 py-2 rounded-lg text-sm"
+                  className="bg-accent-primary text-text-primary px-4 py-2 rounded-lg text-sm"
                 >
                   Copy to Today
                 </button>

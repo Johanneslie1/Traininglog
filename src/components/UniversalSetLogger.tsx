@@ -506,7 +506,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
               onFocus={(e) => {
                 e.stopPropagation();
               }}
-              className="resistance-input resistance-input-control flex-1 min-w-0 px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white text-center focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors"
+              className="resistance-input resistance-input-control flex-1 min-w-0 px-3 py-2 bg-bg-tertiary border border-border rounded-lg text-text-primary text-center focus:outline-none focus:border-accent-primary focus:ring-1 focus:ring-accent-primary transition-colors"
               inputMode={step && step < 1 ? 'decimal' : 'numeric'}
               min={min}
               step={step}
@@ -558,7 +558,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
                 }
               }}
               onFocus={(e) => e.stopPropagation()}
-              className="w-full px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+              className="w-full px-3 py-2 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:outline-none focus:border-accent-primary focus:ring-1 focus:ring-accent-primary"
             >
               <option value="">Select RIR</option>
               {Object.entries(RIR_SCALE).map(([value, label]) => (
@@ -642,7 +642,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
                   updateSet(setIndex, 'intensity', parseInt(value));
                 }
               }}
-              className="w-full px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500"
+              className="w-full px-3 py-2 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:outline-none focus:border-accent-primary"
             >
               <option value="">Select Intensity</option>
               <option value="1">1 - Very Light</option>
@@ -667,7 +667,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
             <select
               value={sets[setIndex]?.stretchType || 'static'}
               onChange={(e) => updateSet(setIndex, 'stretchType', e.target.value)}
-              className="w-full px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500"
+              className="w-full px-3 py-2 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:outline-none focus:border-accent-primary"
             >
               <option value="static">Static Stretching</option>
               <option value="dynamic">Dynamic Stretching</option>
@@ -706,7 +706,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
                   }
                 }
               }}
-              className="w-full px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500"
+              className="w-full px-3 py-2 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:outline-none focus:border-accent-primary"
               placeholder="1-10"
             />
           </div>
@@ -757,7 +757,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
                 updateSet(setIndex, 'rpe', parseInt(value));
               }
             }}
-            className="w-full px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500"
+            className="w-full px-3 py-2 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:outline-none focus:border-accent-primary"
           >
             <option value="">Select RPE</option>
             {Object.entries(RPE_SCALE).map(([value, { label }]) => (
@@ -782,7 +782,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
             updateSet(setIndex, 'notes', value);
           }}
           onFocus={(e) => e.stopPropagation()}
-          className="w-full px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+          className="w-full px-3 py-2 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:outline-none focus:border-accent-primary focus:ring-1 focus:ring-accent-primary"
           rows={2}
           placeholder="Optional notes about this set..."
         />
@@ -845,7 +845,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
             >
               <div 
                 className={`
-                  bg-[#1a1a1a] rounded-lg border border-white/10 overflow-hidden
+                  bg-bg-primary rounded-lg border border-border overflow-hidden
                   ${isNewlyAdded ? 'set-added-animation' : ''}
                 `}
               >
@@ -968,7 +968,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
       {/* RPE Helper Modal */}
       {showRPEHelper && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-60">
-          <div className="bg-[#1a1a1a] rounded-lg p-6 max-w-md w-full mx-4 border border-white/10">
+          <div className="bg-bg-secondary rounded-lg p-6 max-w-md w-full mx-4 border border-border">
             <h3 className="text-lg font-bold text-white mb-4">RPE Scale Reference</h3>
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {Object.entries(RPE_SCALE).map(([value, { label, description }]) => (

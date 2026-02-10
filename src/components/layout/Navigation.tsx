@@ -111,7 +111,7 @@ const Navigation: React.FC = () => {
       {showDrawer && (
         <div className="fixed inset-0 bg-black/80 z-50" onClick={() => setShowDrawer(false)}>
           <div 
-            className="absolute bottom-0 inset-x-0 bg-[#1a1a1a] rounded-t-xl py-6 px-4 space-y-2"
+            className="absolute bottom-0 inset-x-0 bg-bg-secondary rounded-t-xl py-6 px-4 space-y-2"
             onClick={e => e.stopPropagation()}
           >
             <div className="w-12 h-1 bg-white/20 rounded-full mx-auto mb-6" />

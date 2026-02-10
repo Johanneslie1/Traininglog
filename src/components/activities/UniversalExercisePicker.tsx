@@ -12,12 +12,12 @@ const FilterBlock: React.FC<FilterBlockProps> = ({ title, values, selected, onTo
   
   return (
     <div>
-      <p className="text-[10px] uppercase tracking-wide text-gray-400 mb-1 font-semibold">{title}</p>
+      <p className="text-[10px] uppercase tracking-wide text-text-tertiary mb-1 font-semibold">{title}</p>
       <div className="flex flex-wrap gap-1">
         {uniqueValues.sort().map((v: string, index: number) => {
           const active = selected.has(v);
             return (
-              <button key={`${title}-${v}-${index}`} onClick={() => onToggle(v)} className={`px-2 py-0.5 rounded border text-[10px] ${active ? 'bg-yellow-600 border-yellow-500 text-white' : 'bg-gray-800 border-gray-600 text-gray-300 hover:border-yellow-500 hover:text-white'}`}>{v}</button>
+              <button key={`${title}-${v}-${index}`} onClick={() => onToggle(v)} className={`px-2 py-0.5 rounded border text-[10px] ${active ? 'bg-yellow-600 border-yellow-500 text-text-primary' : 'bg-bg-tertiary border-border text-text-secondary hover:border-yellow-500 hover:text-text-primary'}`}>{v}</button>
             );
         })}
       </div>
@@ -165,34 +165,34 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
   return (
     <div className="w-full h-full flex flex-col min-h-0">
       {/* Header */}
-      <div className="flex items-center justify-between p-6 border-b border-gray-700">
+      <div className="flex items-center justify-between p-6 border-b border-border">
         <div>
-          <h2 className="text-2xl font-bold text-white">{title}</h2>
-          {subtitle && <p className="text-gray-400">{subtitle}</p>}
+          <h2 className="text-2xl font-bold text-text-primary">{title}</h2>
+          {subtitle && <p className="text-text-tertiary">{subtitle}</p>}
         </div>
         {multiSelect && (
-          <div className="text-xs text-gray-400">Selected: <span className="text-yellow-400 font-semibold">{selectedCount}</span></div>
+          <div className="text-xs text-text-tertiary">Selected: <span className="text-yellow-400 font-semibold">{selectedCount}</span></div>
         )}
       </div>
       {/* Search, Quick Filters & Advanced (Sticky) */}
-      <div className="p-4 border-b border-gray-700 space-y-3 bg-[#1a1a1a]/95 backdrop-blur sticky top-0 z-10">
+      <div className="p-4 border-b border-border space-y-3 bg-bg-secondary/95 backdrop-blur sticky top-0 z-10">
         <div className="flex gap-2 items-center">
           <input
             type="text"
             placeholder="Search exercises (name or instructions)"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:border-yellow-500"
+            className="flex-1 px-3 py-2 bg-bg-tertiary border border-border rounded-md text-text-primary placeholder-gray-400 focus:outline-none focus:border-yellow-500"
             aria-label="Search exercises"
           />
           <button
             onClick={() => { setSearch(''); setTypeFilter(new Set()); setLateralFilter(new Set()); setEquipmentFilter(new Set()); setTagFilter(new Set()); }}
-            className="px-3 py-2 text-xs font-medium bg-gray-800 border border-gray-600 rounded-md text-gray-300 hover:text-white hover:border-yellow-500"
+            className="px-3 py-2 text-xs font-medium bg-bg-tertiary border border-border rounded-md text-text-secondary hover:text-text-primary hover:border-yellow-500"
             aria-label="Reset filters"
           >Reset</button>
           <button
             onClick={() => setShowAdvanced(s => !s)}
-            className="px-3 py-2 text-xs font-medium bg-gray-800 border border-gray-600 rounded-md text-gray-300 hover:text-white hover:border-yellow-500"
+            className="px-3 py-2 text-xs font-medium bg-bg-tertiary border border-border rounded-md text-text-secondary hover:text-text-primary hover:border-yellow-500"
             aria-expanded={showAdvanced}
             aria-controls="advanced-filters"
           >{showAdvanced ? 'Hide' : 'Filters'}</button>
@@ -206,7 +206,7 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
               <button
                 key={value}
                 onClick={() => toggle(setTypeFilter, value)}
-                className={`px-3 py-1 rounded-full text-xs font-medium border transition ${active ? 'bg-yellow-500 border-yellow-400 text-black' : 'bg-gray-800 border-gray-600 text-gray-300 hover:border-yellow-500 hover:text-white'}`}
+                className={`px-3 py-1 rounded-full text-xs font-medium border transition ${active ? 'bg-yellow-500 border-yellow-400 text-black' : 'bg-bg-tertiary border-border text-text-secondary hover:border-yellow-500 hover:text-text-primary'}`}
               >{value}</button>
             );
           })}
@@ -217,7 +217,7 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
               <button
                 key={value}
                 onClick={() => toggle(setLateralFilter, value)}
-                className={`px-3 py-1 rounded-full text-xs font-medium border transition ${active ? 'bg-blue-500 border-blue-400 text-white' : 'bg-gray-800 border-gray-600 text-gray-300 hover:border-blue-400 hover:text-white'}`}
+                className={`px-3 py-1 rounded-full text-xs font-medium border transition ${active ? 'bg-blue-500 border-blue-400 text-text-primary' : 'bg-bg-tertiary border-border text-text-secondary hover:border-blue-400 hover:text-text-primary'}`}
               >{value}</button>
             );
           })}
@@ -232,7 +232,7 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
             </div>
           </div>
         )}
-        <p className="text-[11px] text-gray-400">Showing <span className="text-yellow-400 font-semibold">{advancedFiltered.length}</span> of {enriched.length} exercises</p>
+        <p className="text-[11px] text-text-tertiary">Showing <span className="text-yellow-400 font-semibold">{advancedFiltered.length}</span> of {enriched.length} exercises</p>
       </div>
       {/* Exercise List */}
       <div className="flex-1 overflow-y-auto p-6">
@@ -243,26 +243,26 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
               <div
                 key={ex.id}
                 onClick={() => handleCardClick(ex)}
-                className={`relative bg-gray-800 rounded-lg p-4 cursor-pointer hover:bg-gray-700 transition-colors border ${active ? 'border-yellow-400 ring-2 ring-yellow-400' : 'border-gray-600'}`}
+                className={`relative bg-bg-tertiary rounded-lg p-4 cursor-pointer hover:bg-bg-tertiary hover:opacity-90 transition-colors border ${active ? 'border-yellow-400 ring-2 ring-yellow-400' : 'border-border'}`}
               >
                 {renderCard ? renderCard(ex, active) : (
                   <>
-                    <h3 className="text-lg font-semibold text-white mb-1">{ex.name}</h3>
+                    <h3 className="text-lg font-semibold text-text-primary mb-1">{ex.name}</h3>
                     {ex.description && (
-                      <p className="text-gray-400 text-xs mb-2 line-clamp-3">{ex.description}</p>
+                      <p className="text-text-tertiary text-xs mb-2 line-clamp-3">{ex.description}</p>
                     )}
                     <div className="flex flex-wrap gap-1">
                       {ex.category && (
-                        <span className="px-2 py-0.5 bg-yellow-600 text-white text-[10px] rounded">{ex.category}</span>
+                        <span className="px-2 py-0.5 bg-yellow-600 text-text-primary text-[10px] rounded">{ex.category}</span>
                       )}
                       {ex.type && (
-                        <span className="px-2 py-0.5 bg-blue-600 text-white text-[10px] rounded">{ex.type}</span>
+                        <span className="px-2 py-0.5 bg-blue-600 text-text-primary text-[10px] rounded">{ex.type}</span>
                       )}
                       {ex.difficulty && (
-                        <span className="px-2 py-0.5 bg-orange-600 text-white text-[10px] rounded">{ex.difficulty}</span>
+                        <span className="px-2 py-0.5 bg-orange-600 text-text-primary text-[10px] rounded">{ex.difficulty}</span>
                       )}
                       {Array.isArray(ex.tags) && ex.tags.slice(0,3).map((t: string) => (
-                        <span key={t} className="px-2 py-0.5 bg-gray-700 text-gray-200 text-[10px] rounded">{t}</span>
+                        <span key={t} className="px-2 py-0.5 bg-bg-tertiary hover:opacity-90 text-gray-200 text-[10px] rounded">{t}</span>
                       ))}
                     </div>
                     {active && <div className="absolute top-2 right-2 bg-yellow-500 text-black text-[10px] font-bold px-2 py-0.5 rounded">✓</div>}
@@ -274,12 +274,12 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
         </div>
         {advancedFiltered.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-400 text-lg">No exercises found</p>
+            <p className="text-text-tertiary text-lg">No exercises found</p>
             <p className="text-gray-500 text-sm mt-2">Try adjusting your search or filter</p>
             <div className="mt-6">
               <button
                 onClick={handleCreateExercise}
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-purple-600 text-white font-medium hover:bg-purple-700 transition-colors"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-purple-600 text-text-primary font-medium hover:bg-purple-700 transition-colors"
               >
                 <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 102 0v-5h5a1 1 0 100-2h-5V4a1 1 0 00-1-1z" clipRule="evenodd" />
@@ -291,14 +291,14 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
         )}
       </div>
       {multiSelect && (
-        <div className="border-t border-gray-700 p-4 bg-[#1a1a1a] flex items-center justify-between gap-4">
-          <div className="flex flex-wrap gap-2 text-xs text-gray-400 max-w-[60%]">
-            {selectedList.slice(0,6).map(s => <span key={s.id} className="px-2 py-0.5 bg-gray-800 rounded border border-gray-600 text-gray-300 truncate max-w-[120px]">{s.name}</span>)}
+        <div className="border-t border-border p-4 bg-bg-secondary flex items-center justify-between gap-4">
+          <div className="flex flex-wrap gap-2 text-xs text-text-tertiary max-w-[60%]">
+            {selectedList.slice(0,6).map(s => <span key={s.id} className="px-2 py-0.5 bg-bg-tertiary rounded border border-border text-text-secondary truncate max-w-[120px]">{s.name}</span>)}
             {selectedList.length > 6 && <span className="text-gray-500">+{selectedList.length - 6} more</span>}
           </div>
           <div className="flex gap-2 ml-auto">
-            <button onClick={() => setSelectedMap({})} disabled={selectedCount===0} className={`px-3 py-2 text-xs font-medium rounded-md border ${selectedCount===0 ? 'text-gray-500 border-gray-700 cursor-not-allowed' : 'text-gray-300 border-gray-600 hover:text-white hover:border-yellow-500'}`}>Clear</button>
-            <button onClick={() => { if (onConfirmSelection) onConfirmSelection(selectedList); }} disabled={selectedCount===0} className={`px-4 py-2 text-sm font-semibold rounded-md ${selectedCount===0 ? 'bg-gray-700 text-gray-500 cursor-not-allowed' : 'bg-yellow-500 hover:bg-yellow-400 text-black'}`}>{confirmLabel} {selectedCount>0 && `(${selectedCount})`}</button>
+            <button onClick={() => setSelectedMap({})} disabled={selectedCount===0} className={`px-3 py-2 text-xs font-medium rounded-md border ${selectedCount===0 ? 'text-gray-500 border-border cursor-not-allowed' : 'text-text-secondary border-border hover:text-text-primary hover:border-yellow-500'}`}>Clear</button>
+            <button onClick={() => { if (onConfirmSelection) onConfirmSelection(selectedList); }} disabled={selectedCount===0} className={`px-4 py-2 text-sm font-semibold rounded-md ${selectedCount===0 ? 'bg-bg-tertiary hover:opacity-90 text-gray-500 cursor-not-allowed' : 'bg-yellow-500 hover:bg-yellow-400 text-black'}`}>{confirmLabel} {selectedCount>0 && `(${selectedCount})`}</button>
           </div>
         </div>
       )}

@@ -32,8 +32,8 @@ interface LogOptionsProps {
 type ViewState = 'main' | 'setEditor' | 'programPicker' | 'copyPrevious' | 'sport' | 'stretching' | 'endurance' | 'other' | 'speedAgility' | 'resistance' | 'editExercise' | 'selectType';
 
 const helperCategories: Category[] = [
-  { id: 'programs', name: 'Add from Program', icon: '📋', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-purple-600', textColor: 'text-white' },
-  { id: 'copyPrevious', name: 'Copy from Previous', icon: '📝', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-blue-600', textColor: 'text-white' },
+  { id: 'programs', name: 'Add from Program', icon: '📋', bgColor: 'bg-bg-tertiary', iconBgColor: 'bg-purple-600', textColor: 'text-text-primary' },
+  { id: 'copyPrevious', name: 'Copy from Previous', icon: '📝', bgColor: 'bg-bg-tertiary', iconBgColor: 'bg-blue-600', textColor: 'text-text-primary' },
 ];
 
 // Activity types for the main selection
@@ -43,7 +43,7 @@ const activityTypes = [
     name: 'Resistance Training',
     description: 'Weight lifting, strength training',
     icon: '🏋️‍♂️',
-    bgColor: 'bg-gradient-to-r from-blue-500 to-blue-700',
+    bgColor: 'bg-blue-600 dark:bg-blue-600',
     textColor: 'text-white',
     examples: 'Squats, Deadlifts, Bench Press'
   },
@@ -52,7 +52,7 @@ const activityTypes = [
     name: 'Sports',
     description: 'Team sports, individual competitions',
     icon: '⚽',
-    bgColor: 'bg-gradient-to-r from-green-500 to-green-700',
+    bgColor: 'bg-green-600 dark:bg-green-600',
     textColor: 'text-white',
     examples: 'Football, Basketball, Tennis'
   },
@@ -61,7 +61,7 @@ const activityTypes = [
     name: 'Stretching & Flexibility',
     description: 'Static stretches, yoga, mobility',
     icon: '🧘‍♀️',
-    bgColor: 'bg-gradient-to-r from-purple-500 to-purple-700',
+    bgColor: 'bg-purple-600 dark:bg-purple-600',
     textColor: 'text-white',
     examples: 'Yoga, Static Stretches, PNF'
   },
@@ -70,7 +70,7 @@ const activityTypes = [
     name: 'Endurance Training',
     description: 'Cardio, running, cycling',
     icon: '🏃‍♂️',
-    bgColor: 'bg-gradient-to-r from-red-500 to-red-700',
+    bgColor: 'bg-red-600 dark:bg-red-600',
     textColor: 'text-white',
     examples: 'Running, Cycling, Swimming'
   },
@@ -79,7 +79,7 @@ const activityTypes = [
   name: 'Speed, Agility & Plyometrics',
   description: 'Sprints, jumps, plyometrics, change of direction',
     icon: '⚡',
-    bgColor: 'bg-gradient-to-r from-yellow-500 to-amber-600',
+    bgColor: 'bg-amber-600 dark:bg-amber-600',
     textColor: 'text-white',
   examples: 'Plyometrics, Ladder, Sprints, Jumps'
   },
@@ -88,7 +88,7 @@ const activityTypes = [
     name: 'Other Activities',
     description: 'Custom activities and tracking',
     icon: '🎯',
-    bgColor: 'bg-gradient-to-r from-gray-500 to-gray-700',
+    bgColor: 'bg-gray-600 dark:bg-gray-600',
     textColor: 'text-white',
     examples: 'Meditation, Therapy, Custom'
   }
@@ -197,9 +197,9 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
   if (view === 'selectType') {
     return (
       <div className="flex flex-col h-full">
-        <div className="flex items-center justify-between mb-4 pb-4 border-b border-white/10">
-          <h2 className="text-xl font-bold text-white">Select Training Type</h2>
-          <button onClick={onClose} className="text-white/60 hover:text-white">
+        <div className="flex items-center justify-between mb-4 pb-4 border-b border-border">
+          <h2 className="text-xl font-bold text-text-primary">Select Training Type</h2>
+          <button onClick={onClose} className="text-text-tertiary hover:text-text-primary">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -447,13 +447,13 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
   return (
     <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex flex-col z-50">
       {/* Header - Fixed at top */}
-      <header className="sticky top-0 flex items-center justify-between p-4 bg-[#1a1a1a] border-b border-white/10">
-        <h2 className="text-xl font-bold text-white">
+      <header className="sticky top-0 flex items-center justify-between p-4 bg-bg-secondary border-b border-border">
+        <h2 className="text-xl font-bold text-text-primary">
           {editingExercise ? 'Edit Exercise' : 'Add Exercise'}
         </h2>
         <button 
           onClick={onClose}
-          className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white"
+          className="p-2 hover:bg-white/10 rounded-lg transition-colors text-text-tertiary hover:text-text-primary"
           aria-label="Close"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -467,7 +467,7 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
         <div className="max-w-md mx-auto p-4 space-y-6 md:space-y-8">
           {/* Quick Add Section */}
           <section className="space-y-3 md:space-y-4">
-            <h3 className="text-lg font-semibold text-white/90">Quick Add</h3>
+            <h3 className="text-lg font-semibold text-text-primary">Quick Add</h3>
             <div className="grid grid-cols-2 gap-3 md:gap-4">
               {helperCategories.map(category => (
                 <CategoryButton
@@ -487,7 +487,7 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
 
           {/* Activity Types Section */}
           <section className="space-y-3 md:space-y-4">
-            <h3 className="text-lg font-semibold text-white/90">Choose Activity Type</h3>
+            <h3 className="text-lg font-semibold text-text-primary">Choose Activity Type</h3>
             <div className="grid grid-cols-1 gap-3 md:gap-4">
               {activityTypes.map(activityType => (
                 <div
@@ -514,7 +514,7 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
                     transition-all duration-200 ease-in-out
                     hover:scale-105 hover:shadow-lg
                     active:scale-95
-                    border border-white/10
+                    border border-border
                   `}
                 >
                   <div className="flex items-center space-x-3">
@@ -530,7 +530,7 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
                         {activityType.examples}
                       </p>
                     </div>
-                    <div className="text-white/60">
+                    <div className="text-text-tertiary">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
@@ -542,8 +542,8 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
           </section>
 
           {/* Create Custom Exercise Section */}
-          <section className="space-y-3 md:space-y-4 border-t border-white/10 pt-4">
-            <h3 className="text-lg font-semibold text-white/90">Create Custom Exercise</h3>
+          <section className="space-y-3 md:space-y-4 border-t border-border pt-4">
+            <h3 className="text-lg font-semibold text-text-primary">Create Custom Exercise</h3>
             <div className="grid grid-cols-2 gap-3 md:gap-4">
               {activityTypes.map(activityType => (
                 <button
@@ -573,18 +573,18 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
                     setCreateDialogActivityType(dialogActivityType);
                     setShowCreateDialog(true);
                   }}
-                  className="flex items-center p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors text-left"
+                  className="flex items-center p-3 bg-white/5 border border-border rounded-xl hover:bg-white/10 transition-colors text-left"
                 >
                   <div className="text-lg mr-3">{activityType.icon}</div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-white text-sm font-medium truncate">
+                    <p className="text-text-primary text-sm font-medium truncate">
                       Create {activityType.name}
                     </p>
-                    <p className="text-gray-400 text-xs truncate">
+                    <p className="text-text-tertiary text-xs truncate">
                       Custom exercise
                     </p>
                   </div>
-                  <div className="text-white/40">
+                  <div className="text-text-muted">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                     </svg>

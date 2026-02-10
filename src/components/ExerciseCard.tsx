@@ -78,7 +78,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
     if (isHidden) {
       // Compact view when hidden
       return (
-        <div className="text-sm text-gray-300">
+        <div className="text-sm text-text-secondary">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {/* Activity type badge if applicable */}
@@ -87,7 +87,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
                   {getActivityTypeInfo(exercise.activityType).label}
                 </span>
               )}
-              <span className="text-gray-400">
+              <span className="text-text-tertiary">
                 {exercise.sets?.length || 0} set{(exercise.sets?.length || 0) !== 1 ? 's' : ''}
               </span>
             </div>
@@ -132,13 +132,13 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
     if (isNonResistance) {
       // Non-resistance activity - display all sets
       return (
-        <div className="text-sm text-gray-300">
+        <div className="text-sm text-text-secondary">
           {/* Activity type badge */}
           <div className="flex items-center gap-2 mb-2">
             <span className={`px-2 py-1 ${getActivityTypeInfo(exercise.activityType).color} ${getActivityTypeInfo(exercise.activityType).textColor} text-xs rounded-full`}>
               {getActivityTypeInfo(exercise.activityType).icon} {getActivityTypeInfo(exercise.activityType).label}
             </span>
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-text-tertiary">
               {exercise.sets?.length || 0} set{(exercise.sets?.length || 0) !== 1 ? 's' : ''}
             </span>
           </div>
@@ -160,7 +160,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
                 const typeInfo = getActivityTypeInfo(exercise.activityType);
                 
                 return (
-                  <div key={setIndex} className={`bg-gray-800/30 rounded-lg p-3 border-l-2 ${typeInfo.borderColor}`}>
+                  <div key={setIndex} className={`bg-bg-tertiary rounded-lg p-3 border-l-2 ${typeInfo.borderColor}`}>
                     <div className={`text-xs ${typeInfo.textColor} mb-2 font-medium`}>
                       Set {setIndex + 1}
                     </div>
@@ -168,92 +168,92 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
                     {/* Volume Metrics Row */}
                     <div className="flex flex-wrap gap-3 mb-2">
                       {hasValue(set.reps) && (
-                        <div className="bg-gray-800/50 rounded p-2">
-                          <div className="text-xs text-gray-400 mb-1">Reps</div>
-                          <div className="text-white font-medium">{set.reps}</div>
+                        <div className="bg-data-field-bg rounded p-2">
+                          <div className="text-xs text-data-field-label mb-1">Reps</div>
+                          <div className="text-data-field-text font-medium">{set.reps}</div>
                         </div>
                       )}
                       {hasValue(set.duration) && (
-                        <div className="bg-gray-800/50 rounded p-2">
-                          <div className="text-xs text-gray-400 mb-1">Duration</div>
-                          <div className="text-white font-medium">
+                        <div className="bg-data-field-bg rounded p-2">
+                          <div className="text-xs text-data-field-label mb-1">Duration</div>
+                          <div className="text-data-field-text font-medium">
                             {(exercise.activityType || 'unknown') === 'endurance' ? `${set.duration} min` : `${set.duration} sec`}
                           </div>
                         </div>
                       )}
                       {hasValue(set.distance) && (
-                        <div className="bg-gray-800/50 rounded p-2">
-                          <div className="text-xs text-gray-400 mb-1">Distance</div>
-                          <div className="text-white font-medium">
+                        <div className="bg-data-field-bg rounded p-2">
+                          <div className="text-xs text-data-field-label mb-1">Distance</div>
+                          <div className="text-data-field-text font-medium">
                             {(exercise.activityType || 'unknown') === 'endurance' ? `${set.distance} km` : `${set.distance} m`}
                           </div>
                         </div>
                       )}
                       {hasValue(set.calories) && (
-                        <div className="bg-gray-800/50 rounded p-2">
-                          <div className="text-xs text-gray-400 mb-1">Calories</div>
-                          <div className="text-white font-medium">{set.calories} kcal</div>
+                        <div className="bg-data-field-bg rounded p-2">
+                          <div className="text-xs text-data-field-label mb-1">Calories</div>
+                          <div className="text-data-field-text font-medium">{set.calories} kcal</div>
                         </div>
                       )}
                       {hasValue(set.holdTime) && (
-                        <div className="bg-gray-800/50 rounded p-2">
-                          <div className="text-xs text-gray-400 mb-1">Hold Time</div>
-                          <div className="text-white font-medium">{set.holdTime}s</div>
+                        <div className="bg-data-field-bg rounded p-2">
+                          <div className="text-xs text-data-field-label mb-1">Hold Time</div>
+                          <div className="text-data-field-text font-medium">{set.holdTime}s</div>
                         </div>
                       )}
                       {hasValue(set.stretchType) && (exercise.activityType === ActivityType.STRETCHING) && (
-                        <div className="bg-gray-800/50 rounded p-2">
-                          <div className="text-xs text-gray-400 mb-1">Stretch Type</div>
-                          <div className="text-white font-medium capitalize">{set.stretchType}</div>
+                        <div className="bg-data-field-bg rounded p-2">
+                          <div className="text-xs text-data-field-label mb-1">Stretch Type</div>
+                          <div className="text-data-field-text font-medium capitalize">{set.stretchType}</div>
                         </div>
                       )}
                       {hasValue(set.restTime) && (exercise.activityType === ActivityType.SPEED_AGILITY) && (
-                        <div className="bg-gray-800/50 rounded p-2">
-                          <div className="text-xs text-gray-400 mb-1">Rest Time</div>
-                          <div className="text-white font-medium">{set.restTime}s</div>
+                        <div className="bg-data-field-bg rounded p-2">
+                          <div className="text-xs text-data-field-label mb-1">Rest Time</div>
+                          <div className="text-data-field-text font-medium">{set.restTime}s</div>
                         </div>
                       )}
                       {hasValue(set.rpe) && (exercise.activityType === ActivityType.SPEED_AGILITY) && (
-                        <div className="bg-gray-800/50 rounded p-2">
-                          <div className="text-xs text-gray-400 mb-1">RPE</div>
-                          <div className="text-white font-medium">{set.rpe}/10</div>
+                        <div className="bg-data-field-bg rounded p-2">
+                          <div className="text-xs text-data-field-label mb-1">RPE</div>
+                          <div className="text-data-field-text font-medium">{set.rpe}/10</div>
                         </div>
                       )}
                       {hasValue(set.pace) && (
-                        <div className="bg-gray-800/50 rounded p-2">
-                          <div className="text-xs text-gray-400 mb-1">Pace</div>
-                          <div className="text-white font-medium">{set.pace}</div>
+                        <div className="bg-data-field-bg rounded p-2">
+                          <div className="text-xs text-data-field-label mb-1">Pace</div>
+                          <div className="text-data-field-text font-medium">{set.pace}</div>
                         </div>
                       )}
                       {hasValue(set.elevation) && (
-                        <div className="bg-gray-800/50 rounded p-2">
-                          <div className="text-xs text-gray-400 mb-1">Elevation</div>
-                          <div className="text-white font-medium">{set.elevation}m</div>
+                        <div className="bg-data-field-bg rounded p-2">
+                          <div className="text-xs text-data-field-label mb-1">Elevation</div>
+                          <div className="text-data-field-text font-medium">{set.elevation}m</div>
                         </div>
                       )}
                     </div>
 
                     {/* Strain Metrics - Heart Rate */}
                     {(hasValue(set.heartRate) || hasValue(set.maxHeartRate) || hasValue(set.averageHeartRate)) && (
-                      <div className="bg-red-900/20 rounded p-2 mb-2">
-                        <div className="text-xs text-red-300 mb-1 font-medium">Heart Rate</div>
+                      <div className="bg-status-heart-bg rounded p-2 mb-2 border border-status-heart-border">
+                        <div className="text-xs text-status-heart-text mb-1 font-medium">Heart Rate</div>
                         <div className="grid grid-cols-2 gap-2 text-sm">
                           {hasValue(set.averageHeartRate) && (
                             <div>
-                              <span className="text-gray-400">Avg:</span>
-                              <span className="text-white ml-1">{set.averageHeartRate} bpm</span>
+                              <span className="text-text-tertiary">Avg:</span>
+                              <span className="text-text-primary ml-1">{set.averageHeartRate} bpm</span>
                             </div>
                           )}
                           {hasValue(set.maxHeartRate) && (
                             <div>
-                              <span className="text-gray-400">Max:</span>
-                              <span className="text-white ml-1">{set.maxHeartRate} bpm</span>
+                              <span className="text-text-tertiary">Max:</span>
+                              <span className="text-text-primary ml-1">{set.maxHeartRate} bpm</span>
                             </div>
                           )}
                           {hasValue(set.heartRate) && !hasValue(set.averageHeartRate) && (
                             <div>
-                              <span className="text-gray-400">HR:</span>
-                              <span className="text-white ml-1">{set.heartRate} bpm</span>
+                              <span className="text-text-tertiary">HR:</span>
+                              <span className="text-text-primary ml-1">{set.heartRate} bpm</span>
                             </div>
                           )}
                         </div>
@@ -264,25 +264,25 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
                     {((hasValue(set.rpe) && exercise.activityType !== ActivityType.SPEED_AGILITY) || 
                       (hasValue(set.intensity) && exercise.activityType !== ActivityType.SPEED_AGILITY) || 
                       hasValue(set.performance)) && (
-                      <div className="bg-yellow-900/20 rounded p-2 mb-2">
-                        <div className="text-xs text-yellow-300 mb-1 font-medium">Intensity</div>
+                      <div className="bg-status-intensity-bg rounded p-2 mb-2 border border-status-intensity-border">
+                        <div className="text-xs text-status-intensity-text mb-1 font-medium">Intensity</div>
                         <div className="grid grid-cols-3 gap-2 text-sm">
                           {hasValue(set.rpe) && exercise.activityType !== ActivityType.SPEED_AGILITY && (
                             <div>
-                              <span className="text-gray-400">RPE:</span>
-                              <span className="text-white ml-1">{set.rpe}/10</span>
+                              <span className="text-text-tertiary">RPE:</span>
+                              <span className="text-text-primary ml-1">{set.rpe}/10</span>
                             </div>
                           )}
                           {hasValue(set.intensity) && exercise.activityType !== ActivityType.SPEED_AGILITY && (
                             <div>
-                              <span className="text-gray-400">Intensity:</span>
-                              <span className="text-white ml-1">{set.intensity}/10</span>
+                              <span className="text-text-tertiary">Intensity:</span>
+                              <span className="text-text-primary ml-1">{set.intensity}/10</span>
                             </div>
                           )}
                           {hasValue(set.performance) && (
                             <div>
-                              <span className="text-gray-400">Performance:</span>
-                              <span className="text-white ml-1">{set.performance}/10</span>
+                              <span className="text-text-tertiary">Performance:</span>
+                              <span className="text-text-primary ml-1">{set.performance}/10</span>
                             </div>
                           )}
                         </div>
@@ -292,8 +292,8 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
                     {/* Notes - Only if they contain performance insights */}
                     {hasValue(set.notes) && (
                       <div className="bg-gray-800/40 rounded p-2 border-l-2 border-blue-500">
-                        <div className="text-xs text-gray-400 mb-1">Notes</div>
-                        <div className="text-white text-sm">{set.notes}</div>
+                        <div className="text-xs text-text-tertiary mb-1">Notes</div>
+                        <div className="text-text-primary text-sm">{set.notes}</div>
                       </div>
                     )}
                   </div>
@@ -326,8 +326,8 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
           {/* Show performance-relevant resistance exercise data */}
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-gray-400">Total Volume</span>
-              <span className="text-white">{calculateTotalVolume()}kg</span>
+              <span className="text-text-tertiary">Total Volume</span>
+              <span className="text-text-primary">{calculateTotalVolume()}kg</span>
             </div>
             
             {/* Check for performance-relevant fields in resistance sets */}
@@ -365,8 +365,8 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
 
               return uniqueFields.map((field, index) => (
                 <div key={index} className="flex items-center justify-between">
-                  <span className="text-gray-400">{field.label}</span>
-                  <span className="text-white">{field.value}</span>
+                  <span className="text-text-tertiary">{field.label}</span>
+                  <span className="text-text-primary">{field.value}</span>
                 </div>
               ));
             })()}
@@ -376,22 +376,22 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
     } else {
       // Fallback for other exercise types
       return (
-        <div className="text-sm text-gray-300">
+        <div className="text-sm text-text-secondary">
           <div className="flex items-center justify-between">
-            <span className="text-gray-400">Type</span>
-            <span className="text-white capitalize">{exercise.activityType || 'Exercise'}</span>
+            <span className="text-text-tertiary">Type</span>
+            <span className="text-text-primary capitalize">{exercise.activityType || 'Exercise'}</span>
           </div>
         </div>
       );
     }
   };
 
-  const cardClassName = `bg-[#1a1a1a] rounded-lg p-3 transition-all duration-200 ${
+  const cardClassName = `bg-bg-secondary rounded-lg p-3 transition-all duration-200 ${
     isInSuperset 
-      ? 'bg-[#2196F3]/5' 
+      ? 'bg-blue-500/5 dark:bg-[#2196F3]/5' 
       : isSelected 
-      ? 'bg-[#8B5CF6]/10 border-l-2 border-[#8B5CF6]' 
-      : 'hover:bg-black/20'
+      ? 'bg-accent-primary/10 border-l-2 border-accent-primary' 
+      : 'hover:bg-bg-tertiary'
   }`;
 
   return (
@@ -405,9 +405,9 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
             type="checkbox"
             checked={isSelected}
             onChange={handleSupersetToggle}
-            className="w-4 h-4 text-[#8B5CF6] bg-gray-100 border-gray-300 rounded focus:ring-[#8B5CF6] focus:ring-2"
+            className="w-4 h-4 text-accent-primary bg-gray-100 border-gray-300 rounded focus:ring-accent-primary focus:ring-2"
           />
-          <span className="text-sm text-gray-400">Select for superset</span>
+          <span className="text-sm text-text-secondary">Select for superset</span>
         </div>
       )}
 
@@ -415,11 +415,11 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
         <div className="flex items-center gap-2">
           {/* Compact exercise number with optional sub-number */}
           {exerciseNumber && (
-            <div className="flex items-center justify-center min-w-6 h-6 bg-[#8B5CF6] text-white text-xs font-bold rounded-full px-1.5">
+            <div className="flex items-center justify-center min-w-6 h-6 bg-accent-primary text-text-primary text-xs font-bold rounded-full px-1.5">
               {exerciseNumber}{subNumber ? String.fromCharCode(96 + subNumber) : ''}
             </div>
           )}
-          <h3 className="text-base font-medium text-white">{exercise.exerciseName}</h3>
+          <h3 className="text-base font-medium text-text-primary">{exercise.exerciseName}</h3>
           {/* Toggle visibility button */}
           {onToggleVisibility && (
             <button
@@ -428,7 +428,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
               aria-label={isHidden ? "Show exercise details" : "Hide exercise details"}
             >
               <svg
-                className={`w-4 h-4 text-gray-400 hover:text-white transition-transform ${isHidden ? 'rotate-180' : ''}`}
+                className={`w-4 h-4 text-text-tertiary hover:text-text-primary transition-transform ${isHidden ? 'rotate-180' : ''}`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -462,10 +462,10 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
               }}
               className={`p-2 rounded-lg transition-colors ${
                 isInSuperset 
-                  ? 'bg-[#2196F3] text-white' // Blue for existing superset
+                  ? 'bg-[#2196F3] text-text-primary' // Blue for existing superset
                   : isSelected
-                    ? 'bg-[#8B5CF6] text-white' // Purple for selected
-                    : 'hover:bg-white/10 text-gray-400 hover:text-white'
+                    ? 'bg-[#8B5CF6] text-text-primary' // Purple for selected
+                    : 'hover:bg-white/10 text-text-tertiary hover:text-text-primary'
               }`}
               aria-label={isInSuperset ? "In superset" : isSelected ? "Selected for superset" : "Add to superset"}
             >
@@ -490,7 +490,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
                 className="p-2 hover:bg-white/10 rounded-lg transition-colors"
                 aria-label="Edit exercise"
               >
-                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-5 h-5 text-text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
               </button>

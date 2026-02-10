@@ -99,18 +99,18 @@ const StretchingActivityPicker: React.FC<StretchingActivityPickerProps> = ({
 
 	return (
 		<div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50">
-			<div className="bg-[#1a1a1a] rounded-xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden">
+			<div className="bg-bg-secondary rounded-xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden">
 				<div className="absolute top-4 left-4">
 					<button
 						onClick={onBack}
-						className="px-3 py-1 rounded-md bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 text-sm"
+						className="px-3 py-1 rounded-md bg-bg-tertiary text-text-secondary hover:text-text-primary hover:bg-bg-tertiary hover:opacity-90 text-sm"
 					>
 						← Back
 					</button>
 				</div>
 				<button
 					onClick={onClose}
-					className="absolute top-4 right-4 text-gray-400 hover:text-white"
+					className="absolute top-4 right-4 text-text-tertiary hover:text-text-primary"
 				>
 					✕
 				</button>

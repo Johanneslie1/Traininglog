@@ -412,29 +412,29 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   }, [user]);
 
   return (
-    <div className="relative min-h-screen bg-black">
+    <div className="relative min-h-screen bg-bg-primary">
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-4 bg-black/95 backdrop-blur-sm fixed top-0 left-0 right-0 z-50 border-b border-white/10">
+      <header className="flex items-center justify-between px-4 py-4 bg-bg-primary/95 backdrop-blur-sm fixed top-0 left-0 right-0 z-50 border-b border-border">
         <div className="flex items-center gap-3">
           <button 
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            className="p-2 hover:bg-hover-overlay rounded-lg transition-colors"
             onClick={() => setUiState(prev => ({ ...prev, showMenu: true }))}
             aria-label="Open menu"
           >
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6 text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <h1 className="text-white text-xl font-medium">{formatDate(selectedDate)}</h1>
+          <h1 className="text-text-primary text-xl font-medium">{formatDate(selectedDate)}</h1>
         </div>
         
         <div className="flex items-center">          <button 
             onClick={() => toggleCalendar()} 
-            className={`p-2 rounded-lg transition-colors ${uiState.showCalendar ? 'bg-white/10' : 'hover:bg-white/10'}`}
+            className={`p-2 rounded-lg transition-colors ${uiState.showCalendar ? 'bg-hover-overlay' : 'hover:bg-hover-overlay'}`}
             aria-label="Open calendar"
             aria-expanded={uiState.showCalendar}
           >
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6 text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </button>
@@ -445,12 +445,12 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
       <main className="px-4 pb-24 pt-20">
         <div className="relative flex flex-col h-full">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold text-white">
+            <h2 className="text-2xl font-bold text-text-primary">
               Exercise Log - {selectedDate.toLocaleDateString()}
             </h2>
             <button
               onClick={() => toggleCalendar()}
-              className="px-4 py-2 text-white rounded-lg transition-colors"
+              className="px-4 py-2 text-text-primary rounded-lg transition-colors"
               aria-label="Toggle calendar"
               aria-expanded={uiState.showCalendar}
             >
@@ -463,11 +463,11 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#8B5CF6]"></div>
               </div>
             ) : exercises.length === 0 ? (
-              <div className="text-center py-8 text-gray-400">
+              <div className="text-center py-8 text-text-tertiary">
                 <p className="text-lg">No exercises logged for this date</p>
                 <button
                   onClick={() => updateUiState('showLogOptions', true)}
-                  className="mt-4 px-4 py-2 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white rounded-lg transition-colors"
+                  className="mt-4 px-4 py-2 bg-accent-primary hover:bg-accent-secondary text-text-primary rounded-lg transition-colors"
                 >
                   Add Exercise
                 </button>
@@ -489,7 +489,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
 
       {/* Calendar */}
       {uiState.showCalendar && (
-        <div className="fixed inset-0 bg-black/90 z-50">          <Calendar 
+        <div className="fixed inset-0 bg-bg-primary/90 z-50">          <Calendar 
             onClose={() => toggleCalendar(false)}
             onSelectExercises={handleExerciseSelect}
             onDateSelect={handleDateSelect}
@@ -502,7 +502,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
       <div className="fixed bottom-6 right-6 z-50">
         <button
           onClick={() => updateUiState('showLogOptions', true)}
-          className="w-16 h-16 bg-[#8B5CF6] hover:bg-[#7C3AED] rounded-full flex items-center justify-center text-white shadow-lg transition-colors"
+          className="w-16 h-16 bg-accent-primary hover:bg-accent-secondary rounded-full flex items-center justify-center text-text-primary shadow-lg transition-colors"
           aria-label="Add Exercise"
         >
           <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -544,7 +544,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
 
       {/* Log Options Modal */}
       {uiState.showLogOptions && (
-        <div className="fixed inset-0 bg-black/90 z-50">
+        <div className="fixed inset-0 bg-bg-primary/90 z-50">
           <LogOptions 
             onClose={() => {
               updateUiState('showLogOptions', false);
@@ -562,7 +562,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
 
       {/* Set Logger Modal */}
       {uiState.showSetLogger && selectedExercise && selectedExercise.id && (
-        <div className="fixed inset-0 bg-black/90 z-50">
+        <div className="fixed inset-0 bg-bg-primary/90 z-50">
           <ExerciseSetLogger
             exercise={{
               id: selectedExercise.id,
@@ -585,7 +585,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
 
       {/* Workout Summary Modal */}
       {uiState.showWorkoutSummary && exercises.length > 0 && (
-        <div className="fixed inset-0 bg-black/90 z-50">
+        <div className="fixed inset-0 bg-bg-primary/90 z-50">
           <WorkoutSummary
             exercises={exercises.map(ex => ({
               id: ex.id || 'temp-id',
@@ -603,7 +603,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
 
 const ExerciseLog: React.FC<ExerciseLogProps> = () => {
   return (
-    <ErrorBoundary fallback={<div className="text-white p-4">Error loading exercises. Please try again.</div>}>
+    <ErrorBoundary fallback={<div className="text-text-primary p-4">Error loading exercises. Please try again.</div>}>
       <SupersetProvider>
         <ExerciseLogContent />
       </SupersetProvider>
@@ -612,3 +612,5 @@ const ExerciseLog: React.FC<ExerciseLogProps> = () => {
 };
 
 export default ExerciseLog;
+
+
