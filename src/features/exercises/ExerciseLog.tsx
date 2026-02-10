@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { SupersetProvider, useSupersets } from '../../context/SupersetContext';
+import { useDate } from '../../context/DateContext';
 import { useNavigate } from 'react-router-dom';
 import { ExerciseLog as ExerciseLogType } from '../../types/exercise';
 import { ExerciseSet } from '../../types/sets';
@@ -28,14 +29,9 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   const navigate = useNavigate();
   const { user } = useSelector((state: RootState) => state.auth);
   const { removeExerciseFromSuperset, loadSupersetsForDate, saveSupersetsForDate } = useSupersets();
+  const { selectedDate, setSelectedDate, normalizeDate } = useDate();
   
   // Date utility functions
-  const normalizeDate = useCallback((date: Date): Date => {
-    const normalized = new Date(date);
-    normalized.setHours(0, 0, 0, 0);
-    return normalized;
-  }, []);
-
   const areDatesEqual = useCallback((date1: Date, date2: Date): boolean => {
     const normalized1 = normalizeDate(date1);
     const normalized2 = normalizeDate(date2);
@@ -72,12 +68,11 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   }, []);
 
   // Exercise data loading
-  const [selectedDate, setSelectedDate] = useState<Date>(() => normalizeDate(new Date()));
   const [exercises, setExercises] = useState<UnifiedExerciseData[]>([]);
   const [loading, setLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<ExerciseData | null>(null);
-  const [editingExercise, setEditingExercise] = useState<UnifiedExerciseData | null>(null); // Add editing state
+  const [editingExercise, setEditingExercise] = useState<UnifiedExerciseData | null>(null);
 
   // Convert local storage exercise to ExerciseData format
   const convertToExerciseData = useCallback((exercise: Omit<ExerciseLogType, 'id'> & { id?: string }, userId: string): ExerciseData => ({
@@ -167,12 +162,6 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
       setLoading(false);
     }
   }, [user?.id, areDatesEqual, normalizeDate, getDateRange, convertToExerciseData, loadSupersetsForDate]);
-  // Always ensure selectedDate is valid
-  useEffect(() => {
-    if (!selectedDate) {
-      setSelectedDate(new Date());
-    }
-  }, [selectedDate]);
   
   // Automatic initialization and data loading when user changes
   useEffect(() => {

@@ -3,6 +3,8 @@ import { Provider } from 'react-redux';
 import { store } from '@/store/store';
 import { HashRouter, useNavigate, useLocation } from 'react-router-dom';
 import { ProgramsProvider } from '@/context/ProgramsContext';
+import { SettingsProvider } from '@/context/SettingsContext';
+import { DateProvider } from '@/context/DateContext';
 import { Toaster } from 'react-hot-toast';
 import { StatePersistence } from '@/utils/statePersistence';
 import { useAndroidBackButton } from '@/hooks/useBackButton';
@@ -49,19 +51,23 @@ export const Providers: React.FC<ProvidersProps> = ({ children }) => {
         }}
       >
         <NavigationHandler />
-        <ProgramsProvider>
-          {children}
-          <Toaster 
-            position="top-center"
-            toastOptions={{
-              duration: 2000,
-              style: {
-                background: '#2a2a2a',
-                color: '#fff',
-              },
-            }}
-          />
-        </ProgramsProvider>
+        <SettingsProvider>
+          <DateProvider>
+            <ProgramsProvider>
+              {children}
+              <Toaster 
+                position="top-center"
+                toastOptions={{
+                  duration: 2000,
+                  style: {
+                    background: '#2a2a2a',
+                    color: '#fff',
+                  },
+                }}
+              />
+            </ProgramsProvider>
+          </DateProvider>
+        </SettingsProvider>
       </HashRouter>
     </Provider>
   );

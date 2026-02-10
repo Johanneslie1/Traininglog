@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
+import { useDate } from '@/context/DateContext';
 import SideMenu from '../SideMenu';
 import Settings from '../Settings';
 import WeeklyCalendarHeader from '../WeeklyCalendarHeader';
@@ -14,7 +15,7 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const { selectedDate, setSelectedDate } = useDate();
   const [showMonthlyCalendar, setShowMonthlyCalendar] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
