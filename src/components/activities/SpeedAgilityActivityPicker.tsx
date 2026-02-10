@@ -261,33 +261,60 @@ const SpeedAgilityActivityPicker: React.FC<SpeedAgilityActivityPickerProps> = ({
           <p className="text-[11px] text-gray-400">Showing <span className="text-yellow-400 font-semibold">{advancedFiltered.length}</span> of {enriched.length} drills</p>
         </div>
 
-        {/* Activities List */}
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {/* Activities List - Compact View */}
+        <div className="flex-1 overflow-y-auto px-4 py-2">
+          <div className="space-y-1">
             {advancedFiltered.map(ex => (
               <div
                 key={ex.id}
                 onClick={() => handleSelectEnriched(ex)}
-                className="bg-gray-800 rounded-lg p-4 cursor-pointer hover:bg-gray-700 transition-colors border border-gray-600"
+                className="relative flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer transition-all border bg-gray-800/50 border-transparent hover:bg-gray-800 hover:border-gray-600"
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleSelectEnriched(ex);
+                  }
+                }}
               >
-                <h3 className="text-lg font-semibold text-white mb-1">{ex.name}</h3>
-                {(ex as any).description && (
-                  <p className="text-gray-400 text-xs mb-2 line-clamp-3">{(ex as any).description}</p>
-                )}
-                <div className="flex flex-wrap gap-1">
-                  {ex.category && (
-                    <span className="px-2 py-0.5 bg-yellow-600 text-white text-[10px] rounded">{ex.category}</span>
+                {/* Main content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold truncate text-white">
+                      {ex.name}
+                    </h3>
+                    {/* Primary badge only */}
+                    {(ex.category || (ex as any).drillType) && (
+                      <span className="flex-shrink-0 px-2 py-0.5 bg-gray-700 border border-gray-600 text-gray-300 text-[10px] rounded uppercase tracking-wide">
+                        {ex.category || (ex as any).drillType}
+                      </span>
+                    )}
+                  </div>
+                  {/* Optional: Show description */}
+                  {(ex as any).description && (
+                    <p className="text-gray-400 text-xs mt-0.5 line-clamp-1">{(ex as any).description}</p>
                   )}
-                  {(ex as any).drillType && (
-                    <span className="px-2 py-0.5 bg-blue-600 text-white text-[10px] rounded">{(ex as any).drillType}</span>
-                  )}
-                  {(ex as any).difficulty && (
-                    <span className="px-2 py-0.5 bg-orange-600 text-white text-[10px] rounded">{(ex as any).difficulty}</span>
-                  )}
-                  {Array.from(((ex as any).tags || []) as string[]).slice(0,3).map((t: string) => (
-                    <span key={t} className="px-2 py-0.5 bg-gray-700 text-gray-200 text-[10px] rounded">{t}</span>
-                  ))}
                 </div>
+
+                {/* Difficulty indicator */}
+                {(ex as any).difficulty && (
+                  <div className="flex-shrink-0">
+                    <span className={`text-[10px] px-2 py-1 rounded ${
+                      (ex as any).difficulty === 'beginner' ? 'bg-green-600/20 text-green-400' :
+                      (ex as any).difficulty === 'intermediate' ? 'bg-yellow-600/20 text-yellow-400' :
+                      (ex as any).difficulty === 'advanced' ? 'bg-red-600/20 text-red-400' :
+                      'bg-gray-700 text-gray-300'
+                    }`}>
+                      {(ex as any).difficulty}
+                    </span>
+                  </div>
+                )}
+
+                {/* Right arrow indicator */}
+                <svg className="flex-shrink-0 w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
               </div>
             ))}
           </div>
