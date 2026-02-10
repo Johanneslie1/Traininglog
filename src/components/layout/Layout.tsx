@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import SideMenu from '../SideMenu';
-import AuthButtons from '../AuthButtons';
 import Settings from '../Settings';
 
 interface LayoutProps {
@@ -88,13 +87,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
-      )}
-
-      {/* Auth Buttons - Hide on program routes */}
-      {!isProgramRoute && (
-        <div className={`fixed top-4 z-30 ${isAuthenticated ? 'right-4' : 'left-1/2 transform -translate-x-1/2'}`}>
-          <AuthButtons />
-        </div>
       )}
 
       {/* Main Content */}
