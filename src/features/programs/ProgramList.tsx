@@ -268,6 +268,10 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
         onNavigateToday={() => navigate('/')}
         onNavigatePrograms={() => navigate('/programs')}
         onNavigateExercises={() => navigate('/exercises?showCreate=true')}
+        onOpenSettings={() => {
+          setShowSideMenu(false);
+          navigate('/');
+        }}
       />
     </div>
   );

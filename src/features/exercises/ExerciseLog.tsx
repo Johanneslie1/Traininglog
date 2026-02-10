@@ -528,6 +528,10 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
         onNavigateToday={() => setSelectedDate(new Date())}
         onNavigatePrograms={() => { navigate('/programs'); }}
         onNavigateExercises={() => { navigate('/exercises'); }}
+        onOpenSettings={() => {
+          updateUiState('showMenu', false);
+          navigate('/');
+        }}
       />
 
       {/* Log Options Modal */}

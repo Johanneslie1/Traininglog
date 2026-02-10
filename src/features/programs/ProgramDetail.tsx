@@ -492,6 +492,10 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
         onNavigateToday={() => navigate('/')}
         onNavigatePrograms={() => navigate('/programs')}
         onNavigateExercises={() => navigate('/exercises?showCreate=true')}
+        onOpenSettings={() => {
+          setShowSideMenu(false);
+          navigate('/');
+        }}
       />
     </div>
   );
