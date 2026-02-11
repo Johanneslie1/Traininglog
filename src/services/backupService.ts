@@ -104,7 +104,8 @@ export async function exportFullBackup(userId?: string): Promise<BackupData> {
     // Export settings from localStorage
     const settings: AppSettings = {
       defaultWeightIncrements: 2.5,
-      defaultUnits: 'kg'
+      defaultUnits: 'kg',
+      useProgressiveOverload: false
     };
 
     // Try to get settings from localStorage

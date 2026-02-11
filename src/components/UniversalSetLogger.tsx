@@ -18,7 +18,6 @@ import {
   getDaysSinceLastSession,
   formatProgressionRationale
 } from '@/services/progressiveOverloadService';
-import { format } from 'date-fns';
 
 interface UniversalSetLoggerProps {
   exercise: Exercise;

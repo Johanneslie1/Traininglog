@@ -427,10 +427,8 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
       <SideMenu
         isOpen={uiState.showMenu}
         onClose={() => updateUiState('showMenu', false)}
-        onShowWorkoutSummary={() => updateUiState('showWorkoutSummary', true)}
         onNavigateToday={() => setSelectedDate(new Date())}
         onNavigatePrograms={() => { navigate('/programs'); }}
-        onNavigateExercises={() => { navigate('/exercises'); }}
         onOpenSettings={() => {
           updateUiState('showMenu', false);
           setShowSettings(true);

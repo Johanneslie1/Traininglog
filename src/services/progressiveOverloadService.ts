@@ -38,34 +38,6 @@ const calculateAverageRIR = (sets: ExerciseSet[]): number => {
 };
 
 /**
- * Get the most common weight used in the last session
- */
-const getMostCommonWeight = (sets: ExerciseSet[]): number => {
-  const weights = sets
-    .filter(s => s.weight !== undefined && s.weight > 0)
-    .map(s => s.weight);
-  
-  if (weights.length === 0) return 0;
-  
-  // Find most frequent weight or use the highest
-  const weightCounts = new Map<number, number>();
-  weights.forEach(w => {
-    weightCounts.set(w, (weightCounts.get(w) || 0) + 1);
-  });
-  
-  let mostCommonWeight = 0;
-  let maxCount = 0;
-  weightCounts.forEach((count, weight) => {
-    if (count > maxCount || (count === maxCount && weight > mostCommonWeight)) {
-      mostCommonWeight = weight;
-      maxCount = count;
-    }
-  });
-  
-  return mostCommonWeight;
-};
-
-/**
  * Get the average reps from the last session
  */
 const getAverageReps = (sets: ExerciseSet[]): number => {
@@ -101,7 +73,6 @@ export function calculateProgressiveSuggestions(
   // Calculate metrics from last session
   const avgRPE = calculateAverageRPE(lastSets);
   const avgRIR = calculateAverageRIR(lastSets);
-  const lastWeight = getMostCommonWeight(lastSets);
   const lastReps = getAverageReps(lastSets);
   
   // Determine progression strategy based on intensity and recovery

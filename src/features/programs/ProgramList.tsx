@@ -303,10 +303,8 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
       <SideMenu
         isOpen={showSideMenu}
         onClose={() => setShowSideMenu(false)}
-        onShowWorkoutSummary={() => {}}
         onNavigateToday={() => navigate('/')}
         onNavigatePrograms={() => navigate('/programs')}
-        onNavigateExercises={() => navigate('/exercises?showCreate=true')}
         onOpenSettings={() => {
           setShowSideMenu(false);
           setShowSettings(true);

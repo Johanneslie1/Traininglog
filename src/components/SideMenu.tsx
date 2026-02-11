@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { logoutUser } from '@/services/firebase/auth';
@@ -152,7 +152,6 @@ const SideMenu: React.FC<SideMenuProps> = ({
                 Sign Up
               </button>
             </div>
-          )}
           )}
         </div>
       </div>
