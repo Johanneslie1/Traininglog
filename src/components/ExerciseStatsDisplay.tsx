@@ -44,7 +44,7 @@ const ExerciseStatsDisplay: React.FC<ExerciseStatsDisplayProps> = ({
               </span>
             )}
             {stats.maxWeight && (
-              <span className="text-green-400">
+              <span className="text-text-secondary">
                 {stats.maxWeight} kg max
               </span>
             )}
@@ -68,7 +68,7 @@ const ExerciseStatsDisplay: React.FC<ExerciseStatsDisplayProps> = ({
               </span>
             )}
             {stats.totalVolume && (
-              <span className="text-green-400">
+              <span className="text-text-secondary">
                 {stats.totalVolume} cm max height
               </span>
             )}
@@ -91,7 +91,7 @@ const ExerciseStatsDisplay: React.FC<ExerciseStatsDisplayProps> = ({
               </span>
             )}
             {stats.totalDistance && (
-              <span className="text-green-400">
+              <span className="text-text-secondary">
                 {stats.totalDistance.toFixed(2)} km
               </span>
             )}

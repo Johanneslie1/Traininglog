@@ -60,9 +60,9 @@ export const WorkoutSummary: React.FC<WorkoutSummaryProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
       <div className="w-full max-w-md mx-4 bg-bg-secondary rounded-lg max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="bg-green-600 p-4 text-center">
+        <div className="bg-accent-primary p-4 text-center">
           <div className="text-text-primary text-lg font-bold mb-1">Workout Complete!</div>
-          <div className="text-green-100 text-sm">
+          <div className="text-text-secondary text-sm">
             {formatDate(new Date(exercises[0]?.timestamp || Date.now()))}
           </div>
         </div>
@@ -108,7 +108,7 @@ export const WorkoutSummary: React.FC<WorkoutSummaryProps> = ({
                     if (set.difficulty) {
                       switch (set.difficulty) {
                         case DifficultyCategory.WARMUP: bgColor = 'bg-blue-600'; break;
-                        case DifficultyCategory.EASY: bgColor = 'bg-green-600'; break;
+                        case DifficultyCategory.EASY: bgColor = 'bg-gray-600'; break;
                         case DifficultyCategory.NORMAL: bgColor = 'bg-yellow-600'; break;
                         case DifficultyCategory.HARD: bgColor = 'bg-red-600'; break;
                         default: bgColor = 'bg-gray-700';

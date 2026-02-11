@@ -18,7 +18,7 @@
   
   /* Difficulty Colors */
   --color-warmup: #60A5FA;
-  --color-easy: #34D399;
+  --color-easy: #B0B0B0;
   --color-normal: #F59E0B;
   --color-hard: #EF4444;
   --color-failure: #EC4899;
@@ -78,7 +78,7 @@
   
   /* Difficulty Colors */
   --color-warmup: #3B82F6;
-  --color-easy: #10B981;
+  --color-easy: #525252;
   --color-normal: #F59E0B;
   --color-hard: #EF4444;
   --color-failure: #EC4899;
