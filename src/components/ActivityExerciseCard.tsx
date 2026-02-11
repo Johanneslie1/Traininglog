@@ -292,9 +292,9 @@ const ActivityExerciseCard: React.FC<ActivityExerciseCardProps> = ({
         return (
           <div className="flex items-center gap-2 text-sm">
             {set.holdTime && <span className="text-text-primary">{set.holdTime}s</span>}
-            {set.reps && <span className="text-purple-300">×{set.reps}</span>}
+            {set.reps && <span className="text-text-primary">×{set.reps}</span>}
             {set.intensity && <span className="text-text-tertiary">{set.intensity}/10</span>}
-            {set.stretchType && <span className="text-purple-200 text-xs">{set.stretchType}</span>}
+            {set.stretchType && <span className="text-text-secondary text-xs">{set.stretchType}</span>}
           </div>
         );
       case ActivityType.SPORT:

@@ -942,7 +942,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
                     
                     {/* Compact set summary based on exercise type */}
                     {!isExpanded && (
-                      <div className="flex items-center gap-2 text-white font-medium truncate">
+                      <div className="flex items-center gap-2 text-text-primary font-medium truncate">
                         {exerciseType === 'strength' || exerciseType === 'bodyweight' ? (
                           <span>{set.weight || 0}kg × {set.reps || 0}</span>
                         ) : exerciseType === 'endurance' ? (

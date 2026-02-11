@@ -308,9 +308,9 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
                         <div key={setIndex} className="flex items-center gap-4 text-sm">
                           <span className="text-gray-400 w-8">#{setIndex + 1}</span>
                           <div className="flex items-center gap-2">
-                            <span className="text-white">{set.weight || 0}kg</span>
+                            <span className="text-text-primary">{set.weight || 0}kg</span>
                             <span className="text-gray-400">×</span>
-                            <span className="text-white">{set.reps || 0} reps</span>
+                            <span className="text-text-primary">{set.reps || 0} reps</span>
                             {set.difficulty && (
                               <span className="text-xs px-2 py-1 bg-gray-700 text-gray-300 rounded">
                                 {set.difficulty}

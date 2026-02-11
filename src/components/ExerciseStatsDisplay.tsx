@@ -240,7 +240,7 @@ const ExerciseStatsDisplay: React.FC<ExerciseStatsDisplayProps> = ({
           details.push(<span key="height">{set.height}cm</span>);
         }
         if (set.intensity) {
-          details.push(<span key="intensity" className="text-blue-400">Intensity {set.intensity}</span>);
+          details.push(<span key="intensity" className="text-text-secondary">Intensity {set.intensity}</span>);
         }
         if (set.rpe) {
           details.push(<span key="rpe" className="text-text-secondary">RPE {set.rpe}</span>);

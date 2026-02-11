@@ -74,7 +74,7 @@ const WorkoutAnalytics: React.FC<WorkoutAnalyticsProps> = ({
         </div>
         
         <div className="space-y-1">
-          <div className="text-lg font-semibold text-gray-900 dark:text-white">{totalReps}</div>
+          <div className="text-lg font-semibold text-text-primary">{totalReps}</div>
           <div className="text-xs text-gray-500 dark:text-gray-400">Total Reps</div>
         </div>
       </div>
@@ -83,12 +83,12 @@ const WorkoutAnalytics: React.FC<WorkoutAnalyticsProps> = ({
       <div className="mt-4 pt-3 border-t border-gray-200 dark:border-border">
         <div className="grid grid-cols-2 gap-4 text-center text-xs">
           <div className="space-y-1">
-            <div className="text-sm font-medium text-gray-900 dark:text-white">{estimatedDuration}min</div>
+            <div className="text-sm font-medium text-text-primary">{estimatedDuration}min</div>
             <div className="text-gray-500 dark:text-gray-400">Est. Duration</div>
           </div>
           
           <div className="space-y-1">
-            <div className="text-sm font-medium text-gray-900 dark:text-white">
+            <div className="text-sm font-medium text-text-primary">
               {intensityScore >= 10000 ? `${Math.round(intensityScore / 1000)}k` : Math.round(intensityScore)}
             </div>
             <div className="text-gray-500 dark:text-gray-400">Intensity</div>
