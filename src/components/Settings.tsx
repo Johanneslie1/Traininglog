@@ -4,6 +4,7 @@ import { RootState } from '@/store/store';
 import { exportData, downloadCSV, downloadActivityCSVs, getExportPreview, ExportPreview, ExportOptions } from '@/services/exportService';
 import { exportFullBackup, downloadBackupJson } from '@/services/backupService';
 import { useTheme, Theme } from '@/context/ThemeContext';
+import { useSettings } from '@/context/SettingsContext';
 
 type DateRangePreset = 'last7days' | 'last30days' | 'thisMonth' | 'lastMonth' | 'allTime' | 'custom';
 
@@ -219,13 +220,14 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
   };
 
   const { theme, setTheme } = useTheme();
+  const { settings: appSettings, updateSetting } = useSettings();
 
   const [settings, setSettings] = useState<Setting[]>([
     {
       id: 'defaultIncrements',
       label: 'Default Weight Increments',
       type: 'select',
-      value: 2.5,
+      value: appSettings.defaultWeightIncrements,
       options: [
         { label: '1.0 kg', value: 1.0 },
         { label: '2.5 kg', value: 2.5 },
@@ -234,10 +236,25 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
     }
   ]);
 
+  // Sync local state with context when appSettings change
+  useEffect(() => {
+    setSettings(prev => prev.map(setting => {
+      if (setting.id === 'defaultIncrements') {
+        return { ...setting, value: appSettings.defaultWeightIncrements };
+      }
+      return setting;
+    }));
+  }, [appSettings.defaultWeightIncrements]);
+
   const handleSettingChange = (id: string, value: any) => {
     setSettings(prev => prev.map(setting => 
       setting.id === id ? { ...setting, value } : setting
     ));
+    
+    // Update the context as well
+    if (id === 'defaultIncrements') {
+      updateSetting('defaultWeightIncrements', value);
+    }
   };
 
   const handleThemeChange = (newTheme: Theme) => {
@@ -280,6 +297,29 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                   <option value="dark">Dark</option>
                   <option value="system">System</option>
                 </select>
+              </div>
+
+              {/* Progressive Overload Auto-fill Toggle */}
+              <div className="flex items-start justify-between py-2">
+                <div className="flex-1 pr-4">
+                  <div className="text-text-primary font-medium">Progressive Overload Auto-fill</div>
+                  <p className="text-text-tertiary text-sm mt-1">
+                    Automatically pre-fill resistance exercises with smart weight, rep, and RPE suggestions based on your previous session
+                  </p>
+                </div>
+                <button
+                  onClick={() => updateSetting('useProgressiveOverload', !appSettings.useProgressiveOverload)}
+                  className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${
+                    appSettings.useProgressiveOverload ? 'bg-accent-primary' : 'bg-bg-tertiary'
+                  }`}
+                  aria-label="Toggle progressive overload auto-fill"
+                >
+                  <div
+                    className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transform transition-transform ${
+                      appSettings.useProgressiveOverload ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
               </div>
               
               {settings.map((setting) => (

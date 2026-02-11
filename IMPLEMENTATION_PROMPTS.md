@@ -520,6 +520,34 @@ Create:
 
 ## Utility Prompts
 
+### Prompt: Streamline Sidebar Navigation
+
+```
+Remove unnecessary buttons from the left sidebar to simplify navigation.
+
+Current location: `src/components/SideMenu.tsx`
+
+Remove the following three buttons:
+1. **Exercise Database** (lines ~87-92) - Users access exercises through the main exercise logging flow
+2. **Workout Summary** (lines ~97-105) - Functionality not fully implemented and redundant with analytics
+3. **Superset Guide** (lines ~118-126) - Documentation that doesn't need prominent placement
+
+Additional cleanup:
+- Remove `onShowWorkoutSummary` prop from SideMenuProps interface
+- Remove `showSupersetGuide` state (line ~28)
+- Remove SupersetGuide import (line ~7)
+- Remove SupersetGuide modal component at bottom (lines ~191-194)
+- Update parent component `src/components/layout/Layout.tsx` to remove the `onShowWorkoutSummary` prop passing
+
+Keep the core navigation:
+- Exercise Log
+- Programs  
+- Settings
+- Auth buttons (Login/Logout)
+
+This streamlines the UI to focus on essential features without removing actual functionality.
+```
+
 ### Prompt: Add Loading States
 
 ```

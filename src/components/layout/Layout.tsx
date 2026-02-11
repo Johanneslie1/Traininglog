@@ -31,10 +31,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     !isProgramRoute && 
     (location.pathname === '/' || location.pathname === '/exercises');
   
-  const handleShowWorkoutSummary = () => {
-    // TODO: Implement workout summary functionality
-  };
-
   // Navigation handlers
   const handleNavigate = (path: string) => {
     setShowMenu(false);
@@ -73,10 +69,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <SideMenu
           isOpen={showMenu}
           onClose={() => setShowMenu(false)}
-          onShowWorkoutSummary={handleShowWorkoutSummary}
           onNavigateToday={() => handleNavigate('/')}
           onNavigatePrograms={() => handleNavigate('/programs')}
-          onNavigateExercises={() => handleNavigate('/exercises?showCreate=true')}
           onOpenSettings={() => {
             setShowMenu(false);
             setShowSettings(true);

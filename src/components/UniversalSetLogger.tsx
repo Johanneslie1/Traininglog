@@ -11,6 +11,14 @@ import TemplateSelector from './templates/TemplateSelector';
 import CustomTemplateManager from './templates/CustomTemplateManager';
 import { WorkoutTemplate } from '@/types/workoutTemplate';
 import { applyTemplate } from '@/services/workoutTemplateService';
+import { useSettings } from '@/context/SettingsContext';
+import { 
+  calculateProgressiveSuggestions, 
+  shouldApplyProgressiveOverload,
+  getDaysSinceLastSession,
+  formatProgressionRationale
+} from '@/services/progressiveOverloadService';
+import { format } from 'date-fns';
 
 interface UniversalSetLoggerProps {
   exercise: Exercise;
@@ -234,9 +242,12 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
   
   // Fetch exercise history for progressive overload context
   const exerciseHistory = useExerciseHistory(exercise.name);
+  const { settings } = useSettings();
   const [showRPEHelper, setShowRPEHelper] = useState(false);
   const [expandedSetIndex, setExpandedSetIndex] = useState<number | null>(null);
   const [lastAddedIndex, setLastAddedIndex] = useState<number | null>(null);
+  const [isPreFilled, setIsPreFilled] = useState(false);
+  const [progressionRationale, setProgressionRationale] = useState<string>('');
   
   // Template system state
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
@@ -248,21 +259,55 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
   // Ref for scrolling to new sets
   const setListRef = useRef<HTMLDivElement>(null);
 
-  // Initialize sets
+  // Initialize sets with progressive overload auto-fill
   useEffect(() => {
     if (initialSets && initialSets.length > 0) {
-      // Deep clone the initial sets to prevent reference issues
+      // Editing existing exercise - use provided sets
       const clonedSets = initialSets.map(set => ({ ...set }));
       setSets(clonedSets);
-      // Generate stable IDs for existing sets
       const ids = clonedSets.map((_, index) => `set-${exercise.name}-${index}-${Date.now()}`);
       setSetIds(ids);
+      setIsPreFilled(false);
+    } else if (
+      !isEditing && 
+      settings.useProgressiveOverload && 
+      shouldApplyProgressiveOverload(exerciseHistory.lastPerformed, exerciseType)
+    ) {
+      // NEW: Auto-fill with progressive overload suggestions
+      const lastSession = exerciseHistory.lastPerformed!;
+      const daysSince = getDaysSinceLastSession(lastSession.timestamp);
+      const suggestions = calculateProgressiveSuggestions(lastSession, daysSince);
+      
+      if (suggestions.length > 0) {
+        setSets(suggestions);
+        const ids = suggestions.map((_, index) => `set-${exercise.name}-${index}-${Date.now()}`);
+        setSetIds(ids);
+        setIsPreFilled(true);
+        
+        // Set rationale for display
+        const rationale = formatProgressionRationale(lastSession, suggestions, daysSince);
+        setProgressionRationale(rationale);
+        
+        // Show success notification
+        toast.success(
+          `Pre-filled based on last session (${lastSession.summary})`,
+          { duration: 3000, icon: '📈' }
+        );
+      } else {
+        // Fallback to default
+        const defaultSet = getDefaultSet(exerciseType);
+        setSets([defaultSet]);
+        setSetIds([`set-${exercise.name}-0-${Date.now()}`]);
+        setIsPreFilled(false);
+      }
     } else {
+      // Default empty set (no history or setting disabled)
       const defaultSet = getDefaultSet(exerciseType);
       setSets([defaultSet]);
       setSetIds([`set-${exercise.name}-0-${Date.now()}`]);
+      setIsPreFilled(false);
     }
-  }, [initialSets, exerciseType, exercise.name]);
+  }, [initialSets, exerciseType, exercise.name, isEditing, settings.useProgressiveOverload, exerciseHistory.lastPerformed]);
 
   const addSet = useCallback(() => {
     const lastSet = sets[sets.length - 1];
@@ -827,6 +872,39 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
               onCopyLastValues={handleCopyLastHistoryValues}
               compact={false}
             />
+          </div>
+        )}
+
+        {/* Progressive Overload Pre-fill Banner */}
+        {isPreFilled && !isEditing && (
+          <div className="mt-3 bg-blue-600/20 border border-blue-500/50 rounded-lg p-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-lg">📈</span>
+                  <p className="text-white text-sm font-medium">
+                    Pre-filled for Progressive Overload
+                  </p>
+                </div>
+                <p className="text-gray-300 text-xs leading-relaxed">
+                  {progressionRationale}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  const defaultSet = getDefaultSet(exerciseType);
+                  setSets([defaultSet]);
+                  setSetIds([`set-${exercise.name}-0-${Date.now()}`]);
+                  setIsPreFilled(false);
+                  setProgressionRationale('');
+                  toast.success('Cleared suggestions', { duration: 1500 });
+                }}
+                className="flex-shrink-0 text-xs text-blue-400 hover:text-blue-300 transition-colors px-2 py-1 rounded hover:bg-blue-600/30"
+                aria-label="Clear pre-filled values"
+              >
+                Clear
+              </button>
+            </div>
           </div>
         )}
       </div>

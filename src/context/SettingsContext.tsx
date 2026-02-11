@@ -5,6 +5,7 @@ import { convertExerciseLogsUnits, convertTemplates } from '@/utils/exerciseConv
 export interface AppSettings {
   defaultWeightIncrements: number;
   defaultUnits: 'kg' | 'lb';
+  useProgressiveOverload: boolean;
 }
 
 interface SettingsContextType {
@@ -16,6 +17,7 @@ interface SettingsContextType {
 const defaultSettings: AppSettings = {
   defaultWeightIncrements: 2.5,
   defaultUnits: 'kg',
+  useProgressiveOverload: true, // Enable by default for better UX
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
