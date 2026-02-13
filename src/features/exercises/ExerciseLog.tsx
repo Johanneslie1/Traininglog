@@ -22,6 +22,7 @@ import Settings from '../../components/Settings';
 import DraggableExerciseDisplay from '../../components/DraggableExerciseDisplay';
 import FloatingSupersetControls from '../../components/FloatingSupersetControls';
 import { getAllExercisesByDate, UnifiedExerciseData, deleteExercise } from '../../utils/unifiedExerciseUtils';
+import { FloatingActionButton, EmptyState, ExerciseListSkeleton } from '../../components/ui';
 
 interface ExerciseLogProps {}
 
@@ -371,19 +372,17 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
         <div className="relative flex flex-col h-full">
           <div className="flex-grow">
             {loading ? (
-              <div className="flex justify-center items-center h-32">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#8B5CF6]"></div>
-              </div>
+              <ExerciseListSkeleton count={3} />
             ) : exercises.length === 0 ? (
-              <div className="text-center py-8 text-text-tertiary">
-                <p className="text-lg">No exercises logged for this date</p>
-                <button
-                  onClick={() => updateUiState('showLogOptions', true)}
-                  className="mt-4 px-4 py-2 bg-accent-primary hover:bg-accent-secondary text-text-primary rounded-lg transition-colors"
-                >
-                  Add Exercise
-                </button>
-              </div>
+              <EmptyState
+                illustration="workout"
+                title="Ready to Track Your Workout?"
+                description="Start logging to see your progress, track PRs, and build consistency"
+                primaryAction={{
+                  label: 'Log First Exercise',
+                  onClick: () => updateUiState('showLogOptions', true)
+                }}
+              />
             ) : (
               <div className="space-y-4">
                 {/* Exercise display with drag and drop */}
@@ -399,18 +398,12 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
         </div>
       </main>
 
-      {/* Add Button */}
-      <div className="fixed bottom-6 right-6 z-50">
-        <button
-          onClick={() => updateUiState('showLogOptions', true)}
-          className="w-16 h-16 bg-accent-primary hover:bg-accent-secondary rounded-full flex items-center justify-center text-text-primary shadow-lg transition-colors"
-          aria-label="Add Exercise"
-        >
-          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-        </button>
-      </div>
+      {/* Floating Action Button */}
+      <FloatingActionButton
+        onClick={() => updateUiState('showLogOptions', true)}
+        label="Add Exercise"
+        position="bottom-right"
+      />
       {/* Program Modal */}
       {uiState.showProgramModal && (
         <ProgramModal
