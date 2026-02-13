@@ -325,7 +325,7 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
             <div className="mt-6">
               <button
                 onClick={handleCreateExercise}
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-purple-600 text-text-primary font-medium hover:bg-purple-700 transition-colors"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-accent-primary text-text-primary font-medium hover:bg-accent-hover transition-colors"
               >
                 <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 102 0v-5h5a1 1 0 100-2h-5V4a1 1 0 00-1-1z" clipRule="evenodd" />

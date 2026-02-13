@@ -61,19 +61,19 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
     const type = activityType || ActivityType.RESISTANCE;
     switch (type) {
       case ActivityType.RESISTANCE:
-        return { label: 'Resistance', color: 'bg-blue-600', textColor: 'text-blue-100' };
+        return { label: 'Resistance', color: 'bg-activity-resistance', textColor: 'text-white' };
       case ActivityType.SPORT:
-        return { label: 'Sport', color: 'bg-green-600', textColor: 'text-green-100' };
+        return { label: 'Sport', color: 'bg-activity-sport', textColor: 'text-white' };
       case ActivityType.STRETCHING:
-        return { label: 'Stretching', color: 'bg-purple-600', textColor: 'text-purple-100' };
+        return { label: 'Stretching', color: 'bg-activity-stretching', textColor: 'text-white' };
       case ActivityType.ENDURANCE:
-        return { label: 'Endurance', color: 'bg-orange-600', textColor: 'text-orange-100' };
+        return { label: 'Endurance', color: 'bg-activity-endurance', textColor: 'text-white' };
       case ActivityType.SPEED_AGILITY:
-        return { label: 'Speed/Agility', color: 'bg-red-600', textColor: 'text-red-100' };
+        return { label: 'Speed/Agility', color: 'bg-activity-speed', textColor: 'text-white' };
       case ActivityType.OTHER:
-        return { label: 'Other', color: 'bg-gray-600', textColor: 'text-gray-100' };
+        return { label: 'Other', color: 'bg-activity-other', textColor: 'text-white' };
       default:
-        return { label: 'Resistance', color: 'bg-blue-600', textColor: 'text-blue-100' };
+        return { label: 'Resistance', color: 'bg-activity-resistance', textColor: 'text-white' };
     }
   };
 

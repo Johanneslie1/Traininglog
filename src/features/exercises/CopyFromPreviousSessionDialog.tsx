@@ -238,7 +238,7 @@ const CopyFromPreviousSessionDialog: React.FC<Props> = ({
                 </div>
                 <div className="flex gap-3">
                   <button
-                    className="px-4 py-2 text-sm font-medium text-text-primary bg-purple-600 rounded-lg hover:bg-purple-500 transition-colors"
+                    className="px-4 py-2 text-sm font-medium text-text-primary bg-accent-primary rounded-lg hover:bg-accent-hover transition-colors"
                     onClick={handleSelectAll}
                   >
                     Select All
@@ -329,7 +329,7 @@ const CopyFromPreviousSessionDialog: React.FC<Props> = ({
                 </span>
               )}
               <button
-                className="px-6 py-2 bg-purple-600 text-text-primary rounded-lg hover:bg-purple-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-6 py-2 bg-accent-primary text-text-primary rounded-lg hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 onClick={handleCopy}
                 disabled={selectedExercises.size === 0}
               >

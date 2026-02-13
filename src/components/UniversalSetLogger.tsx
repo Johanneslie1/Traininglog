@@ -1021,7 +1021,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
         {/* Template Button - Apply workout patterns */}
         <button
           onClick={() => setShowTemplateSelector(true)}
-          className="w-full py-2.5 sm:py-3 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 active:bg-purple-600/40 text-purple-300 font-medium transition-colors border border-purple-500/30 touch-manipulation"
+          className="w-full py-2.5 sm:py-3 rounded-lg bg-accent-primary/20 hover:bg-accent-primary/30 active:bg-accent-primary/40 text-accent-300 font-medium transition-colors border border-accent-500/30 touch-manipulation"
         >
           ✨ Apply Template
         </button>
@@ -1057,7 +1057,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
             </div>
             <button
               onClick={() => setShowRPEHelper(false)}
-              className="mt-4 w-full py-2 bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors"
+              className="mt-4 w-full py-2 bg-accent-primary hover:bg-accent-hover text-white rounded transition-colors"
             >
               Close
             </button>
@@ -1070,7 +1070,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
           <button
             onClick={handleSave}
-            className="flex-1 py-3 rounded-lg bg-purple-600 text-white font-medium hover:bg-purple-700 active:bg-purple-800 transition-colors touch-manipulation text-base"
+            className="flex-1 py-3 rounded-lg bg-accent-primary text-white font-medium hover:bg-accent-hover active:bg-accent-active transition-colors touch-manipulation text-base"
           >
             {isEditing ? 'Update' : 'Save'} {getSetLabel()}{sets.length !== 1 ? 's' : ''}
           </button>

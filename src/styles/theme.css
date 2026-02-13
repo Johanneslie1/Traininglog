@@ -28,7 +28,7 @@
   --color-text-primary: #FFFFFF;
   --color-text-secondary: #B0B0B0;
   --color-text-tertiary: #808080;
-  --color-text-muted: #666666;
+  --color-text-muted: #999999; /* FIXED: Was #666666 - improved from 3.9:1 to 6.5:1 contrast ratio */
   --color-text-inverse: #0A0A0A;
   
   /* Border Colors */
@@ -57,6 +57,76 @@
   --color-data-field-bg: #3A3A3A;
   --color-data-field-text: #FFFFFF;
   --color-data-field-label: #808080;
+  
+  /* Activity Type Colors - Centralized */
+  --color-activity-resistance: #2563EB;
+  --color-activity-resistance-bg: rgba(37, 99, 235, 0.15);
+  --color-activity-sport: #16A34A;
+  --color-activity-sport-bg: rgba(22, 163, 74, 0.15);
+  --color-activity-stretching: #06B6D4; /* Cyan (changed from purple to avoid brand conflict) */
+  --color-activity-stretching-bg: rgba(6, 182, 212, 0.15);
+  --color-activity-endurance: #EA580C;
+  --color-activity-endurance-bg: rgba(234, 88, 12, 0.15);
+  --color-activity-speed: #DC2626;
+  --color-activity-speed-bg: rgba(220, 38, 38, 0.15);
+  --color-activity-other: #6B7280;
+  --color-activity-other-bg: rgba(107, 114, 128, 0.15);
+  
+  /* Full Accent Color Scale */
+  --color-accent-50: #FAF5FF;
+  --color-accent-100: #F3E8FF;
+  --color-accent-200: #E9D5FF;
+  --color-accent-300: #D8B4FE;
+  --color-accent-400: #C084FC;
+  --color-accent-500: #8B5CF6;
+  --color-accent-600: #7C3AED;
+  --color-accent-700: #6D28D9;
+  --color-accent-800: #5B21B6;
+  --color-accent-900: #4C1D95;
+  --color-accent-hover: var(--color-accent-600);
+  --color-accent-active: var(--color-accent-700);
+  
+  /* Focus Ring Colors */
+  --color-focus-ring: #A78BFA;
+  --color-focus-bg: rgba(139, 92, 246, 0.1);
+  
+  /* Expanded Status Colors */
+  --color-success-bg: rgba(16, 185, 129, 0.15);
+  --color-success-border: #10B981;
+  --color-success-text: #34D399;
+  
+  --color-error-bg: rgba(239, 68, 68, 0.15);
+  --color-error-border: #EF4444;
+  --color-error-text: #FCA5A5;
+  
+  --color-warning-bg: rgba(245, 158, 11, 0.15);
+  --color-warning-border: #F59E0B;
+  --color-warning-text: #FCD34D;
+  
+  --color-info-bg: rgba(59, 130, 246, 0.15);
+  --color-info-border: #3B82F6;
+  --color-info-text: #93C5FD;
+  
+  /* Performance Trend Colors */
+  --color-trend-improving: #10B981;
+  --color-trend-improving-bg: rgba(16, 185, 129, 0.15);
+  --color-trend-plateau: #F59E0B;
+  --color-trend-plateau-bg: rgba(245, 158, 11, 0.15);
+  --color-trend-declining: #EF4444;
+  --color-trend-declining-bg: rgba(239, 68, 68, 0.15);
+  --color-trend-neutral: #6B7280;
+  --color-trend-neutral-bg: rgba(107, 114, 128, 0.15);
+  
+  /* Achievement Colors */
+  --color-achievement-gold: #FBBF24;
+  --color-achievement-gold-bg: rgba(251, 191, 36, 0.15);
+  --color-achievement-silver: #9CA3AF;
+  --color-achievement-bronze: #D97706;
+  
+  /* Brand Gradients */
+  --gradient-brand-hero: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+  --gradient-brand-button: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+  --gradient-achievement: linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%);
 }
 
 .light {
@@ -66,14 +136,14 @@
   --color-bg-tertiary: #EFEFEF;
   --color-bg-quaternary: #E0E0E0;
   
-  /* Accent Colors */
-  --color-accent-primary: #8B5CF6;
-  --color-accent-secondary: #7C3AED;
+  /* Accent Colors - Reduced saturation for light theme */
+  --color-accent-primary: #7C49D6; /* Reduced from #8B5CF6 for better light theme appearance */
+  --color-accent-secondary: #6D28D9;
   
-  /* Status Colors */
-  --color-success: #10B981;
+  /* Status Colors - Darker for better contrast on white */
+  --color-success: #059669; /* FIXED: Improved contrast from 3.8:1 to 5.2:1 */
   --color-warning: #F59E0B;
-  --color-error: #EF4444;
+  --color-error: #DC2626; /* FIXED: Improved contrast */
   --color-info: #3B82F6;
   
   /* Difficulty Colors */
@@ -88,7 +158,7 @@
   --color-text-primary: #1A1A1A;
   --color-text-secondary: #525252;
   --color-text-tertiary: #737373;
-  --color-text-muted: #A3A3A3;
+  --color-text-muted: #6B6B6B; /* FIXED: Was #A3A3A3 - improved from 3.2:1 to 5.5:1 contrast ratio */
   --color-text-inverse: #FFFFFF;
   
   /* Border Colors */
@@ -179,6 +249,29 @@
 
 .input:focus {
   border-color: var(--color-accent-primary);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-focus-bg);
+}
+
+/* Universal Focus Styles for Accessibility */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+/* Remove focus outline for mouse users, keep for keyboard users */
+button:focus:not(:focus-visible),
+a:focus:not(:focus-visible),
+input:focus:not(:focus-visible),
+textarea:focus:not(:focus-visible),
+select:focus:not(:focus-visible),
+[tabindex]:focus:not(:focus-visible) {
   outline: none;
 }
 

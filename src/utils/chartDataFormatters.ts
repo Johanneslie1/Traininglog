@@ -1,12 +1,41 @@
 import { VolumeDataPoint, MuscleVolumeData, TrainingFrequencyData, HeatmapCell, IntensityLevel, ChartDataset } from '@/types/analytics';
 
 /**
+ * Default chart color palette (vibrant, dark-theme optimized)
+ */
+export const DEFAULT_CHART_COLORS = [
+  '#3b82f6', // Blue
+  '#10b981', // Green
+  '#f59e0b', // Amber
+  '#ef4444', // Red
+  '#8b5cf6', // Purple (brand)
+  '#ec4899', // Pink
+  '#14b8a6', // Teal
+  '#f97316', // Orange
+];
+
+/**
+ * Colorblind-safe palette (tested for deuteranopia & protanopia)
+ * Use this for accessibility-first charts
+ */
+export const COLORBLIND_SAFE_PALETTE = [
+  '#0173B2', // Blue
+  '#DE8F05', // Orange
+  '#029E73', // Teal
+  '#CC78BC', // Purple
+  '#CA9161', // Brown
+  '#FBAFE4', // Pink
+  '#949494', // Gray
+  '#ECE133', // Yellow
+];
+
+/**
  * Format volume data for line charts
  * Groups data by exercise and creates separate datasets
  * @param dataPoints - Array of volume data points
  * @returns Array of chart datasets
  */
-export function formatVolumeChartData(dataPoints: VolumeDataPoint[]): ChartDataset[] {
+export function formatVolumeChartData(dataPoints: VolumeDataPoint[], useColorblindSafe = false): ChartDataset[] {
   // Group by exercise
   const exerciseMap = new Map<string, VolumeDataPoint[]>();
   
@@ -15,17 +44,8 @@ export function formatVolumeChartData(dataPoints: VolumeDataPoint[]): ChartDatas
     exerciseMap.set(point.exerciseName, [...existing, point]);
   });
   
-  // Create datasets with colors
-  const colors = [
-    '#3b82f6', // blue
-    '#10b981', // green
-    '#f59e0b', // amber
-    '#ef4444', // red
-    '#8b5cf6', // purple
-    '#ec4899', // pink
-    '#14b8a6', // teal
-    '#f97316', // orange
-  ];
+  // Use colorblind-safe palette if requested
+  const colors = useColorblindSafe ? COLORBLIND_SAFE_PALETTE : DEFAULT_CHART_COLORS;
   
   const datasets: ChartDataset[] = [];
   let colorIndex = 0;

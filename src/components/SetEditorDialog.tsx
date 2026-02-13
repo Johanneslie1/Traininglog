@@ -187,7 +187,7 @@ export const SetEditorDialog: React.FC<SetEditorDialogProps> = ({
                 onClick={() => setSet(prev => ({ ...prev, difficulty }))}
                 className={`min-h-[44px] rounded-lg ${
                   set.difficulty === difficulty 
-                    ? 'bg-purple-600 text-text-primary' 
+                    ? 'bg-accent-primary text-text-primary' 
                     : 'bg-bg-tertiary text-text-secondary'
                 } text-sm font-medium transition-colors`}
               >
@@ -229,7 +229,7 @@ export const SetEditorDialog: React.FC<SetEditorDialogProps> = ({
             </button>
             <button
               onClick={() => onSave(set)}
-              className="flex-1 sm:flex-initial px-8 py-3 rounded-lg bg-purple-600 text-text-primary font-medium min-h-[44px]"
+              className="flex-1 sm:flex-initial px-8 py-3 rounded-lg bg-accent-primary hover:bg-accent-hover text-text-primary font-medium min-h-[44px]"
             >
               Save
             </button>

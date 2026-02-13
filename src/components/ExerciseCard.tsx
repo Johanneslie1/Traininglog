@@ -464,7 +464,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
                 isInSuperset 
                   ? 'bg-[#2196F3] text-text-primary' // Blue for existing superset
                   : isSelected
-                    ? 'bg-[#8B5CF6] text-text-primary' // Purple for selected
+                    ? 'bg-accent-primary text-text-primary' // Purple/accent for selected
                     : 'hover:bg-white/10 text-text-tertiary hover:text-text-primary'
               }`}
               aria-label={isInSuperset ? "In superset" : isSelected ? "Selected for superset" : "Add to superset"}

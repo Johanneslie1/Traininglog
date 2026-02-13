@@ -155,7 +155,7 @@ export const ProgramAddExerciseOptions: React.FC<ProgramAddExerciseOptionsProps>
                           setCreateDialogActivityType(ActivityType.RESISTANCE);
                           setShowCreateDialog(true);
                         }}
-                        className="mt-4 flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-purple-600 text-text-primary font-medium hover:bg-purple-700 transition-colors mx-auto"
+                        className="mt-4 flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-accent-primary text-text-primary font-medium hover:bg-accent-hover transition-colors mx-auto"
                       >
                         <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 102 0v-5h5a1 1 0 100-2h-5V4a1 1 0 00-1-1z" clipRule="evenodd" />
@@ -283,7 +283,7 @@ export const ProgramAddExerciseOptions: React.FC<ProgramAddExerciseOptionsProps>
                   setCreateDialogActivityType(ActivityType.RESISTANCE);
                   setShowCreateDialog(true);
                 }}
-                className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg bg-purple-600 text-text-primary font-medium hover:bg-purple-700 transition-colors"
+                className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg bg-accent-primary text-text-primary font-medium hover:bg-accent-hover transition-colors"
               >
                 <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 102 0v-5h5a1 1 0 100-2h-5V4a1 1 0 00-1-1z" clipRule="evenodd" />

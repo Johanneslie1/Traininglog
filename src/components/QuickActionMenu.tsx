@@ -35,7 +35,7 @@ const QuickActionMenu: React.FC<QuickActionMenuProps> = ({
         onAddFromPrograms();
         setIsOpen(false);
       },
-      color: 'bg-purple-600 hover:bg-purple-700'
+      color: 'bg-accent-primary hover:bg-accent-hover'
     },
     {
       label: 'Save as Template',

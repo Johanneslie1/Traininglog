@@ -195,7 +195,7 @@ export const Calendar: React.FC<CalendarProps> = ({
               disabled={isLoading}
               className={`
                 h-10 rounded-lg text-sm font-medium relative
-                ${isSelected ? 'bg-[#8B5CF6] text-text-primary' : 'text-text-tertiary'}
+                ${isSelected ? 'bg-accent-primary text-text-primary' : 'text-text-tertiary'}
                 ${isCurrentMonth ? 'hover:bg-white/10' : 'opacity-50'}
                 ${isLoading ? 'cursor-wait' : 'cursor-pointer'}
                 disabled:cursor-wait disabled:opacity-50

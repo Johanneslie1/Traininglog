@@ -97,7 +97,7 @@ export const CreateCustomExerciseModal: React.FC<CreateCustomExerciseModalProps>
           </button>
           <button
             onClick={handleSave}
-            className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded text-white text-sm font-medium transition-colors"
+            className="flex-1 px-4 py-2 bg-accent-primary hover:bg-accent-hover rounded text-white text-sm font-medium transition-colors"
           >
             Create Exercise
           </button>

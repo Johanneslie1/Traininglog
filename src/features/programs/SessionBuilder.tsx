@@ -63,15 +63,15 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
     const type = activityType || ActivityType.RESISTANCE;
     switch (type) {
       case ActivityType.RESISTANCE:
-        return { label: 'Resistance', color: 'bg-blue-600', textColor: 'text-blue-100' };
+        return { label: 'Resistance', color: 'bg-activity-resistance', textColor: 'text-blue-100' };
       case ActivityType.SPORT:
-        return { label: 'Sport', color: 'bg-green-600', textColor: 'text-green-100' };
+        return { label: 'Sport', color: 'bg-activity-sport', textColor: 'text-green-100' };
       case ActivityType.STRETCHING:
-        return { label: 'Stretching', color: 'bg-purple-600', textColor: 'text-purple-100' };
+        return { label: 'Stretching', color: 'bg-activity-stretching', textColor: 'text-cyan-100' };
       case ActivityType.ENDURANCE:
-        return { label: 'Endurance', color: 'bg-orange-600', textColor: 'text-orange-100' };
+        return { label: 'Endurance', color: 'bg-activity-endurance', textColor: 'text-orange-100' };
       case ActivityType.SPEED_AGILITY:
-        return { label: 'Speed/Agility', color: 'bg-red-600', textColor: 'text-red-100' };
+        return { label: 'Speed/Agility', color: 'bg-activity-speed', textColor: 'text-red-100' };
       case ActivityType.OTHER:
         return { label: 'Other', color: 'bg-gray-600', textColor: 'text-gray-100' };
       default:
@@ -405,7 +405,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
         
         <button
           onClick={handleSaveSession}
-          className="px-4 py-2 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white rounded-lg transition-colors font-medium flex-shrink-0 ml-4"
+          className="px-4 py-2 bg-accent-primary hover:bg-accent-hover text-white rounded-lg transition-colors font-medium flex-shrink-0 ml-4"
         >
           Save Session
         </button>
@@ -478,7 +478,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
               </div>
               <button
                 onClick={() => setView('exerciseSelection')}
-                className="px-6 py-3 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white rounded-lg transition-colors font-medium"
+                className="px-6 py-3 bg-accent-primary hover:bg-accent-hover text-white rounded-lg transition-colors font-medium"
               >
                 Add First Exercise
               </button>
