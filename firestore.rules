@@ -142,23 +142,22 @@ service cloud.firestore {
       // Allow read if user is the assigned user or the one who shared
       allow read: if isAuthenticated() && (
         resource.data.userId == request.auth.uid ||
-        // Check if user is the sharer by getting the shared program
-        get(/databases/$(database)/documents/sharedPrograms/$(resource.data.sharedProgramId)).data.sharedBy == request.auth.uid
+        resource.data.sharedBy == request.auth.uid
       );
       
-      // Allow create by the owner when sharing
+      // Allow create by the coach who is sharing (sharedBy field must match authenticated user)
       allow create: if isAuthenticated() && 
-        get(/databases/$(database)/documents/sharedPrograms/$(request.resource.data.sharedProgramId)).data.sharedBy == request.auth.uid;
+        request.resource.data.sharedBy == request.auth.uid;
       
-      // Allow update by assigned user (to change status) or by owner
+      // Allow update by assigned user (to change status) or by coach
       allow update: if isAuthenticated() && (
         resource.data.userId == request.auth.uid ||
-        get(/databases/$(database)/documents/sharedPrograms/$(resource.data.sharedProgramId)).data.sharedBy == request.auth.uid
+        resource.data.sharedBy == request.auth.uid
       );
       
-      // Allow delete by owner only
+      // Allow delete by coach only
       allow delete: if isAuthenticated() && 
-        get(/databases/$(database)/documents/sharedPrograms/$(resource.data.sharedProgramId)).data.sharedBy == request.auth.uid;
+        resource.data.sharedBy == request.auth.uid;
     }
 
     // Teams collection

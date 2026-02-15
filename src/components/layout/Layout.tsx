@@ -34,7 +34,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       location.pathname === '/exercises' ||
       location.pathname === '/coach' ||
       location.pathname.startsWith('/teams') ||
-      location.pathname === '/shared-programs'
+      location.pathname === '/shared-programs' ||
+      location.pathname.startsWith('/join') ||
+      location.pathname.startsWith('/coach/athlete')
     );
   
   // Navigation handlers

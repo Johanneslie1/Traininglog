@@ -935,6 +935,7 @@ export const shareProgram = async (
         sharedProgramId: sharedProgramRef.id,
         programId,
         userId,
+        sharedBy: user.uid,
         assignedAt: new Date().toISOString(),
         status: 'not-started',
         coachMessage: coachMessage || undefined
