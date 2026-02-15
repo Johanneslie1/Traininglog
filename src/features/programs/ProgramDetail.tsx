@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Program, ProgramSession } from '@/types/program';
 import { ActivityType } from '@/types/activityTypes';
+import { formatPrescription } from '@/utils/prescriptionUtils';
 import SessionBuilder from './SessionBuilder';
 import { PencilIcon, TrashIcon, ChevronDownIcon, ArrowLeftIcon, DuplicateIcon, ShareIcon } from '@heroicons/react/outline';
 import ShareProgramDialog from './ShareProgramDialog';
@@ -472,16 +473,26 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <div>
+                        <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <h4 className="text-base font-medium text-text-primary">{exercise.name}</h4>
                             <span className={`px-2 py-0.5 text-xs rounded-full ${getActivityTypeInfo(exercise.activityType).color} ${getActivityTypeInfo(exercise.activityType).textColor}`}>
                               {getActivityTypeInfo(exercise.activityType).label}
                             </span>
                           </div>
-                          <div className="text-sm text-text-tertiary">
-                            Sets and reps will be logged during workout
-                          </div>
+                          {exercise.prescription && exercise.instructionMode === 'structured' ? (
+                            <div className="text-sm text-blue-400">
+                              📋 {formatPrescription(exercise.prescription, exercise.activityType || ActivityType.RESISTANCE)}
+                            </div>
+                          ) : exercise.instructions && exercise.instructionMode === 'freeform' ? (
+                            <div className="text-sm text-purple-400 italic">
+                              {exercise.instructions}
+                            </div>
+                          ) : (
+                            <div className="text-sm text-text-tertiary">
+                              Sets and reps will be logged during workout
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>

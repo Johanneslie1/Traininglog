@@ -1,5 +1,35 @@
 import { ActivityType } from './activityTypes';
 
+// Prescription types for structured programming
+export type NumberOrRange = number | { min: number; max: number };
+
+export interface WeightPrescription {
+  type: 'percentage' | 'absolute' | 'rpe';
+  value: NumberOrRange;
+}
+
+export interface Prescription {
+  // Core prescription fields
+  sets?: NumberOrRange;
+  reps?: NumberOrRange; // For resistance training
+  
+  // Weight/intensity options
+  weight?: WeightPrescription;
+  rpe?: number; // Target RPE (1-10)
+  intensity?: number; // Target intensity (1-10) for non-resistance
+  
+  // Endurance fields
+  duration?: NumberOrRange; // seconds or minutes
+  distance?: NumberOrRange; // km or meters
+  
+  // Programming details
+  rest?: number; // Rest between sets in seconds
+  tempo?: string; // e.g., "3-0-1-0" (eccentric-pause-concentric-pause)
+  
+  // Additional notes specific to this prescription
+  notes?: string;
+}
+
 export interface Program {
   id: string;
   name: string;
@@ -29,7 +59,13 @@ export interface ProgramExercise {
   notes?: string; // Session-specific notes for this exercise
   order?: number;
   activityType?: ActivityType; // Cached activity type (synced from exercise database)
-  // Note: sets, reps, weight, setsData are only stored during actual workout logging, not in programs
+  
+  // Prescription system - what the coach prescribes (not actual logged data)
+  instructionMode?: 'structured' | 'freeform';
+  prescription?: Prescription; // Structured prescription (sets, reps, weight %, etc.)
+  instructions?: string; // Freeform text instructions for complex protocols
+  
+  // Note: Actual performed sets, reps, weight, setsData are only stored during workout logging, not in programs
 }
 
 // Shared Program Types

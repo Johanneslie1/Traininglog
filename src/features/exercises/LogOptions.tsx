@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import toast from 'react-hot-toast';
 import { TrainingTypeSelector } from '@/components/TrainingTypeSelector';
 import { TrainingType } from '@/types/exercise';
 import { Exercise } from '@/types/exercise';
@@ -137,6 +138,9 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
     if (!user?.id) return;
 
     try {
+      // Check if any exercises have pre-filled sets (from prescriptions)
+      const hasPrefilledSets = exercises.some(ex => ex.sets && ex.sets.length > 0);
+      
       for (const { exercise, sets } of exercises) {
         await addExerciseLog(
           {
@@ -150,9 +154,14 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
 
       setView('main');
       onExerciseAdded?.();
+      
+      // Show appropriate toast message
+      if (hasPrefilledSets) {
+        toast.success('Exercises added with program values. Adjust as needed!');
+      }
     } catch (error) {
       console.error('Error saving program exercises:', error);
-      // Here you might want to show an error notification to the user
+      toast.error('Failed to add exercises. Please try again.');
     }
   };
 

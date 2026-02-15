@@ -3,6 +3,7 @@ import { Program, ProgramSession } from '@/types/program';
 import { Exercise } from '@/types/exercise';
 import { ExerciseSet } from '@/types/sets';
 import { ActivityType } from '@/types/activityTypes';
+import { formatPrescriptionBadge, prescriptionToSets } from '@/utils/prescriptionUtils';
 import ProgramCard from './ProgramCard';
 import { usePrograms } from '@/context/ProgramsContext';
 import UniversalExercisePicker from '@/components/activities/UniversalExercisePicker';
@@ -82,6 +83,15 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
       
       if (!exercise) return null;
 
+      // Convert prescription to sets if it exists
+      let sets: ExerciseSet[] = [];
+      if (exercise.prescription && exercise.instructionMode === 'structured') {
+        sets = prescriptionToSets(
+          exercise.prescription,
+          exercise.activityType || ActivityType.RESISTANCE
+        );
+      }
+
       return {
         exercise: {
           id: exercise.id,
@@ -90,15 +100,16 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
           category: 'compound' as const,
           primaryMuscles: [],
           secondaryMuscles: [],
-          instructions: [],
+          instructions: exercise.instructions ? [exercise.instructions] : [],
           description: exercise.notes || '',
           defaultUnit: 'kg' as const,
           metrics: {
             trackWeight: true,
             trackReps: true,
-          }
+          },
+          activityType: exercise.activityType,
         },
-        sets: [] // Empty sets - will be logged during workout
+        sets // Empty sets or pre-filled from prescription
       };
     }).filter((ex): ex is NonNullable<typeof ex> => ex !== null);
 
@@ -352,9 +363,19 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
                                 {exercise.name}
                               </h4>
                               <div className="mt-2 flex flex-wrap gap-2">
-                                <span className="inline-flex items-center px-2 py-1 rounded bg-bg-secondary text-sm text-text-tertiary">
-                                  Sets and reps will be logged during workout
-                                </span>
+                                {exercise.prescription && exercise.instructionMode === 'structured' ? (
+                                  <span className="inline-flex items-center px-2 py-1 rounded bg-blue-500/20 text-blue-300 text-sm">
+                                    📋 {formatPrescriptionBadge(exercise.prescription, exercise.activityType || ActivityType.RESISTANCE)}
+                                  </span>
+                                ) : exercise.instructions && exercise.instructionMode === 'freeform' ? (
+                                  <span className="inline-flex items-center px-2 py-1 rounded bg-purple-500/20 text-purple-300 text-sm italic">
+                                    {exercise.instructions}
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-2 py-1 rounded bg-bg-secondary text-sm text-text-tertiary">
+                                    Sets and reps will be logged during workout
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </div>

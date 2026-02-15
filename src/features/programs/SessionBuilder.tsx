@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Exercise } from '@/types/exercise';
-import { ProgramSession, ProgramExercise } from '@/types/program';
+import { ProgramSession, ProgramExercise, Prescription } from '@/types/program';
 import { ActivityType } from '@/types/activityTypes';
+import { formatPrescriptionBadge } from '@/utils/prescriptionUtils';
+import PrescriptionEditor from './PrescriptionEditor';
 import ExerciseHistoryPicker from './ExerciseHistoryPicker';
 import ProgramExercisePicker from './ProgramExercisePicker';
 import ExerciseDatabasePicker from './ExerciseDatabasePicker';
@@ -99,6 +101,14 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
     data: Exercise[];
   } | null>(null);
   
+  // Prescription state - keyed by exercise index
+  const [exercisePrescriptions, setExercisePrescriptions] = useState<Record<number, {
+    instructionMode: 'structured' | 'freeform';
+    prescription?: Prescription;
+    instructions?: string;
+  }>>({});
+  const [editingPrescription, setEditingPrescription] = useState<number | null>(null);
+  
   // UserId for CopyFromPreviousSessionDialog - must be at top level to avoid hooks violation
   const [userId, setUserId] = useState('');
   
@@ -110,6 +120,31 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
     };
     getUserId().then(setUserId);
   }, []);
+
+  // Initialize prescription data from initialSession
+  useEffect(() => {
+    if (initialSession?.exercises) {
+      const prescriptions: Record<number, {
+        instructionMode: 'structured' | 'freeform';
+        prescription?: Prescription;
+        instructions?: string;
+      }> = {};
+      
+      initialSession.exercises.forEach((ex, index) => {
+        if (ex.instructionMode && (ex.prescription || ex.instructions)) {
+          prescriptions[index] = {
+            instructionMode: ex.instructionMode,
+            prescription: ex.prescription,
+            instructions: ex.instructions,
+          };
+        }
+      });
+      
+      if (Object.keys(prescriptions).length > 0) {
+        setExercisePrescriptions(prescriptions);
+      }
+    }
+  }, [initialSession]);
 
   // Exercise selection handlers - extract exercises from the objects
   const handleAddFromHistory = (exercises: { exercise: Exercise; sets: any[] }[]) => {
@@ -247,7 +282,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
       return;
     }
 
-    // Convert exercises to ProgramExercise format (exercise reference only)
+    // Convert exercises to ProgramExercise format (exercise reference + prescription)
     const exercises: ProgramExercise[] = selectedExercises.map((item, index) => {
       // Ensure we have a valid exercise ID (not temporary)
       let exerciseId = item.id;
@@ -263,13 +298,19 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
         exerciseRef = `exercises/${exerciseId}`;
       }
       
+      // Get prescription data for this exercise
+      const prescriptionData = exercisePrescriptions[index];
+      
       return {
         id: exerciseId,
         name: item.name,
         exerciseRef,
         order: index,
         notes: item.description || '',
-        activityType: item.activityType || ActivityType.RESISTANCE // Default to RESISTANCE for backward compatibility
+        activityType: item.activityType || ActivityType.RESISTANCE, // Default to RESISTANCE for backward compatibility
+        instructionMode: prescriptionData?.instructionMode,
+        prescription: prescriptionData?.prescription,
+        instructions: prescriptionData?.instructions,
       };
     });
 
@@ -546,18 +587,64 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
                                       </button>
                                     </div>
                                   ) : (
-                                    <button
-                                      onClick={() => handleEditExerciseName(exerciseIndex)}
-                                      className="text-left hover:bg-white/5 rounded p-1 -m-1 transition-colors w-full"
-                                    >
-                                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                        <h3 className="text-lg font-medium text-white break-words">{exercise.name}</h3>
-                                        <span className={`px-2 py-0.5 text-xs rounded-full flex-shrink-0 ${getActivityTypeInfo(exercise.activityType).color} ${getActivityTypeInfo(exercise.activityType).textColor}`}>
-                                          {getActivityTypeInfo(exercise.activityType).label}
-                                        </span>
-                                      </div>
-                                      <p className="text-sm text-gray-400">Sets and reps will be logged during workout</p>
-                                    </button>
+                                    <div className="w-full">
+                                      <button
+                                        onClick={() => handleEditExerciseName(exerciseIndex)}
+                                        className="text-left hover:bg-white/5 rounded p-1 -m-1 transition-colors w-full"
+                                      >
+                                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                          <h3 className="text-lg font-medium text-white break-words">{exercise.name}</h3>
+                                          <span className={`px-2 py-0.5 text-xs rounded-full flex-shrink-0 ${getActivityTypeInfo(exercise.activityType).color} ${getActivityTypeInfo(exercise.activityType).textColor}`}>
+                                            {getActivityTypeInfo(exercise.activityType).label}
+                                          </span>
+                                        </div>
+                                        <p className="text-sm text-gray-400">Sets and reps will be logged during workout</p>
+                                      </button>
+                                      
+                                      {/* Prescription display/editor */}
+                                      {exercisePrescriptions[exerciseIndex] && editingPrescription !== exerciseIndex ? (
+                                        <div className="mt-2">
+                                          <div className="flex items-center gap-2 mb-1">
+                                            <span className="text-xs font-medium text-gray-400">Prescription:</span>
+                                            <button
+                                              onClick={() => setEditingPrescription(exerciseIndex)}
+                                              className="text-xs text-blue-400 hover:text-blue-300"
+                                            >
+                                              Edit
+                                            </button>
+                                            <button
+                                              onClick={() => {
+                                                setExercisePrescriptions(prev => {
+                                                  const updated = { ...prev };
+                                                  delete updated[exerciseIndex];
+                                                  return updated;
+                                                });
+                                              }}
+                                              className="text-xs text-red-400 hover:text-red-300"
+                                            >
+                                              Remove
+                                            </button>
+                                          </div>
+                                          {exercisePrescriptions[exerciseIndex].instructionMode === 'freeform' ? (
+                                            <p className="text-sm text-gray-300 italic">{exercisePrescriptions[exerciseIndex].instructions}</p>
+                                          ) : (
+                                            <span className="inline-block px-2 py-1 bg-blue-500/20 text-blue-300 text-sm rounded">
+                                              {formatPrescriptionBadge(exercisePrescriptions[exerciseIndex].prescription, exercise.activityType || ActivityType.RESISTANCE)}
+                                            </span>
+                                          )}
+                                        </div>
+                                      ) : editingPrescription !== exerciseIndex ? (
+                                        <button
+                                          onClick={() => setEditingPrescription(exerciseIndex)}
+                                          className="mt-2 text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                                        >
+                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                          </svg>
+                                          Add Instructions
+                                        </button>
+                                      ) : null}
+                                    </div>
                                   )}
                                 </div>
                               </div>
@@ -613,6 +700,26 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
                                 </button>
                               </div>
                             </div>
+                            
+                            {/* Prescription Editor - shown when editing */}
+                            {editingPrescription === exerciseIndex && (
+                              <div className="mt-4 pt-4 border-t border-white/10">
+                                <PrescriptionEditor
+                                  activityType={exercise.activityType || ActivityType.RESISTANCE}
+                                  initialPrescription={exercisePrescriptions[exerciseIndex]?.prescription}
+                                  initialInstructionMode={exercisePrescriptions[exerciseIndex]?.instructionMode}
+                                  initialInstructions={exercisePrescriptions[exerciseIndex]?.instructions}
+                                  onSave={(data) => {
+                                    setExercisePrescriptions(prev => ({
+                                      ...prev,
+                                      [exerciseIndex]: data,
+                                    }));
+                                    setEditingPrescription(null);
+                                  }}
+                                  onCancel={() => setEditingPrescription(null)}
+                                />
+                              </div>
+                            )}
                           </div>
                         )}
                       </Draggable>
