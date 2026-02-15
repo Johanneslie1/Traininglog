@@ -171,3 +171,21 @@ export const getCurrentUser = async (): Promise<User | null> => {
     return null;
   }
 };
+
+/**
+ * Update user's role in Firestore
+ */
+export const updateUserRole = async (userId: string, role: 'athlete' | 'coach'): Promise<void> => {
+  try {
+    const userRef = doc(db, 'users', userId);
+    await setDoc(userRef, {
+      role,
+      updatedAt: Timestamp.now()
+    }, { merge: true });
+    
+    logger.info('User role updated successfully:', { userId, role });
+  } catch (error) {
+    logger.error('Error updating user role:', error);
+    throw new Error('Failed to update user role');
+  }
+};

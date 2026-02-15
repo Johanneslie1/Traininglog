@@ -185,7 +185,7 @@ function convertTimestampToString(timestamp: any): string {
   return new Date().toISOString();
 }
 
-export const createProgram = async (program: Omit<Program, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> => {
+export const createProgram = async (program: Omit<Program, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
   try {
     const user = await ensureAuth();
     if (!user || !user.uid) {
@@ -285,7 +285,8 @@ export const createProgram = async (program: Omit<Program, 'id' | 'createdAt' | 
     console.log('[programService] Committing program creation batch with', sessions?.length || 0, 'sessions');
     await batch.commit();
     console.log('[programService] Program created successfully with ID:', programRef.id);
-
+    
+    return programRef.id;
   } catch (err) {
     console.error('[programService] Error in createProgram:', err);
     if (err instanceof Error) {
@@ -863,3 +864,352 @@ export const createTestProgram = async (): Promise<void> => {
     throw error;
   }
 };
+
+// ========== PROGRAM SHARING FUNCTIONS ==========
+
+/**
+ * Share a program with specific users (e.g., team members)
+ * Creates a sharedPrograms entry that links to the original program
+ */
+export const shareProgram = async (
+  programId: string, 
+  shareWithUserIds: string[],
+  coachMessage?: string
+): Promise<string> => {
+  try {
+    const user = await ensureAuth();
+    
+    console.log('[programService] Sharing program:', { programId, shareWithUserIds, coachMessage });
+    
+    // Get the program to share
+    const programRef = doc(db, PROGRAMS_COLLECTION, programId);
+    const programSnap = await getDoc(programRef);
+    
+    if (!programSnap.exists()) {
+      throw new Error('Program not found');
+    }
+    
+    const programData = programSnap.data();
+    
+    // Verify user owns the program
+    if (programData.userId !== user.uid) {
+      throw new Error('You can only share programs you own');
+    }
+    
+    // Get full program with sessions
+    const sessionsRef = collection(db, `${PROGRAMS_COLLECTION}/${programId}/sessions`);
+    const sessionsSnapshot = await getDocs(sessionsRef);
+    const sessions = sessionsSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    
+    const fullProgram: any = {
+      id: programId,
+      ...programData,
+      sessions
+    };
+    
+    // Create shared program document
+    const sharedProgramRef = doc(collection(db, 'sharedPrograms'));
+    const sharedProgramData = removeUndefinedFields({
+      programId,
+      originalProgram: fullProgram,
+      sharedBy: user.uid,
+      sharedByName: user.uid, // TODO: Replace with actual user display name when user profiles exist
+      sharedWith: shareWithUserIds,
+      sharedAt: new Date().toISOString(),
+      lastModified: new Date().toISOString(),
+      canEdit: false,
+      isActive: true
+    });
+    
+    // Use batch to create shared program and assignments
+    const batch = writeBatch(db);
+    batch.set(sharedProgramRef, sharedProgramData);
+    
+    // Create assignment for each user with optional coach message
+    shareWithUserIds.forEach(userId => {
+      const assignmentRef = doc(collection(db, 'sharedProgramAssignments'));
+      const assignmentData = removeUndefinedFields({
+        sharedProgramId: sharedProgramRef.id,
+        programId,
+        userId,
+        assignedAt: new Date().toISOString(),
+        status: 'not-started',
+        coachMessage: coachMessage || undefined
+      });
+      batch.set(assignmentRef, assignmentData);
+    });
+    
+    await batch.commit();
+    
+    console.log('[programService] Program shared successfully:', sharedProgramRef.id);
+    return sharedProgramRef.id;
+  } catch (error) {
+    console.error('[programService] Error sharing program:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get programs shared with the current user
+ */
+export const getSharedPrograms = async (): Promise<any[]> => {
+  try {
+    const user = await ensureAuth();
+    
+    console.log('[programService] Fetching shared programs for user:', user.uid);
+    
+    // Get assignments for this user (all except archived)
+    const assignmentsRef = collection(db, 'sharedProgramAssignments');
+    const q = query(
+      assignmentsRef, 
+      where('userId', '==', user.uid)
+    );
+    const assignmentsSnap = await getDocs(q);
+    
+    if (assignmentsSnap.empty) {
+      console.log('[programService] No shared programs found');
+      return [];
+    }
+    
+    // Filter out archived assignments
+    const activeAssignments = assignmentsSnap.docs.filter(
+      doc => doc.data().status !== 'archived'
+    );
+    
+    if (activeAssignments.length === 0) {
+      console.log('[programService] No active shared programs found');
+      return [];
+    }
+    
+    // Get the shared program details for each assignment
+    const sharedPrograms = await Promise.all(
+      activeAssignments.map(async (assignmentDoc) => {
+        const assignment = assignmentDoc.data();
+        const sharedProgramRef = doc(db, 'sharedPrograms', assignment.sharedProgramId);
+        const sharedProgramSnap = await getDoc(sharedProgramRef);
+        
+        if (!sharedProgramSnap.exists()) {
+          console.warn('[programService] Shared program not found:', assignment.sharedProgramId);
+          return null;
+        }
+        
+        return {
+          id: sharedProgramSnap.id,
+          ...sharedProgramSnap.data(),
+          assignmentId: assignmentDoc.id,
+          assignmentStatus: assignment.status,
+          assignedAt: assignment.assignedAt,
+          coachMessage: assignment.coachMessage
+        };
+      })
+    );
+    
+    // Filter out any null entries
+    return sharedPrograms.filter(p => p !== null);
+  } catch (error) {
+    console.error('[programService] Error fetching shared programs:', error);
+    throw error;
+  }
+};
+
+/**
+ * Copy a shared program to user's own programs
+ */
+export const copySharedProgram = async (sharedProgramId: string): Promise<string> => {
+  try {
+    const user = await ensureAuth();
+    
+    console.log('[programService] Copying shared program:', sharedProgramId);
+    
+    // Get the shared program
+    const sharedProgramRef = doc(db, 'sharedPrograms', sharedProgramId);
+    const sharedProgramSnap = await getDoc(sharedProgramRef);
+    
+    if (!sharedProgramSnap.exists()) {
+      throw new Error('Shared program not found');
+    }
+    
+    const sharedProgram = sharedProgramSnap.data();
+    const originalProgram = sharedProgram.originalProgram;
+    
+    // Create a copy of the program for the user
+    const programCopy = {
+      ...originalProgram,
+      id: undefined, // Remove ID so a new one is created
+      userId: user.uid,
+      createdBy: user.uid,
+      name: `${originalProgram.name} (Copy)`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      sessions: originalProgram.sessions.map((session: any) => ({
+        ...session,
+        userId: user.uid
+      }))
+    };
+    
+    // Create the new program
+    const newProgramId = await createProgram(programCopy);
+    
+    // Update assignment status to 'copied'
+    const assignmentsRef = collection(db, 'sharedProgramAssignments');
+    const q = query(
+      assignmentsRef,
+      where('sharedProgramId', '==', sharedProgramId),
+      where('userId', '==', user.uid)
+    );
+    const assignmentsSnap = await getDocs(q);
+    
+    const batch = writeBatch(db);
+    assignmentsSnap.docs.forEach(doc => {
+      batch.update(doc.ref, { status: 'copied' });
+    });
+    await batch.commit();
+    
+    console.log('[programService] Shared program copied successfully:', newProgramId);
+    return newProgramId;
+  } catch (error) {
+    console.error('[programService] Error copying shared program:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update a shared program (only owner can do this)
+ */
+export const updateSharedProgram = async (sharedProgramId: string): Promise<void> => {
+  try {
+    const user = await ensureAuth();
+    
+    console.log('[programService] Updating shared program:', sharedProgramId);
+    
+    // Get the shared program
+    const sharedProgramRef = doc(db, 'sharedPrograms', sharedProgramId);
+    const sharedProgramSnap = await getDoc(sharedProgramRef);
+    
+    if (!sharedProgramSnap.exists()) {
+      throw new Error('Shared program not found');
+    }
+    
+    const sharedProgram = sharedProgramSnap.data();
+    
+    // Verify user is the owner
+    if (sharedProgram.sharedBy !== user.uid) {
+      throw new Error('Only the program owner can update shared programs');
+    }
+    
+    // Get the latest version of the program
+    const programId = sharedProgram.programId;
+    const programRef = doc(db, PROGRAMS_COLLECTION, programId);
+    const programSnap = await getDoc(programRef);
+    
+    if (!programSnap.exists()) {
+      throw new Error('Original program not found');
+    }
+    
+    // Get sessions
+    const sessionsRef = collection(db, `${PROGRAMS_COLLECTION}/${programId}/sessions`);
+    const sessionsSnapshot = await getDocs(sessionsRef);
+    const sessions = sessionsSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    
+    const updatedProgram: any = {
+      id: programId,
+      ...programSnap.data(),
+      sessions
+    };
+    
+    // Update the shared program with latest data
+    const updateData = removeUndefinedFields({
+      originalProgram: updatedProgram,
+      lastModified: new Date().toISOString()
+    });
+    
+    await writeBatch(db).update(sharedProgramRef, updateData).commit();
+    
+    console.log('[programService] Shared program updated successfully');
+  } catch (error) {
+    console.error('[programService] Error updating shared program:', error);
+    throw error;
+  }
+};
+
+/**
+ * Unshare a program (deactivate sharing)
+ */
+export const unshareProgram = async (sharedProgramId: string): Promise<void> => {
+  try {
+    const user = await ensureAuth();
+    
+    console.log('[programService] Unsharing program:', sharedProgramId);
+    
+    // Get the shared program
+    const sharedProgramRef = doc(db, 'sharedPrograms', sharedProgramId);
+    const sharedProgramSnap = await getDoc(sharedProgramRef);
+    
+    if (!sharedProgramSnap.exists()) {
+      throw new Error('Shared program not found');
+    }
+    
+    const sharedProgram = sharedProgramSnap.data();
+    
+    // Verify user is the owner
+    if (sharedProgram.sharedBy !== user.uid) {
+      throw new Error('Only the program owner can unshare programs');
+    }
+    
+    // Deactivate instead of delete to maintain history
+    await writeBatch(db).update(sharedProgramRef, { 
+      isActive: false,
+      lastModified: new Date().toISOString()
+    }).commit();
+    
+    console.log('[programService] Program unshared successfully');
+  } catch (error) {
+    console.error('[programService] Error unsharing program:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update assignment status (for athletes to mark programs as started/completed)
+ */
+export const updateAssignmentStatus = async (
+  assignmentId: string, 
+  status: 'not-started' | 'in-progress' | 'completed' | 'copied' | 'archived'
+): Promise<void> => {
+  try {
+    const user = await ensureAuth();
+    
+    console.log('[programService] Updating assignment status:', { assignmentId, status });
+    
+    const assignmentRef = doc(db, 'sharedProgramAssignments', assignmentId);
+    const assignmentSnap = await getDoc(assignmentRef);
+    
+    if (!assignmentSnap.exists()) {
+      throw new Error('Assignment not found');
+    }
+    
+    const assignment = assignmentSnap.data();
+    
+    // Verify user owns this assignment
+    if (assignment.userId !== user.uid) {
+      throw new Error('You can only update your own assignments');
+    }
+    
+    await updateDoc(assignmentRef, {
+      status,
+      lastViewedAt: new Date().toISOString()
+    });
+    
+    console.log('[programService] Assignment status updated successfully');
+  } catch (error) {
+    console.error('[programService] Error updating assignment status:', error);
+    throw error;
+  }
+};
+

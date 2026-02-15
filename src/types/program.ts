@@ -30,4 +30,29 @@ export interface ProgramExercise {
   order?: number;
   activityType?: ActivityType; // Cached activity type (synced from exercise database)
   // Note: sets, reps, weight, setsData are only stored during actual workout logging, not in programs
-};
+}
+
+// Shared Program Types
+export interface SharedProgram {
+  id: string;
+  programId: string; // Reference to original program
+  originalProgram: Program; // Full program data (denormalized for faster access)
+  sharedBy: string; // userId of coach who shared
+  sharedByName?: string; // Display name of coach
+  sharedWith: string[]; // Array of userIds or teamIds
+  sharedAt: string;
+  lastModified: string;
+  canEdit: boolean; // Whether recipients can edit (false for shared programs)
+  isActive: boolean; // Coach can deactivate without deleting
+}
+
+export interface SharedProgramAssignment {
+  id: string;
+  sharedProgramId: string;
+  programId: string;
+  userId: string; // Athlete who received the program
+  assignedAt: string;
+  status: 'not-started' | 'in-progress' | 'completed' | 'copied' | 'archived';
+  lastViewedAt?: string;
+  coachMessage?: string; // Optional message/instructions from coach
+}

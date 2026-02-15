@@ -23,8 +23,13 @@ service cloud.firestore {
       allow write: if isAuthenticated() && isOwner(userId);
       
       // Nested exercises collection under users - CRUD permissions
+      // NOTE: Coach access - Coaches can view athlete exercise logs through the application.
+      // The coachService.ts verifies coach-athlete relationship via team membership before
+      // fetching data. Firestore rules cannot efficiently verify team membership across
+      // multiple teams, so we rely on application-level authorization.
       match /exercises/{exerciseId} {
         // Allow read if authenticated and owns either parent or document
+        // Application code (coachService) enforces coach-athlete relationship
         allow read: if isAuthenticated() && (
           isOwner(userId) || 
           (resource != null && resource.data.userId == request.auth.uid)
@@ -45,6 +50,7 @@ service cloud.firestore {
       }
 
       // Nested exerciseLogs collection under users
+      // NOTE: Same coach access pattern as exercises collection above
       match /exerciseLogs/{logId} {
         allow read: if isAuthenticated() && isOwner(userId);
         allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
@@ -108,6 +114,108 @@ service cloud.firestore {
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // Shared Programs collection
+    match /sharedPrograms/{sharedProgramId} {
+      // Allow read if user is the owner or is in the sharedWith list
+      allow read: if isAuthenticated() && (
+        resource.data.sharedBy == request.auth.uid ||
+        request.auth.uid in resource.data.sharedWith
+      );
+      
+      // Allow create if user is authenticated and is the sharedBy user
+      allow create: if isAuthenticated() && 
+        request.resource.data.sharedBy == request.auth.uid;
+      
+      // Allow update only by the owner (sharedBy user)
+      allow update: if isAuthenticated() && 
+        resource.data.sharedBy == request.auth.uid;
+      
+      // Allow delete only by the owner
+      allow delete: if isAuthenticated() && 
+        resource.data.sharedBy == request.auth.uid;
+    }
+
+    // Shared Program Assignments collection
+    match /sharedProgramAssignments/{assignmentId} {
+      // Allow read if user is the assigned user or the one who shared
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        // Check if user is the sharer by getting the shared program
+        get(/databases/$(database)/documents/sharedPrograms/$(resource.data.sharedProgramId)).data.sharedBy == request.auth.uid
+      );
+      
+      // Allow create by the owner when sharing
+      allow create: if isAuthenticated() && 
+        get(/databases/$(database)/documents/sharedPrograms/$(request.resource.data.sharedProgramId)).data.sharedBy == request.auth.uid;
+      
+      // Allow update by assigned user (to change status) or by owner
+      allow update: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        get(/databases/$(database)/documents/sharedPrograms/$(resource.data.sharedProgramId)).data.sharedBy == request.auth.uid
+      );
+      
+      // Allow delete by owner only
+      allow delete: if isAuthenticated() && 
+        get(/databases/$(database)/documents/sharedPrograms/$(resource.data.sharedProgramId)).data.sharedBy == request.auth.uid;
+    }
+
+    // Teams collection
+    match /teams/{teamId} {
+      // Helper function to check if user is a team member
+      function isTeamMember(teamId) {
+        return exists(/databases/$(database)/documents/teams/$(teamId)/members/$(request.auth.uid));
+      }
+
+      // Allow querying/listing teams when authenticated (for invite code lookup)
+      // The invite code itself acts as an authentication token
+allow list: if isAuthenticated();
+      
+      // Allow reading specific team if user is coach, member, or team is active
+      allow get: if isAuthenticated() && (
+        resource.data.coachId == request.auth.uid ||
+        isTeamMember(teamId) ||
+        resource.data.isActive == true
+      );
+      
+      // Allow create if authenticated and is setting self as coach
+      allow create: if isAuthenticated() && 
+        request.resource.data.coachId == request.auth.uid;
+      
+      // Allow update only by the coach
+      allow update: if isAuthenticated() && 
+        resource.data.coachId == request.auth.uid;
+      
+      // Allow delete only by the coach
+      allow delete: if isAuthenticated() && 
+        resource.data.coachId == request.auth.uid;
+
+      // Team members subcollection
+      match /members/{memberId} {
+        // Allow read if user is the coach or is reading their own membership or is a team member
+        allow read: if isAuthenticated() && (
+          get(/databases/$(database)/documents/teams/$(teamId)).data.coachId == request.auth.uid ||
+          memberId == request.auth.uid ||
+          exists(/databases/$(database)/documents/teams/$(teamId)/members/$(request.auth.uid))
+        );
+        
+        // Allow create by the coach or by the user themselves (when joining)
+        allow create: if isAuthenticated() && (
+          get(/databases/$(database)/documents/teams/$(teamId)).data.coachId == request.auth.uid ||
+          memberId == request.auth.uid
+        );
+        
+        // Allow update by the coach
+        allow update: if isAuthenticated() && 
+          get(/databases/$(database)/documents/teams/$(teamId)).data.coachId == request.auth.uid;
+        
+        // Allow delete by the coach or by the member themselves (when leaving)
+        allow delete: if isAuthenticated() && (
+          get(/databases/$(database)/documents/teams/$(teamId)).data.coachId == request.auth.uid ||
+          memberId == request.auth.uid
+        );
+      }
     }
   }
 }

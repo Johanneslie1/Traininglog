@@ -13,6 +13,12 @@ const Register = lazy(() => import('@/features/auth/Register'));
 const ExerciseLog = lazy(() => import('@/features/exercises/ExerciseLog'));
 const ProgramList = lazy(() => import('@/features/programs/ProgramList'));
 const ProgramDetail = lazy(() => import('@/features/programs/ProgramDetail'));
+const SharedProgramList = lazy(() => import('@/features/programs/SharedProgramList'));
+const TeamList = lazy(() => import('@/features/teams/TeamList'));
+const TeamDetail = lazy(() => import('@/features/teams/TeamDetail'));
+const JoinTeam = lazy(() => import('@/features/teams/JoinTeam'));
+const CoachDashboard = lazy(() => import('@/features/coach/CoachDashboard'));
+const AthleteOverview = lazy(() => import('@/features/coach/AthleteOverview'));
 const Debug = lazy(() => import('@/features/debug/Debug'));
 const ExerciseOverview = lazy(() => import('@/pages/ExerciseOverview'));
 const SpeedAgilityPlyoPage = lazy(() => import('@/pages/SpeedAgilityPlyoPage'));
@@ -146,6 +152,54 @@ const AppRoutes: React.FC = () => {
           element={
             <ProtectedRoute>
               <ProgramDetailWrapper />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/shared-programs"
+          element={
+            <ProtectedRoute>
+              <SharedProgramList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/teams"
+          element={
+            <ProtectedRoute>
+              <TeamList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/teams/:id"
+          element={
+            <ProtectedRoute>
+              <TeamDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/join/:inviteCode?"
+          element={
+            <ProtectedRoute>
+              <JoinTeam />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/coach"
+          element={
+            <ProtectedRoute>
+              <CoachDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/coach/athlete/:athleteId"
+          element={
+            <ProtectedRoute>
+              <AthleteOverview />
             </ProtectedRoute>
           }
         />

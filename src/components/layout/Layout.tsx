@@ -26,10 +26,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   // Hide Layout's fixed elements on program routes (they have their own headers)
   const isProgramRoute = location.pathname.startsWith('/programs') || location.pathname === '/program-selection';
   
-  // Only show weekly calendar on specific routes
+  // Only show weekly calendar on specific routes (including coaching routes)
   const showWeeklyCalendar = isAuthenticated && 
     !isProgramRoute && 
-    (location.pathname === '/' || location.pathname === '/exercises');
+    (
+      location.pathname === '/' || 
+      location.pathname === '/exercises' ||
+      location.pathname === '/coach' ||
+      location.pathname.startsWith('/teams') ||
+      location.pathname === '/shared-programs'
+    );
   
   // Navigation handlers
   const handleNavigate = (path: string) => {

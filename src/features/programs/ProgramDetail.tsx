@@ -2,7 +2,8 @@ import React, { useState, useCallback } from 'react';
 import { Program, ProgramSession } from '@/types/program';
 import { ActivityType } from '@/types/activityTypes';
 import SessionBuilder from './SessionBuilder';
-import { PencilIcon, TrashIcon, ChevronDownIcon, ArrowLeftIcon, DuplicateIcon } from '@heroicons/react/outline';
+import { PencilIcon, TrashIcon, ChevronDownIcon, ArrowLeftIcon, DuplicateIcon, ShareIcon } from '@heroicons/react/outline';
+import ShareProgramDialog from './ShareProgramDialog';
 import { usePrograms } from '@/context/ProgramsContext';
 import { createSession, deleteSession } from '@/services/programService';
 import { auth } from '@/services/firebase/config';
@@ -31,6 +32,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
   const [duplicatingSessionId, setDuplicatingSessionId] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showSideMenu, setShowSideMenu] = useState(false);
+  const [showShareDialog, setShowShareDialog] = useState(false);
   const { updateSessionInProgram: updateSession, deleteProgram, updateProgram, duplicateSession } = usePrograms();
 
   // Helper function to get activity type display info
@@ -358,6 +360,14 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
               ) : (
                 <div className="flex items-center gap-1 sm:gap-2">
                   <button
+                    onClick={() => setShowShareDialog(true)}
+                    className="p-1.5 sm:p-2.5 hover:bg-bg-tertiary/60 rounded-xl transition-all duration-200 text-green-400 hover:text-green-300"
+                    title="Share program"
+                    aria-label={`Share program ${program.name}`}
+                  >
+                    <ShareIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </button>
+                  <button
                     onClick={handleProgramEdit}
                     className="p-1.5 sm:p-2.5 hover:bg-bg-tertiary/60 rounded-xl transition-all duration-200 text-blue-400 hover:text-blue-300"
                     title="Edit program"
@@ -538,6 +548,19 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
       />
+
+      {/* Share Program Dialog */}
+      {showShareDialog && (
+        <ShareProgramDialog
+          programId={program.id}
+          programName={program.name}
+          onClose={() => setShowShareDialog(false)}
+          onSuccess={() => {
+            // Optionally refresh or show success message
+            console.log('Program shared successfully');
+          }}
+        />
+      )}
     </div>
   );
 };
