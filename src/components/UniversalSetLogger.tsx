@@ -18,6 +18,8 @@ import {
   getDaysSinceLastSession,
   formatProgressionRationale
 } from '@/services/progressiveOverloadService';
+import { Prescription } from '@/types/program';
+import { prescriptionToSets, formatPrescription } from '@/utils/prescriptionUtils';
 
 interface UniversalSetLoggerProps {
   exercise: Exercise;
@@ -25,6 +27,8 @@ interface UniversalSetLoggerProps {
   onCancel: () => void;
   initialSets?: ExerciseSet[];
   isEditing?: boolean;
+  prescription?: Prescription; // Prescription data from program
+  instructionMode?: 'structured' | 'freeform'; // Instruction mode from program
 }
 
 // RPE Scale for reference
@@ -235,9 +239,15 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
   onCancel,
   initialSets = [],
   isEditing = false,
+  prescription,
+  instructionMode,
 }) => {
   const exerciseType = getExerciseType(exercise);
   const [sets, setSets] = useState<ExerciseSet[]>([]);
+  
+  // Prescription state
+  const [followPrescription, setFollowPrescription] = useState<boolean>(true);
+  const [prescriptionApplied, setPrescriptionApplied] = useState<boolean>(false);
   
   // Fetch exercise history for progressive overload context
   const exerciseHistory = useExerciseHistory(exercise.name);
@@ -266,7 +276,10 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
   const [instructionsExpanded, setInstructionsExpanded] = useState(false);
   const shouldCollapseInstructions = instructionsText && instructionsText.length > 150;
 
-  // Initialize sets with progressive overload auto-fill
+  // Check if exercise has prescription from program
+  const hasPrescription = prescription && instructionMode === 'structured';
+
+  // Initialize sets with progressive overload auto-fill or prescription pre-fill
   useEffect(() => {
     if (initialSets && initialSets.length > 0) {
       // Editing existing exercise - use provided sets
@@ -277,10 +290,50 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
       setIsPreFilled(false);
     } else if (
       !isEditing && 
+      hasPrescription && 
+      followPrescription && 
+      !prescriptionApplied
+    ) {
+      // NEW: Auto-fill from prescription
+      try {
+        const prefilledSets = prescriptionToSets(
+          prescription!,
+          exercise.activityType || ActivityType.RESISTANCE
+        );
+        
+        if (prefilledSets.length > 0) {
+          setSets(prefilledSets);
+          const ids = prefilledSets.map((_, index) => `set-${exercise.name}-${index}-${Date.now()}`);
+          setSetIds(ids);
+          setIsPreFilled(true);
+          setPrescriptionApplied(true);
+          
+          // Show success notification
+          toast.success(
+            `Pre-filled ${prefilledSets.length} set${prefilledSets.length > 1 ? 's' : ''} from prescription`,
+            { duration: 2500, icon: '📋' }
+          );
+        } else {
+          // Fallback to default if prescription conversion fails
+          const defaultSet = getDefaultSet(exerciseType);
+          setSets([defaultSet]);
+          setSetIds([`set-${exercise.name}-0-${Date.now()}`]);
+          setIsPreFilled(false);
+        }
+      } catch (error) {
+        console.error('Error pre-filling from prescription:', error);
+        toast.error('Could not pre-fill from prescription');
+        const defaultSet = getDefaultSet(exerciseType);
+        setSets([defaultSet]);
+        setSetIds([`set-${exercise.name}-0-${Date.now()}`]);
+        setIsPreFilled(false);
+      }
+    } else if (
+      !isEditing && 
       settings.useProgressiveOverload && 
       shouldApplyProgressiveOverload(exerciseHistory.lastPerformed, exerciseType)
     ) {
-      // NEW: Auto-fill with progressive overload suggestions
+      // Auto-fill with progressive overload suggestions (only if no prescription)
       const lastSession = exerciseHistory.lastPerformed!;
       const daysSince = getDaysSinceLastSession(lastSession.timestamp);
       const suggestions = calculateProgressiveSuggestions(lastSession, daysSince);
@@ -314,7 +367,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
       setSetIds([`set-${exercise.name}-0-${Date.now()}`]);
       setIsPreFilled(false);
     }
-  }, [initialSets, exerciseType, exercise.name, isEditing, settings.useProgressiveOverload, exerciseHistory.lastPerformed]);
+  }, [initialSets, exerciseType, exercise.name, exercise.activityType, isEditing, settings.useProgressiveOverload, exerciseHistory.lastPerformed, hasPrescription, followPrescription, prescription, prescriptionApplied]);
 
   const addSet = useCallback(() => {
     const lastSet = sets[sets.length - 1];
@@ -448,6 +501,37 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
       });
     }
   }, [exercise.name]);
+
+  // Toggle prescription pre-filling
+  const handleTogglePrescription = useCallback(() => {
+    const newValue = !followPrescription;
+    setFollowPrescription(newValue);
+    
+    if (newValue && hasPrescription && sets.length === 0) {
+      // Re-apply prescription
+      try {
+        const prefilledSets = prescriptionToSets(
+          prescription!,
+          exercise.activityType || ActivityType.RESISTANCE
+        );
+        if (prefilledSets.length > 0) {
+          setSets(prefilledSets);
+          const newIds = prefilledSets.map((_, index) => `set-${exercise.name}-${index}-${Date.now()}`);
+          setSetIds(newIds);
+          setPrescriptionApplied(true);
+          toast.success('Prescription applied', { duration: 1500 });
+        }
+      } catch (error) {
+        console.error('Error applying prescription:', error);
+        toast.error('Could not apply prescription');
+      }
+    } else if (!newValue && prescriptionApplied) {
+      toast('Prescription mode disabled. Modify sets as needed.', { 
+        duration: 2000,
+        icon: 'ℹ️' 
+      });
+    }
+  }, [followPrescription, hasPrescription, prescription, exercise.activityType, exercise.name, sets.length, prescriptionApplied]);
 
   const handleSave = () => {
     // Option 3: Relaxed validation - only require at least one field per set
@@ -869,6 +953,40 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
         <div className="text-xs sm:text-sm text-gray-400 mt-1">
           {exerciseType.charAt(0).toUpperCase() + exerciseType.slice(1)} Exercise
         </div>
+
+        {/* Prescription Toggle - only show when prescription available */}
+        {hasPrescription && !isEditing && (
+          <div className="mt-3 p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-purple-400 text-sm font-medium">📋 Prescription Available</span>
+                  {prescriptionApplied && (
+                    <span className="text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded">
+                      Applied
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-gray-400">
+                  {formatPrescription(prescription, exercise.activityType || ActivityType.RESISTANCE)}
+                </p>
+              </div>
+              <button
+                onClick={handleTogglePrescription}
+                className={`shrink-0 relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  followPrescription ? 'bg-purple-600' : 'bg-gray-600'
+                }`}
+                aria-label="Toggle prescription pre-filling"
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    followPrescription ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+        )}
         
         {/* Program Instructions - displayed from prescription */}
         {instructionsText && (

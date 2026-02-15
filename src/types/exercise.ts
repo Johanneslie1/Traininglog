@@ -1,4 +1,5 @@
 import { ActivityType } from './activityTypes';
+import { Prescription } from './program';
 
 // Training type enum for unified system
 export enum TrainingType {
@@ -88,6 +89,10 @@ export interface Exercise {
   customExercise?: boolean; // If true, this exercise was created by a user
   userId?: string; // Only set if customExercise is true
   createdBy?: string;
+  
+  // Program prescription data (when exercise comes from a program)
+  prescription?: Prescription; // Prescription from program
+  instructionMode?: 'structured' | 'freeform'; // Instruction mode from program
 }
 
 export type MuscleGroup =

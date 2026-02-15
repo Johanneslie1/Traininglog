@@ -10,6 +10,8 @@ import { ActivityType } from '@/types/activityTypes';
 import { toast } from 'react-hot-toast';
 import { useExerciseHistory } from '@/hooks/useExerciseHistory';
 import { ExerciseHistorySummary } from '@/components/ExerciseHistorySummary';
+import { Prescription } from '@/types/program';
+import { prescriptionToSets, formatPrescription } from '@/utils/prescriptionUtils';
 
 interface ExerciseSetLoggerProps {
   exercise: Partial<Exercise> & { 
@@ -18,6 +20,8 @@ interface ExerciseSetLoggerProps {
     sets?: ExerciseSet[];
     type?: string;
     activityType?: ActivityType;
+    prescription?: Prescription; // Prescription data from program
+    instructionMode?: 'structured' | 'freeform'; // Instruction mode from program
   };
   onSave: ((sets: ExerciseSet[], exerciseId: string) => void) | ((sets: ExerciseSet[]) => void);
   onCancel: () => void;
@@ -82,11 +86,16 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
         onCancel={onCancel}
         initialSets={exercise.sets || []}
         isEditing={isEditing}
+        prescription={exercise.prescription}
+        instructionMode={exercise.instructionMode}
       />
     );
   }
 
   // Use traditional resistance training logger for strength exercises
+  const [followPrescription, setFollowPrescription] = useState<boolean>(true);
+  const [prescriptionApplied, setPrescriptionApplied] = useState<boolean>(false);
+  
   const [sets, setSets] = useState<ExerciseSet[]>(() => {
     if (isEditing && exercise.sets && exercise.sets.length > 0) {
       return exercise.sets;
@@ -102,11 +111,70 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
   // Fetch exercise history for progressive overload context
   const exerciseHistory = useExerciseHistory(exercise.name);
 
+  // Check if exercise has prescription from program
+  const hasPrescription = exercise.prescription && exercise.instructionMode === 'structured';
+
   // Check if exercise has instructions from program prescription
   const hasInstructions = exercise.instructions && exercise.instructions.length > 0;
   const instructionsText = hasInstructions 
     ? (Array.isArray(exercise.instructions) ? exercise.instructions[0] : exercise.instructions)
     : null;
+
+  // Pre-fill sets from prescription when component mounts (only if not editing)
+  useEffect(() => {
+    if (!isEditing && hasPrescription && followPrescription && sets.length === 0 && !prescriptionApplied) {
+      try {
+        const prefilledSets = prescriptionToSets(
+          exercise.prescription!,
+          exercise.activityType || ActivityType.RESISTANCE
+        );
+        
+        if (prefilledSets.length > 0) {
+          setSets(prefilledSets);
+          setPrescriptionApplied(true);
+          setIsAddingSet(false); // Don't show add set dialog automatically
+          
+          toast.success(
+            `Pre-filled ${prefilledSets.length} set${prefilledSets.length > 1 ? 's' : ''} from prescription`,
+            {
+              duration: 2500,
+              icon: '📋',
+            }
+          );
+        }
+      } catch (error) {
+        console.error('Error pre-filling from prescription:', error);
+        toast.error('Could not pre-fill from prescription');
+      }
+    }
+  }, [isEditing, hasPrescription, followPrescription, exercise.prescription, exercise.activityType, sets.length, prescriptionApplied]);
+
+  // Toggle prescription pre-filling
+  const handleTogglePrescription = () => {
+    const newValue = !followPrescription;
+    setFollowPrescription(newValue);
+    
+    if (newValue && hasPrescription && sets.length === 0) {
+      // Re-apply prescription
+      try {
+        const prefilledSets = prescriptionToSets(
+          exercise.prescription!,
+          exercise.activityType || ActivityType.RESISTANCE
+        );
+        setSets(prefilledSets);
+        setPrescriptionApplied(true);
+        setIsAddingSet(false);
+        toast.success('Prescription applied', { duration: 1500 });
+      } catch (error) {
+        console.error('Error applying prescription:', error);
+      }
+    } else if (!newValue && prescriptionApplied) {
+      toast('Prescription mode disabled. Modify sets as needed.', { 
+        duration: 2000,
+        icon: 'ℹ️' 
+      });
+    }
+  };
 
   // Handle copying last values from exercise history
   const handleCopyLastHistoryValues = (historySets: ExerciseSet[]) => {
@@ -332,6 +400,40 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
           </h2>
           <span className="text-text-tertiary">{sets.length} sets</span>
         </div>
+
+        {/* Prescription Toggle - only show when prescription available */}
+        {hasPrescription && !isEditing && (
+          <div className="mb-4 p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-purple-400 text-sm font-medium">📋 Prescription Available</span>
+                  {prescriptionApplied && (
+                    <span className="text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded">
+                      Applied
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-gray-400">
+                  {formatPrescription(exercise.prescription, exercise.activityType || ActivityType.RESISTANCE)}
+                </p>
+              </div>
+              <button
+                onClick={handleTogglePrescription}
+                className={`shrink-0 relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  followPrescription ? 'bg-purple-600' : 'bg-gray-600'
+                }`}
+                aria-label="Toggle prescription pre-filling"
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    followPrescription ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+        )}
         
         {/* Program Instructions - displayed from prescription */}
         {instructionsText && (

@@ -83,7 +83,7 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
       
       if (!exercise) return null;
 
-      // Convert prescription to sets if it exists
+      // Convert prescription to sets if it exists (for direct logging)
       let sets: ExerciseSet[] = [];
       if (exercise.prescription && exercise.instructionMode === 'structured') {
         sets = prescriptionToSets(
@@ -108,8 +108,11 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
             trackReps: true,
           },
           activityType: exercise.activityType,
+          // Include prescription data for logger components
+          prescription: exercise.prescription,
+          instructionMode: exercise.instructionMode,
         },
-        sets // Empty sets or pre-filled from prescription
+        sets // Pre-filled from prescription or empty
       };
     }).filter((ex): ex is NonNullable<typeof ex> => ex !== null);
 
