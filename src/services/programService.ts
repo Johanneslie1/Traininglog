@@ -9,6 +9,7 @@ import {
   writeBatch,
   serverTimestamp,
   getDoc,
+  updateDoc,
 
 } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
