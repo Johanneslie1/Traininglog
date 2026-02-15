@@ -606,7 +606,21 @@ export const createSession = async (programId: string, session: {
 };
 
 // Update a session's exercises
-export const updateSession = async (programId: string, sessionId: string, exercises: Array<{ id: string; name: string; sets: number; reps: number; weight?: number; setsData?: any[]; }>): Promise<void> => {
+export const updateSession = async (programId: string, sessionId: string, exercises: Array<{ 
+  id: string; 
+  name: string; 
+  sets?: number; 
+  reps?: number; 
+  weight?: number; 
+  setsData?: any[];
+  notes?: string;
+  order?: number;
+  exerciseRef?: string;
+  activityType?: string;
+  instructionMode?: 'structured' | 'freeform';
+  prescription?: any;
+  instructions?: string;
+}>): Promise<void> => {
   try {
     const user = await ensureAuth();
     console.log('[programService] Updating session exercises:', { programId, sessionId, exerciseCount: exercises.length });
