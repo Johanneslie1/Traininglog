@@ -102,6 +102,12 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
   // Fetch exercise history for progressive overload context
   const exerciseHistory = useExerciseHistory(exercise.name);
 
+  // Check if exercise has instructions from program prescription
+  const hasInstructions = exercise.instructions && exercise.instructions.length > 0;
+  const instructionsText = hasInstructions 
+    ? (Array.isArray(exercise.instructions) ? exercise.instructions[0] : exercise.instructions)
+    : null;
+
   // Handle copying last values from exercise history
   const handleCopyLastHistoryValues = (historySets: ExerciseSet[]) => {
     if (historySets.length > 0) {
@@ -112,6 +118,10 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
       });
     }
   };
+
+  // Check for collapsible instructions
+  const [instructionsExpanded, setInstructionsExpanded] = useState(false);
+  const shouldCollapseInstructions = instructionsText && instructionsText.length > 150;
 
   // Get the appropriate previous set based on context
   const getPreviousSet = (currentIndex?: number): ExerciseSet | undefined => {
@@ -322,6 +332,28 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
           </h2>
           <span className="text-text-tertiary">{sets.length} sets</span>
         </div>
+        
+        {/* Program Instructions - displayed from prescription */}
+        {instructionsText && (
+          <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+            <div className="flex items-start gap-2">
+              <span className="text-blue-400 text-sm font-medium shrink-0">📋 Instructions:</span>
+              <div className="flex-1 min-w-0">
+                <p className={`text-sm text-gray-300 whitespace-pre-wrap ${shouldCollapseInstructions && !instructionsExpanded ? 'line-clamp-3' : ''}`}>
+                  {instructionsText}
+                </p>
+                {shouldCollapseInstructions && (
+                  <button
+                    onClick={() => setInstructionsExpanded(!instructionsExpanded)}
+                    className="text-xs text-blue-400 hover:text-blue-300 mt-1 underline"
+                  >
+                    {instructionsExpanded ? 'Show less' : 'Show more'}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* Exercise History Summary - helps with progressive overload */}
         {!isEditing && (

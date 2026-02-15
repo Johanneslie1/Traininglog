@@ -133,23 +133,49 @@ export const getPrograms = async (): Promise<Program[]> => {
               const sessionData = sessionDoc.data();
               console.log(`[programService] Processing session: ${sessionDoc.id}`, sessionData);
               
+              // Check if any exercises have prescription data
+              const exercisesWithPrescriptions = (sessionData.exercises || []).filter((ex: any) => ex.prescription || ex.instructions);
+              if (exercisesWithPrescriptions.length > 0) {
+                console.log(`[programService] Session ${sessionDoc.id} has ${exercisesWithPrescriptions.length} exercises with prescriptions`);
+              }
+              
               return {
                 id: sessionDoc.id,
                 name: sessionData.name,
+                notes: sessionData.notes || '',
                 exercises: (sessionData.exercises || [])
-                  .map((ex: any, exIndex: number) => ({
-                    id: ex.id || crypto.randomUUID(),
-                    name: ex.name,
-                    sets: ex.sets || 3,
-                    reps: ex.reps || 10,
-                    weight: ex.weight || 0,
-                    order: ex.order ?? exIndex,
-                    setsData: ex.setsData || Array(ex.sets || 3).fill({
+                  .map((ex: any, exIndex: number) => {
+                    const exerciseData = {
+                      id: ex.id || crypto.randomUUID(),
+                      name: ex.name,
+                      sets: ex.sets || 3,
                       reps: ex.reps || 10,
                       weight: ex.weight || 0,
-                      difficulty: 'MODERATE'
-                    })
-                  }))
+                      order: ex.order ?? exIndex,
+                      notes: ex.notes || '',
+                      exerciseRef: ex.exerciseRef,
+                      activityType: ex.activityType,
+                      // Include prescription fields
+                      instructionMode: ex.instructionMode,
+                      prescription: ex.prescription,
+                      instructions: ex.instructions,
+                      setsData: ex.setsData || Array(ex.sets || 3).fill({
+                        reps: ex.reps || 10,
+                        weight: ex.weight || 0,
+                        difficulty: 'MODERATE'
+                      })
+                    };
+                    
+                    if (ex.prescription || ex.instructions) {
+                      console.log(`[programService] Exercise "${ex.name}" has prescription:`, {
+                        instructionMode: ex.instructionMode,
+                        hasPrescription: !!ex.prescription,
+                        hasInstructions: !!ex.instructions
+                      });
+                    }
+                    
+                    return exerciseData;
+                  })
                   .sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0)),
                 userId: user.uid,
                 order: sessionData.order ?? 0
@@ -262,14 +288,23 @@ export const createProgram = async (program: Omit<Program, 'id' | 'createdAt' | 
           createdAt: timestamp,
           // Ensure exercises array exists and preserve all exercise reference fields
           // Assign order based on array index to maintain insertion order
-          exercises: (session.exercises || []).map((ex: any, exIndex: number) => ({
-            id: ex.id,
-            name: ex.name,
-            exerciseRef: ex.exerciseRef || undefined,
-            notes: ex.notes || '',
-            order: ex.order ?? exIndex,
-            activityType: ex.activityType || undefined
-          }))
+          exercises: (session.exercises || []).map((ex: any, exIndex: number) => {
+            const exerciseData: any = {
+              id: ex.id,
+              name: ex.name,
+              notes: ex.notes || '',
+              order: ex.order ?? exIndex
+            };
+            
+            // Only add optional fields if they exist
+            if (ex.exerciseRef) exerciseData.exerciseRef = ex.exerciseRef;
+            if (ex.activityType) exerciseData.activityType = ex.activityType;
+            if (ex.instructionMode) exerciseData.instructionMode = ex.instructionMode;
+            if (ex.prescription) exerciseData.prescription = ex.prescription;
+            if (ex.instructions) exerciseData.instructions = ex.instructions;
+            
+            return exerciseData;
+          })
         });
         
         console.log('[programService] Adding session to batch:', {
@@ -331,12 +366,17 @@ export const replaceProgram = async (programId: string, program: Program): Promi
     // Create new sessions
     sessions.forEach((session, index) => {
       const sessionRef = doc(collection(programRef, 'sessions'));
-      // Process exercises with proper order
-      const processedExercises = (session.exercises || []).map((ex: any, exIndex: number) => ({
-        ...ex,
-        order: ex.order ?? exIndex
-      }));
-      batch.set(sessionRef, {
+      // Process exercises with proper order and clean undefined fields
+      const processedExercises = (session.exercises || []).map((ex: any, exIndex: number) => {
+        const exerciseData: any = {
+          ...ex,
+          order: ex.order ?? exIndex
+        };
+        // Remove any undefined fields from the exercise (including nested prescription fields)
+        return removeUndefinedFields(exerciseData);
+      });
+      
+      const sessionData = removeUndefinedFields({
         ...session,
         id: sessionRef.id,
         order: session.order ?? index,
@@ -344,6 +384,8 @@ export const replaceProgram = async (programId: string, program: Program): Promi
         userId: user.uid,
         programId
       });
+      
+      batch.set(sessionRef, sessionData);
     });
 
     await batch.commit();
@@ -463,10 +505,21 @@ export const createSession = async (programId: string, session: {
 
     // Process exercises - store exercise reference and minimal data
     // Assign order based on array index to maintain insertion order
+    console.log('[createSession] Processing exercises, received:', session.exercises);
+    
     const processedExercises = session.exercises.map((exercise: any, exIndex: number) => {
       // Keep the exercise ID as-is to maintain reference to exercise database
       // Only generate new ID if completely missing
       const exerciseId = exercise.id || crypto.randomUUID();
+      
+      console.log(`[createSession] Processing exercise ${exIndex} (${exercise.name}):`, {
+        hasInstructionMode: !!exercise.instructionMode,
+        hasPrescription: !!exercise.prescription,
+        hasInstructions: !!exercise.instructions,
+        instructionMode: exercise.instructionMode,
+        prescription: exercise.prescription,
+        instructions: exercise.instructions
+      });
       
       // Build exercise object with only defined fields
       const exerciseData: any = {
@@ -486,8 +539,24 @@ export const createSession = async (programId: string, session: {
         exerciseData.activityType = exercise.activityType;
       }
 
+      // Add prescription fields if they exist
+      if (exercise.instructionMode) {
+        exerciseData.instructionMode = exercise.instructionMode;
+        console.log('[createSession] Added instructionMode:', exerciseData.instructionMode);
+      }
+      if (exercise.prescription) {
+        exerciseData.prescription = exercise.prescription;
+        console.log('[createSession] Added prescription:', exerciseData.prescription);
+      }
+      if (exercise.instructions) {
+        exerciseData.instructions = exercise.instructions;
+        console.log('[createSession] Added instructions length:', exerciseData.instructions?.length);
+      }
+
       return exerciseData;
     });
+    
+    console.log('[createSession] Processed exercises before removeUndefinedFields:', JSON.stringify(processedExercises, null, 2));
 
     // Create new session reference in the sessions subcollection
     const sessionsColRef = collection(programRef, 'sessions');
@@ -504,6 +573,9 @@ export const createSession = async (programId: string, session: {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     });
+    
+    console.log('[createSession] Session data after removeUndefinedFields:', JSON.stringify(sessionData, null, 2));
+    console.log('[createSession] Writing to Firestore at:', `programs/${programId}/sessions/${sessionRef.id}`);
 
     // Start a batch write
     const batch = writeBatch(db);
@@ -564,48 +636,98 @@ export const updateSession = async (programId: string, sessionId: string, exerci
 
     // Process exercises to ensure correct format and data integrity
     // Assign order based on array index to maintain insertion order
+    console.log('[updateSession] Processing exercises, received:', exercises);
+    
     const processedExercises = exercises.map((exercise, exIndex) => {
       // Ensure valid exercise ID
       const exerciseId = (!exercise.id || exercise.id.startsWith('temp-')) 
         ? crypto.randomUUID() 
         : exercise.id;
 
-      // Process sets data
-      const setsData = exercise.setsData 
-        ? exercise.setsData.map(set => ({
-            reps: set.reps || exercise.reps || 10,
-            weight: typeof set.weight === 'number' ? set.weight : (exercise.weight || 0),
-            difficulty: set.difficulty || 'MODERATE'
-          }))
-        : Array(exercise.sets || 3).fill({
-            reps: exercise.reps || 10,
-            weight: exercise.weight || 0,
-            difficulty: 'MODERATE'
-          });
+      console.log(`[updateSession] Processing exercise ${exIndex} (${exercise.name}):`, {
+        hasInstructionMode: !!exercise.instructionMode,
+        hasPrescription: !!exercise.prescription,
+        hasInstructions: !!exercise.instructions,
+        instructionMode: exercise.instructionMode,
+        prescription: exercise.prescription,
+        instructions: exercise.instructions
+      });
 
-      return {
+      // Build exercise object with all relevant fields
+      const exerciseData: any = {
         id: exerciseId,
         name: exercise.name,
-        sets: setsData.length,
-        reps: setsData[0]?.reps || exercise.reps || 10,
-        weight: setsData[0]?.weight || exercise.weight || 0,
-        setsData: setsData,
-        order: exIndex
+        notes: exercise.notes || '',
+        order: exercise.order ?? exIndex
       };
+      
+      // Only add exerciseRef if it exists
+      if (exercise.exerciseRef) {
+        exerciseData.exerciseRef = exercise.exerciseRef;
+      }
+      
+      // Only add activityType if it exists
+      if (exercise.activityType) {
+        exerciseData.activityType = exercise.activityType;
+      }
+
+      // Add prescription fields if they exist
+      if (exercise.instructionMode) {
+        exerciseData.instructionMode = exercise.instructionMode;
+        console.log('[updateSession] Added instructionMode:', exerciseData.instructionMode);
+      }
+      if (exercise.prescription) {
+        exerciseData.prescription = exercise.prescription;
+        console.log('[updateSession] Added prescription:', exerciseData.prescription);
+      }
+      if (exercise.instructions) {
+        exerciseData.instructions = exercise.instructions;
+        console.log('[updateSession] Added instructions length:', exerciseData.instructions?.length);
+      }
+
+      // Process sets data if available (for backward compatibility)
+      if (exercise.setsData) {
+        const setsData = exercise.setsData.map(set => ({
+          reps: set.reps || exercise.reps || 10,
+          weight: typeof set.weight === 'number' ? set.weight : (exercise.weight || 0),
+          difficulty: set.difficulty || 'MODERATE'
+        }));
+        exerciseData.sets = setsData.length;
+        exerciseData.reps = setsData[0]?.reps || exercise.reps || 10;
+        exerciseData.weight = setsData[0]?.weight || exercise.weight || 0;
+        exerciseData.setsData = setsData;
+      } else if (exercise.sets || exercise.reps || exercise.weight !== undefined) {
+        // Legacy format support
+        const setsData = Array(exercise.sets || 3).fill({
+          reps: exercise.reps || 10,
+          weight: exercise.weight || 0,
+          difficulty: 'MODERATE'
+        });
+        exerciseData.sets = setsData.length;
+        exerciseData.reps = setsData[0]?.reps;
+        exerciseData.weight = setsData[0]?.weight;
+        exerciseData.setsData = setsData;
+      }
+
+      return exerciseData;
     });
 
     // Start a transaction to ensure data consistency
     const batch = writeBatch(db);
 
     // Update or create the session with all data
-    const sessionData = {
+    const sessionData = removeUndefinedFields({
       exercises: processedExercises,
       updatedAt: serverTimestamp(),
       userId: user.uid,
       name: sessionDoc.exists() ? sessionDoc.data().name : 'New Session',
+      notes: sessionDoc.exists() ? (sessionDoc.data().notes || '') : '',
       order: sessionDoc.exists() ? sessionDoc.data().order : 0,
       programId: programId  // Add reference to parent program
-    };
+    });
+    
+    console.log('[updateSession] Session data after removeUndefinedFields:', JSON.stringify(sessionData, null, 2));
+    console.log('[updateSession] Writing to Firestore at:', `programs/${programId}/sessions/${sessionId}`);
 
     // Use set with merge to handle both create and update
     batch.set(sessionRef, sessionData, { merge: true });
@@ -670,7 +792,11 @@ export const duplicateProgram = async (programId: string): Promise<Program> => {
           exerciseRef: ex.exerciseRef,
           notes: ex.notes || '',
           order: ex.order,
-          activityType: ex.activityType
+          activityType: ex.activityType,
+          // Preserve prescription fields
+          instructionMode: ex.instructionMode,
+          prescription: ex.prescription,
+          instructions: ex.instructions
         })),
         notes: sessionData.notes || '',
         order: sessionData.order ?? 0,
@@ -758,7 +884,11 @@ export const duplicateSession = async (programId: string, sessionId: string): Pr
       exerciseRef: ex.exerciseRef,
       notes: ex.notes || '',
       order: ex.order,
-      activityType: ex.activityType
+      activityType: ex.activityType,
+      // Preserve prescription fields
+      instructionMode: ex.instructionMode,
+      prescription: ex.prescription,
+      instructions: ex.instructions
     }));
 
     const newSessionData = {

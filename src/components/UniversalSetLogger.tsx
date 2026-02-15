@@ -258,6 +258,14 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
   // Ref for scrolling to new sets
   const setListRef = useRef<HTMLDivElement>(null);
 
+  // Check if exercise has instructions from program prescription
+  const hasInstructions = exercise.instructions && exercise.instructions.length > 0;
+  const instructionsText = hasInstructions 
+    ? (Array.isArray(exercise.instructions) ? exercise.instructions[0] : exercise.instructions)
+    : null;
+  const [instructionsExpanded, setInstructionsExpanded] = useState(false);
+  const shouldCollapseInstructions = instructionsText && instructionsText.length > 150;
+
   // Initialize sets with progressive overload auto-fill
   useEffect(() => {
     if (initialSets && initialSets.length > 0) {
@@ -861,6 +869,28 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
         <div className="text-xs sm:text-sm text-gray-400 mt-1">
           {exerciseType.charAt(0).toUpperCase() + exerciseType.slice(1)} Exercise
         </div>
+        
+        {/* Program Instructions - displayed from prescription */}
+        {instructionsText && (
+          <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+            <div className="flex items-start gap-2">
+              <span className="text-blue-400 text-sm font-medium shrink-0">📋 Instructions:</span>
+              <div className="flex-1 min-w-0">
+                <p className={`text-sm text-gray-300 whitespace-pre-wrap ${shouldCollapseInstructions && !instructionsExpanded ? 'line-clamp-3' : ''}`}>
+                  {instructionsText}
+                </p>
+                {shouldCollapseInstructions && (
+                  <button
+                    onClick={() => setInstructionsExpanded(!instructionsExpanded)}
+                    className="text-xs text-blue-400 hover:text-blue-300 mt-1 underline"
+                  >
+                    {instructionsExpanded ? 'Show less' : 'Show more'}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* Exercise History Summary - helps with progressive overload */}
         {!isEditing && (

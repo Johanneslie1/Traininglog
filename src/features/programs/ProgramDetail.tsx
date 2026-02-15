@@ -108,9 +108,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
     setDuplicatingSessionId(sessionId);
     
     try {
-      console.log('[ProgramDetail] Duplicating session:', sessionId);
       await duplicateSession(program.id, sessionId);
-      console.log('[ProgramDetail] Session duplicated successfully');
       
       // The duplicateSession in context will refresh programs, 
       // but we need to get the updated program to update local state
@@ -129,9 +127,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
       setIsDeletingProgram(true);
       
       try {
-        console.log('[ProgramDetail] Deleting program:', program.id);
         await deleteProgram(program.id);
-        console.log('[ProgramDetail] Program deleted successfully');
         // Navigate back to programs list after successful deletion
         onBack();
       } catch (error) {
@@ -184,6 +180,12 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
   };
 
   const handleSessionBuilderSave = async (sessionData: Omit<ProgramSession, 'userId'>) => {
+    console.log('[ProgramDetail] handleSessionBuilderSave called with sessionData:', {
+      name: sessionData.name,
+      exerciseCount: sessionData.exercises?.length,
+      exercises: sessionData.exercises
+    });
+    
     try {
       setIsLoading(true);
       
@@ -195,6 +197,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
           userId: editingSession.userId
         };
         
+        console.log('[ProgramDetail] Updating session, exercises being passed:', updatedSession.exercises);
         await updateSession(program.id, editingSession.id, updatedSession.exercises);
         
         // Update local state
@@ -221,6 +224,13 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
           })),
           order: nextOrder
         };
+        
+        console.log('[ProgramDetail] Creating new session with data:', {
+          name: sessionToCreate.name,
+          exerciseCount: sessionToCreate.exercises.length,
+          sampleExercise: sessionToCreate.exercises[0]
+        });
+        console.log('[ProgramDetail] Full sessionToCreate:', JSON.stringify(sessionToCreate, null, 2));
         
         const newSessionId = await createSession(program.id, sessionToCreate);
         const newSession = {

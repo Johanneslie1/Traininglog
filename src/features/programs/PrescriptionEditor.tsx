@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Prescription } from '@/types/program';
 import { ActivityType } from '@/types/activityTypes';
-import { formatPrescription } from '@/utils/prescriptionUtils';
+import { formatPrescription, validatePrescription } from '@/utils/prescriptionUtils';
+import { toast } from 'react-hot-toast';
 
 interface PrescriptionEditorProps {
   activityType: ActivityType;
@@ -26,6 +27,7 @@ const PrescriptionEditor: React.FC<PrescriptionEditorProps> = ({
 }) => {
   const [instructionMode, setInstructionMode] = useState<'structured' | 'freeform'>(initialInstructionMode);
   const [freeformText, setFreeformText] = useState(initialInstructions || '');
+  const [isSaving, setIsSaving] = useState(false);
 
   // Structured mode state
   const [sets, setSets] = useState<number>(initialPrescription?.sets as number || 3);
@@ -98,11 +100,21 @@ const PrescriptionEditor: React.FC<PrescriptionEditorProps> = ({
   }, [initialPrescription]);
 
   const handleSave = () => {
+    setIsSaving(true);
+    
     if (instructionMode === 'freeform') {
+      if (!freeformText.trim()) {
+        toast.error('Please enter instructions or switch to structured mode');
+        setIsSaving(false);
+        return;
+      }
+      
       onSave({
         instructionMode: 'freeform',
-        instructions: freeformText,
+        instructions: freeformText.trim(),
       });
+      setIsSaving(false);
+      toast.success('Instructions saved');
       return;
     }
 
@@ -160,10 +172,20 @@ const PrescriptionEditor: React.FC<PrescriptionEditorProps> = ({
       }
     }
 
+    // Validate prescription
+    const validation = validatePrescription(prescription, activityType);
+    if (!validation.valid) {
+      toast.error(validation.errors[0] || 'Invalid prescription');
+      setIsSaving(false);
+      return;
+    }
+
     onSave({
       instructionMode: 'structured',
       prescription,
     });
+    setIsSaving(false);
+    toast.success('Prescription saved');
   };
 
   // Generate preview text
@@ -748,15 +770,27 @@ const PrescriptionEditor: React.FC<PrescriptionEditorProps> = ({
       <div className="flex justify-end gap-2 pt-2">
         <button
           onClick={onCancel}
-          className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          disabled={isSaving}
+          className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Cancel
         </button>
         <button
           onClick={handleSave}
-          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+          disabled={isSaving}
+          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
         >
-          Save Prescription
+          {isSaving ? (
+            <>
+              <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Saving...
+            </>
+          ) : (
+            'Save Prescription'
+          )}
         </button>
       </div>
     </div>

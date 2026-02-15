@@ -177,16 +177,56 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
   // Exercise management utilities
   const handleRemoveExercise = (index: number) => {
     setSelectedExercises(prev => prev.filter((_, i) => i !== index));
+    
+    // Update prescription indices after removal
+    setExercisePrescriptions(prev => {
+      const updated: Record<number, typeof prev[number]> = {};
+      
+      Object.keys(prev).forEach(key => {
+        const idx = Number(key);
+        if (idx < index) {
+          // Keep indices before removed exercise
+          updated[idx] = prev[idx];
+        } else if (idx > index) {
+          // Shift down indices after removed exercise
+          updated[idx - 1] = prev[idx];
+        }
+        // Skip the removed exercise's prescription (idx === index)
+      });
+      
+      return updated;
+    });
   };
 
   const moveExercise = (index: number, direction: 'up' | 'down') => {
     const previousExercises = [...selectedExercises];
     const result = [...selectedExercises];
+    let swapIndex = index;
+    
     if (direction === 'up' && index > 0) {
+      swapIndex = index - 1;
       [result[index], result[index - 1]] = [result[index - 1], result[index]];
     } else if (direction === 'down' && index < result.length - 1) {
+      swapIndex = index + 1;
       [result[index], result[index + 1]] = [result[index + 1], result[index]];
     }
+    
+    // Swap prescriptions as well
+    if (swapIndex !== index) {
+      setExercisePrescriptions(prev => {
+        const updated = { ...prev };
+        const temp = updated[index];
+        updated[index] = updated[swapIndex];
+        updated[swapIndex] = temp;
+        
+        // Clean up undefined entries
+        if (updated[index] === undefined) delete updated[index];
+        if (updated[swapIndex] === undefined) delete updated[swapIndex];
+        
+        return updated;
+      });
+    }
+    
     setLastAction({ type: 'reorder', data: previousExercises });
     setSelectedExercises(result);
   };
@@ -203,6 +243,32 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
     const newExercises = Array.from(selectedExercises);
     const [removed] = newExercises.splice(sourceIndex, 1);
     newExercises.splice(destIndex, 0, removed);
+
+    // Reorder prescriptions to match new exercise order
+    setExercisePrescriptions(prev => {
+      const updated: Record<number, typeof prev[number]> = {};
+      const oldPrescriptions = { ...prev };
+      
+      // Build mapping of old index -> new index
+      const indexMap = new Map<number, number>();
+      
+      // Track which old index maps to which new index
+      newExercises.forEach((exercise, newIdx) => {
+        const oldIdx = previousExercises.findIndex(e => e.id === exercise.id);
+        if (oldIdx !== -1) {
+          indexMap.set(oldIdx, newIdx);
+        }
+      });
+      
+      // Apply the mapping to prescriptions
+      indexMap.forEach((newIdx, oldIdx) => {
+        if (oldPrescriptions[oldIdx]) {
+          updated[newIdx] = oldPrescriptions[oldIdx];
+        }
+      });
+      
+      return updated;
+    });
 
     setLastAction({ type: 'reorder', data: previousExercises });
     setSelectedExercises(newExercises);
@@ -257,11 +323,37 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
       name: `${exerciseToDuplicate.name} (Copy)`
     };
     
+    // Insert duplicated exercise after the original
     setSelectedExercises(prev => [
       ...prev.slice(0, exerciseIndex + 1),
       duplicatedExercise,
       ...prev.slice(exerciseIndex + 1)
     ]);
+    
+    // Duplicate prescription if it exists, and update indices for exercises after insertion point
+    if (exercisePrescriptions[exerciseIndex]) {
+      setExercisePrescriptions(prev => {
+        const updated: Record<number, typeof prev[number]> = {};
+        
+        // Copy prescriptions before and including the duplicated exercise
+        Object.keys(prev).forEach(key => {
+          const idx = Number(key);
+          if (idx <= exerciseIndex) {
+            updated[idx] = prev[idx];
+          } else {
+            // Shift indices for exercises after insertion point
+            updated[idx + 1] = prev[idx];
+          }
+        });
+        
+        // Add duplicated prescription right after the original
+        updated[exerciseIndex + 1] = { ...prev[exerciseIndex] };
+        
+        return updated;
+      });
+    }
+    
+    toast.success('Exercise duplicated');
   };
 
   const handleSaveSession = async () => {
@@ -283,6 +375,8 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
     }
 
     // Convert exercises to ProgramExercise format (exercise reference + prescription)
+    console.log('[SessionBuilder] Current exercisePrescriptions state:', exercisePrescriptions);
+    
     const exercises: ProgramExercise[] = selectedExercises.map((item, index) => {
       // Ensure we have a valid exercise ID (not temporary)
       let exerciseId = item.id;
@@ -301,7 +395,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
       // Get prescription data for this exercise
       const prescriptionData = exercisePrescriptions[index];
       
-      return {
+      const exerciseData = {
         id: exerciseId,
         name: item.name,
         exerciseRef,
@@ -312,7 +406,18 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
         prescription: prescriptionData?.prescription,
         instructions: prescriptionData?.instructions,
       };
+      
+      console.log(`[SessionBuilder] Exercise ${index} (${item.name}):`, {
+        hasPrescriptionData: !!prescriptionData,
+        instructionMode: exerciseData.instructionMode,
+        hasPrescription: !!exerciseData.prescription,
+        hasInstructions: !!exerciseData.instructions
+      });
+      
+      return exerciseData;
     });
+    
+    console.log('[SessionBuilder] Final exercises array before onSave:', JSON.stringify(exercises, null, 2));
 
     const session: Omit<ProgramSession, 'userId'> = {
       id: initialSession?.id || '',
@@ -323,7 +428,6 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
 
     // Clear persisted form data after successful save
     clearPersistedState();
-    console.log('[SessionBuilder] Cleared persisted form data');
 
     onSave(session);
   };
@@ -614,11 +718,14 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
                                             </button>
                                             <button
                                               onClick={() => {
-                                                setExercisePrescriptions(prev => {
-                                                  const updated = { ...prev };
-                                                  delete updated[exerciseIndex];
-                                                  return updated;
-                                                });
+                                                if (window.confirm('Remove prescription? This cannot be undone.')) {
+                                                  setExercisePrescriptions(prev => {
+                                                    const updated = { ...prev };
+                                                    delete updated[exerciseIndex];
+                                                    return updated;
+                                                  });
+                                                  toast.success('Prescription removed');
+                                                }
                                               }}
                                               className="text-xs text-red-400 hover:text-red-300"
                                             >
