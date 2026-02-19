@@ -15,6 +15,10 @@ const STATE_STORAGE_KEY = 'app_state_v1';
 const FORM_DATA_PREFIX = 'form_data_';
 
 export class StatePersistence {
+  private static isAutoSaveInitialized = false;
+  private static beforeUnloadHandler: (() => void) | null = null;
+  private static visibilityHandler: (() => void) | null = null;
+
   /**
    * Save current application state
    */
@@ -28,7 +32,6 @@ export class StatePersistence {
       };
 
       localStorage.setItem(STATE_STORAGE_KEY, JSON.stringify(state));
-      console.log('[StatePersistence] State saved:', state.currentPath);
     } catch (error) {
       console.error('[StatePersistence] Failed to save state:', error);
     }
@@ -48,12 +51,10 @@ export class StatePersistence {
       const isRecent = Date.now() - state.timestamp < 24 * 60 * 60 * 1000;
       
       if (!isRecent) {
-        console.log('[StatePersistence] State expired, clearing');
         this.clearState();
         return null;
       }
 
-      console.log('[StatePersistence] State restored:', state.currentPath);
       return state;
     } catch (error) {
       console.error('[StatePersistence] Failed to restore state:', error);
@@ -67,7 +68,6 @@ export class StatePersistence {
   static clearState(): void {
     try {
       localStorage.removeItem(STATE_STORAGE_KEY);
-      console.log('[StatePersistence] State cleared');
     } catch (error) {
       console.error('[StatePersistence] Failed to clear state:', error);
     }
@@ -83,7 +83,6 @@ export class StatePersistence {
         data,
         timestamp: Date.now(),
       }));
-      console.log(`[StatePersistence] Form data saved for ${formId}`);
     } catch (error) {
       console.error('[StatePersistence] Failed to save form data:', error);
     }
@@ -109,7 +108,6 @@ export class StatePersistence {
         return null;
       }
 
-      console.log(`[StatePersistence] Form data restored for ${formId}`);
       return data;
     } catch (error) {
       console.error('[StatePersistence] Failed to restore form data:', error);
@@ -124,7 +122,6 @@ export class StatePersistence {
     try {
       const key = `${FORM_DATA_PREFIX}${formId}`;
       localStorage.removeItem(key);
-      console.log(`[StatePersistence] Form data cleared for ${formId}`);
     } catch (error) {
       console.error('[StatePersistence] Failed to clear form data:', error);
     }
@@ -133,25 +130,46 @@ export class StatePersistence {
   /**
    * Initialize auto-save on page navigation
    */
-  static initializeAutoSave(): void {
+  static initializeAutoSave(): () => void {
+    if (this.isAutoSaveInitialized) {
+      return () => {
+        this.cleanupAutoSave();
+      };
+    }
+
     // Save state before page unload
-    window.addEventListener('beforeunload', () => {
+    this.beforeUnloadHandler = () => {
       this.saveState();
-    });
+    };
+    window.addEventListener('beforeunload', this.beforeUnloadHandler);
 
     // Save state on visibility change (mobile app switching)
-    document.addEventListener('visibilitychange', () => {
+    this.visibilityHandler = () => {
       if (document.hidden) {
         this.saveState();
       }
-    });
+    };
+    document.addEventListener('visibilitychange', this.visibilityHandler);
 
-    // Save state on hash change (navigation)
-    window.addEventListener('hashchange', () => {
-      this.saveState();
-    });
+    this.isAutoSaveInitialized = true;
 
-    console.log('[StatePersistence] Auto-save initialized');
+    return () => {
+      this.cleanupAutoSave();
+    };
+  }
+
+  private static cleanupAutoSave(): void {
+    if (this.beforeUnloadHandler) {
+      window.removeEventListener('beforeunload', this.beforeUnloadHandler);
+      this.beforeUnloadHandler = null;
+    }
+
+    if (this.visibilityHandler) {
+      document.removeEventListener('visibilitychange', this.visibilityHandler);
+      this.visibilityHandler = null;
+    }
+
+    this.isAutoSaveInitialized = false;
   }
 
   /**
@@ -161,7 +179,6 @@ export class StatePersistence {
     // Wait for DOM to be ready
     setTimeout(() => {
       window.scrollTo(0, scrollPosition);
-      console.log('[StatePersistence] Scroll position restored:', scrollPosition);
     }, 100);
   }
 }

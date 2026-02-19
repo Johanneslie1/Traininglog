@@ -221,12 +221,6 @@ export const deleteExerciseLog = async (logId: string, userId: string): Promise<
 
 export const getExerciseLogs = async (userId: string, startDate: Date, endDate: Date): Promise<ExerciseLog[]> => {
   try {
-    console.log('📖 getExerciseLogs called with:', { 
-      userId, 
-      startDate: startDate.toISOString(), 
-      endDate: endDate.toISOString() 
-    });
-    
     if (!userId) {
       throw new Error('userId is required to fetch exercise logs');
     }
@@ -241,17 +235,10 @@ export const getExerciseLogs = async (userId: string, startDate: Date, endDate: 
     );
 
     const querySnapshot = await getDocs(q);
-    console.log('📖 StrengthExercises query returned', querySnapshot.docs.length, 'documents');
     
     const exercises = querySnapshot.docs.map((doc) => {
       const data = doc.data();
-      console.log('📖 Processing strength exercise document:', doc.id, {
-        exerciseName: data.exerciseName,
-        exerciseType: data.exerciseType,
-        timestamp: data.timestamp?.toDate?.()?.toISOString(),
-        categories: data.categories
-      });
-      
+
       return {
         id: doc.id,
         exerciseName: data.exerciseName,
@@ -265,7 +252,6 @@ export const getExerciseLogs = async (userId: string, startDate: Date, endDate: 
       } as ExerciseLog;
     });
 
-    console.log('📖 Retrieved strength exercises:', exercises.length);
     return exercises;
   } catch (error) {
     console.error('❌ Error fetching exercise logs:', error);

@@ -160,6 +160,50 @@ service cloud.firestore {
         resource.data.sharedBy == request.auth.uid;
     }
 
+    // Shared Sessions collection
+    match /sharedSessions/{sharedSessionId} {
+      // Allow read if user is the owner or is in the sharedWith list
+      allow read: if isAuthenticated() && (
+        resource.data.sharedBy == request.auth.uid ||
+        request.auth.uid in resource.data.sharedWith
+      );
+      
+      // Allow create if user is authenticated and is the sharedBy user
+      allow create: if isAuthenticated() && 
+        request.resource.data.sharedBy == request.auth.uid;
+      
+      // Allow update only by the owner (sharedBy user)
+      allow update: if isAuthenticated() && 
+        resource.data.sharedBy == request.auth.uid;
+      
+      // Allow delete only by the owner
+      allow delete: if isAuthenticated() && 
+        resource.data.sharedBy == request.auth.uid;
+    }
+
+    // Shared Session Assignments collection
+    match /sharedSessionAssignments/{assignmentId} {
+      // Allow read if user is the assigned user or the one who shared
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.sharedBy == request.auth.uid
+      );
+      
+      // Allow create by the coach who is sharing (sharedBy field must match authenticated user)
+      allow create: if isAuthenticated() && 
+        request.resource.data.sharedBy == request.auth.uid;
+      
+      // Allow update by assigned user (to change status) or by coach
+      allow update: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.sharedBy == request.auth.uid
+      );
+      
+      // Allow delete by coach only
+      allow delete: if isAuthenticated() && 
+        resource.data.sharedBy == request.auth.uid;
+    }
+
     // Teams collection
     match /teams/{teamId} {
       // Helper function to check if user is a team member

@@ -25,7 +25,11 @@ interface SharedProgramData {
   coachMessage?: string;
 }
 
-const SharedProgramList: React.FC = () => {
+interface SharedProgramListProps {
+  embedded?: boolean;
+}
+
+const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false }) => {
   const navigate = useNavigate();
   const [sharedPrograms, setSharedPrograms] = useState<SharedProgramData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -149,7 +153,7 @@ const SharedProgramList: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-black">
+      <div className={`flex items-center justify-center ${embedded ? 'py-10' : 'min-h-screen bg-black'}`}>
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
         <div className="ml-3 text-white">Loading shared programs...</div>
       </div>
@@ -157,17 +161,23 @@ const SharedProgramList: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white p-4">
+    <div className={`${embedded ? '' : 'min-h-screen bg-black text-white p-4'}`}>
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <button
-            onClick={() => navigate('/programs')}
-            className="text-primary-500 hover:text-primary-400 mb-4 flex items-center"
-          >
-            ← Back to My Programs
-          </button>
-          <h1 className="text-3xl font-bold mb-2">Assigned Programs</h1>
+          {!embedded && (
+            <button
+              onClick={() => navigate('/programs')}
+              className="text-primary-500 hover:text-primary-400 mb-4 flex items-center"
+            >
+              ← Back to My Programs
+            </button>
+          )}
+          {embedded ? (
+            <h2 className="text-2xl font-bold mb-2">Assigned Programs</h2>
+          ) : (
+            <h1 className="text-3xl font-bold mb-2">Assigned Programs</h1>
+          )}
           <p className="text-gray-400">
             Programs shared with you by your coach
           </p>

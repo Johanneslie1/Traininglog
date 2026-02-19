@@ -92,3 +92,33 @@ export interface SharedProgramAssignment {
   lastViewedAt?: string;
   coachMessage?: string; // Optional message/instructions from coach
 }
+
+// Shared Session Types (for individual session sharing)
+export interface SharedSession {
+  id: string;
+  sessionId: string; // Original session ID (if from a program)
+  sessionData: ProgramSession; // Full session data (denormalized)
+  sharedBy: string; // Coach userId
+  sharedByName?: string; // Coach display name
+  sharedWith: string[]; // Array of athlete userIds
+  sharedAt: string;
+  lastModified: string;
+  canEdit: boolean; // false for shared sessions
+  isActive: boolean;
+  sourceProgram?: {
+    programId: string;
+    programName: string;
+  }; // Optional: track if session came from a program
+}
+
+export interface SharedSessionAssignment {
+  id: string;
+  sharedSessionId: string;
+  sessionData: ProgramSession;
+  userId: string; // Athlete who received
+  sharedBy: string; // Coach userId
+  assignedAt: string;
+  status: 'not-started' | 'in-progress' | 'completed' | 'copied' | 'archived';
+  lastViewedAt?: string;
+  coachMessage?: string;
+}

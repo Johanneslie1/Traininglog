@@ -195,8 +195,6 @@ export const deleteExerciseLog = async (logId: string, userId: string): Promise<
 
 export const getExerciseLogs = async (userId: string, startDate: Date, endDate: Date): Promise<ExerciseLog[]> => {
   try {
-    console.log('📖 getExerciseLogs called with:', { userId, startDate, endDate });
-    
     if (!userId) {
       throw new Error('userId is required to fetch exercise logs');
     }
@@ -224,7 +222,6 @@ export const getExerciseLogs = async (userId: string, startDate: Date, endDate: 
       } as ExerciseLog;
     });
 
-    console.log('📖 Retrieved exercises:', exercises.length);
     return exercises;
   } catch (error) {
     console.error('❌ Error fetching exercise logs:', error);

@@ -5,6 +5,7 @@ import { formatPrescription } from '@/utils/prescriptionUtils';
 import SessionBuilder from './SessionBuilder';
 import { PencilIcon, TrashIcon, ChevronDownIcon, ArrowLeftIcon, DuplicateIcon, ShareIcon } from '@heroicons/react/outline';
 import ShareProgramDialog from './ShareProgramDialog';
+import ShareSessionDialog from './ShareSessionDialog';
 import { usePrograms } from '@/context/ProgramsContext';
 import { createSession, deleteSession } from '@/services/programService';
 import { auth } from '@/services/firebase/config';
@@ -34,6 +35,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
   const [showSettings, setShowSettings] = useState(false);
   const [showSideMenu, setShowSideMenu] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
+  const [sharingSession, setSharingSession] = useState<ProgramSession | null>(null);
   const { updateSessionInProgram: updateSession, deleteProgram, updateProgram, duplicateSession } = usePrograms();
 
   // Helper function to get activity type display info
@@ -427,6 +429,14 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                   {!selectionMode && (
                     <>
                       <button
+                        onClick={() => setSharingSession(session)}
+                        className="p-1.5 sm:p-2 hover:bg-bg-tertiary/60 rounded-xl transition-all duration-200 text-green-400 hover:text-green-300"
+                        title="Share session"
+                        aria-label="Share session"
+                      >
+                        <ShareIcon className="w-4 h-4" />
+                      </button>
+                      <button
                         onClick={(e) => handleDuplicateSession(session.id, session.name, e)}
                         disabled={duplicatingSessionId === session.id}
                         className="p-1.5 sm:p-2 hover:bg-bg-tertiary/60 rounded-xl transition-all duration-200 text-blue-400 hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -579,6 +589,19 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
           onSuccess={() => {
             // Optionally refresh or show success message
             console.log('Program shared successfully');
+          }}
+        />
+      )}
+
+      {/* Share Session Dialog */}
+      {sharingSession && (
+        <ShareSessionDialog
+          session={sharingSession}
+          sourceProgramId={program.id}
+          sourceProgramName={program.name}
+          onClose={() => setSharingSession(null)}
+          onSuccess={() => {
+            console.log('Session shared successfully');
           }}
         />
       )}

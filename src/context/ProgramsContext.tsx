@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
+import React, { createContext, useState, useEffect, useContext, useCallback, useRef } from 'react';
 import { auth } from '@/services/firebase/config';
 import { Program } from '@/types/program';
 import { onAuthStateChanged, User } from 'firebase/auth';
@@ -28,7 +28,7 @@ export const ProgramsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(auth.currentUser);
-  const [fetchingRef, setFetchingRef] = useState(false);
+  const isFetchingRef = useRef(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -47,12 +47,12 @@ export const ProgramsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
 
     // Prevent duplicate fetches unless forced
-    if (fetchingRef && !force) {
+    if (isFetchingRef.current && !force) {
       logger.verbose('[ProgramsContext] Already loading, skipping duplicate fetch');
       return;
     }
 
-    setFetchingRef(true);
+    isFetchingRef.current = true;
     setIsLoading(true);
     setError(null);
 
@@ -68,19 +68,17 @@ export const ProgramsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setError(errorMessage);
     } finally {
       setIsLoading(false);
-      setFetchingRef(false);
+      isFetchingRef.current = false;
     }
-  }, [user, fetchingRef]);
+  }, [user]);
 
   useEffect(() => {
     if (user) {
-      console.log('[ProgramsContext] User authenticated, fetching programs');
       fetchPrograms(true); // Force fetch on user change
     } else {
-      console.log('[ProgramsContext] No user, clearing programs');
       setPrograms([]);
       setIsLoading(false);
-      setFetchingRef(false);
+      isFetchingRef.current = false;
     }
   }, [user]); // Remove fetchPrograms from dependencies to prevent infinite loops
 
@@ -92,14 +90,7 @@ export const ProgramsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setError(null);
     
     try {
-      console.log('[ProgramsContext] Creating program:', {
-        name: program.name,
-        sessionCount: program.sessions?.length || 0,
-        userId: user.uid
-      });
-      
       await programService.createProgram({ ...program, userId: user.uid });
-      console.log('[ProgramsContext] Program created successfully');
       await fetchPrograms(true); // Force refresh after creating
     } catch (err) {
       let errorMessage = 'Failed to create program';

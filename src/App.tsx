@@ -68,27 +68,15 @@ const App: React.FC = () => {
 
   // Initialize state persistence
   useEffect(() => {
-    console.log('[App] Initializing state persistence...');
-    StatePersistence.initializeAutoSave();
-
-    // Restore previous state on app load
-    const savedState = StatePersistence.restoreState();
-    if (savedState) {
-      console.log('[App] Restoring previous state:', savedState.currentPath);
-      // The router will handle navigation to the saved path
-      if (savedState.scrollPosition) {
-        StatePersistence.restoreScrollPosition(savedState.scrollPosition);
-      }
-    }
+    const cleanup = StatePersistence.initializeAutoSave();
+    return cleanup;
   }, []);
 
   // Initialize auth state
   useEffect(() => {
-    console.log('[Auth] Initializing auth state...');
     store.dispatch(setLoading(true));
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      console.log('[Auth] Auth state changed:', user?.uid);
       try {
         if (user) {
           // Check if user document exists
@@ -105,10 +93,8 @@ const App: React.FC = () => {
             createdAt: userData.createdAt ? new Date(userData.createdAt) : new Date(),
             updatedAt: userData.updatedAt ? new Date(userData.updatedAt) : new Date()
           }));
-          console.log('[Auth] User authenticated:', user.uid);
         } else {
           store.dispatch(setUser(null));
-          console.log('[Auth] No user authenticated');
         }
       } catch (error) {
         console.error('[Auth] Error handling auth state change:', error);
@@ -120,7 +106,6 @@ const App: React.FC = () => {
     });
 
     return () => {
-      console.log('[Auth] Cleaning up auth listener');
       unsubscribe();
     };
   }, []);

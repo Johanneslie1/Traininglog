@@ -102,16 +102,13 @@ function validateProgram(program: Partial<Program>, isNew: boolean = false): voi
 export const getPrograms = async (): Promise<Program[]> => {
   try {
     const user = await ensureAuth();
-    
-    console.log('[programService] Fetching programs for user:', user.uid);
-    
+
     // Query programs for current user
     const programsRef = collection(db, PROGRAMS_COLLECTION);
     const q = query(programsRef, where('userId', '==', user.uid));
     const programsSnapshot = await getDocs(q);
     
     if (programsSnapshot.empty) {
-      console.log('[programService] No programs found for user:', user.uid);
       return [];
     }
 
@@ -120,24 +117,14 @@ export const getPrograms = async (): Promise<Program[]> => {
       programsSnapshot.docs.map(async (programDoc) => {
         try {
           const programData = programDoc.data();
-          console.log(`[programService] Fetching sessions for program: ${programDoc.id}`);
           
           // Get sessions subcollection
           const sessionsRef = collection(db, `${PROGRAMS_COLLECTION}/${programDoc.id}/sessions`);
           const sessionsSnapshot = await getDocs(sessionsRef);
           
-          console.log(`[programService] Found ${sessionsSnapshot.size} sessions for program: ${programDoc.id}`);
-          
           const sessions = sessionsSnapshot.docs
             .map(sessionDoc => {
               const sessionData = sessionDoc.data();
-              console.log(`[programService] Processing session: ${sessionDoc.id}`, sessionData);
-              
-              // Check if any exercises have prescription data
-              const exercisesWithPrescriptions = (sessionData.exercises || []).filter((ex: any) => ex.prescription || ex.instructions);
-              if (exercisesWithPrescriptions.length > 0) {
-                console.log(`[programService] Session ${sessionDoc.id} has ${exercisesWithPrescriptions.length} exercises with prescriptions`);
-              }
               
               return {
                 id: sessionDoc.id,
@@ -165,15 +152,7 @@ export const getPrograms = async (): Promise<Program[]> => {
                         difficulty: 'MODERATE'
                       })
                     };
-                    
-                    if (ex.prescription || ex.instructions) {
-                      console.log(`[programService] Exercise "${ex.name}" has prescription:`, {
-                        instructionMode: ex.instructionMode,
-                        hasPrescription: !!ex.prescription,
-                        hasInstructions: !!ex.instructions
-                      });
-                    }
-                    
+
                     return exerciseData;
                   })
                   .sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0)),
@@ -197,7 +176,6 @@ export const getPrograms = async (): Promise<Program[]> => {
     );
 
     const validPrograms = programs.filter((p): p is Program => p !== null);
-    console.log('[programService] Successfully fetched programs:', validPrograms.length);
     return validPrograms;
   } catch (err) {
     console.error('[programService] Error fetching programs:', err);

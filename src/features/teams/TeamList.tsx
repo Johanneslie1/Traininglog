@@ -6,7 +6,11 @@ import CreateTeamModal from './CreateTeamModal';
 import toast from 'react-hot-toast';
 import { useIsCoach } from '@/hooks/useUserRole';
 
-const TeamList: React.FC = () => {
+interface TeamListProps {
+  embedded?: boolean;
+}
+
+const TeamList: React.FC<TeamListProps> = ({ embedded = false }) => {
   const navigate = useNavigate();
   const isCoach = useIsCoach();
   const [teams, setTeams] = useState<Team[]>([]);
@@ -47,7 +51,7 @@ const TeamList: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-black">
+      <div className={`flex items-center justify-center ${embedded ? 'py-10' : 'min-h-screen bg-black'}`}>
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
         <div className="ml-3 text-white">Loading teams...</div>
       </div>
@@ -55,15 +59,26 @@ const TeamList: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white p-4">
+    <div className={`${embedded ? '' : 'min-h-screen bg-black text-white p-4'}`}>
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold mb-2">My Teams</h1>
-            <p className="text-gray-400">
-              Manage your coaching teams and athletes
-            </p>
+            {embedded ? (
+              <>
+                <h2 className="text-2xl font-bold mb-2">My Teams</h2>
+                <p className="text-gray-400">
+                  Manage your coaching teams and athletes
+                </p>
+              </>
+            ) : (
+              <>
+                <h1 className="text-3xl font-bold mb-2">My Teams</h1>
+                <p className="text-gray-400">
+                  Manage your coaching teams and athletes
+                </p>
+              </>
+            )}
           </div>
           <button
             onClick={() => setShowCreateModal(true)}

@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
@@ -151,7 +153,7 @@ const AthleteOverview: React.FC = () => {
             className="text-primary-500 hover:text-primary-400 mb-4 flex items-center"
           >
             <ArrowLeftIcon className="h-4 w-4 mr-2" />
-            Back to Dashboard
+            Back to Coach Hub
           </button>
           <div className="bg-gray-900 border border-gray-800 rounded-lg p-8 text-center">
             <p className="text-gray-400">Athlete data not found</p>
@@ -170,7 +172,7 @@ const AthleteOverview: React.FC = () => {
           className="text-primary-500 hover:text-primary-400 mb-4 flex items-center"
         >
           <ArrowLeftIcon className="h-4 w-4 mr-2" />
-          Back to Dashboard
+          Back to Coach Hub
         </button>
 
         {/* Athlete Info Card */}
@@ -199,7 +201,7 @@ const AthleteOverview: React.FC = () => {
         </div>
 
         {/* Summary Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
           <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
             <div className="text-gray-400 text-sm mb-1">This Week</div>
             <div className="text-2xl font-bold">{stats.workoutsThisWeek}</div>
@@ -219,9 +221,15 @@ const AthleteOverview: React.FC = () => {
           </div>
 
           <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
-            <div className="text-gray-400 text-sm mb-1">Assigned</div>
+            <div className="text-gray-400 text-sm mb-1">Programs</div>
             <div className="text-2xl font-bold">{stats.programsAssigned}</div>
-            <div className="text-xs text-gray-500">programs</div>
+            <div className="text-xs text-gray-500">assigned</div>
+          </div>
+
+          <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
+            <div className="text-gray-400 text-sm mb-1">Sessions</div>
+            <div className="text-2xl font-bold">{stats.sessionsAssigned}</div>
+            <div className="text-xs text-gray-500">assigned</div>
           </div>
 
           <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">

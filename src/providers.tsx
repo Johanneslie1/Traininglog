@@ -24,8 +24,11 @@ const NavigationHandler: React.FC = () => {
     if (savedState && savedState.currentPath) {
       const targetPath = savedState.currentPath.replace('#', '');
       if (targetPath !== location.pathname && targetPath !== '#/') {
-        console.log('[NavigationHandler] Restoring navigation to:', targetPath);
         navigate(targetPath, { replace: true });
+      }
+
+      if (savedState.scrollPosition) {
+        StatePersistence.restoreScrollPosition(savedState.scrollPosition);
       }
     }
   }, []); // Only run once on mount
