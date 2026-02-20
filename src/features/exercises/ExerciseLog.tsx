@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { SupersetProvider, useSupersets } from '../../context/SupersetContext';
 import { useDate } from '../../context/DateContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ExerciseLog as ExerciseLogType } from '../../types/exercise';
 import { ExerciseSet } from '../../types/sets';
 import { ExerciseData } from '../../services/exerciseDataService';
@@ -23,11 +23,17 @@ import DraggableExerciseDisplay from '../../components/DraggableExerciseDisplay'
 import FloatingSupersetControls from '../../components/FloatingSupersetControls';
 import { getAllExercisesByDate, UnifiedExerciseData, deleteExercise } from '../../utils/unifiedExerciseUtils';
 import { FloatingActionButton, EmptyState, ExerciseListSkeleton } from '../../components/ui';
+import { updateSharedSessionStatus } from '@/services/sessionService';
+import { prescriptionToSets } from '@/utils/prescriptionUtils';
+import { ActivityType } from '@/types/activityTypes';
+import { SharedSessionAssignment } from '@/types/program';
+import toast from 'react-hot-toast';
 
 interface ExerciseLogProps {}
 
 const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useSelector((state: RootState) => state.auth);
   const { removeExerciseFromSuperset, loadSupersetsForDate, saveSupersetsForDate } = useSupersets();
   const { selectedDate, setSelectedDate, normalizeDate } = useDate();
@@ -74,6 +80,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<ExerciseData | null>(null);
   const [editingExercise, setEditingExercise] = useState<UnifiedExerciseData | null>(null);
+  const [processedSharedAssignmentId, setProcessedSharedAssignmentId] = useState<string | null>(null);
 
   // Convert local storage exercise to ExerciseData format
   const convertToExerciseData = useCallback((exercise: Omit<ExerciseLogType, 'id'> & { id?: string }, userId: string): ExerciseData => ({
@@ -365,6 +372,52 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     });
   }, [user]);
 
+  useEffect(() => {
+    const sharedSessionAssignment = (location.state as { sharedSessionAssignment?: SharedSessionAssignment } | null)?.sharedSessionAssignment;
+
+    if (!sharedSessionAssignment || !user?.id) {
+      return;
+    }
+
+    if (processedSharedAssignmentId === sharedSessionAssignment.id) {
+      return;
+    }
+
+    const addAssignedSessionToLog = async () => {
+      try {
+        for (const exercise of sharedSessionAssignment.sessionData.exercises) {
+          const activityType = exercise.activityType || ActivityType.RESISTANCE;
+          const shouldPrefill = exercise.instructionMode === 'structured' && !!exercise.prescription;
+          const sets = shouldPrefill ? prescriptionToSets(exercise.prescription!, activityType) : [];
+
+          await addExerciseLog(
+            {
+              exerciseName: exercise.name,
+              userId: user.id,
+              sets,
+              activityType: activityType
+            },
+            selectedDate
+          );
+        }
+
+        if (sharedSessionAssignment.status === 'not-started') {
+          await updateSharedSessionStatus(sharedSessionAssignment.id, 'in-progress');
+        }
+
+        setProcessedSharedAssignmentId(sharedSessionAssignment.id);
+        await loadExercises(selectedDate);
+        toast.success('Assigned session added to your log');
+        navigate(location.pathname, { replace: true, state: null });
+      } catch (error) {
+        console.error('Error adding assigned session to log:', error);
+        toast.error('Could not add assigned session to log');
+      }
+    };
+
+    addAssignedSessionToLog();
+  }, [location.state, location.pathname, navigate, loadExercises, processedSharedAssignmentId, selectedDate, user?.id]);
+
   return (
     <div className="relative min-h-screen bg-bg-primary">
       {/* Main Content */}
@@ -421,7 +474,6 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
         isOpen={uiState.showMenu}
         onClose={() => updateUiState('showMenu', false)}
         onNavigateToday={() => setSelectedDate(new Date())}
-        onNavigatePrograms={() => { navigate('/programs'); }}
         onOpenSettings={() => {
           updateUiState('showMenu', false);
           setShowSettings(true);

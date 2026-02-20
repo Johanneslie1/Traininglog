@@ -5,15 +5,15 @@ import { UsersIcon, ChartBarIcon, ClipboardListIcon } from '@heroicons/react/out
 import toast from 'react-hot-toast';
 import { useIsCoach } from '@/hooks/useUserRole';
 import AthleteList from './AthleteList';
+import CoachProgramAssignmentPanel from './CoachProgramAssignmentPanel';
 import TeamList from '@/features/teams/TeamList';
-import SharedProgramList from '@/features/programs/SharedProgramList';
-import SharedSessionsList from '@/features/sessions/SharedSessionsList';
+import CoachAnnouncementsPanel from '@/features/coach/CoachAnnouncementsPanel';
 
 interface TeamWithMembers extends Team {
   memberCount: number;
 }
 
-type CoachTab = 'overview' | 'teams' | 'athletes' | 'programs' | 'sessions';
+type CoachTab = 'overview' | 'teams' | 'athletes' | 'programs' | 'announcements';
 
 const CoachDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -28,7 +28,7 @@ const CoachDashboard: React.FC = () => {
     tabParam === 'athletes' ||
     tabParam === 'overview' ||
     tabParam === 'programs' ||
-    tabParam === 'sessions'
+    tabParam === 'announcements'
       ? tabParam
       : 'overview';
 
@@ -37,7 +37,7 @@ const CoachDashboard: React.FC = () => {
     { id: 'teams', label: 'Teams' },
     { id: 'athletes', label: 'Athletes' },
     { id: 'programs', label: 'Programs' },
-    { id: 'sessions', label: 'Sessions' }
+    { id: 'announcements', label: 'Announcements' }
   ];
 
   useEffect(() => {
@@ -206,11 +206,11 @@ const CoachDashboard: React.FC = () => {
         )}
 
         {activeTab === 'programs' && (
-          <SharedProgramList embedded />
+          <CoachProgramAssignmentPanel />
         )}
 
-        {activeTab === 'sessions' && (
-          <SharedSessionsList embedded />
+        {activeTab === 'announcements' && (
+          <CoachAnnouncementsPanel />
         )}
       </div>
     </div>

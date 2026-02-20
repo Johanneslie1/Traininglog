@@ -3,6 +3,7 @@ import { db } from './firebase/firebase';
 import {
   collection,
   doc,
+  FirestoreError,
   getDocs,
   query,
   where,
@@ -43,6 +44,18 @@ function removeUndefinedFields<T>(obj: T): T {
   }
   return obj;
 }
+
+const isPermissionDeniedError = (error: unknown): boolean => {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+
+  const firestoreError = error as Partial<FirestoreError> & { message?: string };
+  return (
+    firestoreError.code === 'permission-denied' ||
+    firestoreError.message?.includes('Missing or insufficient permissions') === true
+  );
+};
 
 /**
  * Share a session with multiple athletes
@@ -154,6 +167,11 @@ export const getSharedSessionsForAthlete = async (): Promise<SharedSessionAssign
     console.log('[sessionService] Found', activeAssignments.length, 'active shared sessions');
     return activeAssignments;
   } catch (error) {
+    if (isPermissionDeniedError(error)) {
+      console.warn('[sessionService] Permission denied while fetching shared sessions. Returning empty list.');
+      return [];
+    }
+
     console.error('[sessionService] Error fetching shared sessions:', error);
     throw error;
   }

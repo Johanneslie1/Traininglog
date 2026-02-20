@@ -34,6 +34,25 @@ export interface TeamMember {
   status: 'active' | 'inactive';
 }
 
+export const getTeamMember = async (teamId: string, userId: string): Promise<TeamMember | null> => {
+  try {
+    const memberRef = doc(db, 'teams', teamId, 'members', userId);
+    const memberSnap = await getDoc(memberRef);
+
+    if (!memberSnap.exists()) {
+      return null;
+    }
+
+    return {
+      id: memberSnap.id,
+      ...memberSnap.data()
+    } as TeamMember;
+  } catch (error) {
+    console.error('[teamService] Error fetching team member:', error);
+    throw error;
+  }
+};
+
 // Ensure user is authenticated
 async function ensureAuth() {
   const auth = getAuth();
@@ -413,10 +432,9 @@ export const getAthleteTeams = async (): Promise<Team[]> => {
     const userTeams: Team[] = [];
     
     for (const teamDoc of teamsSnapshot.docs) {
-      const memberRef = doc(db, 'teams', teamDoc.id, 'members', user.uid);
-      const memberSnap = await getDoc(memberRef);
+      const memberSnap = await getTeamMember(teamDoc.id, user.uid);
       
-      if (memberSnap.exists()) {
+      if (memberSnap) {
         userTeams.push({
           id: teamDoc.id,
           ...teamDoc.data()
@@ -427,6 +445,28 @@ export const getAthleteTeams = async (): Promise<Team[]> => {
     return userTeams;
   } catch (error) {
     console.error('[teamService] Error fetching athlete teams:', error);
+    throw error;
+  }
+};
+
+/**
+ * Leave a team as the currently authenticated athlete
+ */
+export const leaveTeam = async (teamId: string): Promise<void> => {
+  try {
+    const user = await ensureAuth();
+
+    const existingMembership = await getTeamMember(teamId, user.uid);
+    if (!existingMembership) {
+      throw new Error('You are not a member of this team');
+    }
+
+    const memberRef = doc(db, 'teams', teamId, 'members', user.uid);
+    await deleteDoc(memberRef);
+
+    console.log('[teamService] Athlete left team successfully');
+  } catch (error) {
+    console.error('[teamService] Error leaving team:', error);
     throw error;
   }
 };

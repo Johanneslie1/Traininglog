@@ -15,22 +15,12 @@ const ProgramList = lazy(() => import('@/features/programs/ProgramList'));
 const ProgramDetail = lazy(() => import('@/features/programs/ProgramDetail'));
 const AthleteTeamsHub = lazy(() => import('@/features/teams/AthleteTeamsHub'));
 const TeamDetail = lazy(() => import('@/features/teams/TeamDetail'));
+const JoinTeam = lazy(() => import('@/features/teams/JoinTeam'));
 const CoachDashboard = lazy(() => import('@/features/coach/CoachDashboard'));
 const AthleteOverview = lazy(() => import('@/features/coach/AthleteOverview'));
 const Debug = lazy(() => import('@/features/debug/Debug'));
 const ExerciseOverview = lazy(() => import('@/pages/ExerciseOverview'));
 const SpeedAgilityPlyoPage = lazy(() => import('@/pages/SpeedAgilityPlyoPage'));
-
-const TeamsRouteWrapper: React.FC = () => {
-  const user = useSelector((state: RootState) => state.auth.user);
-  const isCoach = user?.role === 'coach';
-
-  if (isCoach) {
-    return <Navigate to="/coach?tab=teams" replace />;
-  }
-
-  return <AthleteTeamsHub />;
-};
 
 // Wrapper to fetch program by id and render ProgramDetail
 const ProgramDetailWrapper: React.FC = () => {
@@ -94,6 +84,12 @@ interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
+interface RoleRouteProps {
+  children: React.ReactNode;
+  allowedRole: 'coach' | 'athlete';
+  redirectTo: string;
+}
+
 // Protected Route wrapper
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { isAuthenticated, isLoading } = useSelector((state: RootState) => state.auth);
@@ -109,6 +105,16 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
 
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
+};
+
+const RoleRoute: React.FC<RoleRouteProps> = ({ children, allowedRole, redirectTo }) => {
+  const userRole = useSelector((state: RootState) => state.auth.user?.role);
+
+  if (userRole !== allowedRole) {
+    return <Navigate to={redirectTo} replace />;
+  }
+
+  return <>{children}</>;
 };
 
 // App Routes
@@ -168,7 +174,9 @@ const AppRoutes: React.FC = () => {
           path="/teams"
           element={
             <ProtectedRoute>
-              <TeamsRouteWrapper />
+              <RoleRoute allowedRole="athlete" redirectTo="/coach?tab=teams">
+                <AthleteTeamsHub />
+              </RoleRoute>
             </ProtectedRoute>
           }
         />
@@ -181,10 +189,28 @@ const AppRoutes: React.FC = () => {
           }
         />
         <Route
+          path="/join/:inviteCode"
+          element={
+            <ProtectedRoute>
+              <JoinTeam />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/join"
+          element={
+            <ProtectedRoute>
+              <JoinTeam />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/coach"
           element={
             <ProtectedRoute>
-              <CoachDashboard />
+              <RoleRoute allowedRole="coach" redirectTo="/teams?tab=teams">
+                <CoachDashboard />
+              </RoleRoute>
             </ProtectedRoute>
           }
         />
@@ -192,7 +218,9 @@ const AppRoutes: React.FC = () => {
           path="/coach/athlete/:athleteId"
           element={
             <ProtectedRoute>
-              <AthleteOverview />
+              <RoleRoute allowedRole="coach" redirectTo="/teams?tab=teams">
+                <AthleteOverview />
+              </RoleRoute>
             </ProtectedRoute>
           }
         />

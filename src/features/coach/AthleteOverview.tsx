@@ -18,9 +18,11 @@ import {
   FilterIcon,
   CheckCircleIcon,
   ClockIcon,
-  PlayIcon
+  PlayIcon,
+  ShareIcon
 } from '@heroicons/react/outline';
 import toast from 'react-hot-toast';
+import AthleteAssignDialog from './AthleteAssignDialog';
 
 type DateFilter = '7days' | '30days' | '3months' | 'all';
 
@@ -33,6 +35,7 @@ const AthleteOverview: React.FC = () => {
   const [assignedPrograms, setAssignedPrograms] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dateFilter, setDateFilter] = useState<DateFilter>('30days');
+  const [showAssignDialog, setShowAssignDialog] = useState(false);
 
   useEffect(() => {
     if (athleteId) {
@@ -177,16 +180,27 @@ const AthleteOverview: React.FC = () => {
 
         {/* Athlete Info Card */}
         <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-lg p-6 mb-6">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-16 h-16 bg-primary-900/30 rounded-full flex items-center justify-center">
-              <span className="text-primary-400 text-2xl font-bold">
-                A
-              </span>
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 bg-primary-900/30 rounded-full flex items-center justify-center">
+                <span className="text-primary-400 text-2xl font-bold">
+                  A
+                </span>
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold">Athlete #{athleteId?.slice(0, 8) || 'Unknown'}</h1>
+                <p className="text-gray-400">Member since {formatDate(new Date().toISOString())}</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-3xl font-bold">Athlete #{athleteId?.slice(0, 8) || 'Unknown'}</h1>
-              <p className="text-gray-400">Member since {formatDate(new Date().toISOString())}</p>
-            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowAssignDialog(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium transition-colors"
+            >
+              <ShareIcon className="h-4 w-4" />
+              Assign Program/Session
+            </button>
           </div>
 
           {/* Last Active */}
@@ -355,6 +369,14 @@ const AthleteOverview: React.FC = () => {
           )}
         </div>
       </div>
+
+      {showAssignDialog && athleteId && (
+        <AthleteAssignDialog
+          athleteId={athleteId}
+          onClose={() => setShowAssignDialog(false)}
+          onAssigned={loadAthleteData}
+        />
+      )}
     </div>
   );
 };

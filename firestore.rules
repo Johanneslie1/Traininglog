@@ -1,5 +1,4 @@
-// This file won't be automatically deployed, but it shows the recommended Firestore rules
-// You'll need to copy these to your Firebase console if your access is being denied
+// Firestore security rules for the app. Deploy with: firebase deploy --only firestore:rules
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -202,6 +201,24 @@ service cloud.firestore {
       // Allow delete by coach only
       allow delete: if isAuthenticated() && 
         resource.data.sharedBy == request.auth.uid;
+    }
+
+    // Coach announcements collection
+    match /coachAnnouncements/{announcementId} {
+      // Coaches can read announcements they created.
+      // Athletes can read announcements where they are recipients.
+      allow read: if isAuthenticated() && (
+        resource.data.createdBy == request.auth.uid ||
+        request.auth.uid in resource.data.recipientUserIds
+      );
+
+      // Create is allowed for authenticated users creating as themselves.
+      allow create: if isAuthenticated() &&
+        request.resource.data.createdBy == request.auth.uid;
+
+      // Only creator can update/delete.
+      allow update, delete: if isAuthenticated() &&
+        resource.data.createdBy == request.auth.uid;
     }
 
     // Teams collection

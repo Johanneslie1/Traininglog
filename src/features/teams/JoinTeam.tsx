@@ -62,7 +62,7 @@ const JoinTeam: React.FC = () => {
       toast.success(`Successfully joined ${team.name}!`);
       
       // Navigate to home or teams page
-      navigate('/');
+      navigate('/teams?tab=teams');
     } catch (error) {
       console.error('Error joining team:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to join team');

@@ -77,7 +77,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           isOpen={showMenu}
           onClose={() => setShowMenu(false)}
           onNavigateToday={() => handleNavigate('/')}
-          onNavigatePrograms={() => handleNavigate('/programs')}
           onOpenSettings={() => {
             setShowMenu(false);
             setShowSettings(true);

@@ -567,7 +567,6 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
         isOpen={showSideMenu}
         onClose={() => setShowSideMenu(false)}
         onNavigateToday={() => navigate('/')}
-        onNavigatePrograms={() => navigate('/programs')}
         onOpenSettings={() => {
           setShowSideMenu(false);
           setShowSettings(true);
