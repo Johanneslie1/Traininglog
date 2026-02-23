@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { CreateExerciseDialog } from '../../components/exercises/CreateExerciseDialog';
+import { CreateUniversalExerciseDialog } from '@/components/exercises/CreateUniversalExerciseDialog';
 
 interface MenuItem {
   name: string;
@@ -141,7 +141,7 @@ const Navigation: React.FC = () => {
 
       {/* Create Exercise Dialog */}
       {showCreateDialog && (
-        <CreateExerciseDialog
+        <CreateUniversalExerciseDialog
           onClose={() => setShowCreateDialog(false)}
           onSuccess={(_id) => {
             setShowCreateDialog(false);

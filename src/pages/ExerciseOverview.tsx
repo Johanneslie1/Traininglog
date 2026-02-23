@@ -3,7 +3,7 @@ import { useCollection } from '@/hooks/useCollection';
 import { db } from '@/services/firebase/config';
 import { collection, query, where, orderBy, QueryConstraint } from 'firebase/firestore';
 import type { Exercise } from '@/types/exercise';
-import { CreateExerciseDialog } from '@/components/exercises/CreateExerciseDialog';
+import { CreateUniversalExerciseDialog } from '@/components/exercises/CreateUniversalExerciseDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useLocation } from 'react-router-dom';
 interface FilterState {
@@ -172,7 +172,7 @@ const ExerciseOverview: React.FC = () => {
 
       {/* Create Exercise Dialog */}
       {showCreateDialog && (
-        <CreateExerciseDialog
+        <CreateUniversalExerciseDialog
           onClose={() => setShowCreateDialog(false)}
           onSuccess={() => {
             setShowCreateDialog(false);

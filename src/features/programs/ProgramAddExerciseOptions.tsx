@@ -62,7 +62,7 @@ export const ProgramAddExerciseOptions: React.FC<ProgramAddExerciseOptionsProps>
   const [view, setView] = useState<ViewState>('main');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [createDialogActivityType, setCreateDialogActivityType] = useState<ActivityType>(ActivityType.RESISTANCE);
+  const [createDialogActivityType, setCreateDialogActivityType] = useState<ActivityType | undefined>(undefined);
 
   if (false) { // Removed universal search functionality
     const universalSearchQuery = '';
@@ -357,21 +357,21 @@ export const ProgramAddExerciseOptions: React.FC<ProgramAddExerciseOptionsProps>
                       <div className="text-text-tertiary"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg></div>
                     </div>
                   </div>
-                  <button
-                    onClick={() => {
-                      setCreateDialogActivityType(a.id as ActivityType);
-                      setShowCreateDialog(true);
-                    }}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-white/10 text-text-secondary hover:bg-white/20 hover:text-text-primary transition-colors text-sm"
-                  >
-                    <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 102 0v-5h5a1 1 0 100-2h-5V4a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
-                    Create {a.name.split(' ')[0]} Exercise
-                  </button>
                 </div>
               ))}
             </div>
+            <button
+              onClick={() => {
+                setCreateDialogActivityType(undefined);
+                setShowCreateDialog(true);
+              }}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/10 border border-border text-text-primary hover:bg-white/15 transition-colors"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 102 0v-5h5a1 1 0 100-2h-5V4a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              Create New Exercise
+            </button>
           </section>
         </div>
       </main>

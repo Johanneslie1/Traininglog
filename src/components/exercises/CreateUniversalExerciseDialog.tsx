@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { Exercise, MuscleGroup } from '@/types/exercise';
 import { ActivityType } from '@/types/activityTypes';
@@ -148,11 +148,12 @@ interface FormErrors {
 export const CreateUniversalExerciseDialog: React.FC<CreateUniversalExerciseDialogProps> = ({
   onClose,
   onSuccess,
-  activityType = ActivityType.RESISTANCE,
+  activityType,
   searchQuery = ''
 }) => {
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedActivityType, setSelectedActivityType] = useState<ActivityType | null>(activityType ?? null);
   const [exercise, setExercise] = useState<UniversalExerciseFormData>({
     name: searchQuery,
     description: '',
@@ -164,6 +165,12 @@ export const CreateUniversalExerciseDialog: React.FC<CreateUniversalExerciseDial
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
+
+  const allowActivityTypeSelection = !activityType;
+
+  useEffect(() => {
+    setSelectedActivityType(activityType ?? null);
+  }, [activityType]);
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -217,8 +224,8 @@ export const CreateUniversalExerciseDialog: React.FC<CreateUniversalExerciseDial
     return areas.map(area => mapping[area] || 'full_body' as MuscleGroup);
   };
 
-  const getExerciseType = (): Exercise['type'] => {
-    switch (activityType) {
+  const getExerciseType = (currentActivityType: ActivityType): Exercise['type'] => {
+    switch (currentActivityType) {
       case ActivityType.RESISTANCE:
         return 'strength';
       case ActivityType.ENDURANCE:
@@ -233,8 +240,8 @@ export const CreateUniversalExerciseDialog: React.FC<CreateUniversalExerciseDial
     }
   };
 
-  const getExerciseCategory = (): Exercise['category'] => {
-    switch (activityType) {
+  const getExerciseCategory = (currentActivityType: ActivityType): Exercise['category'] => {
+    switch (currentActivityType) {
       case ActivityType.RESISTANCE:
         return exercise.targetAreas.length > 1 ? 'compound' : 'isolation';
       case ActivityType.ENDURANCE:
@@ -251,8 +258,8 @@ export const CreateUniversalExerciseDialog: React.FC<CreateUniversalExerciseDial
     }
   };
 
-  const getDefaultUnit = (): Exercise['defaultUnit'] => {
-    switch (activityType) {
+  const getDefaultUnit = (currentActivityType: ActivityType): Exercise['defaultUnit'] => {
+    switch (currentActivityType) {
       case ActivityType.RESISTANCE:
         return 'kg';
       case ActivityType.ENDURANCE:
@@ -265,8 +272,8 @@ export const CreateUniversalExerciseDialog: React.FC<CreateUniversalExerciseDial
     }
   };
 
-  const getMetrics = (): Exercise['metrics'] => {
-    switch (activityType) {
+  const getMetrics = (currentActivityType: ActivityType): Exercise['metrics'] => {
+    switch (currentActivityType) {
       case ActivityType.RESISTANCE:
         return {
           trackWeight: true,
@@ -340,39 +347,46 @@ export const CreateUniversalExerciseDialog: React.FC<CreateUniversalExerciseDial
       return;
     }
 
+    if (!selectedActivityType) {
+      toast.error('Please select an activity type first');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
+      const currentActivityType = selectedActivityType;
+
       const exerciseData: Omit<Exercise, 'id'> = {
         name: exercise.name.trim(),
         description: exercise.description.trim(),
-        type: getExerciseType(),
-        category: getExerciseCategory(),
-        activityType: activityType,
+        type: getExerciseType(currentActivityType),
+        category: getExerciseCategory(currentActivityType),
+        activityType: currentActivityType,
         primaryMuscles: mapTargetAreasToMuscleGroups(exercise.targetAreas),
         secondaryMuscles: [],
         instructions: exercise.instructions.trim() ? [exercise.instructions.trim()] : [],
         tips: exercise.tips.trim() ? [exercise.tips.trim()] : [],
         equipment: exercise.equipment.map(eq => eq.replace(' (Bodyweight)', '')),
         difficulty: exercise.difficulty.toLowerCase() as 'beginner' | 'intermediate' | 'advanced',
-        defaultUnit: getDefaultUnit(),
-        metrics: getMetrics(),
+        defaultUnit: getDefaultUnit(currentActivityType),
+        metrics: getMetrics(currentActivityType),
         customExercise: true,
         isDefault: false,
         createdBy: user.id,
         userId: user.id,
         
         // Activity-specific fields
-        ...(activityType === ActivityType.SPORT && exercise.sportType && {
+        ...(currentActivityType === ActivityType.SPORT && exercise.sportType && {
           sportType: exercise.sportType,
           teamBased: ['Football', 'Basketball', 'Soccer', 'Hockey', 'Volleyball'].includes(exercise.sportType)
         }),
-        ...(activityType === ActivityType.ENDURANCE && exercise.enduranceCategory && {
+        ...(currentActivityType === ActivityType.ENDURANCE && exercise.enduranceCategory && {
           category: exercise.enduranceCategory.toLowerCase().replace(/\s+/g, '_')
         }),
-        ...(activityType === ActivityType.SPEED_AGILITY && exercise.drillType && {
+        ...(currentActivityType === ActivityType.SPEED_AGILITY && exercise.drillType && {
           drillType: exercise.drillType
         }),
-        ...(activityType === ActivityType.STRETCHING && exercise.flexibilityType && {
+        ...(currentActivityType === ActivityType.STRETCHING && exercise.flexibilityType && {
           flexibilityType: exercise.flexibilityType
         }),
       };
@@ -407,8 +421,8 @@ export const CreateUniversalExerciseDialog: React.FC<CreateUniversalExerciseDial
     }));
   };
 
-  const getActivityTypeTitle = () => {
-    switch (activityType) {
+  const getActivityTypeTitle = (currentActivityType: ActivityType | null) => {
+    switch (currentActivityType) {
       case ActivityType.RESISTANCE:
         return 'Resistance Exercise';
       case ActivityType.ENDURANCE:
@@ -426,16 +440,108 @@ export const CreateUniversalExerciseDialog: React.FC<CreateUniversalExerciseDial
     }
   };
 
+  const activityTypeOptions = [
+    {
+      value: ActivityType.RESISTANCE,
+      label: 'Resistance Training',
+      description: 'Weight lifting and strength training',
+      icon: '🏋️‍♂️'
+    },
+    {
+      value: ActivityType.SPORT,
+      label: 'Sports',
+      description: 'Team and individual sports',
+      icon: '⚽'
+    },
+    {
+      value: ActivityType.STRETCHING,
+      label: 'Stretching & Flexibility',
+      description: 'Mobility, stretching, and recovery',
+      icon: '🧘‍♀️'
+    },
+    {
+      value: ActivityType.ENDURANCE,
+      label: 'Endurance Training',
+      description: 'Cardio, running, cycling, and similar',
+      icon: '🏃‍♂️'
+    },
+    {
+      value: ActivityType.SPEED_AGILITY,
+      label: 'Speed & Agility',
+      description: 'Drills, plyometrics, and quickness work',
+      icon: '⚡'
+    },
+    {
+      value: ActivityType.OTHER,
+      label: 'Other Activities',
+      description: 'Any custom activity type',
+      icon: '🎯'
+    }
+  ];
+
+  if (!selectedActivityType) {
+    return (
+      <div className="fixed inset-0 z-80 overflow-y-auto">
+        <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+          <div className="relative transform overflow-hidden rounded-lg bg-[#1a1a1a] px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl sm:p-6 max-h-[90vh] overflow-y-auto">
+            <div className="space-y-6">
+              <div className="text-center">
+                <h3 className="text-lg font-semibold text-white">Select Activity Type</h3>
+                <p className="text-sm text-gray-400 mt-1">Choose where this exercise belongs before entering details</p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {activityTypeOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setSelectedActivityType(option.value)}
+                    className="text-left rounded-lg border border-gray-600 bg-[#2a2a2a] p-4 hover:bg-[#333] transition-colors"
+                  >
+                    <div className="flex items-start gap-3">
+                      <span className="text-2xl" aria-hidden="true">{option.icon}</span>
+                      <div>
+                        <p className="font-medium text-white">{option.label}</p>
+                        <p className="text-sm text-gray-400 mt-1">{option.description}</p>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={onClose}
+                className="inline-flex w-full justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:text-sm"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-80 overflow-y-auto">
       <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-        <div className="relative transform overflow-hidden rounded-lg bg-[#1a1a1a] px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl sm:p-6">
+        <div className="relative transform overflow-hidden rounded-lg bg-[#1a1a1a] px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl sm:p-6 max-h-[90vh] overflow-y-auto">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="text-center">
-              <h3 className="text-lg font-semibold text-white">Create {getActivityTypeTitle()}</h3>
+              <h3 className="text-lg font-semibold text-white">Create {getActivityTypeTitle(selectedActivityType)}</h3>
               <p className="text-sm text-gray-400 mt-1">
                 Add a custom exercise to your database
               </p>
+              {allowActivityTypeSelection && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedActivityType(null)}
+                  className="mt-2 text-xs text-blue-400 hover:text-blue-300"
+                >
+                  Change activity type
+                </button>
+              )}
             </div>
 
             <div>
@@ -492,7 +598,7 @@ export const CreateUniversalExerciseDialog: React.FC<CreateUniversalExerciseDial
             </div>
 
             {/* Activity-specific fields */}
-            {activityType === ActivityType.SPORT && (
+            {selectedActivityType === ActivityType.SPORT && (
               <div>
                 <label htmlFor="sportType" className="block text-sm font-medium text-white/90">
                   Sport Type
@@ -511,7 +617,7 @@ export const CreateUniversalExerciseDialog: React.FC<CreateUniversalExerciseDial
               </div>
             )}
 
-            {activityType === ActivityType.ENDURANCE && (
+            {selectedActivityType === ActivityType.ENDURANCE && (
               <div>
                 <label htmlFor="enduranceCategory" className="block text-sm font-medium text-white/90">
                   Endurance Category
@@ -530,7 +636,7 @@ export const CreateUniversalExerciseDialog: React.FC<CreateUniversalExerciseDial
               </div>
             )}
 
-            {activityType === ActivityType.SPEED_AGILITY && (
+            {selectedActivityType === ActivityType.SPEED_AGILITY && (
               <div>
                 <label htmlFor="drillType" className="block text-sm font-medium text-white/90">
                   Drill Type
@@ -549,7 +655,7 @@ export const CreateUniversalExerciseDialog: React.FC<CreateUniversalExerciseDial
               </div>
             )}
 
-            {activityType === ActivityType.STRETCHING && (
+            {selectedActivityType === ActivityType.STRETCHING && (
               <div>
                 <label htmlFor="flexibilityType" className="block text-sm font-medium text-white/90">
                   Flexibility Type

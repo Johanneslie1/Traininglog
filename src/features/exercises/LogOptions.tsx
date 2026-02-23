@@ -99,7 +99,6 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
   const [view, setView] = useState<ViewState>('main');
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [createDialogActivityType, setCreateDialogActivityType] = useState<ActivityType>(ActivityType.RESISTANCE);
   
   const user = useSelector((state: RootState) => state.auth.user);
 
@@ -550,57 +549,16 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
             </div>
           </section>
 
-          {/* Create Custom Exercise Section */}
           <section className="space-y-3 md:space-y-4 border-t border-border pt-4">
-            <h3 className="text-lg font-semibold text-text-primary">Create Custom Exercise</h3>
-            <div className="grid grid-cols-2 gap-3 md:gap-4">
-              {activityTypes.map(activityType => (
-                <button
-                  key={`create-${activityType.id}`}
-                  onClick={() => {
-                    let dialogActivityType = ActivityType.RESISTANCE;
-                    switch (activityType.id) {
-                      case 'resistance':
-                        dialogActivityType = ActivityType.RESISTANCE;
-                        break;
-                      case 'sport':
-                        dialogActivityType = ActivityType.SPORT;
-                        break;
-                      case 'stretching':
-                        dialogActivityType = ActivityType.STRETCHING;
-                        break;
-                      case 'endurance':
-                        dialogActivityType = ActivityType.ENDURANCE;
-                        break;
-                      case 'speedAgility':
-                        dialogActivityType = ActivityType.SPEED_AGILITY;
-                        break;
-                      case 'other':
-                        dialogActivityType = ActivityType.OTHER;
-                        break;
-                    }
-                    setCreateDialogActivityType(dialogActivityType);
-                    setShowCreateDialog(true);
-                  }}
-                  className="flex items-center p-3 bg-white/5 border border-border rounded-xl hover:bg-white/10 transition-colors text-left"
-                >
-                  <div className="text-lg mr-3">{activityType.icon}</div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-text-primary text-sm font-medium truncate">
-                      Create {activityType.name}
-                    </p>
-                    <p className="text-text-tertiary text-xs truncate">
-                      Custom exercise
-                    </p>
-                  </div>
-                  <div className="text-text-muted">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                  </div>
-                </button>
-              ))}
-            </div>
+            <button
+              onClick={() => setShowCreateDialog(true)}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/10 border border-border text-text-primary hover:bg-white/15 transition-colors"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 102 0v-5h5a1 1 0 100-2h-5V4a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              Create New Exercise
+            </button>
           </section>
         </div>
       </main>
@@ -613,7 +571,6 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
             setShowCreateDialog(false);
             // Optionally handle the created exercise
           }}
-          activityType={createDialogActivityType}
           searchQuery=""
         />
       )}
