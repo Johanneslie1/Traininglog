@@ -1,22 +1,30 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-hot-toast';
-import { Exercise, MuscleGroup } from '@/types/exercise';
+import { collection, orderBy, query, QueryConstraint, where } from 'firebase/firestore';
 import { ActivityType } from '@/types/activityTypes';
-import { addDoc, collection } from 'firebase/firestore';
-import { db } from '@/services/firebase/config';
+import type { Exercise } from '@/types/exercise';
 import { useAuth } from '@/hooks/useAuth';
+import { useCollection } from '@/hooks/useCollection';
+import { db } from '@/services/firebase/config';
+import {
+  createExerciseByActivityType,
+  deleteCustomExerciseById,
+  DuplicateExerciseNameError,
+  findDuplicateExerciseByName,
+  updateExerciseByActivityType
+} from '@/services/customExerciseCreationService';
 
 interface CreateUniversalExerciseDialogProps {
   onClose: () => void;
   onSuccess?: (exerciseId: string) => void;
   activityType?: ActivityType;
   searchQuery?: string;
+  initialExercise?: Exercise;
 }
 
-// General body parts/target areas
 export const generalTargetAreas = [
   'Chest',
-  'Back', 
+  'Back',
   'Shoulders',
   'Biceps',
   'Triceps',
@@ -30,10 +38,9 @@ export const generalTargetAreas = [
   'Full Body',
   'Upper Body',
   'Lower Body',
-  'Cardiovascular',
+  'Cardiovascular'
 ] as const;
 
-// Sport types
 export const sportTypes = [
   'Football',
   'Basketball',
@@ -49,10 +56,9 @@ export const sportTypes = [
   'Hockey',
   'Volleyball',
   'Golf',
-  'Other',
+  'Other'
 ] as const;
 
-// Endurance categories
 export const enduranceCategories = [
   'Running',
   'Cycling',
@@ -62,22 +68,20 @@ export const enduranceCategories = [
   'Hiking',
   'HIIT',
   'Circuit Training',
-  'Other Cardio',
+  'Other Cardio'
 ] as const;
 
-// Speed & Agility drill types
 export const drillTypes = [
   'Speed',
   'Agility',
-  'Plyometric', 
+  'Plyometric',
   'Reaction',
   'Coordination',
   'Balance',
   'Power',
-  'Change of Direction',
+  'Change of Direction'
 ] as const;
 
-// Flexibility/Stretching types
 export const flexibilityTypes = [
   'Static Stretching',
   'Dynamic Stretching',
@@ -86,10 +90,9 @@ export const flexibilityTypes = [
   'Mobility Work',
   'Foam Rolling',
   'PNF Stretching',
-  'Active Recovery',
+  'Active Recovery'
 ] as const;
 
-// Equipment options
 export const equipmentOptions = [
   'None (Bodyweight)',
   'Dumbbells',
@@ -110,7 +113,7 @@ export const equipmentOptions = [
   'Mats',
   'Cones',
   'Ladder',
-  'Other',
+  'Other'
 ] as const;
 
 type GeneralTargetArea = typeof generalTargetAreas[number];
@@ -120,20 +123,18 @@ type DrillType = typeof drillTypes[number];
 type FlexibilityType = typeof flexibilityTypes[number];
 type Equipment = typeof equipmentOptions[number];
 
+type FormStep = 1 | 2 | 3;
+
 interface UniversalExerciseFormData {
   name: string;
   description: string;
   targetAreas: GeneralTargetArea[];
   equipment: Equipment[];
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
-  
-  // Activity-specific fields
   sportType?: SportType;
   enduranceCategory?: EnduranceCategory;
   drillType?: DrillType;
   flexibilityType?: FlexibilityType;
-  
-  // Instructions/tips
   instructions: string;
   tips: string;
 }
@@ -145,280 +146,241 @@ interface FormErrors {
   instructions?: string;
 }
 
+const getFormFromExercise = (exercise?: Exercise, fallbackName = ''): UniversalExerciseFormData => {
+  if (!exercise) {
+    return {
+      name: fallbackName,
+      description: '',
+      targetAreas: [],
+      equipment: [],
+      difficulty: 'Beginner',
+      instructions: '',
+      tips: ''
+    };
+  }
+
+  const difficultyValue = exercise.difficulty
+    ? `${exercise.difficulty.charAt(0).toUpperCase()}${exercise.difficulty.slice(1)}`
+    : 'Beginner';
+
+  return {
+    name: exercise.name ?? fallbackName,
+    description: exercise.description ?? '',
+    targetAreas: (exercise.targetAreas ?? []) as GeneralTargetArea[],
+    equipment: (exercise.equipment ?? []) as Equipment[],
+    difficulty: (difficultyValue as UniversalExerciseFormData['difficulty']) ?? 'Beginner',
+    instructions: Array.isArray(exercise.instructions) ? exercise.instructions.join('\n') : '',
+    tips: Array.isArray(exercise.tips) ? exercise.tips.join('\n') : '',
+    sportType: exercise.sportType as SportType | undefined,
+    enduranceCategory: (exercise.category as EnduranceCategory) ?? undefined,
+    drillType: exercise.drillType as DrillType | undefined,
+    flexibilityType: (exercise.category as FlexibilityType) ?? undefined
+  };
+};
+
+const normalizeExerciseName = (name: string): string => name.trim().replace(/\s+/g, ' ').toLowerCase();
+
 export const CreateUniversalExerciseDialog: React.FC<CreateUniversalExerciseDialogProps> = ({
   onClose,
   onSuccess,
   activityType,
-  searchQuery = ''
+  searchQuery = '',
+  initialExercise
 }) => {
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedActivityType, setSelectedActivityType] = useState<ActivityType | null>(activityType ?? null);
-  const [exercise, setExercise] = useState<UniversalExerciseFormData>({
-    name: searchQuery,
-    description: '',
-    targetAreas: [],
-    equipment: [],
-    difficulty: 'Beginner',
-    instructions: '',
-    tips: '',
-  });
-
+  const [selectedActivityType, setSelectedActivityType] = useState<ActivityType | null>(
+    activityType ?? initialExercise?.activityType ?? null
+  );
+  const [exercise, setExercise] = useState<UniversalExerciseFormData>(
+    getFormFromExercise(initialExercise, searchQuery)
+  );
+  const [step, setStep] = useState<FormStep>(1);
   const [errors, setErrors] = useState<FormErrors>({});
+  const [duplicateExercise, setDuplicateExercise] = useState<Exercise | null>(null);
+  const [deleteCandidate, setDeleteCandidate] = useState<Exercise | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [editingExerciseId, setEditingExerciseId] = useState<string | null>(initialExercise?.id ?? null);
 
+  const isEditMode = Boolean(editingExerciseId);
   const allowActivityTypeSelection = !activityType;
 
+  const customExerciseConstraints: QueryConstraint[] = [];
+  if (user?.id) {
+    customExerciseConstraints.push(where('userId', '==', user.id));
+  } else {
+    customExerciseConstraints.push(where('userId', '==', '__no-user__'));
+  }
+  customExerciseConstraints.push(orderBy('name'));
+
+  const customExerciseQuery = query(collection(db, 'exercises'), ...customExerciseConstraints);
+  const { documents: userExercises } = useCollection<Exercise>(customExerciseQuery);
+  const customExercises = useMemo(() => {
+    return (userExercises ?? []).filter((item) => Boolean(item.userId));
+  }, [userExercises]);
+
   useEffect(() => {
-    setSelectedActivityType(activityType ?? null);
-  }, [activityType]);
+    setSelectedActivityType(activityType ?? initialExercise?.activityType ?? null);
+  }, [activityType, initialExercise]);
 
-  const validateForm = (): boolean => {
-    const newErrors: FormErrors = {};
+  const validateStep = (stepToValidate: FormStep): boolean => {
+    const nextErrors: FormErrors = {};
 
-    if (!exercise.name?.trim()) {
-      newErrors.name = 'Exercise name is required';
-    } else if (exercise.name.length < 3) {
-      newErrors.name = 'Name must be at least 3 characters';
+    if (stepToValidate >= 1) {
+      if (!exercise.name.trim()) {
+        nextErrors.name = 'Please enter an activity name.';
+      } else if (exercise.name.trim().length < 3) {
+        nextErrors.name = 'Name must be at least 3 characters.';
+      }
+
+      if (!exercise.description.trim()) {
+        nextErrors.description = 'Please add a short description.';
+      } else if (exercise.description.trim().length < 10) {
+        nextErrors.description = 'Description should be at least 10 characters.';
+      }
     }
 
-    if (!exercise.description?.trim()) {
-      newErrors.description = 'Description is required';
-    } else if (exercise.description.length < 10) {
-      newErrors.description = 'Description must be at least 10 characters';
+    if (stepToValidate >= 2) {
+      if (!exercise.targetAreas.length) {
+        nextErrors.targetAreas = 'Select at least one target area.';
+      }
+
+      if (!exercise.instructions.trim()) {
+        nextErrors.instructions = 'Please provide instructions.';
+      } else if (exercise.instructions.trim().length < 10) {
+        nextErrors.instructions = 'Instructions should be at least 10 characters.';
+      }
     }
 
-    if (!exercise.targetAreas?.length) {
-      newErrors.targetAreas = 'Select at least one target area';
-    }
-
-    if (!exercise.instructions?.trim()) {
-      newErrors.instructions = 'Instructions are required';
-    } else if (exercise.instructions.length < 10) {
-      newErrors.instructions = 'Instructions must be at least 10 characters';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
   };
 
-  const mapTargetAreasToMuscleGroups = (areas: GeneralTargetArea[]): MuscleGroup[] => {
-    const mapping: Record<string, MuscleGroup> = {
-      'Chest': 'chest',
-      'Back': 'back',
-      'Shoulders': 'shoulders',
-      'Biceps': 'biceps',
-      'Triceps': 'triceps',
-      'Forearms': 'forearms',
-      'Core': 'core',
-      'Legs': 'quadriceps',
-      'Quadriceps': 'quadriceps',
-      'Hamstrings': 'hamstrings',
-      'Calves': 'calves',
-      'Glutes': 'glutes',
-      'Full Body': 'full_body',
-      'Upper Body': 'full_body',
-      'Lower Body': 'quadriceps',
-      'Cardiovascular': 'full_body',
-    };
-
-    return areas.map(area => mapping[area] || 'full_body' as MuscleGroup);
+  const handleTargetAreaToggle = (area: GeneralTargetArea) => {
+    setExercise((prev) => ({
+      ...prev,
+      targetAreas: prev.targetAreas.includes(area)
+        ? prev.targetAreas.filter((value) => value !== area)
+        : [...prev.targetAreas, area]
+    }));
   };
 
-  const getExerciseType = (currentActivityType: ActivityType): Exercise['type'] => {
-    switch (currentActivityType) {
-      case ActivityType.RESISTANCE:
-        return 'strength';
-      case ActivityType.ENDURANCE:
-        return 'cardio';
-      case ActivityType.STRETCHING:
-        return 'flexibility';
-      case ActivityType.SPORT:
-      case ActivityType.SPEED_AGILITY:
-      case ActivityType.OTHER:
-      default:
-        return 'strength';
+  const handleEquipmentToggle = (equipmentItem: Equipment) => {
+    setExercise((prev) => ({
+      ...prev,
+      equipment: prev.equipment.includes(equipmentItem)
+        ? prev.equipment.filter((value) => value !== equipmentItem)
+        : [...prev.equipment, equipmentItem]
+    }));
+  };
+
+  const checkDuplicate = async (): Promise<Exercise | null> => {
+    if (!user?.id || !selectedActivityType || !exercise.name.trim()) {
+      setDuplicateExercise(null);
+      return null;
     }
-  };
 
-  const getExerciseCategory = (currentActivityType: ActivityType): Exercise['category'] => {
-    switch (currentActivityType) {
-      case ActivityType.RESISTANCE:
-        return exercise.targetAreas.length > 1 ? 'compound' : 'isolation';
-      case ActivityType.ENDURANCE:
-        return 'cardio';
-      case ActivityType.STRETCHING:
-        return 'stretching';
-      case ActivityType.SPORT:
-        return 'sport';
-      case ActivityType.SPEED_AGILITY:
-        return 'plyometric';
-      case ActivityType.OTHER:
-      default:
-        return 'other';
+    const duplicate = await findDuplicateExerciseByName(
+      selectedActivityType,
+      exercise.name,
+      user.id,
+      editingExerciseId ?? undefined
+    );
+
+    setDuplicateExercise(duplicate);
+
+    if (duplicate) {
+      setErrors((prev) => ({
+        ...prev,
+        name: 'This name already exists for this activity type. Edit existing instead.'
+      }));
     }
+
+    return duplicate;
   };
 
-  const getDefaultUnit = (currentActivityType: ActivityType): Exercise['defaultUnit'] => {
-    switch (currentActivityType) {
-      case ActivityType.RESISTANCE:
-        return 'kg';
-      case ActivityType.ENDURANCE:
-      case ActivityType.STRETCHING:
-      case ActivityType.SPORT:
-      case ActivityType.SPEED_AGILITY:
-      case ActivityType.OTHER:
-      default:
-        return 'time';
-    }
+  const loadExerciseForEdit = (exerciseToEdit: Exercise) => {
+    setEditingExerciseId(exerciseToEdit.id);
+    setSelectedActivityType(exerciseToEdit.activityType ?? ActivityType.OTHER);
+    setExercise(getFormFromExercise(exerciseToEdit));
+    setStep(1);
+    setErrors({});
+    setDuplicateExercise(null);
   };
 
-  const getMetrics = (currentActivityType: ActivityType): Exercise['metrics'] => {
-    switch (currentActivityType) {
-      case ActivityType.RESISTANCE:
-        return {
-          trackWeight: true,
-          trackReps: true,
-          trackSets: true,
-          trackTime: false,
-          trackDistance: false,
-          trackRPE: true,
-        };
-      case ActivityType.ENDURANCE:
-        return {
-          trackWeight: false,
-          trackReps: true, // All exercises support sets/reps
-          trackSets: true,
-          trackTime: true,
-          trackDistance: true,
-          trackRPE: true,
-          trackIntensity: true,
-        };
-      case ActivityType.STRETCHING:
-        return {
-          trackWeight: false,
-          trackReps: true, // All exercises support sets/reps
-          trackSets: true,
-          trackTime: true,
-          trackDistance: false,
-          trackRPE: true,
-        };
-      case ActivityType.SPORT:
-        return {
-          trackWeight: false,
-          trackReps: true,
-          trackSets: true,
-          trackTime: true,
-          trackDistance: true,
-          trackRPE: true,
-        };
-      case ActivityType.SPEED_AGILITY:
-        return {
-          trackWeight: false,
-          trackReps: true,
-          trackSets: true,
-          trackTime: true,
-          trackDistance: true,
-          trackRPE: true,
-          trackHeight: true,
-        };
-      case ActivityType.OTHER:
-      default:
-        return {
-          trackWeight: false,
-          trackReps: true, // All exercises support sets/reps
-          trackSets: true,
-          trackTime: true,
-          trackDistance: false,
-          trackRPE: true,
-        };
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    
-    if (!user) {
-      toast.error('You must be logged in to create exercises');
+  const handleDeleteCustomExercise = async () => {
+    if (!user?.id || !deleteCandidate?.id) {
       return;
     }
 
-    if (!validateForm()) {
-      toast.error('Please fill in all required fields');
+    setIsDeleting(true);
+    try {
+      await deleteCustomExerciseById(deleteCandidate.id, user.id);
+      toast.success('Custom activity deleted.');
+      if (editingExerciseId === deleteCandidate.id) {
+        setEditingExerciseId(null);
+        setExercise(getFormFromExercise(undefined, searchQuery));
+      }
+      setDeleteCandidate(null);
+    } catch (error) {
+      console.error('Failed to delete custom activity:', error);
+      toast.error('Could not delete this activity. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!user) {
+      toast.error('You must be logged in to create activities.');
       return;
     }
 
     if (!selectedActivityType) {
-      toast.error('Please select an activity type first');
+      toast.error('Please choose an activity type first.');
+      return;
+    }
+
+    if (!validateStep(2)) {
+      toast.error('Please fix the required fields before saving.');
+      return;
+    }
+
+    const duplicate = await checkDuplicate();
+    if (duplicate) {
+      toast.error('Duplicate name detected. Try editing the existing activity.');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const currentActivityType = selectedActivityType;
-
-      const exerciseData: Omit<Exercise, 'id'> = {
-        name: exercise.name.trim(),
-        description: exercise.description.trim(),
-        type: getExerciseType(currentActivityType),
-        category: getExerciseCategory(currentActivityType),
-        activityType: currentActivityType,
-        primaryMuscles: mapTargetAreasToMuscleGroups(exercise.targetAreas),
-        secondaryMuscles: [],
-        instructions: exercise.instructions.trim() ? [exercise.instructions.trim()] : [],
-        tips: exercise.tips.trim() ? [exercise.tips.trim()] : [],
-        equipment: exercise.equipment.map(eq => eq.replace(' (Bodyweight)', '')),
-        difficulty: exercise.difficulty.toLowerCase() as 'beginner' | 'intermediate' | 'advanced',
-        defaultUnit: getDefaultUnit(currentActivityType),
-        metrics: getMetrics(currentActivityType),
-        customExercise: true,
-        isDefault: false,
-        createdBy: user.id,
-        userId: user.id,
-        
-        // Activity-specific fields
-        ...(currentActivityType === ActivityType.SPORT && exercise.sportType && {
-          sportType: exercise.sportType,
-          teamBased: ['Football', 'Basketball', 'Soccer', 'Hockey', 'Volleyball'].includes(exercise.sportType)
-        }),
-        ...(currentActivityType === ActivityType.ENDURANCE && exercise.enduranceCategory && {
-          category: exercise.enduranceCategory.toLowerCase().replace(/\s+/g, '_')
-        }),
-        ...(currentActivityType === ActivityType.SPEED_AGILITY && exercise.drillType && {
-          drillType: exercise.drillType
-        }),
-        ...(currentActivityType === ActivityType.STRETCHING && exercise.flexibilityType && {
-          flexibilityType: exercise.flexibilityType
-        }),
-      };
-
-      const docRef = await addDoc(collection(db, 'exercises'), exerciseData);
-      toast.success('Exercise created successfully!');
-      onSuccess?.(docRef.id);
+      if (isEditMode && editingExerciseId) {
+        await updateExerciseByActivityType(editingExerciseId, selectedActivityType, exercise, user.id);
+        toast.success('Activity updated successfully.');
+        onSuccess?.(editingExerciseId);
+      } else {
+        const exerciseId = await createExerciseByActivityType(selectedActivityType, exercise, user.id);
+        toast.success('Activity created successfully.');
+        onSuccess?.(exerciseId);
+      }
       onClose();
     } catch (error) {
-      console.error('Error creating exercise:', error);
-      toast.error('Failed to create exercise. Please try again.');
+      if (error instanceof DuplicateExerciseNameError) {
+        setDuplicateExercise(error.duplicateExercise);
+        setErrors((prev) => ({
+          ...prev,
+          name: 'This name already exists for this activity type. Edit existing instead.'
+        }));
+        toast.error('Duplicate name detected.');
+      } else {
+        console.error('Error saving activity:', error);
+        toast.error('Failed to save activity. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const handleTargetAreaToggle = (area: GeneralTargetArea) => {
-    setExercise(prev => ({
-      ...prev,
-      targetAreas: prev.targetAreas.includes(area)
-        ? prev.targetAreas.filter(a => a !== area)
-        : [...prev.targetAreas, area]
-    }));
-  };
-
-  const handleEquipmentToggle = (equipment: Equipment) => {
-    setExercise(prev => ({
-      ...prev,
-      equipment: prev.equipment.includes(equipment)
-        ? prev.equipment.filter(e => e !== equipment)
-        : [...prev.equipment, equipment]
-    }));
   };
 
   const getActivityTypeTitle = (currentActivityType: ActivityType | null) => {
@@ -436,7 +398,7 @@ export const CreateUniversalExerciseDialog: React.FC<CreateUniversalExerciseDial
       case ActivityType.OTHER:
         return 'Custom Activity';
       default:
-        return 'New Exercise';
+        return 'New Activity';
     }
   };
 
@@ -444,8 +406,8 @@ export const CreateUniversalExerciseDialog: React.FC<CreateUniversalExerciseDial
     {
       value: ActivityType.RESISTANCE,
       label: 'Resistance Training',
-      description: 'Weight lifting and strength training',
-      icon: '🏋️‍♂️'
+      description: 'Strength and load-based activities',
+      icon: '🏋️'
     },
     {
       value: ActivityType.SPORT,
@@ -456,309 +418,574 @@ export const CreateUniversalExerciseDialog: React.FC<CreateUniversalExerciseDial
     {
       value: ActivityType.STRETCHING,
       label: 'Stretching & Flexibility',
-      description: 'Mobility, stretching, and recovery',
-      icon: '🧘‍♀️'
+      description: 'Mobility and recovery activities',
+      icon: '🧘'
     },
     {
       value: ActivityType.ENDURANCE,
       label: 'Endurance Training',
-      description: 'Cardio, running, cycling, and similar',
-      icon: '🏃‍♂️'
+      description: 'Running, cycling, and cardio',
+      icon: '🏃'
     },
     {
       value: ActivityType.SPEED_AGILITY,
       label: 'Speed & Agility',
-      description: 'Drills, plyometrics, and quickness work',
+      description: 'Drills and quickness work',
       icon: '⚡'
     },
     {
       value: ActivityType.OTHER,
       label: 'Other Activities',
-      description: 'Any custom activity type',
+      description: 'Anything else you track',
       icon: '🎯'
     }
   ];
 
+  const previewTargetAreas = exercise.targetAreas.slice(0, 4);
+  const previewEquipment = exercise.equipment.slice(0, 3);
+
   if (!selectedActivityType) {
     return (
-      <div className="fixed inset-0 z-80 overflow-y-auto">
-        <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-          <div className="relative transform overflow-hidden rounded-lg bg-[#1a1a1a] px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl sm:p-6 max-h-[90vh] overflow-y-auto">
-            <div className="space-y-6">
-              <div className="text-center">
-                <h3 className="text-lg font-semibold text-white">Select Activity Type</h3>
-                <p className="text-sm text-gray-400 mt-1">Choose where this exercise belongs before entering details</p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {activityTypeOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => setSelectedActivityType(option.value)}
-                    className="text-left rounded-lg border border-gray-600 bg-[#2a2a2a] p-4 hover:bg-[#333] transition-colors"
-                  >
-                    <div className="flex items-start gap-3">
-                      <span className="text-2xl" aria-hidden="true">{option.icon}</span>
-                      <div>
-                        <p className="font-medium text-white">{option.label}</p>
-                        <p className="text-sm text-gray-400 mt-1">{option.description}</p>
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-
-              <button
-                type="button"
-                onClick={onClose}
-                className="inline-flex w-full justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:text-sm"
-              >
-                Cancel
-              </button>
-            </div>
+      <div className="fixed inset-0 z-80 overflow-y-auto bg-black/60 p-4">
+        <div className="mx-auto mt-8 max-w-3xl rounded-xl border border-border bg-bg-secondary p-4 shadow-lg sm:p-6">
+          <div className="mb-4 text-center">
+            <h3 className="text-lg font-semibold text-text-primary">Select Activity Type</h3>
+            <p className="mt-1 text-sm text-text-secondary">
+              Choose where this activity belongs before adding details.
+            </p>
           </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {activityTypeOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setSelectedActivityType(option.value)}
+                className="rounded-xl border border-border bg-bg-primary p-4 text-left transition-colors hover:border-accent-primary"
+              >
+                <div className="flex items-start gap-3">
+                  <span className="text-xl" aria-hidden="true">{option.icon}</span>
+                  <div>
+                    <p className="font-medium text-text-primary">{option.label}</p>
+                    <p className="mt-1 text-sm text-text-secondary">{option.description}</p>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="mt-4 inline-flex w-full justify-center rounded-lg border border-border bg-bg-primary px-4 py-2 text-sm font-medium text-text-primary hover:bg-bg-tertiary"
+          >
+            Cancel
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 z-80 overflow-y-auto">
-      <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-        <div className="relative transform overflow-hidden rounded-lg bg-[#1a1a1a] px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl sm:p-6 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-80 overflow-y-auto bg-black/60 p-4">
+      <div className="mx-auto mt-4 grid max-w-6xl grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2 rounded-xl border border-border bg-bg-secondary p-4 shadow-lg sm:p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="text-center">
-              <h3 className="text-lg font-semibold text-white">Create {getActivityTypeTitle(selectedActivityType)}</h3>
-              <p className="text-sm text-gray-400 mt-1">
-                Add a custom exercise to your database
-              </p>
+            <div className="border-b border-border pb-4">
+              <h3 className="text-lg font-semibold text-text-primary">
+                {isEditMode ? 'Edit Custom Activity' : `Create ${getActivityTypeTitle(selectedActivityType)}`}
+              </h3>
+              <p className="mt-1 text-sm text-text-secondary">Build your activity in three clear steps.</p>
               {allowActivityTypeSelection && (
                 <button
                   type="button"
                   onClick={() => setSelectedActivityType(null)}
-                  className="mt-2 text-xs text-blue-400 hover:text-blue-300"
+                  className="mt-2 text-xs text-accent-primary hover:underline"
                 >
                   Change activity type
                 </button>
               )}
             </div>
 
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-white/90">
-                Exercise Name *
-              </label>
-              <input
-                type="text"
-                id="name"
-                required
-                className="mt-1 block w-full rounded-md border-gray-600 bg-[#2a2a2a] text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm placeholder-white/40 px-3 py-2"
-                value={exercise.name}
-                onChange={(e) => setExercise(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="e.g., Bench Press, Morning Run, Basketball Shooting"
-              />
-              {errors.name && <p className="mt-1 text-sm text-red-400">{errors.name}</p>}
+            <div className="flex items-center gap-2 text-xs sm:text-sm">
+              {(['Basics', 'Details', 'Review'] as const).map((label, index) => {
+                const stepNumber = (index + 1) as FormStep;
+                const isActive = step === stepNumber;
+                const isDone = step > stepNumber;
+
+                return (
+                  <React.Fragment key={label}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (stepNumber <= step || validateStep((stepNumber - 1) as FormStep)) {
+                          setStep(stepNumber);
+                        }
+                      }}
+                      className={`rounded-full px-3 py-1 ${
+                        isActive
+                          ? 'bg-accent-primary text-white'
+                          : isDone
+                            ? 'bg-green-500/20 text-green-400'
+                            : 'bg-bg-primary text-text-secondary'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                    {index < 2 && <span className="text-text-secondary">→</span>}
+                  </React.Fragment>
+                );
+              })}
             </div>
 
-            <div>
-              <label htmlFor="description" className="block text-sm font-medium text-white/90">
-                Description *
-              </label>
-              <textarea
-                id="description"
-                rows={3}
-                required
-                className="mt-1 block w-full rounded-md border-gray-600 bg-[#2a2a2a] text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm placeholder-white/40 px-3 py-2"
-                value={exercise.description}
-                onChange={(e) => setExercise(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Brief description of the exercise or activity..."
-              />
-              {errors.description && <p className="mt-1 text-sm text-red-400">{errors.description}</p>}
-            </div>
+            {step === 1 && (
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="name" className="block text-sm font-medium text-text-primary">
+                    Activity Name *
+                  </label>
+                  <input
+                    type="text"
+                    id="name"
+                    className="mt-1 block w-full rounded-lg border border-border bg-bg-primary px-3 py-2 text-text-primary placeholder:text-text-secondary focus:border-accent-primary focus:outline-none"
+                    value={exercise.name}
+                    onBlur={checkDuplicate}
+                    onChange={(event) => {
+                      const nextName = event.target.value;
+                      setExercise((prev) => ({ ...prev, name: nextName }));
+                      if (normalizeExerciseName(nextName) !== normalizeExerciseName(duplicateExercise?.name ?? '')) {
+                        setDuplicateExercise(null);
+                      }
+                    }}
+                    placeholder="e.g., Dumbbell Incline Press"
+                  />
+                  <p className="mt-1 text-xs text-text-secondary">
+                    Tip: pick a clear name so it is easy to find later.
+                  </p>
+                  {errors.name && <p className="mt-1 text-sm text-red-400">{errors.name}</p>}
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium text-white/90">Target Areas *</label>
-              <div className="mt-2 flex flex-wrap gap-2 max-h-32 overflow-y-auto">
-                {generalTargetAreas.map((area) => (
-                  <button
-                    key={area}
-                    type="button"
-                    className={`rounded-full px-3 py-1 text-sm transition-colors ${
-                      exercise.targetAreas.includes(area)
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-[#2a2a2a] text-white/70 hover:bg-[#3a3a3a]'
-                    }`}
-                    onClick={() => handleTargetAreaToggle(area)}
+                {duplicateExercise && (
+                  <div className="rounded-lg border border-red-400/40 bg-red-500/10 p-3 text-sm text-red-300">
+                    <p className="font-medium">Duplicate detected</p>
+                    <p className="mt-1">
+                      “{duplicateExercise.name}” already exists in {selectedActivityType}. You can edit it instead of creating a duplicate.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => loadExerciseForEdit(duplicateExercise)}
+                      className="mt-2 text-xs font-medium text-red-200 underline"
+                    >
+                      Load existing activity for editing
+                    </button>
+                  </div>
+                )}
+
+                <div>
+                  <label htmlFor="description" className="block text-sm font-medium text-text-primary">
+                    Description *
+                  </label>
+                  <textarea
+                    id="description"
+                    rows={3}
+                    className="mt-1 block w-full rounded-lg border border-border bg-bg-primary px-3 py-2 text-text-primary placeholder:text-text-secondary focus:border-accent-primary focus:outline-none"
+                    value={exercise.description}
+                    onChange={(event) => setExercise((prev) => ({ ...prev, description: event.target.value }))}
+                    placeholder="Describe what this activity focuses on."
+                  />
+                  {errors.description && <p className="mt-1 text-sm text-red-400">{errors.description}</p>}
+                </div>
+
+                <div>
+                  <label htmlFor="difficulty" className="block text-sm font-medium text-text-primary">
+                    Difficulty
+                  </label>
+                  <select
+                    id="difficulty"
+                    className="mt-1 block w-full rounded-lg border border-border bg-bg-primary px-3 py-2 text-text-primary focus:border-accent-primary focus:outline-none"
+                    value={exercise.difficulty}
+                    onChange={(event) =>
+                      setExercise((prev) => ({
+                        ...prev,
+                        difficulty: event.target.value as UniversalExerciseFormData['difficulty']
+                      }))
+                    }
                   >
-                    {area}
+                    <option value="Beginner">Beginner</option>
+                    <option value="Intermediate">Intermediate</option>
+                    <option value="Advanced">Advanced</option>
+                  </select>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (validateStep(1)) {
+                      setStep(2);
+                    }
+                  }}
+                  className="inline-flex w-full justify-center rounded-lg bg-accent-primary px-4 py-2 font-medium text-white hover:bg-accent-primary/90"
+                >
+                  Continue to Details
+                </button>
+              </div>
+            )}
+
+            {step === 2 && (
+              <div className="space-y-5">
+                <div>
+                  <div className="mb-1 flex items-center gap-2">
+                    <label className="block text-sm font-medium text-text-primary">Target Areas *</label>
+                    <span className="cursor-help text-xs text-text-secondary" title="Select one or more body areas or performance focus zones.">
+                      ⓘ
+                    </span>
+                  </div>
+                  <div className="mt-2 flex max-h-36 flex-wrap gap-2 overflow-y-auto rounded-lg border border-border bg-bg-primary p-2">
+                    {generalTargetAreas.map((area) => (
+                      <button
+                        key={area}
+                        type="button"
+                        className={`rounded-full px-3 py-1 text-sm transition-colors ${
+                          exercise.targetAreas.includes(area)
+                            ? 'bg-accent-primary text-white'
+                            : 'bg-bg-secondary text-text-secondary hover:bg-bg-tertiary'
+                        }`}
+                        onClick={() => handleTargetAreaToggle(area)}
+                      >
+                        {area}
+                      </button>
+                    ))}
+                  </div>
+                  {errors.targetAreas && <p className="mt-1 text-sm text-red-400">{errors.targetAreas}</p>}
+                </div>
+
+                {(selectedActivityType === ActivityType.SPORT ||
+                  selectedActivityType === ActivityType.ENDURANCE ||
+                  selectedActivityType === ActivityType.SPEED_AGILITY ||
+                  selectedActivityType === ActivityType.STRETCHING) && (
+                  <div>
+                    {selectedActivityType === ActivityType.SPORT && (
+                      <>
+                        <label htmlFor="sportType" className="block text-sm font-medium text-text-primary">
+                          Sport Type
+                        </label>
+                        <select
+                          id="sportType"
+                          className="mt-1 block w-full rounded-lg border border-border bg-bg-primary px-3 py-2 text-text-primary focus:border-accent-primary focus:outline-none"
+                          value={exercise.sportType || ''}
+                          onChange={(event) =>
+                            setExercise((prev) => ({ ...prev, sportType: event.target.value as SportType }))
+                          }
+                        >
+                          <option value="">Select sport type...</option>
+                          {sportTypes.map((type) => (
+                            <option key={type} value={type}>
+                              {type}
+                            </option>
+                          ))}
+                        </select>
+                      </>
+                    )}
+
+                    {selectedActivityType === ActivityType.ENDURANCE && (
+                      <>
+                        <label htmlFor="enduranceCategory" className="block text-sm font-medium text-text-primary">
+                          Endurance Category
+                        </label>
+                        <select
+                          id="enduranceCategory"
+                          className="mt-1 block w-full rounded-lg border border-border bg-bg-primary px-3 py-2 text-text-primary focus:border-accent-primary focus:outline-none"
+                          value={exercise.enduranceCategory || ''}
+                          onChange={(event) =>
+                            setExercise((prev) => ({
+                              ...prev,
+                              enduranceCategory: event.target.value as EnduranceCategory
+                            }))
+                          }
+                        >
+                          <option value="">Select category...</option>
+                          {enduranceCategories.map((category) => (
+                            <option key={category} value={category}>
+                              {category}
+                            </option>
+                          ))}
+                        </select>
+                      </>
+                    )}
+
+                    {selectedActivityType === ActivityType.SPEED_AGILITY && (
+                      <>
+                        <label htmlFor="drillType" className="block text-sm font-medium text-text-primary">
+                          Drill Type
+                        </label>
+                        <select
+                          id="drillType"
+                          className="mt-1 block w-full rounded-lg border border-border bg-bg-primary px-3 py-2 text-text-primary focus:border-accent-primary focus:outline-none"
+                          value={exercise.drillType || ''}
+                          onChange={(event) =>
+                            setExercise((prev) => ({ ...prev, drillType: event.target.value as DrillType }))
+                          }
+                        >
+                          <option value="">Select drill type...</option>
+                          {drillTypes.map((type) => (
+                            <option key={type} value={type}>
+                              {type}
+                            </option>
+                          ))}
+                        </select>
+                      </>
+                    )}
+
+                    {selectedActivityType === ActivityType.STRETCHING && (
+                      <>
+                        <label htmlFor="flexibilityType" className="block text-sm font-medium text-text-primary">
+                          Flexibility Type
+                        </label>
+                        <select
+                          id="flexibilityType"
+                          className="mt-1 block w-full rounded-lg border border-border bg-bg-primary px-3 py-2 text-text-primary focus:border-accent-primary focus:outline-none"
+                          value={exercise.flexibilityType || ''}
+                          onChange={(event) =>
+                            setExercise((prev) => ({
+                              ...prev,
+                              flexibilityType: event.target.value as FlexibilityType
+                            }))
+                          }
+                        >
+                          <option value="">Select flexibility type...</option>
+                          {flexibilityTypes.map((type) => (
+                            <option key={type} value={type}>
+                              {type}
+                            </option>
+                          ))}
+                        </select>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                <div>
+                  <div className="mb-1 flex items-center gap-2">
+                    <label className="block text-sm font-medium text-text-primary">Equipment</label>
+                    <span className="cursor-help text-xs text-text-secondary" title="Choose all tools needed for the activity.">
+                      ⓘ
+                    </span>
+                  </div>
+                  <div className="mt-2 flex max-h-36 flex-wrap gap-2 overflow-y-auto rounded-lg border border-border bg-bg-primary p-2">
+                    {equipmentOptions.map((equipmentItem) => (
+                      <button
+                        key={equipmentItem}
+                        type="button"
+                        className={`rounded-full px-3 py-1 text-sm transition-colors ${
+                          exercise.equipment.includes(equipmentItem)
+                            ? 'bg-green-600 text-white'
+                            : 'bg-bg-secondary text-text-secondary hover:bg-bg-tertiary'
+                        }`}
+                        onClick={() => handleEquipmentToggle(equipmentItem)}
+                      >
+                        {equipmentItem}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="instructions" className="block text-sm font-medium text-text-primary">
+                    Instructions *
+                  </label>
+                  <textarea
+                    id="instructions"
+                    rows={4}
+                    className="mt-1 block w-full rounded-lg border border-border bg-bg-primary px-3 py-2 text-text-primary placeholder:text-text-secondary focus:border-accent-primary focus:outline-none"
+                    value={exercise.instructions}
+                    onChange={(event) => setExercise((prev) => ({ ...prev, instructions: event.target.value }))}
+                    placeholder="Step-by-step instructions for this activity."
+                  />
+                  {errors.instructions && <p className="mt-1 text-sm text-red-400">{errors.instructions}</p>}
+                </div>
+
+                <div>
+                  <label htmlFor="tips" className="block text-sm font-medium text-text-primary">
+                    Tips & Notes
+                  </label>
+                  <textarea
+                    id="tips"
+                    rows={2}
+                    className="mt-1 block w-full rounded-lg border border-border bg-bg-primary px-3 py-2 text-text-primary placeholder:text-text-secondary focus:border-accent-primary focus:outline-none"
+                    value={exercise.tips}
+                    onChange={(event) => setExercise((prev) => ({ ...prev, tips: event.target.value }))}
+                    placeholder="Optional cues, reminders, or safety notes."
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => setStep(1)}
+                    className="inline-flex w-full justify-center rounded-lg border border-border bg-bg-primary px-4 py-2 text-sm font-medium text-text-primary hover:bg-bg-tertiary"
+                  >
+                    Back
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (validateStep(2)) {
+                        setStep(3);
+                      }
+                    }}
+                    className="inline-flex w-full justify-center rounded-lg bg-accent-primary px-4 py-2 text-sm font-medium text-white hover:bg-accent-primary/90"
+                  >
+                    Review
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {step === 3 && (
+              <div className="space-y-4">
+                <div className="rounded-lg border border-border bg-bg-primary p-4">
+                  <h4 className="font-medium text-text-primary">Ready to save</h4>
+                  <p className="mt-1 text-sm text-text-secondary">
+                    Please confirm details. You can still go back to edit fields.
+                  </p>
+                  <ul className="mt-3 space-y-1 text-sm text-text-secondary">
+                    <li>
+                      <span className="text-text-primary">Name:</span> {exercise.name || 'Not set'}
+                    </li>
+                    <li>
+                      <span className="text-text-primary">Type:</span> {selectedActivityType}
+                    </li>
+                    <li>
+                      <span className="text-text-primary">Targets:</span> {exercise.targetAreas.join(', ') || 'None selected'}
+                    </li>
+                    <li>
+                      <span className="text-text-primary">Equipment:</span> {exercise.equipment.join(', ') || 'None selected'}
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  <button
+                    type="button"
+                    onClick={() => setStep(2)}
+                    className="inline-flex w-full justify-center rounded-lg border border-border bg-bg-primary px-4 py-2 text-sm font-medium text-text-primary hover:bg-bg-tertiary"
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="inline-flex w-full justify-center rounded-lg border border-border bg-bg-primary px-4 py-2 text-sm font-medium text-text-primary hover:bg-bg-tertiary"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="inline-flex w-full justify-center rounded-lg bg-accent-primary px-4 py-2 text-sm font-medium text-white hover:bg-accent-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isSubmitting ? 'Saving...' : isEditMode ? 'Update Activity' : 'Create Activity'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </form>
+        </div>
+
+        <aside className="space-y-4">
+          <div className="rounded-xl border border-border bg-bg-secondary p-4 shadow-lg">
+            <h4 className="text-sm font-semibold text-text-primary">Live Preview</h4>
+            <div className="mt-3 rounded-lg border border-border bg-bg-primary p-3">
+              <p className="font-medium text-text-primary">{exercise.name || 'Untitled activity'}</p>
+              <p className="mt-1 text-xs text-text-secondary">{selectedActivityType}</p>
+              <div className="mt-2 flex flex-wrap gap-1">
+                {previewTargetAreas.length > 0 ? (
+                  previewTargetAreas.map((item) => (
+                    <span key={item} className="rounded-full bg-accent-primary/10 px-2 py-0.5 text-xs text-accent-primary">
+                      🎯 {item}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-xs text-text-secondary">Add target areas to preview them here.</span>
+                )}
+              </div>
+              <div className="mt-2 flex flex-wrap gap-1">
+                {previewEquipment.map((item) => (
+                  <span key={item} className="rounded-full bg-green-500/10 px-2 py-0.5 text-xs text-green-400">
+                    🧰 {item}
+                  </span>
                 ))}
               </div>
-              {errors.targetAreas && <p className="mt-1 text-sm text-red-400">{errors.targetAreas}</p>}
             </div>
+          </div>
 
-            {/* Activity-specific fields */}
-            {selectedActivityType === ActivityType.SPORT && (
-              <div>
-                <label htmlFor="sportType" className="block text-sm font-medium text-white/90">
-                  Sport Type
-                </label>
-                <select
-                  id="sportType"
-                  className="mt-1 block w-full rounded-md border-gray-600 bg-[#2a2a2a] text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2"
-                  value={exercise.sportType || ''}
-                  onChange={(e) => setExercise(prev => ({ ...prev, sportType: e.target.value as SportType }))}
-                >
-                  <option value="">Select sport type...</option>
-                  {sportTypes.map((type) => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
-                </select>
-              </div>
-            )}
+          <div className="rounded-xl border border-border bg-bg-secondary p-4 shadow-lg">
+            <h4 className="text-sm font-semibold text-text-primary">Your Custom Activities</h4>
+            <p className="mt-1 text-xs text-text-secondary">Edit or delete activities directly here.</p>
+            <ul className="mt-3 max-h-72 space-y-2 overflow-y-auto">
+              {customExercises.length === 0 && (
+                <li className="rounded-lg border border-border bg-bg-primary p-3 text-xs text-text-secondary">
+                  No custom activities yet.
+                </li>
+              )}
+              {customExercises.map((item) => (
+                <li key={item.id} className="rounded-lg border border-border bg-bg-primary p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-medium text-text-primary">{item.name}</p>
+                      <p className="text-xs text-text-secondary">{item.activityType}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => loadExerciseForEdit(item)}
+                        className="text-xs font-medium text-accent-primary hover:underline"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeleteCandidate(item)}
+                        className="text-xs font-medium text-red-400 hover:underline"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </aside>
+      </div>
 
-            {selectedActivityType === ActivityType.ENDURANCE && (
-              <div>
-                <label htmlFor="enduranceCategory" className="block text-sm font-medium text-white/90">
-                  Endurance Category
-                </label>
-                <select
-                  id="enduranceCategory"
-                  className="mt-1 block w-full rounded-md border-gray-600 bg-[#2a2a2a] text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2"
-                  value={exercise.enduranceCategory || ''}
-                  onChange={(e) => setExercise(prev => ({ ...prev, enduranceCategory: e.target.value as EnduranceCategory }))}
-                >
-                  <option value="">Select category...</option>
-                  {enduranceCategories.map((category) => (
-                    <option key={category} value={category}>{category}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {selectedActivityType === ActivityType.SPEED_AGILITY && (
-              <div>
-                <label htmlFor="drillType" className="block text-sm font-medium text-white/90">
-                  Drill Type
-                </label>
-                <select
-                  id="drillType"
-                  className="mt-1 block w-full rounded-md border-gray-600 bg-[#2a2a2a] text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2"
-                  value={exercise.drillType || ''}
-                  onChange={(e) => setExercise(prev => ({ ...prev, drillType: e.target.value as DrillType }))}
-                >
-                  <option value="">Select drill type...</option>
-                  {drillTypes.map((type) => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {selectedActivityType === ActivityType.STRETCHING && (
-              <div>
-                <label htmlFor="flexibilityType" className="block text-sm font-medium text-white/90">
-                  Flexibility Type
-                </label>
-                <select
-                  id="flexibilityType"
-                  className="mt-1 block w-full rounded-md border-gray-600 bg-[#2a2a2a] text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2"
-                  value={exercise.flexibilityType || ''}
-                  onChange={(e) => setExercise(prev => ({ ...prev, flexibilityType: e.target.value as FlexibilityType }))}
-                >
-                  <option value="">Select flexibility type...</option>
-                  {flexibilityTypes.map((type) => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium text-white/90">Equipment</label>
-              <div className="mt-2 flex flex-wrap gap-2 max-h-32 overflow-y-auto">
-                {equipmentOptions.map((equipment) => (
-                  <button
-                    key={equipment}
-                    type="button"
-                    className={`rounded-full px-3 py-1 text-sm transition-colors ${
-                      exercise.equipment.includes(equipment)
-                        ? 'bg-green-600 text-white'
-                        : 'bg-[#2a2a2a] text-white/70 hover:bg-[#3a3a3a]'
-                    }`}
-                    onClick={() => handleEquipmentToggle(equipment)}
-                  >
-                    {equipment}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="difficulty" className="block text-sm font-medium text-white/90">
-                Difficulty Level
-              </label>
-              <select
-                id="difficulty"
-                className="mt-1 block w-full rounded-md border-gray-600 bg-[#2a2a2a] text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2"
-                value={exercise.difficulty}
-                onChange={(e) => setExercise(prev => ({ ...prev, difficulty: e.target.value as 'Beginner' | 'Intermediate' | 'Advanced' }))}
-              >
-                <option value="Beginner">Beginner</option>
-                <option value="Intermediate">Intermediate</option>
-                <option value="Advanced">Advanced</option>
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="instructions" className="block text-sm font-medium text-white/90">
-                Instructions *
-              </label>
-              <textarea
-                id="instructions"
-                rows={4}
-                required
-                className="mt-1 block w-full rounded-md border-gray-600 bg-[#2a2a2a] text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm placeholder-white/40 px-3 py-2"
-                value={exercise.instructions}
-                onChange={(e) => setExercise(prev => ({ ...prev, instructions: e.target.value }))}
-                placeholder="Step-by-step instructions for performing this exercise..."
-              />
-              {errors.instructions && <p className="mt-1 text-sm text-red-400">{errors.instructions}</p>}
-            </div>
-
-            <div>
-              <label htmlFor="tips" className="block text-sm font-medium text-white/90">
-                Tips & Notes
-              </label>
-              <textarea
-                id="tips"
-                rows={2}
-                className="mt-1 block w-full rounded-md border-gray-600 bg-[#2a2a2a] text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm placeholder-white/40 px-3 py-2"
-                value={exercise.tips}
-                onChange={(e) => setExercise(prev => ({ ...prev, tips: e.target.value }))}
-                placeholder="Optional tips, variations, or safety notes..."
-              />
-            </div>
-
-            <div className="mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="inline-flex w-full justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:col-start-2 sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? 'Creating...' : 'Create Exercise'}
-              </button>
+      {deleteCandidate && (
+        <div className="fixed inset-0 z-80 flex items-center justify-center bg-black/70 p-4">
+          <div className="w-full max-w-sm rounded-xl border border-border bg-bg-secondary p-4">
+            <h5 className="text-base font-semibold text-text-primary">Delete custom activity?</h5>
+            <p className="mt-2 text-sm text-text-secondary">
+              This will remove “{deleteCandidate.name}”. This action cannot be undone.
+            </p>
+            <div className="mt-4 grid grid-cols-2 gap-2">
               <button
                 type="button"
-                onClick={onClose}
-                className="mt-3 inline-flex w-full justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:col-start-1 sm:mt-0 sm:text-sm"
+                onClick={() => setDeleteCandidate(null)}
+                className="rounded-lg border border-border bg-bg-primary px-3 py-2 text-sm text-text-primary hover:bg-bg-tertiary"
               >
                 Cancel
               </button>
+              <button
+                type="button"
+                onClick={handleDeleteCustomExercise}
+                disabled={isDeleting}
+                className="rounded-lg bg-red-500 px-3 py-2 text-sm font-medium text-white hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </button>
             </div>
-          </form>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

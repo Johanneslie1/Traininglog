@@ -134,6 +134,7 @@ const OtherActivityPicker: React.FC<OtherActivityPickerProps> = ({
           onSelect={handleSelect}
           title="Other Activities"
           subtitle="Browse and filter miscellaneous activities"
+          activityType={ActivityType.OTHER}
         />
       </div>
     </div>

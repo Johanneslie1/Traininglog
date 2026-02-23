@@ -5,10 +5,11 @@ import { enrich, applyFilters, collectFacets, FilterState, SpeedAgilityExercise 
 import { UniversalSetLogger } from '@/components/UniversalSetLogger';
 import { UnifiedExerciseData } from '@/utils/unifiedExerciseUtils';
 import { addExerciseLog } from '@/services/firebase/exerciseLogs';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store/store';
 import { ExerciseSet } from '@/types/sets';
 import { Exercise } from '@/types/exercise';
+import { useAuth } from '@/hooks/useAuth';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from '@/services/firebase/config';
 
 interface SpeedAgilityActivityPickerProps {
   onClose: () => void;
@@ -27,6 +28,7 @@ const SpeedAgilityActivityPicker: React.FC<SpeedAgilityActivityPickerProps> = ({
 }) => {
   const [selectedActivity, setSelectedActivity] = useState<SpeedAgilityActivity | null>(null);
   const [view, setView] = useState<'list' | 'logging'>('list');
+  const [customDrills, setCustomDrills] = useState<SpeedAgilityExercise[]>([]);
   // Advanced filters
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<Set<string>>(new Set());
@@ -34,8 +36,14 @@ const SpeedAgilityActivityPicker: React.FC<SpeedAgilityActivityPickerProps> = ({
   const [equipmentFilter, setEquipmentFilter] = useState<Set<string>>(new Set());
   const [tagFilter, setTagFilter] = useState<Set<string>>(new Set());
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const { user } = useAuth();
 
-  const enriched = useMemo(() => enrich(rawData as SpeedAgilityExercise[]), []);
+  const sourceData = useMemo(() => {
+    const jsonDrills = rawData as SpeedAgilityExercise[];
+    return [...jsonDrills, ...customDrills];
+  }, [customDrills]);
+
+  const enriched = useMemo(() => enrich(sourceData), [sourceData]);
   const facets = useMemo(() => collectFacets(enriched), [enriched]);
   const advancedFiltered = useMemo(() => {
     const f: FilterState = {
@@ -47,8 +55,6 @@ const SpeedAgilityActivityPicker: React.FC<SpeedAgilityActivityPickerProps> = ({
     };
     return applyFilters(enriched, f);
   }, [search, typeFilter, lateralFilter, equipmentFilter, tagFilter, enriched]);
-
-  const user = useSelector((state: RootState) => state.auth.user);
 
   function toggle(setter: React.Dispatch<React.SetStateAction<Set<string>>>, value: string) {
     setter(prev => {
@@ -78,6 +84,45 @@ const SpeedAgilityActivityPicker: React.FC<SpeedAgilityActivityPickerProps> = ({
       setView('logging');
     }
   }, [editingExercise]);
+
+  useEffect(() => {
+    const loadCustomDrills = async () => {
+      if (!user?.id) {
+        setCustomDrills([]);
+        return;
+      }
+
+      try {
+        const customQuery = query(collection(db, 'exercises'), where('userId', '==', user.id));
+        const querySnapshot = await getDocs(customQuery);
+
+        const drills = querySnapshot.docs
+          .map(doc => ({ id: doc.id, ...doc.data() } as any))
+          .filter(ex => ex.activityType === ActivityType.SPEED_AGILITY)
+          .map(ex => ({
+            id: ex.id,
+            name: ex.name || 'Custom Drill',
+            category: ex.category || 'general',
+            type: ex.drillType || ex.type || 'agility',
+            lateralization: ex.lateralization || 'bilateral',
+            equipment: Array.isArray(ex.equipment) ? (ex.equipment[0] || 'bodyweight') : (ex.equipment || 'bodyweight'),
+            muscleGroups: Array.isArray(ex.targetAreas)
+              ? ex.targetAreas
+              : (Array.isArray(ex.primaryMuscles) ? ex.primaryMuscles : ['full body']),
+            instructions: Array.isArray(ex.instructions)
+              ? (ex.instructions[0] || ex.description || '')
+              : (ex.instructions || ex.description || '')
+          })) as SpeedAgilityExercise[];
+
+        setCustomDrills(drills);
+      } catch (error) {
+        console.error('Error loading custom speed/agility drills:', error);
+        setCustomDrills([]);
+      }
+    };
+
+    loadCustomDrills();
+  }, [user?.id]);
 
   function handleSelectEnriched(ex: SpeedAgilityExercise) {
     const activity: SpeedAgilityActivity = {

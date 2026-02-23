@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'react-hot-toast';
 import { useCollection } from '@/hooks/useCollection';
 import { db } from '@/services/firebase/config';
 import { collection, query, where, orderBy, QueryConstraint } from 'firebase/firestore';
@@ -6,6 +7,7 @@ import type { Exercise } from '@/types/exercise';
 import { CreateUniversalExerciseDialog } from '@/components/exercises/CreateUniversalExerciseDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useLocation } from 'react-router-dom';
+import { deleteCustomExerciseById } from '@/services/customExerciseCreationService';
 interface FilterState {
   search: string;
   category: string[];
@@ -20,6 +22,7 @@ const ExerciseOverview: React.FC = () => {
     type: 'all'
   });
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [editingExercise, setEditingExercise] = useState<Exercise | undefined>(undefined);
 
   // Get URL search params to check if we should show create dialog
   const location = useLocation();
@@ -67,13 +70,40 @@ const ExerciseOverview: React.FC = () => {
     ? [...new Set(exercises.filter((ex: Exercise) => ex && ex.category).map((ex: Exercise) => ex.category))]
     : [];
 
+  const handleEditCustomExercise = (exercise: Exercise) => {
+    setEditingExercise(exercise);
+    setShowCreateDialog(true);
+  };
+
+  const handleDeleteCustomExercise = async (exercise: Exercise) => {
+    if (!user?.id || !exercise.id) {
+      return;
+    }
+
+    const confirmed = window.confirm(`Delete custom activity "${exercise.name}"? This action cannot be undone.`);
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await deleteCustomExerciseById(exercise.id, user.id);
+      toast.success('Custom activity deleted.');
+    } catch (deleteError) {
+      console.error('Error deleting custom exercise:', deleteError);
+      toast.error('Failed to delete custom activity.');
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-text-primary">Exercise Library</h1>
         <button
-          onClick={() => setShowCreateDialog(true)}
+          onClick={() => {
+            setEditingExercise(undefined);
+            setShowCreateDialog(true);
+          }}
           className="bg-accent-primary text-white px-4 py-2 rounded-lg hover:bg-accent-primary/90"
         >
           Create Exercise
@@ -165,6 +195,24 @@ const ExerciseOverview: React.FC = () => {
                   {exercise.description}
                 </p>
               )}
+              {exercise.userId && (
+                <div className="mt-3 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handleEditCustomExercise(exercise)}
+                    className="text-sm font-medium text-accent-primary hover:underline"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteCustomExercise(exercise)}
+                    className="text-sm font-medium text-red-500 hover:underline"
+                  >
+                    Delete
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -173,11 +221,16 @@ const ExerciseOverview: React.FC = () => {
       {/* Create Exercise Dialog */}
       {showCreateDialog && (
         <CreateUniversalExerciseDialog
-          onClose={() => setShowCreateDialog(false)}
+          onClose={() => {
+            setShowCreateDialog(false);
+            setEditingExercise(undefined);
+          }}
           onSuccess={() => {
             setShowCreateDialog(false);
+            setEditingExercise(undefined);
             // Exercises will automatically refresh due to useCollection hook
           }}
+          initialExercise={editingExercise}
         />
       )}
     </div>

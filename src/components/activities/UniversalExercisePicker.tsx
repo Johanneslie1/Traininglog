@@ -1,6 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { CreateUniversalExerciseDialog } from '@/components/exercises/CreateUniversalExerciseDialog';
 import { ActivityType } from '@/types/activityTypes';
+import { useAuth } from '@/hooks/useAuth';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from '@/services/firebase/config';
 
 // Move FilterBlock definition up so it's declared before use
 interface FilterBlockProps { title: string; values: string[]; selected: Set<string>; onToggle: (value: string) => void; }
@@ -67,6 +70,8 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
     () => initialSelectedIds.reduce((acc, id) => { acc[id] = true; return acc; }, {} as Record<string, boolean>)
   );
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [customExercises, setCustomExercises] = useState<any[]>([]);
+  const { user } = useAuth();
 
   function toggle(setter: React.Dispatch<React.SetStateAction<Set<string>>>, value: string) {
     setter(prev => {
@@ -89,22 +94,63 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
     setShowCreateDialog(true);
   };
 
-  const handleExerciseCreated = (_exerciseId: string) => {
+  const loadCustomExercises = useCallback(async () => {
+    if (!user?.id) {
+      setCustomExercises([]);
+      return;
+    }
+
+    try {
+      const exercisesRef = collection(db, 'exercises');
+      const customQuery = query(exercisesRef, where('userId', '==', user.id));
+      const querySnapshot = await getDocs(customQuery);
+
+      const typeFilteredExercises = querySnapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .filter((exercise: any) => (exercise.activityType || ActivityType.RESISTANCE) === activityType);
+
+      setCustomExercises(typeFilteredExercises);
+    } catch (error) {
+      console.error('UniversalExercisePicker: failed loading custom exercises', error);
+      setCustomExercises([]);
+    }
+  }, [user?.id, activityType]);
+
+  useEffect(() => {
+    loadCustomExercises();
+  }, [loadCustomExercises]);
+
+  const handleExerciseCreated = async (_exerciseId: string) => {
+    await loadCustomExercises();
     setShowCreateDialog(false);
-    // Optionally refresh the exercise list or handle the new exercise
-    // For now, we'll just close the dialog
   };
+
+  const mergedData = useMemo(() => {
+    const baseData = Array.isArray(data) ? data : [];
+    const byId = new Map<string, any>();
+
+    [...baseData, ...customExercises].forEach(exercise => {
+      if (!exercise) return;
+      const fallbackId = `${exercise.name || 'exercise'}-${exercise.activityType || activityType}`;
+      const id = String(exercise.id || fallbackId);
+      if (!byId.has(id)) {
+        byId.set(id, { ...exercise, id });
+      }
+    });
+
+    return Array.from(byId.values());
+  }, [data, customExercises, activityType]);
 
   const enriched = useMemo(() => {
     try {
-      const input = Array.isArray(data) ? data : [];
+      const input = mergedData;
       const result = typeof enrich === 'function' ? (enrich(input) ?? []) : input;
       return Array.isArray(result) ? result : [];
     } catch (e) {
       console.error('UniversalExercisePicker: enrich error', e);
       return [];
     }
-  }, [data, enrich]);
+  }, [mergedData, enrich]);
 
   const facets = useMemo(() => {
     const empty = { type: new Set<string>(), lateralization: new Set<string>(), equipment: new Set<string>(), tags: new Set<string>() };

@@ -100,7 +100,16 @@ const EnduranceActivityPicker: React.FC<EnduranceActivityPickerProps> = ({ onClo
           <button onClick={onBack} className="px-3 py-1 rounded-md bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 text-sm">← Back</button>
         </div>
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white">✕</button>
-        <UniversalExercisePicker data={enduranceData as unknown as EnduranceExercise[]} enrich={enrich as any} collectFacets={collectFacets as any} applyFilters={applyFilters as any} onSelect={handleSelect} title="Endurance Training" subtitle="Browse and filter endurance exercises" />
+        <UniversalExercisePicker
+          data={enduranceData as unknown as EnduranceExercise[]}
+          enrich={enrich as any}
+          collectFacets={collectFacets as any}
+          applyFilters={applyFilters as any}
+          onSelect={handleSelect}
+          title="Endurance Training"
+          subtitle="Browse and filter endurance exercises"
+          activityType={ActivityType.ENDURANCE}
+        />
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ResistanceExercise } from '@/types/activityTypes';
+import { ActivityType } from '@/types/activityTypes';
 import resistanceData from '@/data/exercises/resistance.json';
 import { enrich, applyFilters, collectFacets } from '@/utils/resistanceFilters';
 import UniversalExercisePicker from './UniversalExercisePicker';
@@ -56,6 +57,7 @@ const ResistanceActivityPicker: React.FC<ResistanceActivityPickerProps> = ({
           onSelect={handleSelect}
           title="Resistance Training"
           subtitle="Browse and filter all resistance exercises"
+          activityType={ActivityType.RESISTANCE}
         />
       </div>
     </div>

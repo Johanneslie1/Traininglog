@@ -166,6 +166,7 @@ const SportActivityPicker: React.FC<SportActivityPickerProps> = ({
           onSelect={handleSelect}
           title="Sports Activities"
           subtitle="Browse and filter sports and skill drills"
+          activityType={ActivityType.SPORT}
         />
       </div>
     </div>

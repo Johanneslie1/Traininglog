@@ -122,6 +122,7 @@ const StretchingActivityPicker: React.FC<StretchingActivityPickerProps> = ({
 					onSelect={handleSelect}
 					title="Stretching & Flexibility"
 					subtitle="Browse and filter mobility and flexibility exercises"
+					activityType={ActivityType.STRETCHING}
 				/>
 			</div>
 		</div>

@@ -29,6 +29,7 @@ export interface MetricsConfig {
 export interface Exercise {
   id: string;
   name: string;
+  nameLower?: string;
   description: string;
   trainingType?: TrainingType; // NEW: unified training type
   type?: 'strength' | 'cardio' | 'flexibility' | 'bodyweight' | 'plyometrics' | 'endurance' | 'teamSports' | 'speedAgility' | 'other' | 'speed_agility';
