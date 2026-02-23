@@ -3,7 +3,7 @@ import { Program, ProgramSession } from '@/types/program';
 import { Exercise } from '@/types/exercise';
 import { ExerciseSet } from '@/types/sets';
 import { ActivityType } from '@/types/activityTypes';
-import { formatPrescriptionBadge, prescriptionToSets } from '@/utils/prescriptionUtils';
+import { formatPrescriptionBadge } from '@/utils/prescriptionUtils';
 import ProgramCard from './ProgramCard';
 import { usePrograms } from '@/context/ProgramsContext';
 import UniversalExercisePicker from '@/components/activities/UniversalExercisePicker';
@@ -83,14 +83,9 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
       
       if (!exercise) return null;
 
-      // Convert prescription to sets if it exists (for direct logging)
-      let sets: ExerciseSet[] = [];
-      if (exercise.prescription && exercise.instructionMode === 'structured') {
-        sets = prescriptionToSets(
-          exercise.prescription,
-          exercise.activityType || ActivityType.RESISTANCE
-        );
-      }
+      // Keep logger fast: import with a single editable default row from logger initialization.
+      // Prescription and assistant metadata stay on exercise for guide/hints.
+      const sets: ExerciseSet[] = [];
 
       return {
         exercise: {
@@ -112,7 +107,7 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
           prescription: exercise.prescription,
           instructionMode: exercise.instructionMode,
         },
-        sets // Pre-filled from prescription or empty
+        sets
       };
     }).filter((ex): ex is NonNullable<typeof ex> => ex !== null);
 

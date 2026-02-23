@@ -121,6 +121,65 @@ const buildUiHint = (
   return hint.slice(0, 120);
 };
 
+const getSetsRangeLabel = (prescription?: Prescription): string | null => {
+  const setsRange = parseRangeValue(prescription?.sets);
+  if (!setsRange) {
+    return null;
+  }
+
+  if (setsRange.min === setsRange.max) {
+    return `${setsRange.min} set${setsRange.min === 1 ? '' : 's'}`;
+  }
+
+  return `${setsRange.min}-${setsRange.max} sets`;
+};
+
+const ensureSetsRangeInUiHint = (uiHint: string, prescription?: Prescription): string => {
+  const rangeLabel = getSetsRangeLabel(prescription);
+  if (!rangeLabel) {
+    return uiHint.slice(0, 120);
+  }
+
+  const hasRangeAlready = new RegExp(`\\b${rangeLabel.replace('-', '\\s*[-–]\\s*')}\\b`, 'i').test(uiHint);
+  if (hasRangeAlready) {
+    return uiHint.slice(0, 120);
+  }
+
+  const prefixed = uiHint ? `${rangeLabel} • ${uiHint}` : rangeLabel;
+  return prefixed.slice(0, 120);
+};
+
+const DEFAULT_PROGRESSION_NOTE = 'Build reps inside the target range with clean form; once the top end is consistently reached, increase load by about 1-2.5%.';
+
+const normalizeProgressionNote = (note?: string): string => {
+  if (!note || typeof note !== 'string') {
+    return DEFAULT_PROGRESSION_NOTE;
+  }
+
+  const hadZeroToOneRepWording = /0\s*-\s*1\s*reps?|0\s*to\s*1\s*reps?/i.test(note);
+  if (hadZeroToOneRepWording) {
+    return DEFAULT_PROGRESSION_NOTE;
+  }
+
+  const cleaned = note.replace(/\s+/g, ' ').trim();
+  if (!cleaned) {
+    return DEFAULT_PROGRESSION_NOTE;
+  }
+
+  const hasTopRangeLogic = /(top\s*(of\s*the)?\s*rep\s*range|top\s*end|upper\s*end|upper\s*range|rep\s*range)/i.test(cleaned);
+  const hasLoadLogic = /(increase\s*load|increase\s*weight|add\s*load|add\s*weight|1\s*-\s*2\.5\s*%|1-2\.5%)/i.test(cleaned);
+
+  if (hasTopRangeLogic && hasLoadLogic) {
+    return cleaned;
+  }
+
+  if (hasLoadLogic) {
+    return `${cleaned} Keep reps in range with clean form and progress load after consistently hitting the top end.`;
+  }
+
+  return `${cleaned} Once you consistently hit the top of the rep range with good form, increase load by about 1-2.5%.`;
+};
+
 const getFallbackLoad = (
   prescription: Prescription | undefined,
   oneRepMax: number | undefined,
@@ -261,8 +320,8 @@ const buildFallbackSuggestion = (input: AssistantInput): ExercisePrescriptionAss
   );
 
   const progressionNote = recentHistory.length > 0
-    ? 'When top-range reps are consistent across sets with clean form, increase load by roughly 1-2.5% next session.'
-    : 'Build consistency first, then nudge load up by about 1-2.5% once top-range reps feel stable.';
+    ? 'Build reps inside the target range with clean form; once the top end is consistently reached, increase load by about 1-2.5%.'
+    : 'Use stable technique to build toward the top of the range first, then increase load by about 1-2.5%.';
 
   return {
     uiHint,
@@ -291,7 +350,10 @@ const extractJsonObject = (raw: string): string => {
   return raw.trim();
 };
 
-const normalizeAssistantOutput = (candidate: Partial<ExercisePrescriptionAssistantData>): ExercisePrescriptionAssistantData | null => {
+const normalizeAssistantOutput = (
+  candidate: Partial<ExercisePrescriptionAssistantData>,
+  sourcePrescription?: Prescription
+): ExercisePrescriptionAssistantData | null => {
   if (!candidate || typeof candidate.uiHint !== 'string' || !Array.isArray(candidate.suggestedPrescription)) {
     return null;
   }
@@ -315,11 +377,9 @@ const normalizeAssistantOutput = (candidate: Partial<ExercisePrescriptionAssista
   }
 
   return {
-    uiHint: candidate.uiHint.slice(0, 120),
+    uiHint: ensureSetsRangeInUiHint(candidate.uiHint, sourcePrescription),
     suggestedPrescription: normalizedSets,
-    progressionNote: typeof candidate.progressionNote === 'string'
-      ? candidate.progressionNote.replace(/0\s*-\s*1\s*rep/gi, '1 rep').replace(/0\s*to\s*1\s*rep/gi, '1 rep')
-      : 'When top-range reps are consistent, increase load by a small step (around 1-2.5%).',
+    progressionNote: normalizeProgressionNote(candidate.progressionNote),
     warnings: Array.isArray(candidate.warnings) ? candidate.warnings.filter((item): item is string => typeof item === 'string') : [],
     alternatives: Array.isArray(candidate.alternatives) ? candidate.alternatives.filter((item): item is string => typeof item === 'string') : [],
     source: 'llm',
@@ -361,7 +421,7 @@ const tryGenerateViaLlm = async (input: AssistantInput): Promise<ExercisePrescri
   }
 
   const parsed = JSON.parse(extractJsonObject(rawContent));
-  return normalizeAssistantOutput(parsed);
+  return normalizeAssistantOutput(parsed, input.exercise.prescription);
 };
 
 const buildHistoryEntryFromSets = (sets: Array<Record<string, unknown>>, date: string): AssistantHistoryEntry => {
