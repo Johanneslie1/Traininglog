@@ -12,6 +12,7 @@ import {
 import ExerciseCard from './ExerciseCard';
 import SupersetActionsButton from './SupersetActionsButton';
 import toast from 'react-hot-toast';
+import { OneRepMaxPrediction } from '@/utils/oneRepMax';
 
 // Haptic feedback utility
 const triggerHapticFeedback = (intensity: 'light' | 'medium' | 'heavy' = 'light') => {
@@ -26,13 +27,17 @@ interface DraggableExerciseDisplayProps {
   onEditExercise: (exercise: UnifiedExerciseData) => void;
   onDeleteExercise: (exercise: UnifiedExerciseData) => void;
   onReorderExercises: (exercises: UnifiedExerciseData[]) => void;
+  oneRepMaxByExerciseKey?: Record<string, OneRepMaxPrediction>;
+  getPerformanceKey: (exercise: UnifiedExerciseData) => string;
 }
 
 const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
   exercises,
   onEditExercise,
   onDeleteExercise,
-  onReorderExercises
+  onReorderExercises,
+  oneRepMaxByExerciseKey = {},
+  getPerformanceKey
 }) => {
   const { state, updateExerciseOrder } = useSupersets();
   
@@ -292,6 +297,7 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
                                   <div className="transition-all duration-200 hover:bg-black/20 rounded-lg">
                                     <ExerciseCard
                                       exercise={exercise}
+                                      oneRepMaxPrediction={oneRepMaxByExerciseKey[getPerformanceKey(exercise)]}
                                       exerciseNumber={groupIndex + 1}
                                       subNumber={exerciseIndex + 1}
                                       onEdit={() => onEditExercise(exercise)}
@@ -310,6 +316,7 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
                           <div className="border-l-4 border-border rounded-lg shadow-sm mb-4">
                             <ExerciseCard
                               exercise={group.exercises[0]}
+                              oneRepMaxPrediction={oneRepMaxByExerciseKey[getPerformanceKey(group.exercises[0])]}
                               exerciseNumber={groupIndex + 1}
                               onEdit={() => onEditExercise(group.exercises[0])}
                               onDelete={() => onDeleteExercise(group.exercises[0])}

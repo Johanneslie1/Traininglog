@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { logoutUser } from '@/services/firebase/auth';
 import { logout } from '@/features/auth/authSlice';
 import { RootState } from '@/store/store';
 import { useIsCoach, useIsAthlete } from '@/hooks/useUserRole';
+import { estimateOneRepMaxEpley } from '@/utils/oneRepMax';
 
 interface SideMenuProps {
   isOpen: boolean;
@@ -24,6 +25,20 @@ const SideMenu: React.FC<SideMenuProps> = ({
   const navigate = useNavigate();
   const isCoach = useIsCoach();
   const isAthlete = useIsAthlete();
+  const [showOneRmCalculator, setShowOneRmCalculator] = useState(false);
+  const [calculatorWeight, setCalculatorWeight] = useState<string>('');
+  const [calculatorReps, setCalculatorReps] = useState<string>('');
+
+  const estimatedOneRepMax = useMemo(() => {
+    const weight = Number(calculatorWeight);
+    const reps = Number(calculatorReps);
+
+    if (!Number.isFinite(weight) || !Number.isFinite(reps)) {
+      return 0;
+    }
+
+    return estimateOneRepMaxEpley(weight, reps);
+  }, [calculatorWeight, calculatorReps]);
 
   const handleLogout = async () => {
     try {
@@ -130,6 +145,57 @@ const SideMenu: React.FC<SideMenuProps> = ({
           )}
 
           {/* Settings Section */}
+          <div className="pt-4 border-t border-border space-y-3 px-4">
+            <button
+              onClick={() => setShowOneRmCalculator((current) => !current)}
+              className="w-full flex items-center justify-between rounded-lg px-3 py-2 text-text-primary hover:bg-bg-tertiary transition-colors"
+              aria-label="Toggle 1RM Calculator"
+            >
+              <span className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">
+                1RM Calculator
+              </span>
+              <svg className={`w-4 h-4 text-text-secondary transition-transform ${showOneRmCalculator ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {showOneRmCalculator && (
+              <>
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="text-xs text-text-secondary flex flex-col gap-1">
+                    Weight (kg)
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.5"
+                      value={calculatorWeight}
+                      onChange={(event) => setCalculatorWeight(event.target.value)}
+                      className="w-full rounded-md bg-bg-tertiary border border-border px-2 py-1.5 text-text-primary"
+                    />
+                  </label>
+                  <label className="text-xs text-text-secondary flex flex-col gap-1">
+                    Reps
+                    <input
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={calculatorReps}
+                      onChange={(event) => setCalculatorReps(event.target.value)}
+                      className="w-full rounded-md bg-bg-tertiary border border-border px-2 py-1.5 text-text-primary"
+                    />
+                  </label>
+                </div>
+
+                <div className="rounded-md border border-border bg-bg-tertiary px-3 py-2">
+                  <div className="text-xs text-text-tertiary">Estimated 1RM</div>
+                  <div className="text-sm font-semibold text-text-primary">
+                    {estimatedOneRepMax > 0 ? `${estimatedOneRepMax.toFixed(1)} kg` : 'Enter weight and reps'}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
           <div className="pt-4 border-t border-[#3E4652] space-y-1">
             <button
               onClick={onOpenSettings}

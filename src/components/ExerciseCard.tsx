@@ -4,9 +4,11 @@ import { UnifiedExerciseData } from '../utils/unifiedExerciseUtils';
 import { ActivityType } from '../types/activityTypes';
 import { useSupersets } from '../context/SupersetContext';
 import { getActivityTypeInfo } from './ActivityExerciseCard';
+import { OneRepMaxPrediction } from '@/utils/oneRepMax';
 
 interface ExerciseCardProps {
   exercise: UnifiedExerciseData;
+  oneRepMaxPrediction?: OneRepMaxPrediction;
   onEdit?: () => void;
   onDelete?: () => void;
   showActions?: boolean;
@@ -30,6 +32,7 @@ const getDifficultyColor = (difficulty?: string): string => {
 
 const ExerciseCard: React.FC<ExerciseCardProps> = ({
   exercise,
+  oneRepMaxPrediction,
   onEdit,
   onDelete,
   showActions = true,
@@ -39,6 +42,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
   onToggleVisibility
 }) => {
   const [showMenu, setShowMenu] = useState(false);
+  const [showSetDetails, setShowSetDetails] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { state, toggleExerciseSelection, isExerciseInSuperset, startCreating } = useSupersets();
   
@@ -142,9 +146,17 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
               {exercise.sets?.length || 0} set{(exercise.sets?.length || 0) !== 1 ? 's' : ''}
             </span>
           </div>
+
+          <button
+            onClick={() => setShowSetDetails((current) => !current)}
+            className="mb-2 text-xs text-text-tertiary hover:text-text-primary transition-colors"
+            aria-label="Toggle set details"
+          >
+            {showSetDetails ? 'Hide set metrics' : 'Show set metrics'}
+          </button>
           
           {/* Display all sets */}
-          {exercise.sets && exercise.sets.length > 0 && (
+          {showSetDetails && exercise.sets && exercise.sets.length > 0 && (
             <div className="space-y-3">
               {exercise.sets.map((set, setIndex) => {
                 // Helper function to check if a value exists and is not empty
@@ -323,54 +335,79 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
             ))}
           </div>
 
+          <button
+            onClick={() => setShowSetDetails((current) => !current)}
+            className="mb-2 text-xs text-text-tertiary hover:text-text-primary transition-colors"
+            aria-label="Toggle set details"
+          >
+            {showSetDetails ? 'Hide set metrics' : 'Show set metrics'}
+          </button>
+
           {/* Show performance-relevant resistance exercise data */}
-          <div className="space-y-1">
-            <div className="flex items-center justify-between">
-              <span className="text-text-tertiary">Total Volume</span>
-              <span className="text-text-primary">{calculateTotalVolume()}kg</span>
-            </div>
-            
-            {/* Check for performance-relevant fields in resistance sets */}
-            {(() => {
-              const hasValue = (value: any): boolean => {
-                return value !== null && 
-                       value !== undefined && 
-                       value !== '' && 
-                       !(typeof value === 'string' && value.trim() === '') &&
-                       !(typeof value === 'number' && isNaN(value));
-              };
+          {showSetDetails && (
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-text-tertiary">Total Volume</span>
+                <span className="text-text-primary">{calculateTotalVolume()}kg</span>
+              </div>
 
-              const performanceFields: Array<{ label: string; value: string }> = [];
+              {oneRepMaxPrediction && (
+                <>
+                  <div className="flex items-center justify-between">
+                    <span className="text-text-tertiary">Predicted 1RM</span>
+                    <span className="text-text-primary">{oneRepMaxPrediction.oneRepMax.toFixed(1)}kg</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-text-tertiary">Best Set</span>
+                    <span className="text-text-primary">
+                      {(oneRepMaxPrediction.bestSet.weight || 0)}kg × {(oneRepMaxPrediction.bestSet.reps || 0)}
+                    </span>
+                  </div>
+                </>
+              )}
               
-              // Check if any set has performance-relevant data
-              exercise.sets.forEach((set: any) => {
-                // Intensity metrics
-                if (hasValue(set.rpe)) performanceFields.push({ label: 'RPE', value: `${set.rpe}/10` });
-                if (hasValue(set.rir)) performanceFields.push({ label: 'RIR', value: `${set.rir} reps left` });
-                if (hasValue(set.intensity)) performanceFields.push({ label: 'Intensity', value: `${set.intensity}/10` });
-                if (hasValue(set.performance)) performanceFields.push({ label: 'Performance', value: `${set.performance}/10` });
-                
-                // Volume/Strain metrics
-                if (hasValue(set.restTime)) performanceFields.push({ label: 'Rest Time', value: `${set.restTime}s` });
-                if (hasValue(set.tempo)) performanceFields.push({ label: 'Tempo', value: set.tempo });
-                
-                // Performance notes only
-                if (hasValue(set.notes)) performanceFields.push({ label: 'Performance Notes', value: set.notes });
-              });
+              {/* Check for performance-relevant fields in resistance sets */}
+              {(() => {
+                const hasValue = (value: any): boolean => {
+                  return value !== null && 
+                         value !== undefined && 
+                         value !== '' && 
+                         !(typeof value === 'string' && value.trim() === '') &&
+                         !(typeof value === 'number' && isNaN(value));
+                };
 
-              // Remove duplicates and return unique fields
-              const uniqueFields = performanceFields.filter((field, index, self) => 
-                index === self.findIndex(f => f.label === field.label)
-              );
+                const performanceFields: Array<{ label: string; value: string }> = [];
+                
+                // Check if any set has performance-relevant data
+                exercise.sets.forEach((set: any) => {
+                  // Intensity metrics
+                  if (hasValue(set.rpe)) performanceFields.push({ label: 'RPE', value: `${set.rpe}/10` });
+                  if (hasValue(set.rir)) performanceFields.push({ label: 'RIR', value: `${set.rir} reps left` });
+                  if (hasValue(set.intensity)) performanceFields.push({ label: 'Intensity', value: `${set.intensity}/10` });
+                  if (hasValue(set.performance)) performanceFields.push({ label: 'Performance', value: `${set.performance}/10` });
+                  
+                  // Volume/Strain metrics
+                  if (hasValue(set.restTime)) performanceFields.push({ label: 'Rest Time', value: `${set.restTime}s` });
+                  if (hasValue(set.tempo)) performanceFields.push({ label: 'Tempo', value: set.tempo });
+                  
+                  // Performance notes only
+                  if (hasValue(set.notes)) performanceFields.push({ label: 'Performance Notes', value: set.notes });
+                });
 
-              return uniqueFields.map((field, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <span className="text-text-tertiary">{field.label}</span>
-                  <span className="text-text-primary">{field.value}</span>
-                </div>
-              ));
-            })()}
-          </div>
+                // Remove duplicates and return unique fields
+                const uniqueFields = performanceFields.filter((field, index, self) => 
+                  index === self.findIndex(f => f.label === field.label)
+                );
+
+                return uniqueFields.map((field, index) => (
+                  <div key={index} className="flex items-center justify-between">
+                    <span className="text-text-tertiary">{field.label}</span>
+                    <span className="text-text-primary">{field.value}</span>
+                  </div>
+                ));
+              })()}
+            </div>
+          )}
         </div>
       );
     } else {

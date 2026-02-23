@@ -17,6 +17,7 @@ import { db } from '../../services/firebase/config';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { getExerciseLogsByDate, saveExerciseLog } from '../../utils/localStorageUtils';
 import { addExerciseLog } from '../../services/firebase/exerciseLogs';
+import { getBestHistoricalOneRepMax } from '@/services/firebase/exerciseLogs';
 import SideMenu from '../../components/SideMenu';
 import Settings from '../../components/Settings';
 import DraggableExerciseDisplay from '../../components/DraggableExerciseDisplay';
@@ -28,6 +29,7 @@ import { ActivityType } from '@/types/activityTypes';
 import { SharedSessionAssignment } from '@/types/program';
 import { generateExercisePrescriptionAssistant } from '@/services/exercisePrescriptionAssistantService';
 import toast from 'react-hot-toast';
+import { getExercisePerformanceKey, OneRepMaxPrediction } from '@/utils/oneRepMax';
 
 interface ExerciseLogProps {}
 
@@ -92,10 +94,18 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<ExerciseData | null>(null);
   const [editingExercise, setEditingExercise] = useState<UnifiedExerciseData | null>(null);
+  const [oneRepMaxByExerciseKey, setOneRepMaxByExerciseKey] = useState<Record<string, OneRepMaxPrediction>>({});
 
   const getDateKey = useCallback((date: Date): string => {
     return normalizeDate(date).toISOString().split('T')[0];
   }, [normalizeDate]);
+
+  const getPerformanceKey = useCallback((exercise: UnifiedExerciseData): string => {
+    return getExercisePerformanceKey({
+      exerciseName: exercise.exerciseName,
+      sharedSessionExerciseId: exercise.sharedSessionExerciseId
+    });
+  }, []);
 
   const hasMeaningfulSetData = useCallback((set: ExerciseSet): boolean => {
     return Object.entries(set).some(([key, value]) => {
@@ -488,6 +498,82 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   }, [selectedDate, selectedExercise, areDatesEqual, handleCloseSetLogger]);
 
   useEffect(() => {
+    let cancelled = false;
+
+    const loadOneRepMaxPredictions = async () => {
+      if (!user?.id) {
+        if (!cancelled) {
+          setOneRepMaxByExerciseKey({});
+        }
+        return;
+      }
+
+      const resistanceExercises = exercises.filter((exercise) =>
+        !exercise.activityType || exercise.activityType === ActivityType.RESISTANCE
+      );
+
+      const uniqueExercises = Array.from(
+        new Map(
+          resistanceExercises.map((exercise) => [
+            getPerformanceKey(exercise),
+            {
+              key: getPerformanceKey(exercise),
+              exerciseName: exercise.exerciseName,
+              sharedSessionExerciseId: exercise.sharedSessionExerciseId
+            }
+          ])
+        ).values()
+      );
+
+      if (uniqueExercises.length === 0) {
+        if (!cancelled) {
+          setOneRepMaxByExerciseKey({});
+        }
+        return;
+      }
+
+      const predictions = await Promise.all(
+        uniqueExercises.map(async (exerciseMeta) => {
+          const prediction = await getBestHistoricalOneRepMax({
+            userId: user.id,
+            exerciseName: exerciseMeta.exerciseName,
+            sharedSessionExerciseId: exerciseMeta.sharedSessionExerciseId
+          });
+
+          return {
+            key: exerciseMeta.key,
+            prediction
+          };
+        })
+      );
+
+      if (cancelled) {
+        return;
+      }
+
+      const nextMap: Record<string, OneRepMaxPrediction> = {};
+      predictions.forEach(({ key, prediction }) => {
+        if (prediction) {
+          nextMap[key] = prediction;
+        }
+      });
+
+      setOneRepMaxByExerciseKey(nextMap);
+    };
+
+    loadOneRepMaxPredictions().catch((error) => {
+      console.error('Error loading 1RM predictions:', error);
+      if (!cancelled) {
+        setOneRepMaxByExerciseKey({});
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [exercises, user?.id, getPerformanceKey]);
+
+  useEffect(() => {
     const sharedSessionAssignment = (location.state as { sharedSessionAssignment?: SharedSessionAssignment } | null)?.sharedSessionAssignment;
 
     if (!sharedSessionAssignment || !user?.id) {
@@ -641,6 +727,8 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
                   onEditExercise={handleEditExercise}
                   onDeleteExercise={handleDeleteExercise}
                   onReorderExercises={handleReorderExercises}
+                  oneRepMaxByExerciseKey={oneRepMaxByExerciseKey}
+                  getPerformanceKey={getPerformanceKey}
                 />
               </div>
             )}

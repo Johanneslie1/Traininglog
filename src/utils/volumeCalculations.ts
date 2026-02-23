@@ -1,4 +1,5 @@
 import { ExerciseSet } from '@/types/sets';
+import { estimateOneRepMaxEpley } from '@/utils/oneRepMax';
 
 /**
  * Calculate volume for a single set (weight × reps)
@@ -59,14 +60,7 @@ export function calculateAverageReps(sets: ExerciseSet[]): number {
  * @returns Estimated 1RM, rounded to 1 decimal place
  */
 export function estimate1RM(weight: number, reps: number): number {
-  if (weight === 0 || reps === 0) return 0;
-  if (reps === 1) return weight;
-  if (reps > 12) {
-    // Formula becomes less accurate beyond 12 reps, just return the weight
-    return weight;
-  }
-  
-  return Math.round(weight * (1 + reps / 30) * 10) / 10;
+  return estimateOneRepMaxEpley(weight, reps);
 }
 
 /**
