@@ -13,12 +13,39 @@ import {
 import { db } from './config';
 import { ExerciseLog } from '@/types/exercise';
 import { ExerciseSet } from '@/types/sets';
+import { Prescription } from '@/types/program';
+
+const removeUndefinedFields = <T>(obj: T): T => {
+  if (Array.isArray(obj)) {
+    return obj.map(removeUndefinedFields) as unknown as T;
+  }
+
+  if (obj && typeof obj === 'object') {
+    const cleaned: Record<string, unknown> = {};
+    Object.entries(obj as Record<string, unknown>).forEach(([key, value]) => {
+      if (value !== undefined) {
+        cleaned[key] = removeUndefinedFields(value);
+      }
+    });
+    return cleaned as T;
+  }
+
+  return obj;
+};
 
 type ExerciseLogInput = {
   exerciseName: string;
   userId: string;
   sets: ExerciseSet[];
   activityType?: string; // Add activity type to the input type
+  prescription?: Prescription;
+  instructionMode?: 'structured' | 'freeform';
+  instructions?: string;
+  sharedSessionAssignmentId?: string;
+  sharedSessionId?: string;
+  sharedSessionExerciseId?: string;
+  sharedSessionDateKey?: string;
+  sharedSessionExerciseCompleted?: boolean;
 };
 
 export const addExerciseLog = async (
@@ -33,14 +60,24 @@ export const addExerciseLog = async (
       throw new Error('userId is required to save exercise log');
     }
 
-    const exerciseData = {
+    const exerciseData = removeUndefinedFields({
       ...logData,
       timestamp: Timestamp.fromDate(selectedDate || new Date()),
       deviceId: window.navigator.userAgent,
       userId: logData.userId,
       sets: Array.isArray(logData.sets) ? logData.sets : [], // Ensure sets is always an array
-      ...(logData.activityType && { activityType: logData.activityType }) // Include activityType if provided
-    };
+      ...(logData.activityType && { activityType: logData.activityType }), // Include activityType if provided
+      ...(logData.sharedSessionAssignmentId && { sharedSessionAssignmentId: logData.sharedSessionAssignmentId }),
+      ...(logData.sharedSessionId && { sharedSessionId: logData.sharedSessionId }),
+      ...(logData.sharedSessionExerciseId && { sharedSessionExerciseId: logData.sharedSessionExerciseId }),
+      ...(logData.sharedSessionDateKey && { sharedSessionDateKey: logData.sharedSessionDateKey }),
+      ...(typeof logData.sharedSessionExerciseCompleted === 'boolean' && {
+        sharedSessionExerciseCompleted: logData.sharedSessionExerciseCompleted
+      }),
+      ...(logData.prescription && { prescription: logData.prescription }),
+      ...(logData.instructionMode && { instructionMode: logData.instructionMode }),
+      ...(logData.instructions && { instructions: logData.instructions })
+    });
 
     console.log('📝 Prepared exercise data:', exerciseData);
 
@@ -179,12 +216,17 @@ export const deleteExerciseLog = async (logId: string, userId: string): Promise<
     }
 
     if (!deleted) {
-      const errorMessage = !exerciseDoc && !oldExerciseDoc 
-        ? 'Could not access exercise document. Please check your permissions.'
-        : errors.length > 0
-          ? `Failed to delete exercise: ${errors.join('; ')}`
-          : 'Exercise log not found or you do not have permission to delete it';
-      
+      const noDocumentExists = Boolean(exerciseDoc && !exerciseDoc.exists()) && Boolean(oldExerciseDoc && !oldExerciseDoc.exists());
+
+      if (noDocumentExists) {
+        console.log('ℹ️ Exercise already removed from Firestore, skipping delete:', logId);
+        return;
+      }
+
+      const errorMessage = errors.length > 0
+        ? `Failed to delete exercise: ${errors.join('; ')}`
+        : 'Exercise log not found or you do not have permission to delete it';
+
       throw new Error(errorMessage);
     }
   } catch (error) {
@@ -218,7 +260,15 @@ export const getExerciseLogs = async (userId: string, startDate: Date, endDate: 
         timestamp: data.timestamp.toDate(),
         deviceId: data.deviceId || 'legacy',
         userId: data.userId,
-        activityType: data.activityType
+        activityType: data.activityType,
+        sharedSessionAssignmentId: data.sharedSessionAssignmentId,
+        sharedSessionId: data.sharedSessionId,
+        sharedSessionExerciseId: data.sharedSessionExerciseId,
+        sharedSessionDateKey: data.sharedSessionDateKey,
+        sharedSessionExerciseCompleted: data.sharedSessionExerciseCompleted,
+        prescription: data.prescription,
+        instructionMode: data.instructionMode,
+        instructions: data.instructions
       } as ExerciseLog;
     });
 

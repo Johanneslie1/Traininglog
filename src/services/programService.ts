@@ -99,6 +99,29 @@ function validateProgram(program: Partial<Program>, isNew: boolean = false): voi
   console.log('[programService] Program validation passed');
 }
 
+const resolveCurrentUserDisplayName = async (uid: string): Promise<string> => {
+  const auth = getAuth();
+
+  try {
+    const userDocRef = doc(db, 'users', uid);
+    const userDocSnap = await getDoc(userDocRef);
+    if (userDocSnap.exists()) {
+      const userData = userDocSnap.data() as { firstName?: string; lastName?: string; email?: string };
+      const fullName = `${userData.firstName || ''} ${userData.lastName || ''}`.trim();
+      if (fullName) {
+        return fullName;
+      }
+      if (userData.email) {
+        return userData.email;
+      }
+    }
+  } catch (error) {
+    console.warn('[programService] Could not resolve user display name from profile:', error);
+  }
+
+  return auth.currentUser?.displayName || auth.currentUser?.email || 'Coach';
+};
+
 export const getPrograms = async (): Promise<Program[]> => {
   try {
     const user = await ensureAuth();
@@ -1001,6 +1024,7 @@ export const shareProgram = async (
 ): Promise<string> => {
   try {
     const user = await ensureAuth();
+    const sharedByName = await resolveCurrentUserDisplayName(user.uid);
     
     console.log('[programService] Sharing program:', { programId, shareWithUserIds, coachMessage });
     
@@ -1039,7 +1063,7 @@ export const shareProgram = async (
       programId,
       originalProgram: fullProgram,
       sharedBy: user.uid,
-      sharedByName: user.uid, // TODO: Replace with actual user display name when user profiles exist
+      sharedByName,
       sharedWith: shareWithUserIds,
       sharedAt: new Date().toISOString(),
       lastModified: new Date().toISOString(),
@@ -1059,6 +1083,7 @@ export const shareProgram = async (
         programId,
         userId,
         sharedBy: user.uid,
+        sharedByName,
         assignedAt: new Date().toISOString(),
         status: 'not-started',
         coachMessage: coachMessage || undefined
@@ -1123,6 +1148,7 @@ export const getSharedPrograms = async (): Promise<any[]> => {
         return {
           id: sharedProgramSnap.id,
           ...sharedProgramSnap.data(),
+          sharedByName: (sharedProgramSnap.data() as any).sharedByName || assignment.sharedByName,
           assignmentId: assignmentDoc.id,
           assignmentStatus: assignment.status,
           assignedAt: assignment.assignedAt,
@@ -1325,10 +1351,20 @@ export const updateAssignmentStatus = async (
       throw new Error('You can only update your own assignments');
     }
     
-    await updateDoc(assignmentRef, {
+    const statusPatch: {
+      status: 'not-started' | 'in-progress' | 'completed' | 'copied' | 'archived';
+      lastViewedAt: string;
+      completedAt?: string;
+    } = {
       status,
       lastViewedAt: new Date().toISOString()
-    });
+    };
+
+    if (status === 'completed') {
+      statusPatch.completedAt = new Date().toISOString();
+    }
+
+    await updateDoc(assignmentRef, statusPatch);
     
     console.log('[programService] Assignment status updated successfully');
   } catch (error) {

@@ -39,7 +39,6 @@ const EnduranceActivityPicker: React.FC<EnduranceActivityPickerProps> = ({ onClo
       type: 'endurance',
       category: selected.category || 'cardio',
       equipment: Array.isArray(selected.equipment) ? selected.equipment : [selected.equipment || 'bodyweight'],
-      instructions: [selected.description || ''],
       difficulty: 'beginner',
       defaultUnit: 'time',
       metrics: {
@@ -47,7 +46,12 @@ const EnduranceActivityPicker: React.FC<EnduranceActivityPickerProps> = ({ onClo
         trackDistance: true,
         trackRPE: true,
         trackDuration: true
-      }
+      },
+      prescription: editingExercise?.prescription,
+      instructionMode: editingExercise?.instructionMode,
+      instructions: editingExercise?.instructions
+        ? [editingExercise.instructions]
+        : [selected.description || '']
     };
 
     return (
@@ -69,7 +73,12 @@ const EnduranceActivityPicker: React.FC<EnduranceActivityPickerProps> = ({ onClo
               exerciseName: selected.name,
               userId: user.id,
               sets: sets,
-              activityType: ActivityType.ENDURANCE
+              activityType: ActivityType.ENDURANCE,
+              prescription: exercise.prescription,
+              instructionMode: exercise.instructionMode,
+              instructions: Array.isArray(exercise.instructions)
+                ? exercise.instructions[0]
+                : undefined
             };
 
             console.log('💾 EnduranceActivityPicker: Calling addExerciseLog with:', exerciseLogData);
@@ -89,6 +98,8 @@ const EnduranceActivityPicker: React.FC<EnduranceActivityPickerProps> = ({ onClo
         }}
         initialSets={editingExercise?.sets || []}
         isEditing={!!editingExercise}
+        prescription={exercise.prescription}
+        instructionMode={exercise.instructionMode}
       />
     );
   }

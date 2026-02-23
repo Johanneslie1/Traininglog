@@ -88,14 +88,18 @@ const SportActivityPicker: React.FC<SportActivityPickerProps> = ({
       type: 'teamSports',
       category: selected.category || 'sport',
       equipment: selected.equipment || [],
-      instructions: [selected.description || ''],
       difficulty: 'beginner',
       defaultUnit: 'time',
       metrics: {
         trackTime: true,
         trackDuration: true,
         trackRPE: true
-      }
+      },
+      prescription: editingExercise?.prescription,
+      instructionMode: editingExercise?.instructionMode,
+      instructions: editingExercise?.instructions
+        ? [editingExercise.instructions]
+        : [selected.description || '']
     };
 
     return (
@@ -117,7 +121,12 @@ const SportActivityPicker: React.FC<SportActivityPickerProps> = ({
               exerciseName: selected.name,
               userId: user.id,
               sets: sets,
-              activityType: ActivityType.SPORT
+              activityType: ActivityType.SPORT,
+              prescription: exercise.prescription,
+              instructionMode: exercise.instructionMode,
+              instructions: Array.isArray(exercise.instructions)
+                ? exercise.instructions[0]
+                : undefined
             };
 
             console.log('💾 SportActivityPicker: Calling addExerciseLog with:', exerciseLogData);
@@ -137,6 +146,8 @@ const SportActivityPicker: React.FC<SportActivityPickerProps> = ({
         }}
         initialSets={editingExercise?.sets || []}
         isEditing={!!editingExercise}
+        prescription={exercise.prescription}
+        instructionMode={exercise.instructionMode}
       />
     );
   }

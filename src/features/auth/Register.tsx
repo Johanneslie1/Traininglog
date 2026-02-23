@@ -151,6 +151,19 @@ const Register = () => {
               {isLoading ? 'Creating account...' : 'Create account'}
             </button>
           </div>
+
+          <div className="text-center">
+            <p className="text-sm text-gray-600">
+              Already have an account?{' '}
+              <button
+                type="button"
+                onClick={() => navigate('/login')}
+                className="font-medium text-primary-600 hover:text-primary-700 underline"
+              >
+                Sign in
+              </button>
+            </p>
+          </div>
         </form>
       </div>
     </div>

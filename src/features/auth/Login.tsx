@@ -133,6 +133,19 @@ const Login = () => {
               {isLoading ? 'Signing in...' : 'Sign in'}
             </button>
           </div>
+
+          <div className="text-center">
+            <p className="text-sm text-gray-600">
+              New user?{' '}
+              <button
+                type="button"
+                onClick={() => navigate('/register')}
+                className="font-medium text-primary-600 hover:text-primary-700 underline"
+              >
+                Create account
+              </button>
+            </p>
+          </div>
         </form>
       </div>
     </div>

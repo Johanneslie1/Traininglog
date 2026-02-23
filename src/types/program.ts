@@ -87,9 +87,12 @@ export interface SharedProgramAssignment {
   sharedProgramId: string;
   programId: string;
   userId: string; // Athlete who received the program
+  sharedBy?: string; // Coach userId
+  sharedByName?: string; // Coach display name
   assignedAt: string;
   status: 'not-started' | 'in-progress' | 'completed' | 'copied' | 'archived';
   lastViewedAt?: string;
+  completedAt?: string;
   coachMessage?: string; // Optional message/instructions from coach
 }
 
@@ -117,8 +120,10 @@ export interface SharedSessionAssignment {
   sessionData: ProgramSession;
   userId: string; // Athlete who received
   sharedBy: string; // Coach userId
+  sharedByName?: string; // Coach display name
   assignedAt: string;
   status: 'not-started' | 'in-progress' | 'completed' | 'copied' | 'archived';
   lastViewedAt?: string;
+  completedAt?: string;
   coachMessage?: string;
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { SharedSessionAssignment } from '@/types/program';
 import { getSharedSessionsForAthlete, updateSharedSessionStatus } from '@/services/sessionService';
 import { ActivityType } from '@/types/activityTypes';
@@ -17,11 +17,7 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
   const [expandedSessions, setExpandedSessions] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
 
-  useEffect(() => {
-    loadSharedSessions();
-  }, []);
-
-  const loadSharedSessions = async () => {
+  const loadSharedSessions = useCallback(async () => {
     try {
       setLoading(true);
       const sessions = await getSharedSessionsForAthlete();
@@ -34,7 +30,31 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadSharedSessions();
+  }, [loadSharedSessions]);
+
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        loadSharedSessions();
+      }
+    };
+
+    const handleFocus = () => {
+      loadSharedSessions();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [loadSharedSessions]);
 
   const toggleExpand = (assignmentId: string) => {
     setExpandedSessions(prev => {
@@ -52,7 +72,11 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
     try {
       await updateSharedSessionStatus(assignmentId, status);
       setAssignments(prev => 
-        prev.map(a => a.id === assignmentId ? { ...a, status } : a)
+        prev.map(a => a.id === assignmentId ? {
+          ...a,
+          status,
+          ...(status === 'completed' ? { completedAt: new Date().toISOString() } : {})
+        } : a)
       );
       toast.success('Status updated');
     } catch (err) {
@@ -104,6 +128,41 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
       default:
         return { label: 'Resistance', color: 'bg-blue-600', textColor: 'text-blue-100' };
     }
+  };
+
+  const getGuidedExerciseCount = (assignment: SharedSessionAssignment) => {
+    return assignment.sessionData.exercises.filter((exercise) => {
+      const hasStructured = !!exercise.prescription && exercise.instructionMode === 'structured';
+      const hasFreeform = !!exercise.instructions && exercise.instructionMode === 'freeform';
+      return hasStructured || hasFreeform;
+    }).length;
+  };
+
+  const getCoachDisplayName = (assignment: SharedSessionAssignment) => {
+    const rawName = assignment.sharedByName?.trim();
+    if (!rawName) {
+      return 'Your Coach';
+    }
+
+    if (assignment.sharedBy && rawName === assignment.sharedBy) {
+      return 'Your Coach';
+    }
+
+    return rawName;
+  };
+
+  const getStatusHelperText = (assignment: SharedSessionAssignment) => {
+    if (assignment.status === 'completed') {
+      return assignment.completedAt
+        ? `Completed ${formatDate(assignment.completedAt)}`
+        : 'Completed based on your logged session progress';
+    }
+
+    if (assignment.status === 'in-progress') {
+      return 'Continue logging this assigned session to complete it';
+    }
+
+    return 'Start this assigned session when you are ready';
   };
 
   const formatDate = (dateString: string) => {
@@ -169,6 +228,7 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
               const session = assignment.sessionData;
               const isExpanded = expandedSessions.has(assignment.id);
               const statusBadge = getStatusBadge(assignment.status);
+              const guidedExerciseCount = getGuidedExerciseCount(assignment);
 
               return (
                 <div
@@ -189,6 +249,14 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
                           </span>
                           <span>•</span>
                           <span>{session.exercises.length} exercises</span>
+                          <span>•</span>
+                          <span className="text-gray-300">Coach: {getCoachDisplayName(assignment)}</span>
+                          {guidedExerciseCount > 0 && (
+                            <>
+                              <span>•</span>
+                              <span className="text-primary-300">{guidedExerciseCount} guided</span>
+                            </>
+                          )}
                         </div>
                       </div>
                       <span className={`px-3 py-1 text-xs font-medium rounded-full ${statusBadge.color} ${statusBadge.textColor} flex-shrink-0`}>
@@ -211,7 +279,11 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
                         onClick={() => handleLogSession(assignment)}
                         className="flex-1 min-w-[140px] px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors"
                       >
-                        Log Now
+                        {assignment.status === 'completed'
+                          ? 'Log Again'
+                          : guidedExerciseCount > 0
+                            ? 'Log with Guide'
+                            : 'Log Now'}
                       </button>
                       <button
                         onClick={() => toggleExpand(assignment.id)}
@@ -237,6 +309,9 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
                         </button>
                       )}
                     </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                      {getStatusHelperText(assignment)}
+                    </p>
                   </div>
 
                   {/* Expanded Exercise List */}

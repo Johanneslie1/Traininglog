@@ -3,6 +3,7 @@ import { collection, query, where, getDocs, addDoc, updateDoc, doc } from 'fireb
 import { signInAnonymously } from 'firebase/auth';
 import { ExerciseSet } from '@/types/sets';
 import { ActivityType } from '@/types/activityTypes';
+import { Prescription } from '@/types/program';
 
 export interface ExerciseData {
   id?: string;
@@ -13,6 +14,14 @@ export interface ExerciseData {
   deviceId?: string;
   supersetId?: string; // Add superset support
   activityType?: ActivityType; // Add activity type support using proper enum
+  sharedSessionAssignmentId?: string;
+  sharedSessionId?: string;
+  sharedSessionExerciseId?: string;
+  sharedSessionDateKey?: string;
+  sharedSessionExerciseCompleted?: boolean;
+  prescription?: Prescription;
+  instructionMode?: 'structured' | 'freeform';
+  instructions?: string;
 }
 
 export class ExerciseDataService {

@@ -19,7 +19,8 @@ import {
   formatProgressionRationale
 } from '@/services/progressiveOverloadService';
 import { Prescription } from '@/types/program';
-import { prescriptionToSets, formatPrescription } from '@/utils/prescriptionUtils';
+import { prescriptionToSets } from '@/utils/prescriptionUtils';
+import PrescriptionGuideCard from '@/components/exercises/PrescriptionGuideCard';
 
 interface UniversalSetLoggerProps {
   exercise: Exercise;
@@ -273,11 +274,24 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
   const instructionsText = hasInstructions 
     ? (Array.isArray(exercise.instructions) ? exercise.instructions[0] : exercise.instructions)
     : null;
-  const [instructionsExpanded, setInstructionsExpanded] = useState(false);
-  const shouldCollapseInstructions = instructionsText && instructionsText.length > 150;
 
   // Check if exercise has prescription from program
   const hasPrescription = prescription && instructionMode === 'structured';
+
+  const prescriptionTargetSets = useMemo(() => {
+    if (!hasPrescription || !prescription) {
+      return [] as ExerciseSet[];
+    }
+
+    try {
+      return prescriptionToSets(
+        prescription,
+        exercise.activityType || ActivityType.RESISTANCE
+      );
+    } catch {
+      return [] as ExerciseSet[];
+    }
+  }, [hasPrescription, prescription, exercise.activityType]);
 
   // Initialize sets with progressive overload auto-fill or prescription pre-fill
   useEffect(() => {
@@ -938,6 +952,33 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
     }
   };
 
+  const getInlineTargetText = (index: number) => {
+    if (!followPrescription || prescriptionTargetSets.length === 0) {
+      return null;
+    }
+
+    const safeIndex = Math.min(index, prescriptionTargetSets.length - 1);
+    const targetSet = prescriptionTargetSets[safeIndex];
+    if (!targetSet) {
+      return null;
+    }
+
+    switch (exerciseType) {
+      case 'strength':
+      case 'bodyweight':
+        return `Target ${targetSet.weight || 0}kg × ${targetSet.reps || 0}`;
+      case 'endurance':
+      case 'sport':
+        return `Target ${targetSet.duration || 0} min${targetSet.distance ? ` • ${targetSet.distance} km` : ''}`;
+      case 'flexibility':
+        return `Target ${targetSet.holdTime || targetSet.duration || 0}s hold${targetSet.reps ? ` × ${targetSet.reps}` : ''}`;
+      case 'speed_agility':
+        return `Target ${targetSet.reps || 0} reps${targetSet.distance ? ` • ${targetSet.distance}m` : ''}`;
+      default:
+        return `Target ${targetSet.duration || 0} min`;
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/95 flex flex-col z-50">
       {/* Header */}
@@ -954,61 +995,18 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
           {exerciseType.charAt(0).toUpperCase() + exerciseType.slice(1)} Exercise
         </div>
 
-        {/* Prescription Toggle - only show when prescription available */}
-        {hasPrescription && !isEditing && (
-          <div className="mt-3 p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-purple-400 text-sm font-medium">📋 Prescription Available</span>
-                  {prescriptionApplied && (
-                    <span className="text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded">
-                      Applied
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-gray-400">
-                  {formatPrescription(prescription, exercise.activityType || ActivityType.RESISTANCE)}
-                </p>
-              </div>
-              <button
-                onClick={handleTogglePrescription}
-                className={`shrink-0 relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  followPrescription ? 'bg-purple-600' : 'bg-gray-600'
-                }`}
-                aria-label="Toggle prescription pre-filling"
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    followPrescription ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                />
-              </button>
-            </div>
-          </div>
-        )}
-        
-        {/* Program Instructions - displayed from prescription */}
-        {instructionsText && (
-          <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-            <div className="flex items-start gap-2">
-              <span className="text-blue-400 text-sm font-medium shrink-0">📋 Instructions:</span>
-              <div className="flex-1 min-w-0">
-                <p className={`text-sm text-gray-300 whitespace-pre-wrap ${shouldCollapseInstructions && !instructionsExpanded ? 'line-clamp-3' : ''}`}>
-                  {instructionsText}
-                </p>
-                {shouldCollapseInstructions && (
-                  <button
-                    onClick={() => setInstructionsExpanded(!instructionsExpanded)}
-                    className="text-xs text-blue-400 hover:text-blue-300 mt-1 underline"
-                  >
-                    {instructionsExpanded ? 'Show less' : 'Show more'}
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
+        <div className="mt-3 sticky top-0 z-20">
+          <PrescriptionGuideCard
+            activityType={exercise.activityType || ActivityType.RESISTANCE}
+            prescription={prescription}
+            instructionMode={instructionMode}
+            instructionsText={instructionsText}
+            isEditing={isEditing}
+            followPrescription={followPrescription}
+            prescriptionApplied={prescriptionApplied}
+            onToggleFollow={!isEditing && hasPrescription ? handleTogglePrescription : undefined}
+          />
+        </div>
         
         {/* Exercise History Summary - helps with progressive overload */}
         {!isEditing && (
@@ -1087,6 +1085,11 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
                     <span className="text-gray-400 font-medium shrink-0">
                       {getSetLabel()} {index + 1}
                     </span>
+                    {getInlineTargetText(index) && (
+                      <span className="text-[11px] text-primary-300 bg-primary-900/20 border border-primary-700/40 rounded px-2 py-0.5">
+                        {getInlineTargetText(index)}
+                      </span>
+                    )}
                     
                     {/* Compact set summary based on exercise type */}
                     {!isExpanded && (

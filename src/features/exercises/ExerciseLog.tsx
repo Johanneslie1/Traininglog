@@ -31,6 +31,14 @@ import toast from 'react-hot-toast';
 
 interface ExerciseLogProps {}
 
+interface SharedSessionExerciseMeta {
+  sharedSessionAssignmentId?: string;
+  sharedSessionId?: string;
+  sharedSessionExerciseId?: string;
+  sharedSessionDateKey?: string;
+  sharedSessionExerciseCompleted?: boolean;
+}
+
 const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -80,7 +88,75 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<ExerciseData | null>(null);
   const [editingExercise, setEditingExercise] = useState<UnifiedExerciseData | null>(null);
-  const [processedSharedAssignmentId, setProcessedSharedAssignmentId] = useState<string | null>(null);
+
+  const getDateKey = useCallback((date: Date): string => {
+    return normalizeDate(date).toISOString().split('T')[0];
+  }, [normalizeDate]);
+
+  const hasMeaningfulSetData = useCallback((set: ExerciseSet): boolean => {
+    return Object.entries(set).some(([key, value]) => {
+      if (key === 'difficulty' || key === 'notes' || key === 'setNumber') {
+        return false;
+      }
+
+      if (typeof value === 'number') {
+        return value > 0;
+      }
+
+      if (typeof value === 'string') {
+        return value.trim().length > 0;
+      }
+
+      return Array.isArray(value) ? value.length > 0 : Boolean(value);
+    });
+  }, []);
+
+  const getImportedSharedSessionExerciseDocs = useCallback(async (
+    assignmentId: string,
+    dateKey: string,
+    userId: string
+  ) => {
+    const sharedImportQuery = query(
+      collection(db, 'users', userId, 'exercises'),
+      where('sharedSessionAssignmentId', '==', assignmentId)
+    );
+    const sharedImportSnap = await getDocs(sharedImportQuery);
+
+    return sharedImportSnap.docs
+      .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
+      .filter((docData: any) => docData.sharedSessionDateKey === dateKey);
+  }, []);
+
+  const syncSharedAssignmentCompletion = useCallback(async (
+    assignment: SharedSessionAssignment,
+    userId: string,
+    dateKey: string
+  ) => {
+    const importedDocs = await getImportedSharedSessionExerciseDocs(assignment.id, dateKey, userId);
+    if (importedDocs.length === 0) {
+      return;
+    }
+
+    const expectedExerciseCount = assignment.sessionData.exercises.length;
+    const completedExercises = importedDocs.filter((docData: any) => {
+      if (docData.sharedSessionExerciseCompleted === true) {
+        return true;
+      }
+
+      const sets = Array.isArray(docData.sets) ? docData.sets as ExerciseSet[] : [];
+      return sets.some(hasMeaningfulSetData);
+    });
+
+    if (completedExercises.length >= expectedExerciseCount && assignment.status !== 'completed') {
+      await updateSharedSessionStatus(assignment.id, 'completed');
+      toast.success('Assigned session marked as completed');
+      return;
+    }
+
+    if (assignment.status === 'not-started') {
+      await updateSharedSessionStatus(assignment.id, 'in-progress');
+    }
+  }, [getImportedSharedSessionExerciseDocs, hasMeaningfulSetData]);
 
   // Convert local storage exercise to ExerciseData format
   const convertToExerciseData = useCallback((exercise: Omit<ExerciseLogType, 'id'> & { id?: string }, userId: string): ExerciseData => ({
@@ -89,7 +165,16 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     sets: exercise.sets,
     timestamp: new Date(exercise.timestamp),
     userId: userId,
-    deviceId: exercise.deviceId || localStorage.getItem('device_id') || ''
+    deviceId: exercise.deviceId || localStorage.getItem('device_id') || '',
+    activityType: exercise.activityType as ActivityType | undefined,
+    sharedSessionAssignmentId: exercise.sharedSessionAssignmentId,
+    sharedSessionId: exercise.sharedSessionId,
+    sharedSessionExerciseId: exercise.sharedSessionExerciseId,
+    sharedSessionDateKey: exercise.sharedSessionDateKey,
+    sharedSessionExerciseCompleted: exercise.sharedSessionExerciseCompleted,
+    prescription: exercise.prescription,
+    instructionMode: exercise.instructionMode,
+    instructions: exercise.instructions
   }), []);
 
   // Handle exercise data loading
@@ -132,17 +217,34 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
           exerciseName: data.exerciseName,
           sets: data.sets,
           timestamp: data.timestamp.toDate(),
-          deviceId: data.deviceId
+          deviceId: data.deviceId,
+          activityType: data.activityType,
+          sharedSessionAssignmentId: data.sharedSessionAssignmentId,
+          sharedSessionId: data.sharedSessionId,
+          sharedSessionExerciseId: data.sharedSessionExerciseId,
+          sharedSessionDateKey: data.sharedSessionDateKey,
+          sharedSessionExerciseCompleted: data.sharedSessionExerciseCompleted,
+          prescription: data.prescription,
+          instructionMode: data.instructionMode,
+          instructions: data.instructions
         }, userId);
       });
+
+      const localExercises = getExerciseLogsByDate(loadedDate)
+        .map(exercise => convertToExerciseData(exercise, userId));
 
       // Filter out any duplicates from the unified list
       const uniqueFirebaseExercises = firebaseExercises.filter(fEx => 
         !allExercises.some(ex => ex.id === fEx.id)
       );
 
+      const uniqueLocalExercises = localExercises.filter(localEx =>
+        !allExercises.some(ex => ex.id === localEx.id) &&
+        !firebaseExercises.some(ex => ex.id === localEx.id)
+      );
+
       // Combine all exercises
-      const combinedExercises = [...allExercises, ...uniqueFirebaseExercises];
+      const combinedExercises = [...allExercises, ...uniqueFirebaseExercises, ...uniqueLocalExercises];
 
       // Sort by timestamp to maintain consistent order
       combinedExercises.sort((a, b) => {
@@ -171,13 +273,6 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     }
   }, [user?.id, areDatesEqual, normalizeDate, getDateRange, convertToExerciseData, loadSupersetsForDate]);
   
-  // Automatic initialization and data loading when user changes
-  useEffect(() => {
-    if (user?.id) {
-      loadExercises(selectedDate);
-    }
-  }, [user?.id, loadExercises, selectedDate]);
-
   const handleCloseSetLogger = useCallback(() => {
     setSelectedExercise(null);
     updateUiState('showSetLogger', false);
@@ -204,11 +299,27 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
       };
 
       // Save to Firestore
+      const selectedExerciseWithMeta = selectedExercise as ExerciseData & SharedSessionExerciseMeta;
       const firestoreId = await addExerciseLog(
         {
           exerciseName: updatedExercise.exerciseName,
           userId: user.id,
-          sets: sets
+          sets: sets,
+          ...(selectedExerciseWithMeta.sharedSessionAssignmentId && {
+            sharedSessionAssignmentId: selectedExerciseWithMeta.sharedSessionAssignmentId
+          }),
+          ...(selectedExerciseWithMeta.sharedSessionId && {
+            sharedSessionId: selectedExerciseWithMeta.sharedSessionId
+          }),
+          ...(selectedExerciseWithMeta.sharedSessionExerciseId && {
+            sharedSessionExerciseId: selectedExerciseWithMeta.sharedSessionExerciseId
+          }),
+          ...(selectedExerciseWithMeta.sharedSessionDateKey && {
+            sharedSessionDateKey: selectedExerciseWithMeta.sharedSessionDateKey
+          }),
+          ...(selectedExerciseWithMeta.sharedSessionAssignmentId && {
+            sharedSessionExerciseCompleted: sets.some(hasMeaningfulSetData)
+          })
         },
         selectedDate,
         updatedExercise.id // Pass existing ID if we have one
@@ -224,13 +335,20 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
       });
 
       console.log('✅ Exercise saved to local storage');
+
+      const sharedSessionAssignment = (location.state as { sharedSessionAssignment?: SharedSessionAssignment } | null)?.sharedSessionAssignment;
+      if (selectedExerciseWithMeta.sharedSessionAssignmentId && sharedSessionAssignment?.id === selectedExerciseWithMeta.sharedSessionAssignmentId) {
+        const dateKey = selectedExerciseWithMeta.sharedSessionDateKey || getDateKey(selectedDate);
+        await syncSharedAssignmentCompletion(sharedSessionAssignment, user.id, dateKey);
+      }
+
       handleCloseSetLogger();
       await loadExercises(selectedDate);
     } catch (error) {
       console.error('❌ Error saving exercise sets:', error);
       alert('Failed to save exercise sets. Please try again.');
     }
-  }, [selectedExercise, user, selectedDate, handleCloseSetLogger, loadExercises]);
+  }, [selectedExercise, user, selectedDate, handleCloseSetLogger, loadExercises, location.state, hasMeaningfulSetData, syncSharedAssignmentCompletion, getDateKey]);
 
   const handleDeleteExercise = async (exercise: UnifiedExerciseData) => {
     if (!user?.id) {
@@ -379,44 +497,112 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
       return;
     }
 
-    if (processedSharedAssignmentId === sharedSessionAssignment.id) {
-      return;
-    }
-
     const addAssignedSessionToLog = async () => {
       try {
+        const dateKey = getDateKey(selectedDate);
+        const existingImportedExercises = await getImportedSharedSessionExerciseDocs(
+          sharedSessionAssignment.id,
+          dateKey,
+          user.id
+        );
+
+        if (existingImportedExercises.length > 0) {
+          await loadExercises(selectedDate);
+          toast('Assigned session already added for this date', { icon: 'ℹ️', duration: 2200 });
+          navigate(location.pathname, { replace: true, state: null });
+          return;
+        }
+
+        const importedExercisesForUi: UnifiedExerciseData[] = [];
+
         for (const exercise of sharedSessionAssignment.sessionData.exercises) {
           const activityType = exercise.activityType || ActivityType.RESISTANCE;
           const shouldPrefill = exercise.instructionMode === 'structured' && !!exercise.prescription;
           const sets = shouldPrefill ? prescriptionToSets(exercise.prescription!, activityType) : [];
 
-          await addExerciseLog(
+          const createdExerciseId = await addExerciseLog(
             {
               exerciseName: exercise.name,
               userId: user.id,
               sets,
-              activityType: activityType
+              activityType: activityType,
+              prescription: exercise.prescription,
+              instructionMode: exercise.instructionMode,
+              instructions: typeof exercise.instructions === 'string'
+                ? exercise.instructions
+                : Array.isArray(exercise.instructions)
+                  ? exercise.instructions[0]
+                  : undefined,
+              sharedSessionAssignmentId: sharedSessionAssignment.id,
+              sharedSessionId: sharedSessionAssignment.sharedSessionId,
+              sharedSessionExerciseId: exercise.id,
+              sharedSessionDateKey: dateKey,
+              sharedSessionExerciseCompleted: false
             },
             selectedDate
           );
+
+          importedExercisesForUi.push({
+            id: createdExerciseId,
+            exerciseName: exercise.name,
+            timestamp: selectedDate,
+            userId: user.id,
+            sets,
+            activityType,
+            sharedSessionAssignmentId: sharedSessionAssignment.id,
+            sharedSessionId: sharedSessionAssignment.sharedSessionId,
+            sharedSessionExerciseId: exercise.id,
+            sharedSessionDateKey: dateKey,
+            sharedSessionExerciseCompleted: false,
+            prescription: exercise.prescription,
+            instructionMode: exercise.instructionMode,
+            instructions: typeof exercise.instructions === 'string'
+              ? exercise.instructions
+              : Array.isArray(exercise.instructions)
+                ? exercise.instructions[0]
+                : undefined
+          });
         }
 
-        if (sharedSessionAssignment.status === 'not-started') {
-          await updateSharedSessionStatus(sharedSessionAssignment.id, 'in-progress');
+        if (importedExercisesForUi.length > 0) {
+          setExercises((prevExercises) => {
+            const mergedById = new Map<string, UnifiedExerciseData>();
+
+            prevExercises.forEach((existingExercise) => {
+              if (existingExercise.id) {
+                mergedById.set(existingExercise.id, existingExercise);
+              }
+            });
+
+            importedExercisesForUi.forEach((importedExercise) => {
+              if (importedExercise.id) {
+                mergedById.set(importedExercise.id, importedExercise);
+              }
+            });
+
+            return Array.from(mergedById.values()).sort((a, b) => {
+              const timeA = a.timestamp instanceof Date ? a.timestamp.getTime() : 0;
+              const timeB = b.timestamp instanceof Date ? b.timestamp.getTime() : 0;
+              return timeA - timeB;
+            });
+          });
         }
 
-        setProcessedSharedAssignmentId(sharedSessionAssignment.id);
+        await syncSharedAssignmentCompletion(sharedSessionAssignment, user.id, dateKey);
+
         await loadExercises(selectedDate);
         toast.success('Assigned session added to your log');
         navigate(location.pathname, { replace: true, state: null });
       } catch (error) {
         console.error('Error adding assigned session to log:', error);
-        toast.error('Could not add assigned session to log');
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        toast.error(`Could not add assigned session to log: ${errorMessage}`);
+        navigate(location.pathname, { replace: true, state: null });
       }
     };
 
     addAssignedSessionToLog();
-  }, [location.state, location.pathname, navigate, loadExercises, processedSharedAssignmentId, selectedDate, user?.id]);
+  }, [location.state, location.pathname, navigate, loadExercises, selectedDate, user?.id, getDateKey, getImportedSharedSessionExerciseDocs, syncSharedAssignmentCompletion]);
 
   return (
     <div className="relative min-h-screen bg-bg-primary">

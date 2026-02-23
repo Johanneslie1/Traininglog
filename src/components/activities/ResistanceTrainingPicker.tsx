@@ -55,7 +55,6 @@ const ResistanceTrainingPicker: React.FC<ResistanceTrainingPickerProps> = ({
         type: 'strength',
         category: 'general',
         equipment: [],
-        instructions: [],
         difficulty: 'intermediate',
         primaryMuscles: [],
         secondaryMuscles: [],
@@ -65,7 +64,12 @@ const ResistanceTrainingPicker: React.FC<ResistanceTrainingPickerProps> = ({
           trackReps: true,
           trackRPE: true
         },
-        defaultUnit: 'kg'
+        defaultUnit: 'kg',
+        prescription: editingExercise.prescription,
+        instructionMode: editingExercise.instructionMode,
+        instructions: editingExercise.instructions
+          ? [editingExercise.instructions]
+          : []
       };
       setSelectedExercise(exerciseForLogger);
       setView('logging');
@@ -149,7 +153,12 @@ const ResistanceTrainingPicker: React.FC<ResistanceTrainingPickerProps> = ({
               exerciseName: selectedExercise.name,
               userId: user.id,
               sets: sets,
-              activityType: ActivityType.RESISTANCE
+              activityType: ActivityType.RESISTANCE,
+              prescription: selectedExercise.prescription,
+              instructionMode: selectedExercise.instructionMode,
+              instructions: Array.isArray(selectedExercise.instructions)
+                ? selectedExercise.instructions[0]
+                : undefined
             };
 
             console.log('💾 ResistanceTrainingPicker: Calling addExerciseLog with:', exerciseLogData);
@@ -170,6 +179,8 @@ const ResistanceTrainingPicker: React.FC<ResistanceTrainingPickerProps> = ({
         }}
         initialSets={editingExercise?.sets || []}
         isEditing={!!editingExercise}
+        prescription={selectedExercise.prescription}
+        instructionMode={selectedExercise.instructionMode}
       />
     );
   }

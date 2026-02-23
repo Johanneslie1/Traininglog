@@ -22,6 +22,8 @@ import { useEffect } from 'react';
 import { CreateUniversalExerciseDialog } from '@/components/exercises/CreateUniversalExerciseDialog';
 import { ActivityType } from '@/types/activityTypes';
 import { ExerciseData } from '@/services/exerciseDataService';
+import { auth } from '@/services/firebase/config';
+import { saveExerciseLog } from '@/utils/localStorageUtils';
 
 interface LogOptionsProps {
   onClose: () => void;
@@ -134,29 +136,68 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
     }
   };
   const handleProgramSelected = async (exercises: { exercise: Exercise; sets: ExerciseSet[] }[]) => {
-    if (!user?.id) return;
+    const userId = user?.id || auth.currentUser?.uid;
+
+    if (!userId) {
+      toast.error('You need to be logged in to add exercises');
+      return;
+    }
+
+    if (exercises.length === 0) {
+      toast('No exercises selected', { icon: 'ℹ️' });
+      return;
+    }
 
     try {
       // Check if any exercises have pre-filled sets (from prescriptions)
       const hasPrefilledSets = exercises.some(ex => ex.sets && ex.sets.length > 0);
+      let savedCount = 0;
       
       for (const { exercise, sets } of exercises) {
-        await addExerciseLog(
+        const createdId = await addExerciseLog(
           {
             exerciseName: exercise.name,
-            userId: user.id,
+            userId,
             sets: sets,
+            activityType: exercise.activityType,
+            prescription: exercise.prescription,
+            instructionMode: exercise.instructionMode,
+            instructions: typeof exercise.instructions === 'string'
+              ? exercise.instructions
+              : Array.isArray(exercise.instructions)
+                ? exercise.instructions[0]
+                : undefined,
           },
           selectedDate || new Date()
         );
+
+        saveExerciseLog({
+          id: createdId,
+          exerciseName: exercise.name,
+          userId,
+          sets,
+          timestamp: selectedDate || new Date(),
+          activityType: exercise.activityType,
+          prescription: exercise.prescription,
+          instructionMode: exercise.instructionMode,
+          instructions: typeof exercise.instructions === 'string'
+            ? exercise.instructions
+            : Array.isArray(exercise.instructions)
+              ? exercise.instructions[0]
+              : undefined
+        });
+
+        savedCount += 1;
       }
 
-      setView('main');
       onExerciseAdded?.();
+      onClose();
       
       // Show appropriate toast message
       if (hasPrefilledSets) {
-        toast.success('Exercises added with program values. Adjust as needed!');
+        toast.success(`Added ${savedCount} exercise${savedCount !== 1 ? 's' : ''} with program values`);
+      } else {
+        toast.success(`Added ${savedCount} exercise${savedCount !== 1 ? 's' : ''} from program`);
       }
     } catch (error) {
       console.error('Error saving program exercises:', error);

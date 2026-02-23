@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getSharedPrograms, copySharedProgram, updateAssignmentStatus } from '@/services/programService';
 import { Program } from '@/types/program';
@@ -37,11 +37,7 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
   const [copyingProgramId, setCopyingProgramId] = useState<string | null>(null);
   const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadSharedPrograms();
-  }, []);
-
-  const loadSharedPrograms = async () => {
+  const loadSharedPrograms = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -54,7 +50,31 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadSharedPrograms();
+  }, [loadSharedPrograms]);
+
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        loadSharedPrograms();
+      }
+    };
+
+    const handleFocus = () => {
+      loadSharedPrograms();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [loadSharedPrograms]);
 
   const handleCopyProgram = async (sharedProgramId: string, programName: string) => {
     if (window.confirm(`Copy "${programName}" to your programs? You'll be able to edit your copy.`)) {
@@ -151,6 +171,19 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
     }
   };
 
+  const getCoachDisplayName = (program: SharedProgramData) => {
+    const rawName = program.sharedByName?.trim();
+    if (!rawName) {
+      return 'Your Coach';
+    }
+
+    if (program.sharedBy && rawName === program.sharedBy) {
+      return 'Your Coach';
+    }
+
+    return rawName;
+  };
+
   if (loading) {
     return (
       <div className={`flex items-center justify-center ${embedded ? 'py-10' : 'min-h-screen bg-black'}`}>
@@ -206,6 +239,14 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
               const isCopied = sharedProgram.assignmentStatus === 'copied';
               const isInProgress = sharedProgram.assignmentStatus === 'in-progress';
               const isNotStarted = sharedProgram.assignmentStatus === 'not-started';
+              const guidedExercises = (program.sessions || []).reduce((count, session) => {
+                const sessionGuided = (session.exercises || []).filter((exercise) => {
+                  const hasStructured = !!exercise.prescription && exercise.instructionMode === 'structured';
+                  const hasFreeform = !!exercise.instructions && exercise.instructionMode === 'freeform';
+                  return hasStructured || hasFreeform;
+                }).length;
+                return count + sessionGuided;
+              }, 0);
               
               return (
                 <div
@@ -243,11 +284,11 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
                           <div className="flex items-center gap-2">
                             <div className="w-6 h-6 bg-primary-900/30 rounded-full flex items-center justify-center">
                               <span className="text-primary-400 text-xs font-semibold">
-                                {sharedProgram.sharedByName?.[0] || 'C'}
+                                {getCoachDisplayName(sharedProgram)[0] || 'C'}
                               </span>
                             </div>
                             <span>
-                              Coach: {sharedProgram.sharedByName || 'Your Coach'}
+                              Coach: {getCoachDisplayName(sharedProgram)}
                             </span>
                           </div>
                           <div className="flex items-center">
@@ -258,6 +299,12 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
                             <CalendarIcon className="h-4 w-4 mr-1" />
                             {program.sessions?.length || 0} session{program.sessions?.length !== 1 ? 's' : ''}
                           </div>
+                          {guidedExercises > 0 && (
+                            <div className="flex items-center text-primary-300">
+                              <CheckCircleIcon className="h-4 w-4 mr-1" />
+                              {guidedExercises} guided exercise{guidedExercises !== 1 ? 's' : ''}
+                            </div>
+                          )}
                         </div>
                       </div>
 

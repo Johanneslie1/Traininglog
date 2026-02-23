@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import type { Exercise } from '@/types/exercise';
 import type { ExerciseSet } from '@/types/sets';
 import { SetEditorDialog } from '@/components/SetEditorDialog';
@@ -10,8 +10,9 @@ import { ActivityType } from '@/types/activityTypes';
 import { toast } from 'react-hot-toast';
 import { useExerciseHistory } from '@/hooks/useExerciseHistory';
 import { ExerciseHistorySummary } from '@/components/ExerciseHistorySummary';
+import PrescriptionGuideCard from '@/components/exercises/PrescriptionGuideCard';
 import { Prescription } from '@/types/program';
-import { prescriptionToSets, formatPrescription } from '@/utils/prescriptionUtils';
+import { prescriptionToSets } from '@/utils/prescriptionUtils';
 
 interface ExerciseSetLoggerProps {
   exercise: Partial<Exercise> & { 
@@ -114,6 +115,21 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
   // Check if exercise has prescription from program
   const hasPrescription = exercise.prescription && exercise.instructionMode === 'structured';
 
+  const prescriptionTargetSets = useMemo(() => {
+    if (!hasPrescription || !exercise.prescription) {
+      return [] as ExerciseSet[];
+    }
+
+    try {
+      return prescriptionToSets(
+        exercise.prescription,
+        exercise.activityType || ActivityType.RESISTANCE
+      );
+    } catch {
+      return [] as ExerciseSet[];
+    }
+  }, [hasPrescription, exercise.prescription, exercise.activityType]);
+
   // Check if exercise has instructions from program prescription
   const hasInstructions = exercise.instructions && exercise.instructions.length > 0;
   const instructionsText = hasInstructions 
@@ -186,10 +202,6 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
       });
     }
   };
-
-  // Check for collapsible instructions
-  const [instructionsExpanded, setInstructionsExpanded] = useState(false);
-  const shouldCollapseInstructions = instructionsText && instructionsText.length > 150;
 
   // Get the appropriate previous set based on context
   const getPreviousSet = (currentIndex?: number): ExerciseSet | undefined => {
@@ -314,6 +326,22 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
     }
   };
 
+  const getResistanceTargetText = (index: number) => {
+    if (prescriptionTargetSets.length === 0) {
+      return null;
+    }
+
+    const safeIndex = Math.min(index, prescriptionTargetSets.length - 1);
+    const targetSet = prescriptionTargetSets[safeIndex];
+    if (!targetSet) {
+      return null;
+    }
+
+    const targetWeight = targetSet.weight ?? 0;
+    const targetReps = targetSet.reps ?? 0;
+    return `Target: ${targetWeight}kg × ${targetReps}`;
+  };
+
   const renderSetSummary = (set: ExerciseSet, index: number) => {
     const isNewlyAdded = lastAddedIndex === index;
     
@@ -332,6 +360,11 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
         >
           <div className="flex items-center space-x-4 flex-1 min-w-0">
             <span className="text-text-tertiary shrink-0">Set {index + 1}</span>
+            {followPrescription && hasPrescription && (
+              <span className="text-[11px] text-primary-300 bg-primary-900/20 border border-primary-700/40 rounded px-2 py-0.5">
+                {getResistanceTargetText(index) || 'Target available'}
+              </span>
+            )}
             
             {/* Inline editable weight and reps */}
             <div className="flex items-center gap-1">
@@ -401,61 +434,18 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
           <span className="text-text-tertiary">{sets.length} sets</span>
         </div>
 
-        {/* Prescription Toggle - only show when prescription available */}
-        {hasPrescription && !isEditing && (
-          <div className="mb-4 p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-purple-400 text-sm font-medium">📋 Prescription Available</span>
-                  {prescriptionApplied && (
-                    <span className="text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded">
-                      Applied
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-gray-400">
-                  {formatPrescription(exercise.prescription, exercise.activityType || ActivityType.RESISTANCE)}
-                </p>
-              </div>
-              <button
-                onClick={handleTogglePrescription}
-                className={`shrink-0 relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  followPrescription ? 'bg-purple-600' : 'bg-gray-600'
-                }`}
-                aria-label="Toggle prescription pre-filling"
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    followPrescription ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                />
-              </button>
-            </div>
-          </div>
-        )}
-        
-        {/* Program Instructions - displayed from prescription */}
-        {instructionsText && (
-          <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-            <div className="flex items-start gap-2">
-              <span className="text-blue-400 text-sm font-medium shrink-0">📋 Instructions:</span>
-              <div className="flex-1 min-w-0">
-                <p className={`text-sm text-gray-300 whitespace-pre-wrap ${shouldCollapseInstructions && !instructionsExpanded ? 'line-clamp-3' : ''}`}>
-                  {instructionsText}
-                </p>
-                {shouldCollapseInstructions && (
-                  <button
-                    onClick={() => setInstructionsExpanded(!instructionsExpanded)}
-                    className="text-xs text-blue-400 hover:text-blue-300 mt-1 underline"
-                  >
-                    {instructionsExpanded ? 'Show less' : 'Show more'}
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
+        <div className="sticky top-0 z-20 pb-2 bg-bg-secondary/95 backdrop-blur-sm">
+          <PrescriptionGuideCard
+            activityType={exercise.activityType || ActivityType.RESISTANCE}
+            prescription={exercise.prescription}
+            instructionMode={exercise.instructionMode}
+            instructionsText={instructionsText}
+            isEditing={isEditing}
+            followPrescription={followPrescription}
+            prescriptionApplied={prescriptionApplied}
+            onToggleFollow={!isEditing && hasPrescription ? handleTogglePrescription : undefined}
+          />
+        </div>
         
         {/* Exercise History Summary - helps with progressive overload */}
         {!isEditing && (

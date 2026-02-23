@@ -153,9 +153,6 @@ const SpeedAgilityActivityPicker: React.FC<SpeedAgilityActivityPickerProps> = ({
       type: 'speedAgility',
       category: selectedActivity.category,
       equipment: selectedActivity.equipment,
-      instructions: Array.isArray(selectedActivity.instructions) 
-        ? selectedActivity.instructions 
-        : [selectedActivity.instructions || ''],
       difficulty: selectedActivity.difficulty,
       defaultUnit: 'time',
       metrics: {
@@ -165,7 +162,14 @@ const SpeedAgilityActivityPicker: React.FC<SpeedAgilityActivityPickerProps> = ({
         trackDistance: true,
         trackRPE: true,
         trackHeight: true
-      }
+      },
+      prescription: editingExercise?.prescription,
+      instructionMode: editingExercise?.instructionMode,
+      instructions: editingExercise?.instructions
+        ? [editingExercise.instructions]
+        : Array.isArray(selectedActivity.instructions)
+          ? selectedActivity.instructions
+          : [selectedActivity.instructions || '']
     };
 
     return (
@@ -186,7 +190,12 @@ const SpeedAgilityActivityPicker: React.FC<SpeedAgilityActivityPickerProps> = ({
               exerciseName: selectedActivity.name,
               userId: user.id,
               sets: sets,
-              activityType: ActivityType.SPEED_AGILITY
+              activityType: ActivityType.SPEED_AGILITY,
+              prescription: exercise.prescription,
+              instructionMode: exercise.instructionMode,
+              instructions: Array.isArray(exercise.instructions)
+                ? exercise.instructions[0]
+                : undefined
             };
 
             console.log('💾 SpeedAgilityActivityPicker: Calling addExerciseLog with:', exerciseLogData);
@@ -206,6 +215,8 @@ const SpeedAgilityActivityPicker: React.FC<SpeedAgilityActivityPickerProps> = ({
         }}
         initialSets={editingExercise?.sets || []}
         isEditing={!!editingExercise}
+        prescription={exercise.prescription}
+        instructionMode={exercise.instructionMode}
       />
     );
   }

@@ -45,13 +45,17 @@ const StretchingActivityPicker: React.FC<StretchingActivityPickerProps> = ({
 			type: 'flexibility',
 			category: selected.category || 'flexibility',
 			equipment: ['bodyweight'],
-			instructions: [selected.description || ''],
 			difficulty: 'beginner',
 			defaultUnit: 'time',
 			metrics: {
 				trackReps: true,
 				trackIntensity: true
-			}
+			},
+			prescription: editingExercise?.prescription,
+			instructionMode: editingExercise?.instructionMode,
+			instructions: editingExercise?.instructions
+				? [editingExercise.instructions]
+				: [selected.description || '']
 		};
 
 		return (
@@ -73,7 +77,12 @@ const StretchingActivityPicker: React.FC<StretchingActivityPickerProps> = ({
 							exerciseName: selected.name,
 							userId: user.id,
 							sets: sets,
-							activityType: ActivityType.STRETCHING
+							activityType: ActivityType.STRETCHING,
+							prescription: exercise.prescription,
+							instructionMode: exercise.instructionMode,
+							instructions: Array.isArray(exercise.instructions)
+								? exercise.instructions[0]
+								: undefined
 						};
 
 						console.log('💾 StretchingActivityPicker: Calling addExerciseLog with:', exerciseLogData);
@@ -93,6 +102,8 @@ const StretchingActivityPicker: React.FC<StretchingActivityPickerProps> = ({
 				}}
 				initialSets={editingExercise?.sets || []}
 				isEditing={!!editingExercise}
+				prescription={exercise.prescription}
+				instructionMode={exercise.instructionMode}
 			/>
 		);
 	}

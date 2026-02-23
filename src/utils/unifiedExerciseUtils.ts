@@ -4,6 +4,7 @@ import { activityLoggingService } from '@/services/activityService';
 import { getExerciseLogs } from '@/services/firebase/exerciseLogs';
 import { deleteExerciseLog } from '@/services/firebase/exerciseLogs';
 import { getExerciseLogs as getLocalExerciseLogs } from '@/utils/localStorageUtils';
+import { deleteLocalExerciseLog } from '@/utils/localStorageUtils';
 import { ExerciseSet } from '@/types/sets';
 
 // Extended ExerciseData to support activity types
@@ -153,7 +154,15 @@ export async function getAllExercisesByDate(
       userId: log.userId || userId,
       sets: log.sets || [],
       deviceId: log.deviceId,
-      activityType: (log.activityType as ActivityType) || ActivityType.RESISTANCE
+      activityType: (log.activityType as ActivityType) || ActivityType.RESISTANCE,
+      sharedSessionAssignmentId: log.sharedSessionAssignmentId,
+      sharedSessionId: log.sharedSessionId,
+      sharedSessionExerciseId: log.sharedSessionExerciseId,
+      sharedSessionDateKey: log.sharedSessionDateKey,
+      sharedSessionExerciseCompleted: log.sharedSessionExerciseCompleted,
+      prescription: log.prescription,
+      instructionMode: log.instructionMode,
+      instructions: log.instructions
     }));
 
     const activityLogs = await activityLoggingService.getActivityLogs(
@@ -192,7 +201,15 @@ export async function getAllExercisesByDate(
         userId: log.userId || userId,
         sets: log.sets || [],
         deviceId: log.deviceId,
-        activityType: (log.activityType as ActivityType) || ActivityType.RESISTANCE
+        activityType: (log.activityType as ActivityType) || ActivityType.RESISTANCE,
+        sharedSessionAssignmentId: log.sharedSessionAssignmentId,
+        sharedSessionId: log.sharedSessionId,
+        sharedSessionExerciseId: log.sharedSessionExerciseId,
+        sharedSessionDateKey: log.sharedSessionDateKey,
+        sharedSessionExerciseCompleted: log.sharedSessionExerciseCompleted,
+        prescription: log.prescription,
+        instructionMode: log.instructionMode,
+        instructions: log.instructions
       }));
     } catch (fallbackError) {
       console.error('Fallback also failed:', fallbackError);
@@ -232,10 +249,16 @@ export async function deleteExercise(exercise: UnifiedExerciseData, userId: stri
 
     // Always try to delete from localStorage
     try {
-      // Delete from exercise logs localStorage
-      const exerciseLogs = getLocalExerciseLogs();
-      const filteredExerciseLogs = exerciseLogs.filter((log: any) => log.id !== exercise.id);
-      localStorage.setItem('exerciseLogs', JSON.stringify(filteredExerciseLogs));
+      // Delete from exercise logs localStorage (canonical key: exercise_logs)
+      if (exercise.id) {
+        deleteLocalExerciseLog(exercise.id);
+      } else {
+        const exerciseLogs = getLocalExerciseLogs();
+        const filteredExerciseLogs = exerciseLogs.filter((log: any) =>
+          !(log.exerciseName === exercise.exerciseName && new Date(log.timestamp).getTime() === new Date(exercise.timestamp).getTime())
+        );
+        localStorage.setItem('exercise_logs', JSON.stringify(filteredExerciseLogs));
+      }
 
       // Also delete from activity logs localStorage (for activity types)
       if (exercise.activityType && exercise.activityType !== ActivityType.RESISTANCE) {

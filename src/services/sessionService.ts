@@ -13,6 +13,29 @@ import {
 } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
+const resolveCurrentUserDisplayName = async (uid: string): Promise<string> => {
+  const auth = getAuth();
+
+  try {
+    const userDocRef = doc(db, 'users', uid);
+    const userDocSnap = await getDoc(userDocRef);
+    if (userDocSnap.exists()) {
+      const userData = userDocSnap.data() as { firstName?: string; lastName?: string; email?: string };
+      const fullName = `${userData.firstName || ''} ${userData.lastName || ''}`.trim();
+      if (fullName) {
+        return fullName;
+      }
+      if (userData.email) {
+        return userData.email;
+      }
+    }
+  } catch (error) {
+    console.warn('[sessionService] Could not resolve user display name from profile:', error);
+  }
+
+  return auth.currentUser?.displayName || auth.currentUser?.email || 'Coach';
+};
+
 // Ensure user is authenticated
 async function ensureAuth() {
   const auth = getAuth();
@@ -69,6 +92,7 @@ export const shareSession = async (
 ): Promise<string> => {
   try {
     const user = await ensureAuth();
+    const sharedByName = await resolveCurrentUserDisplayName(user.uid);
     
     console.log('[sessionService] Sharing session:', { 
       sessionName: sessionData.name,
@@ -93,7 +117,7 @@ export const shareSession = async (
       sessionId: sessionData.id,
       sessionData: sessionData,
       sharedBy: user.uid,
-      sharedByName: user.uid, // TODO: Replace with actual user display name when user profiles exist
+      sharedByName,
       sharedWith: shareWithUserIds,
       sharedAt: new Date().toISOString(),
       lastModified: new Date().toISOString(),
@@ -117,6 +141,7 @@ export const shareSession = async (
         sessionData: sessionData,
         userId,
         sharedBy: user.uid,
+        sharedByName,
         assignedAt: new Date().toISOString(),
         status: 'not-started' as const,
         coachMessage: coachMessage || undefined
@@ -157,12 +182,39 @@ export const getSharedSessionsForAthlete = async (): Promise<SharedSessionAssign
     }
     
     // Filter out archived assignments and map to SharedSessionAssignment
-    const activeAssignments = assignmentsSnap.docs
-      .filter(doc => doc.data().status !== 'archived')
-      .map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as SharedSessionAssignment));
+    const activeAssignments = await Promise.all(
+      assignmentsSnap.docs
+        .filter(doc => doc.data().status !== 'archived')
+        .map(async (assignmentDoc) => {
+          const assignmentData = assignmentDoc.data();
+
+          if (assignmentData.sharedByName) {
+            return {
+              id: assignmentDoc.id,
+              ...assignmentData
+            } as SharedSessionAssignment;
+          }
+
+          let sharedByName: string | undefined;
+          try {
+            if (assignmentData.sharedSessionId) {
+              const sharedSessionRef = doc(db, 'sharedSessions', assignmentData.sharedSessionId);
+              const sharedSessionSnap = await getDoc(sharedSessionRef);
+              if (sharedSessionSnap.exists()) {
+                sharedByName = (sharedSessionSnap.data() as any).sharedByName;
+              }
+            }
+          } catch (error) {
+            console.warn('[sessionService] Could not backfill sharedByName for assignment:', assignmentDoc.id, error);
+          }
+
+          return {
+            id: assignmentDoc.id,
+            ...assignmentData,
+            ...(sharedByName && { sharedByName })
+          } as SharedSessionAssignment;
+        })
+    );
     
     console.log('[sessionService] Found', activeAssignments.length, 'active shared sessions');
     return activeAssignments;
@@ -239,10 +291,20 @@ export const updateSharedSessionStatus = async (
       throw new Error('You can only update your own assignments');
     }
     
-    await updateDoc(assignmentRef, {
+    const statusPatch: {
+      status: 'not-started' | 'in-progress' | 'completed' | 'copied' | 'archived';
+      lastViewedAt: string;
+      completedAt?: string;
+    } = {
       status,
       lastViewedAt: new Date().toISOString()
-    });
+    };
+
+    if (status === 'completed') {
+      statusPatch.completedAt = new Date().toISOString();
+    }
+
+    await updateDoc(assignmentRef, statusPatch);
     
     console.log('[sessionService] Assignment status updated successfully');
   } catch (error) {

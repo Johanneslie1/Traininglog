@@ -143,6 +143,22 @@ export interface ExerciseLog {
   exerciseType?: string;
   /** Activity type for non-resistance exercises */
   activityType?: string;
+  /** Shared session assignment link (if exercise was imported from assigned session) */
+  sharedSessionAssignmentId?: string;
+  /** Shared session document id */
+  sharedSessionId?: string;
+  /** Exercise id inside shared session */
+  sharedSessionExerciseId?: string;
+  /** ISO date key (yyyy-mm-dd) used for assignment import dedupe */
+  sharedSessionDateKey?: string;
+  /** Marks that this imported exercise was actually logged/updated by athlete */
+  sharedSessionExerciseCompleted?: boolean;
+  /** Program prescription metadata for showing guide during later edits */
+  prescription?: Prescription;
+  /** Indicates whether guidance is structured or freeform */
+  instructionMode?: 'structured' | 'freeform';
+  /** Freeform coach instructions */
+  instructions?: string;
 }
 
 export type ExerciseType = Exercise['type'];
