@@ -14,6 +14,7 @@ import { db } from './config';
 import { ExerciseLog } from '@/types/exercise';
 import { ExerciseSet } from '@/types/sets';
 import { Prescription } from '@/types/program';
+import { ExercisePrescriptionAssistantData } from '@/types/exercise';
 
 const removeUndefinedFields = <T>(obj: T): T => {
   if (Array.isArray(obj)) {
@@ -41,6 +42,7 @@ type ExerciseLogInput = {
   prescription?: Prescription;
   instructionMode?: 'structured' | 'freeform';
   instructions?: string;
+  prescriptionAssistant?: ExercisePrescriptionAssistantData;
   sharedSessionAssignmentId?: string;
   sharedSessionId?: string;
   sharedSessionExerciseId?: string;
@@ -76,7 +78,8 @@ export const addExerciseLog = async (
       }),
       ...(logData.prescription && { prescription: logData.prescription }),
       ...(logData.instructionMode && { instructionMode: logData.instructionMode }),
-      ...(logData.instructions && { instructions: logData.instructions })
+      ...(logData.instructions && { instructions: logData.instructions }),
+      ...(logData.prescriptionAssistant && { prescriptionAssistant: logData.prescriptionAssistant })
     });
 
     console.log('📝 Prepared exercise data:', exerciseData);
@@ -268,7 +271,8 @@ export const getExerciseLogs = async (userId: string, startDate: Date, endDate: 
         sharedSessionExerciseCompleted: data.sharedSessionExerciseCompleted,
         prescription: data.prescription,
         instructionMode: data.instructionMode,
-        instructions: data.instructions
+        instructions: data.instructions,
+        prescriptionAssistant: data.prescriptionAssistant
       } as ExerciseLog;
     });
 

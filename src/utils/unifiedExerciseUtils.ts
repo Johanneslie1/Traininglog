@@ -162,7 +162,8 @@ export async function getAllExercisesByDate(
       sharedSessionExerciseCompleted: log.sharedSessionExerciseCompleted,
       prescription: log.prescription,
       instructionMode: log.instructionMode,
-      instructions: log.instructions
+      instructions: log.instructions,
+      prescriptionAssistant: log.prescriptionAssistant
     }));
 
     const activityLogs = await activityLoggingService.getActivityLogs(
@@ -209,7 +210,8 @@ export async function getAllExercisesByDate(
         sharedSessionExerciseCompleted: log.sharedSessionExerciseCompleted,
         prescription: log.prescription,
         instructionMode: log.instructionMode,
-        instructions: log.instructions
+        instructions: log.instructions,
+        prescriptionAssistant: log.prescriptionAssistant
       }));
     } catch (fallbackError) {
       console.error('Fallback also failed:', fallbackError);

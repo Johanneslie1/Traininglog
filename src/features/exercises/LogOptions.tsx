@@ -24,6 +24,8 @@ import { ActivityType } from '@/types/activityTypes';
 import { ExerciseData } from '@/services/exerciseDataService';
 import { auth } from '@/services/firebase/config';
 import { saveExerciseLog } from '@/utils/localStorageUtils';
+import { generateExercisePrescriptionAssistant } from '@/services/exercisePrescriptionAssistantService';
+import { ExercisePrescriptionAssistantData } from '@/types/exercise';
 
 interface LogOptionsProps {
   onClose: () => void;
@@ -153,7 +155,22 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
       const hasPrefilledSets = exercises.some(ex => ex.sets && ex.sets.length > 0);
       let savedCount = 0;
       
-      for (const { exercise, sets } of exercises) {
+      for (const { exercise } of exercises) {
+        const sets: ExerciseSet[] = [];
+        const prescriptionAssistant = await generateExercisePrescriptionAssistant({
+          exercise: {
+            id: exercise.id,
+            name: exercise.name,
+            activityType: exercise.activityType,
+            prescription: exercise.prescription
+          },
+          userId,
+          sessionContext: {
+            date: (selectedDate || new Date()).toISOString().slice(0, 10),
+            warmupDone: true
+          }
+        });
+
         const createdId = await addExerciseLog(
           {
             exerciseName: exercise.name,
@@ -167,6 +184,7 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
               : Array.isArray(exercise.instructions)
                 ? exercise.instructions[0]
                 : undefined,
+            prescriptionAssistant,
           },
           selectedDate || new Date()
         );
@@ -184,7 +202,8 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
             ? exercise.instructions
             : Array.isArray(exercise.instructions)
               ? exercise.instructions[0]
-              : undefined
+              : undefined,
+          prescriptionAssistant
         });
 
         savedCount += 1;
@@ -376,7 +395,7 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
           setSelectedExercise(null);
           setView('main');
         }}
-        onSave={async (sets: ExerciseSet[]) => {
+        onSave={async (sets: ExerciseSet[], metadata?: { prescriptionAssistant?: ExercisePrescriptionAssistantData }) => {
           try {
             console.log('💾 LogOptions: Starting to save exercise sets:', {
               exercise: selectedExercise,
@@ -391,6 +410,15 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
               exerciseName: selectedExercise.name,
               userId: user.id,
               sets: sets,
+              activityType: selectedExercise.activityType,
+              prescription: selectedExercise.prescription,
+              instructionMode: selectedExercise.instructionMode,
+              instructions: typeof selectedExercise.instructions === 'string'
+                ? selectedExercise.instructions
+                : Array.isArray(selectedExercise.instructions)
+                  ? selectedExercise.instructions[0]
+                  : undefined,
+              prescriptionAssistant: metadata?.prescriptionAssistant || selectedExercise.prescriptionAssistant,
             };
 
             console.log('💾 LogOptions: Calling addExerciseLog with:', exerciseLogData);
@@ -430,7 +458,7 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
             editingExercise.activityType === ActivityType.SPEED_AGILITY ? 'speed_agility' : 'other',
       category: 'general',
       equipment: [],
-      instructions: [],
+      instructions: editingExercise.instructions ? [editingExercise.instructions] : [],
       difficulty: 'intermediate',
       primaryMuscles: [],
       secondaryMuscles: [],
@@ -442,7 +470,10 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
         trackDistance: editingExercise.activityType === ActivityType.ENDURANCE,
         trackRPE: true
       },
-      defaultUnit: editingExercise.activityType === ActivityType.RESISTANCE ? 'kg' : 'time'
+      defaultUnit: editingExercise.activityType === ActivityType.RESISTANCE ? 'kg' : 'time',
+      prescription: editingExercise.prescription,
+      instructionMode: editingExercise.instructionMode,
+      prescriptionAssistant: editingExercise.prescriptionAssistant
     };
 
     return (
@@ -451,7 +482,7 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
         onCancel={() => {
           setView('main');
         }}
-        onSave={async (sets: ExerciseSet[]) => {
+        onSave={async (sets: ExerciseSet[], metadata?: { prescriptionAssistant?: ExercisePrescriptionAssistantData }) => {
           try {
             console.log('💾 LogOptions: Updating exercise:', {
               exercise: editingExercise,
@@ -467,7 +498,11 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
               exerciseName: editingExercise.exerciseName,
               userId: user.id,
               sets: sets,
-              activityType: editingExercise.activityType
+              activityType: editingExercise.activityType,
+              prescription: editingExercise.prescription,
+              instructionMode: editingExercise.instructionMode,
+              instructions: editingExercise.instructions,
+              prescriptionAssistant: metadata?.prescriptionAssistant || editingExercise.prescriptionAssistant
             };
 
             console.log('💾 LogOptions: Calling addExerciseLog with existing ID:', editingExercise.id);

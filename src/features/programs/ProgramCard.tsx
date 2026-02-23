@@ -53,9 +53,17 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({ program, onClick }) =>
     }
   };
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={() => onClick(program)}
-      className="group relative aspect-[4/3] rounded-xl overflow-hidden bg-bg-tertiary hover:bg-bg-tertiary transition-all hover:scale-[1.02]"
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onClick(program);
+        }
+      }}
+      className="group relative aspect-[4/3] rounded-xl overflow-hidden bg-bg-tertiary hover:bg-bg-tertiary transition-all hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-accent-primary"
     >
       {/* Image or gradient background */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
@@ -104,13 +112,14 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({ program, onClick }) =>
           e.stopPropagation();
           // Handle options menu
         }}
+        aria-label="Open program options"
         className="absolute top-2 right-2 p-2 text-text-secondary hover:text-text-primary bg-black/20 hover:bg-black/40 rounded-lg transition-colors"
       >
         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
         </svg>
       </button>
-    </button>
+    </div>
   );
 };
 

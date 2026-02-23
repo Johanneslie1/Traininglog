@@ -11,7 +11,7 @@ import ExerciseSearch from '@/features/exercises/ExerciseSearch';
 import CopyFromPreviousSessionDialog from '@/features/exercises/CopyFromPreviousSessionDialog';
 import ProgramAddExerciseOptions from './ProgramAddExerciseOptions';
 import { usePersistedFormState } from '@/hooks/usePersistedState';
-import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import toast from 'react-hot-toast';
 
 interface SessionBuilderProps {

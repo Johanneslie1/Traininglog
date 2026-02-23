@@ -12,6 +12,7 @@ import { useExerciseHistory } from '@/hooks/useExerciseHistory';
 import { ExerciseHistorySummary } from '@/components/ExerciseHistorySummary';
 import PrescriptionGuideCard from '@/components/exercises/PrescriptionGuideCard';
 import { Prescription } from '@/types/program';
+import { ExercisePrescriptionAssistantData } from '@/types/exercise';
 import { prescriptionToSets } from '@/utils/prescriptionUtils';
 
 interface ExerciseSetLoggerProps {
@@ -23,8 +24,10 @@ interface ExerciseSetLoggerProps {
     activityType?: ActivityType;
     prescription?: Prescription; // Prescription data from program
     instructionMode?: 'structured' | 'freeform'; // Instruction mode from program
+    instructions?: string | string[];
+    prescriptionAssistant?: ExercisePrescriptionAssistantData;
   };
-  onSave: ((sets: ExerciseSet[], exerciseId: string) => void) | ((sets: ExerciseSet[]) => void);
+  onSave: ((sets: ExerciseSet[], exerciseId: string, metadata?: { prescriptionAssistant?: ExercisePrescriptionAssistantData }) => void) | ((sets: ExerciseSet[], metadata?: { prescriptionAssistant?: ExercisePrescriptionAssistantData }) => void);
   onCancel: () => void;
   isEditing?: boolean;
   previousSet?: ExerciseSet; // Optional previous set for copying
@@ -74,9 +77,13 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
   if (shouldUseUniversalLogger(exercise)) {
     const handleUniversalSave = (sets: ExerciseSet[]) => {
       if (useExerciseId) {
-        (onSave as (sets: ExerciseSet[], exerciseId: string) => void)(sets, exercise.id);
+        (onSave as (sets: ExerciseSet[], exerciseId: string, metadata?: { prescriptionAssistant?: ExercisePrescriptionAssistantData }) => void)(sets, exercise.id, {
+          prescriptionAssistant: exercise.prescriptionAssistant
+        });
       } else {
-        (onSave as (sets: ExerciseSet[]) => void)(sets);
+        (onSave as (sets: ExerciseSet[], metadata?: { prescriptionAssistant?: ExercisePrescriptionAssistantData }) => void)(sets, {
+          prescriptionAssistant: exercise.prescriptionAssistant
+        });
       }
     };
 
@@ -89,19 +96,20 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
         isEditing={isEditing}
         prescription={exercise.prescription}
         instructionMode={exercise.instructionMode}
+        prescriptionAssistant={exercise.prescriptionAssistant}
       />
     );
   }
 
   // Use traditional resistance training logger for strength exercises
   const [followPrescription, setFollowPrescription] = useState<boolean>(true);
-  const [prescriptionApplied, setPrescriptionApplied] = useState<boolean>(false);
+  const prescriptionApplied = false;
   
   const [sets, setSets] = useState<ExerciseSet[]>(() => {
     if (isEditing && exercise.sets && exercise.sets.length > 0) {
       return exercise.sets;
     }
-    return [];
+    return [{ weight: 0, reps: 5, difficulty: DifficultyCategory.EASY }];
   });
   
   const [isAddingSet, setIsAddingSet] = useState(!isEditing);
@@ -136,55 +144,19 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
     ? (Array.isArray(exercise.instructions) ? exercise.instructions[0] : exercise.instructions)
     : null;
 
-  // Pre-fill sets from prescription when component mounts (only if not editing)
+  // Keep a single editable first set; do not auto-prefill multiple sets
   useEffect(() => {
-    if (!isEditing && hasPrescription && followPrescription && sets.length === 0 && !prescriptionApplied) {
-      try {
-        const prefilledSets = prescriptionToSets(
-          exercise.prescription!,
-          exercise.activityType || ActivityType.RESISTANCE
-        );
-        
-        if (prefilledSets.length > 0) {
-          setSets(prefilledSets);
-          setPrescriptionApplied(true);
-          setIsAddingSet(false); // Don't show add set dialog automatically
-          
-          toast.success(
-            `Pre-filled ${prefilledSets.length} set${prefilledSets.length > 1 ? 's' : ''} from prescription`,
-            {
-              duration: 2500,
-              icon: '📋',
-            }
-          );
-        }
-      } catch (error) {
-        console.error('Error pre-filling from prescription:', error);
-        toast.error('Could not pre-fill from prescription');
-      }
+    if (!isEditing && sets.length === 0) {
+      setSets([{ weight: 0, reps: 5, difficulty: DifficultyCategory.EASY }]);
     }
-  }, [isEditing, hasPrescription, followPrescription, exercise.prescription, exercise.activityType, sets.length, prescriptionApplied]);
+  }, [isEditing, sets.length]);
 
   // Toggle prescription pre-filling
   const handleTogglePrescription = () => {
     const newValue = !followPrescription;
     setFollowPrescription(newValue);
-    
-    if (newValue && hasPrescription && sets.length === 0) {
-      // Re-apply prescription
-      try {
-        const prefilledSets = prescriptionToSets(
-          exercise.prescription!,
-          exercise.activityType || ActivityType.RESISTANCE
-        );
-        setSets(prefilledSets);
-        setPrescriptionApplied(true);
-        setIsAddingSet(false);
-        toast.success('Prescription applied', { duration: 1500 });
-      } catch (error) {
-        console.error('Error applying prescription:', error);
-      }
-    } else if (!newValue && prescriptionApplied) {
+
+    if (!newValue && prescriptionApplied) {
       toast('Prescription mode disabled. Modify sets as needed.', { 
         duration: 2000,
         icon: 'ℹ️' 
@@ -320,9 +292,13 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
     }
     
     if (useExerciseId) {
-      (onSave as (sets: ExerciseSet[], exerciseId: string) => void)(sets, exercise.id);
+      (onSave as (sets: ExerciseSet[], exerciseId: string, metadata?: { prescriptionAssistant?: ExercisePrescriptionAssistantData }) => void)(sets, exercise.id, {
+        prescriptionAssistant: exercise.prescriptionAssistant
+      });
     } else {
-      (onSave as (sets: ExerciseSet[]) => void)(sets);
+      (onSave as (sets: ExerciseSet[], metadata?: { prescriptionAssistant?: ExercisePrescriptionAssistantData }) => void)(sets, {
+        prescriptionAssistant: exercise.prescriptionAssistant
+      });
     }
   };
 
@@ -444,6 +420,10 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
             followPrescription={followPrescription}
             prescriptionApplied={prescriptionApplied}
             onToggleFollow={!isEditing && hasPrescription ? handleTogglePrescription : undefined}
+            uiHint={exercise.prescriptionAssistant?.uiHint}
+            warnings={exercise.prescriptionAssistant?.warnings}
+            alternatives={exercise.prescriptionAssistant?.alternatives}
+            progressionNote={exercise.prescriptionAssistant?.progressionNote}
           />
         </div>
         

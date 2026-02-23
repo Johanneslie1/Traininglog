@@ -13,6 +13,10 @@ interface PrescriptionGuideCardProps {
   prescriptionApplied?: boolean;
   onToggleFollow?: () => void;
   className?: string;
+  uiHint?: string;
+  warnings?: string[];
+  alternatives?: string[];
+  progressionNote?: string;
 }
 
 const formatRange = (value?: number | { min: number; max: number }) => {
@@ -86,6 +90,10 @@ const PrescriptionGuideCard: React.FC<PrescriptionGuideCardProps> = ({
   prescriptionApplied,
   onToggleFollow,
   className,
+  uiHint,
+  warnings,
+  alternatives,
+  progressionNote,
 }) => {
   const [showDetails, setShowDetails] = useState(false);
   const [showFullInstructions, setShowFullInstructions] = useState(false);
@@ -99,7 +107,10 @@ const PrescriptionGuideCard: React.FC<PrescriptionGuideCardProps> = ({
   );
   const longInstructions = (instructionsText || '').length > 180;
 
-  if (!hasStructuredPrescription && !hasInstructions) {
+  const hasWarnings = Array.isArray(warnings) && warnings.length > 0;
+  const hasAlternatives = Array.isArray(alternatives) && alternatives.length > 0;
+
+  if (!hasStructuredPrescription && !hasInstructions && !uiHint && !hasWarnings && !hasAlternatives && !progressionNote) {
     return null;
   }
 
@@ -125,6 +136,9 @@ const PrescriptionGuideCard: React.FC<PrescriptionGuideCardProps> = ({
               <p className="text-sm text-text-secondary">
                 {compactPrescription}
               </p>
+            )}
+            {uiHint && (
+              <p className="text-sm text-primary-200 mt-1">{uiHint}</p>
             )}
           </div>
 
@@ -162,7 +176,7 @@ const PrescriptionGuideCard: React.FC<PrescriptionGuideCardProps> = ({
         )}
       </div>
 
-      {(showDetails || hasInstructions) && (
+      {(showDetails || hasInstructions || hasWarnings || hasAlternatives || progressionNote) && (
         <div className="border-t border-white/10 p-3 sm:p-4 space-y-3">
           {showDetails && details.length > 0 && (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -189,6 +203,35 @@ const PrescriptionGuideCard: React.FC<PrescriptionGuideCardProps> = ({
                   {showFullInstructions ? 'Show less' : 'Show more'}
                 </button>
               )}
+            </div>
+          )}
+
+          {hasWarnings && (
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+              <p className="text-xs font-semibold text-amber-300 mb-1">Warnings</p>
+              <ul className="space-y-1">
+                {warnings!.map((warning, index) => (
+                  <li key={`${warning}-${index}`} className="text-sm text-amber-100">• {warning}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {hasAlternatives && (
+            <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3">
+              <p className="text-xs font-semibold text-emerald-300 mb-1">Alternatives</p>
+              <ul className="space-y-1">
+                {alternatives!.map((alternative, index) => (
+                  <li key={`${alternative}-${index}`} className="text-sm text-emerald-100">• {alternative}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {progressionNote && (
+            <div className="rounded-lg border border-primary-500/25 bg-primary-500/10 p-3">
+              <p className="text-xs font-semibold text-primary-300 mb-1">Progression Note</p>
+              <p className="text-sm text-primary-100">{progressionNote}</p>
             </div>
           )}
         </div>

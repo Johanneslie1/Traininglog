@@ -4,6 +4,7 @@ import { signInAnonymously } from 'firebase/auth';
 import { ExerciseSet } from '@/types/sets';
 import { ActivityType } from '@/types/activityTypes';
 import { Prescription } from '@/types/program';
+import { ExercisePrescriptionAssistantData } from '@/types/exercise';
 
 export interface ExerciseData {
   id?: string;
@@ -22,6 +23,7 @@ export interface ExerciseData {
   prescription?: Prescription;
   instructionMode?: 'structured' | 'freeform';
   instructions?: string;
+  prescriptionAssistant?: ExercisePrescriptionAssistantData;
 }
 
 export class ExerciseDataService {
@@ -57,7 +59,11 @@ export class ExerciseDataService {
           timestamp: exercise.timestamp,
           userId: exercise.userId || userId,
           deviceId: exercise.deviceId || window.navigator.userAgent,
-          ...(exercise.activityType && { activityType: exercise.activityType })
+          ...(exercise.activityType && { activityType: exercise.activityType }),
+          ...(exercise.prescription && { prescription: exercise.prescription }),
+          ...(exercise.instructionMode && { instructionMode: exercise.instructionMode }),
+          ...(exercise.instructions && { instructions: exercise.instructions }),
+          ...(exercise.prescriptionAssistant && { prescriptionAssistant: exercise.prescriptionAssistant })
         };
 
         if (exercise.id) {
@@ -106,7 +112,11 @@ export class ExerciseDataService {
             timestamp: data.timestamp.toDate(),
             userId: data.userId,
             deviceId: data.deviceId,
-            ...(data.activityType && { activityType: data.activityType })
+            ...(data.activityType && { activityType: data.activityType }),
+            ...(data.prescription && { prescription: data.prescription }),
+            ...(data.instructionMode && { instructionMode: data.instructionMode }),
+            ...(data.instructions && { instructions: data.instructions }),
+            ...(data.prescriptionAssistant && { prescriptionAssistant: data.prescriptionAssistant })
           } as ExerciseData;
         });
 

@@ -11,25 +11,23 @@ import TemplateSelector from './templates/TemplateSelector';
 import CustomTemplateManager from './templates/CustomTemplateManager';
 import { WorkoutTemplate } from '@/types/workoutTemplate';
 import { applyTemplate } from '@/services/workoutTemplateService';
-import { useSettings } from '@/context/SettingsContext';
-import { 
-  calculateProgressiveSuggestions, 
-  shouldApplyProgressiveOverload,
-  getDaysSinceLastSession,
-  formatProgressionRationale
-} from '@/services/progressiveOverloadService';
 import { Prescription } from '@/types/program';
 import { prescriptionToSets } from '@/utils/prescriptionUtils';
 import PrescriptionGuideCard from '@/components/exercises/PrescriptionGuideCard';
+import { ExercisePrescriptionAssistantData } from '@/types/exercise';
+import { generateExercisePrescriptionAssistant } from '@/services/exercisePrescriptionAssistantService';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
 
 interface UniversalSetLoggerProps {
   exercise: Exercise;
-  onSave: (sets: ExerciseSet[]) => void;
+  onSave: (sets: ExerciseSet[], metadata?: { prescriptionAssistant?: ExercisePrescriptionAssistantData }) => void;
   onCancel: () => void;
   initialSets?: ExerciseSet[];
   isEditing?: boolean;
   prescription?: Prescription; // Prescription data from program
   instructionMode?: 'structured' | 'freeform'; // Instruction mode from program
+  prescriptionAssistant?: ExercisePrescriptionAssistantData;
 }
 
 // RPE Scale for reference
@@ -234,6 +232,18 @@ const getDefaultSet = (exerciseType: string): ExerciseSet => {
   }
 };
 
+const estimateOneRepMax = (sets: ExerciseSet[]): number | undefined => {
+  const candidates = sets
+    .filter((set) => set.weight > 0 && set.reps > 0)
+    .map((set) => set.weight * (1 + set.reps / 30));
+
+  if (candidates.length === 0) {
+    return undefined;
+  }
+
+  return Math.round(Math.max(...candidates) * 2) / 2;
+};
+
 export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
   exercise,
   onSave,
@@ -242,22 +252,24 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
   isEditing = false,
   prescription,
   instructionMode,
+  prescriptionAssistant,
 }) => {
   const exerciseType = getExerciseType(exercise);
   const [sets, setSets] = useState<ExerciseSet[]>([]);
+  const { user } = useSelector((state: RootState) => state.auth);
   
   // Prescription state
   const [followPrescription, setFollowPrescription] = useState<boolean>(true);
-  const [prescriptionApplied, setPrescriptionApplied] = useState<boolean>(false);
+  const prescriptionApplied = false;
   
   // Fetch exercise history for progressive overload context
   const exerciseHistory = useExerciseHistory(exercise.name);
-  const { settings } = useSettings();
   const [showRPEHelper, setShowRPEHelper] = useState(false);
   const [expandedSetIndex, setExpandedSetIndex] = useState<number | null>(null);
   const [lastAddedIndex, setLastAddedIndex] = useState<number | null>(null);
-  const [isPreFilled, setIsPreFilled] = useState(false);
-  const [progressionRationale, setProgressionRationale] = useState<string>('');
+  const [assistantSuggestion, setAssistantSuggestion] = useState<ExercisePrescriptionAssistantData | undefined>(prescriptionAssistant || exercise.prescriptionAssistant);
+  const [assistantLoading, setAssistantLoading] = useState(false);
+  const generatedAssistantRef = useRef(Boolean(prescriptionAssistant || exercise.prescriptionAssistant));
   
   // Template system state
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
@@ -293,7 +305,72 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
     }
   }, [hasPrescription, prescription, exercise.activityType]);
 
-  // Initialize sets with progressive overload auto-fill or prescription pre-fill
+  useEffect(() => {
+    if (prescriptionAssistant || exercise.prescriptionAssistant) {
+      setAssistantSuggestion(prescriptionAssistant || exercise.prescriptionAssistant);
+      generatedAssistantRef.current = true;
+    }
+  }, [prescriptionAssistant, exercise.prescriptionAssistant]);
+
+  useEffect(() => {
+    if (!hasPrescription || isEditing || generatedAssistantRef.current || !user?.id) {
+      return;
+    }
+
+    let cancelled = false;
+    generatedAssistantRef.current = true;
+
+    const generateSuggestion = async () => {
+      try {
+        setAssistantLoading(true);
+        const estimatedOneRepMax = estimateOneRepMax(exerciseHistory.history.flatMap((entry) => entry.sets));
+        const typicalRPEValues = exerciseHistory.history
+          .flatMap((entry) => entry.sets)
+          .map((set) => set.rpe)
+          .filter((value): value is number => typeof value === 'number');
+
+        const typicalRPE = typicalRPEValues.length > 0
+          ? typicalRPEValues.reduce((sum, value) => sum + value, 0) / typicalRPEValues.length
+          : undefined;
+
+        const generated = await generateExercisePrescriptionAssistant({
+          exercise: {
+            id: exercise.id,
+            name: exercise.name,
+            activityType: exercise.activityType,
+            prescription,
+          },
+          userId: user.id,
+          userContext: {
+            oneRepMax: estimatedOneRepMax,
+            typicalRPE,
+          },
+          sessionContext: {
+            date: new Date().toISOString().slice(0, 10),
+            warmupDone: true,
+          },
+        });
+
+        if (!cancelled) {
+          setAssistantSuggestion(generated);
+        }
+      } catch (error) {
+        console.warn('Could not generate prescription assistant output:', error);
+      } finally {
+        if (!cancelled) {
+          setAssistantLoading(false);
+        }
+      }
+    };
+
+    generateSuggestion();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hasPrescription, isEditing, user?.id, exercise.id, exercise.name, exercise.activityType, prescription, exerciseHistory.history]);
+
+  // Initialize sets without auto-prefill to keep first-set editing flow fast
   useEffect(() => {
     if (initialSets && initialSets.length > 0) {
       // Editing existing exercise - use provided sets
@@ -301,87 +378,13 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
       setSets(clonedSets);
       const ids = clonedSets.map((_, index) => `set-${exercise.name}-${index}-${Date.now()}`);
       setSetIds(ids);
-      setIsPreFilled(false);
-    } else if (
-      !isEditing && 
-      hasPrescription && 
-      followPrescription && 
-      !prescriptionApplied
-    ) {
-      // NEW: Auto-fill from prescription
-      try {
-        const prefilledSets = prescriptionToSets(
-          prescription!,
-          exercise.activityType || ActivityType.RESISTANCE
-        );
-        
-        if (prefilledSets.length > 0) {
-          setSets(prefilledSets);
-          const ids = prefilledSets.map((_, index) => `set-${exercise.name}-${index}-${Date.now()}`);
-          setSetIds(ids);
-          setIsPreFilled(true);
-          setPrescriptionApplied(true);
-          
-          // Show success notification
-          toast.success(
-            `Pre-filled ${prefilledSets.length} set${prefilledSets.length > 1 ? 's' : ''} from prescription`,
-            { duration: 2500, icon: '📋' }
-          );
-        } else {
-          // Fallback to default if prescription conversion fails
-          const defaultSet = getDefaultSet(exerciseType);
-          setSets([defaultSet]);
-          setSetIds([`set-${exercise.name}-0-${Date.now()}`]);
-          setIsPreFilled(false);
-        }
-      } catch (error) {
-        console.error('Error pre-filling from prescription:', error);
-        toast.error('Could not pre-fill from prescription');
-        const defaultSet = getDefaultSet(exerciseType);
-        setSets([defaultSet]);
-        setSetIds([`set-${exercise.name}-0-${Date.now()}`]);
-        setIsPreFilled(false);
-      }
-    } else if (
-      !isEditing && 
-      settings.useProgressiveOverload && 
-      shouldApplyProgressiveOverload(exerciseHistory.lastPerformed, exerciseType)
-    ) {
-      // Auto-fill with progressive overload suggestions (only if no prescription)
-      const lastSession = exerciseHistory.lastPerformed!;
-      const daysSince = getDaysSinceLastSession(lastSession.timestamp);
-      const suggestions = calculateProgressiveSuggestions(lastSession, daysSince);
-      
-      if (suggestions.length > 0) {
-        setSets(suggestions);
-        const ids = suggestions.map((_, index) => `set-${exercise.name}-${index}-${Date.now()}`);
-        setSetIds(ids);
-        setIsPreFilled(true);
-        
-        // Set rationale for display
-        const rationale = formatProgressionRationale(lastSession, suggestions, daysSince);
-        setProgressionRationale(rationale);
-        
-        // Show success notification
-        toast.success(
-          `Pre-filled based on last session (${lastSession.summary})`,
-          { duration: 3000, icon: '📈' }
-        );
-      } else {
-        // Fallback to default
-        const defaultSet = getDefaultSet(exerciseType);
-        setSets([defaultSet]);
-        setSetIds([`set-${exercise.name}-0-${Date.now()}`]);
-        setIsPreFilled(false);
-      }
     } else {
-      // Default empty set (no history or setting disabled)
+      // Always start with a single editable set
       const defaultSet = getDefaultSet(exerciseType);
       setSets([defaultSet]);
       setSetIds([`set-${exercise.name}-0-${Date.now()}`]);
-      setIsPreFilled(false);
     }
-  }, [initialSets, exerciseType, exercise.name, exercise.activityType, isEditing, settings.useProgressiveOverload, exerciseHistory.lastPerformed, hasPrescription, followPrescription, prescription, prescriptionApplied]);
+  }, [initialSets, exerciseType, exercise.name, isEditing]);
 
   const addSet = useCallback(() => {
     const lastSet = sets[sets.length - 1];
@@ -520,32 +523,14 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
   const handleTogglePrescription = useCallback(() => {
     const newValue = !followPrescription;
     setFollowPrescription(newValue);
-    
-    if (newValue && hasPrescription && sets.length === 0) {
-      // Re-apply prescription
-      try {
-        const prefilledSets = prescriptionToSets(
-          prescription!,
-          exercise.activityType || ActivityType.RESISTANCE
-        );
-        if (prefilledSets.length > 0) {
-          setSets(prefilledSets);
-          const newIds = prefilledSets.map((_, index) => `set-${exercise.name}-${index}-${Date.now()}`);
-          setSetIds(newIds);
-          setPrescriptionApplied(true);
-          toast.success('Prescription applied', { duration: 1500 });
-        }
-      } catch (error) {
-        console.error('Error applying prescription:', error);
-        toast.error('Could not apply prescription');
-      }
-    } else if (!newValue && prescriptionApplied) {
+
+    if (!newValue) {
       toast('Prescription mode disabled. Modify sets as needed.', { 
         duration: 2000,
         icon: 'ℹ️' 
       });
     }
-  }, [followPrescription, hasPrescription, prescription, exercise.activityType, exercise.name, sets.length, prescriptionApplied]);
+  }, [followPrescription]);
 
   const handleSave = () => {
     // Option 3: Relaxed validation - only require at least one field per set
@@ -589,7 +574,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
       });
     }
 
-    onSave(validSets);
+    onSave(validSets, { prescriptionAssistant: assistantSuggestion });
   };
 
   const renderFieldsForSet = useMemo(() => (setIndex: number) => {
@@ -953,7 +938,34 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
   };
 
   const getInlineTargetText = (index: number) => {
-    if (!followPrescription || prescriptionTargetSets.length === 0) {
+    if (!followPrescription) {
+      return null;
+    }
+
+    if (assistantSuggestion?.suggestedPrescription?.length) {
+      const suggestedSet = assistantSuggestion.suggestedPrescription[
+        Math.min(index, assistantSuggestion.suggestedPrescription.length - 1)
+      ];
+
+      if (suggestedSet) {
+        switch (exerciseType) {
+          case 'strength':
+          case 'bodyweight':
+            return `Target ${suggestedSet.targetLoad || 'bodyweight'} × ${suggestedSet.targetReps || 0}`;
+          case 'endurance':
+          case 'sport':
+            return `Target ${suggestedSet.targetDuration || 0} min${suggestedSet.targetDistance ? ` • ${suggestedSet.targetDistance} km` : ''}`;
+          case 'flexibility':
+            return `Target ${suggestedSet.targetDuration || 0}s hold${suggestedSet.targetReps ? ` × ${suggestedSet.targetReps}` : ''}`;
+          case 'speed_agility':
+            return `Target ${suggestedSet.targetReps || 0} reps${suggestedSet.targetDistance ? ` • ${suggestedSet.targetDistance}m` : ''}`;
+          default:
+            return `Target ${suggestedSet.targetDuration || 0} min`;
+        }
+      }
+    }
+
+    if (prescriptionTargetSets.length === 0) {
       return null;
     }
 
@@ -1005,8 +1017,16 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
             followPrescription={followPrescription}
             prescriptionApplied={prescriptionApplied}
             onToggleFollow={!isEditing && hasPrescription ? handleTogglePrescription : undefined}
+            uiHint={assistantSuggestion?.uiHint}
+            warnings={assistantSuggestion?.warnings}
+            alternatives={assistantSuggestion?.alternatives}
+            progressionNote={assistantSuggestion?.progressionNote}
           />
         </div>
+
+        {assistantLoading && (
+          <p className="mt-2 text-xs text-primary-300">Generating prescription guidance...</p>
+        )}
         
         {/* Exercise History Summary - helps with progressive overload */}
         {!isEditing && (
@@ -1020,38 +1040,6 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
           </div>
         )}
 
-        {/* Progressive Overload Pre-fill Banner */}
-        {isPreFilled && !isEditing && (
-          <div className="mt-3 bg-blue-600/20 border border-blue-500/50 rounded-lg p-3">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-lg">📈</span>
-                  <p className="text-white text-sm font-medium">
-                    Pre-filled for Progressive Overload
-                  </p>
-                </div>
-                <p className="text-gray-300 text-xs leading-relaxed">
-                  {progressionRationale}
-                </p>
-              </div>
-              <button
-                onClick={() => {
-                  const defaultSet = getDefaultSet(exerciseType);
-                  setSets([defaultSet]);
-                  setSetIds([`set-${exercise.name}-0-${Date.now()}`]);
-                  setIsPreFilled(false);
-                  setProgressionRationale('');
-                  toast.success('Cleared suggestions', { duration: 1500 });
-                }}
-                className="flex-shrink-0 text-xs text-blue-400 hover:text-blue-300 transition-colors px-2 py-1 rounded hover:bg-blue-600/30"
-                aria-label="Clear pre-filled values"
-              >
-                Clear
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Sets List */}

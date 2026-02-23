@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { SupersetProvider, useSupersets } from '../../context/SupersetContext';
 import { useDate } from '../../context/DateContext';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ExerciseLog as ExerciseLogType } from '../../types/exercise';
+import { ExerciseLog as ExerciseLogType, ExercisePrescriptionAssistantData } from '../../types/exercise';
 import { ExerciseSet } from '../../types/sets';
 import { ExerciseData } from '../../services/exerciseDataService';
 import { useSelector } from 'react-redux';
@@ -24,9 +24,9 @@ import FloatingSupersetControls from '../../components/FloatingSupersetControls'
 import { getAllExercisesByDate, UnifiedExerciseData, deleteExercise } from '../../utils/unifiedExerciseUtils';
 import { FloatingActionButton, EmptyState, ExerciseListSkeleton } from '../../components/ui';
 import { updateSharedSessionStatus } from '@/services/sessionService';
-import { prescriptionToSets } from '@/utils/prescriptionUtils';
 import { ActivityType } from '@/types/activityTypes';
 import { SharedSessionAssignment } from '@/types/program';
+import { generateExercisePrescriptionAssistant } from '@/services/exercisePrescriptionAssistantService';
 import toast from 'react-hot-toast';
 
 interface ExerciseLogProps {}
@@ -37,6 +37,10 @@ interface SharedSessionExerciseMeta {
   sharedSessionExerciseId?: string;
   sharedSessionDateKey?: string;
   sharedSessionExerciseCompleted?: boolean;
+}
+
+interface SaveMetadata {
+  prescriptionAssistant?: ExercisePrescriptionAssistantData;
 }
 
 const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
@@ -174,7 +178,8 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     sharedSessionExerciseCompleted: exercise.sharedSessionExerciseCompleted,
     prescription: exercise.prescription,
     instructionMode: exercise.instructionMode,
-    instructions: exercise.instructions
+    instructions: exercise.instructions,
+    prescriptionAssistant: exercise.prescriptionAssistant
   }), []);
 
   // Handle exercise data loading
@@ -226,7 +231,8 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
           sharedSessionExerciseCompleted: data.sharedSessionExerciseCompleted,
           prescription: data.prescription,
           instructionMode: data.instructionMode,
-          instructions: data.instructions
+          instructions: data.instructions,
+          prescriptionAssistant: data.prescriptionAssistant
         }, userId);
       });
 
@@ -278,7 +284,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     updateUiState('showSetLogger', false);
   }, [updateUiState]);
 
-  const handleSaveSets = useCallback(async (sets: ExerciseSet[], exerciseId: string) => {
+  const handleSaveSets = useCallback(async (sets: ExerciseSet[], exerciseId: string, metadata?: SaveMetadata) => {
     if (!selectedExercise || !user?.id) {
       console.error('Cannot save sets: missing exercise or user');
       return;
@@ -305,6 +311,11 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
           exerciseName: updatedExercise.exerciseName,
           userId: user.id,
           sets: sets,
+          activityType: selectedExerciseWithMeta.activityType,
+          prescription: selectedExerciseWithMeta.prescription,
+          instructionMode: selectedExerciseWithMeta.instructionMode,
+          instructions: selectedExerciseWithMeta.instructions,
+          prescriptionAssistant: metadata?.prescriptionAssistant || selectedExerciseWithMeta.prescriptionAssistant,
           ...(selectedExerciseWithMeta.sharedSessionAssignmentId && {
             sharedSessionAssignmentId: selectedExerciseWithMeta.sharedSessionAssignmentId
           }),
@@ -330,6 +341,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
       // Save to local storage with the correct ID from Firestore
       await saveExerciseLog({
         ...updatedExercise,
+        prescriptionAssistant: metadata?.prescriptionAssistant || selectedExerciseWithMeta.prescriptionAssistant,
         id: firestoreId,
         userId: user.id
       });
@@ -475,21 +487,6 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     }
   }, [selectedDate, selectedExercise, areDatesEqual, handleCloseSetLogger]);
 
-  // Debug auth state
-  useEffect(() => {
-    console.log('Auth state:', {
-      isAuthenticated: !!user,
-      userId: user?.id,
-      hasRequiredFields: user ? {
-        hasId: !!user.id,
-        hasEmail: !!user.email,
-        hasFirstName: !!user.firstName,
-        hasLastName: !!user.lastName,
-        hasRole: !!user.role
-      } : null
-    });
-  }, [user]);
-
   useEffect(() => {
     const sharedSessionAssignment = (location.state as { sharedSessionAssignment?: SharedSessionAssignment } | null)?.sharedSessionAssignment;
 
@@ -517,8 +514,20 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
 
         for (const exercise of sharedSessionAssignment.sessionData.exercises) {
           const activityType = exercise.activityType || ActivityType.RESISTANCE;
-          const shouldPrefill = exercise.instructionMode === 'structured' && !!exercise.prescription;
-          const sets = shouldPrefill ? prescriptionToSets(exercise.prescription!, activityType) : [];
+          const sets: ExerciseSet[] = [];
+          const prescriptionAssistant = await generateExercisePrescriptionAssistant({
+            exercise: {
+              id: exercise.id,
+              name: exercise.name,
+              activityType,
+              prescription: exercise.prescription
+            },
+            userId: user.id,
+            sessionContext: {
+              date: dateKey,
+              warmupDone: true
+            }
+          });
 
           const createdExerciseId = await addExerciseLog(
             {
@@ -533,6 +542,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
                 : Array.isArray(exercise.instructions)
                   ? exercise.instructions[0]
                   : undefined,
+              prescriptionAssistant,
               sharedSessionAssignmentId: sharedSessionAssignment.id,
               sharedSessionId: sharedSessionAssignment.sharedSessionId,
               sharedSessionExerciseId: exercise.id,
@@ -560,7 +570,8 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
               ? exercise.instructions
               : Array.isArray(exercise.instructions)
                 ? exercise.instructions[0]
-                : undefined
+                : undefined,
+            prescriptionAssistant
           });
         }
 
@@ -697,6 +708,11 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
             exercise={{
               id: selectedExercise.id,
               name: selectedExercise.exerciseName,
+              activityType: selectedExercise.activityType,
+              prescription: selectedExercise.prescription,
+              instructionMode: selectedExercise.instructionMode,
+              instructions: selectedExercise.instructions ? [selectedExercise.instructions] : [],
+              prescriptionAssistant: selectedExercise.prescriptionAssistant,
               sets: selectedExercise.sets.map(set => ({
                 reps: set.reps,
                 weight: set.weight || 0,

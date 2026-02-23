@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/services/firebase/config';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
@@ -189,17 +189,15 @@ export const useExerciseHistory = (exerciseName: string): ExerciseHistoryData =>
       setIsLoading(true);
       setError(null);
 
-      // Query last 3 occurrences from Firestore
+      // Query by exercise name, then sort client-side to avoid composite-index requirement
       const exercisesRef = collection(db, 'users', user.id, 'exercises');
       const q = query(
         exercisesRef,
-        where('exerciseName', '==', exerciseName),
-        orderBy('timestamp', 'desc'),
-        limit(3)
+        where('exerciseName', '==', exerciseName)
       );
 
       const snapshot = await getDocs(q);
-      
+
       const entries: ExerciseHistoryEntry[] = snapshot.docs.map(doc => {
         const data = doc.data();
         const sets = data.sets || [];
@@ -215,7 +213,7 @@ export const useExerciseHistory = (exerciseName: string): ExerciseHistoryData =>
           totalDuration: sets.reduce((sum: number, s: ExerciseSet) => sum + (s.duration || 0), 0) || undefined,
           totalDistance: sets.reduce((sum: number, s: ExerciseSet) => sum + (s.distance || 0), 0) || undefined,
         };
-      });
+      }).sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()).slice(0, 3);
 
       // Update cache
       historyCache.set(cacheKey, { data: entries, timestamp: Date.now() });

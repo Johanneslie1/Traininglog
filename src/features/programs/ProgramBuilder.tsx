@@ -5,7 +5,7 @@ import { PlusIcon, BookmarkIcon, TrashIcon, PencilIcon, MenuIcon } from '@heroic
 import SessionBuilder from './SessionBuilder';
 import { auth } from '@/services/firebase/config';
 import { usePersistedFormState } from '@/hooks/usePersistedState';
-import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import toast from 'react-hot-toast';
 
 interface ProgramBuilderProps {

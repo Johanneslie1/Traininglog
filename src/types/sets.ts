@@ -52,3 +52,15 @@ export interface ExerciseSet {
   timestamp?: Date;
 }
 
+export interface SuggestedPrescriptionSet {
+  setIndex: number;
+  targetReps?: number;
+  targetLoad?: string;
+  targetRPE?: number;
+  targetDuration?: number;
+  targetDistance?: number;
+  restSec?: number;
+  editable: boolean;
+  confidence: number;
+}
+

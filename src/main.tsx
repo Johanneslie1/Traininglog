@@ -7,20 +7,6 @@ import './styles/theme.css'; // Import the new theme
 import './tests/authDebug'; // Add auth debugging tools for development
 import './tests/permissionTest'; // Add permission testing tools
 
-// Suppress react-beautiful-dnd defaultProps warning in development
-if (import.meta.env.DEV) {
-  const originalConsoleWarn = console.warn;
-  console.warn = (...args) => {
-    if (typeof args[0] === 'string' && 
-        (args[0].includes('Support for defaultProps will be removed') ||
-         args[0].includes('Connect(Droppable): Support for defaultProps') ||
-         args[0].includes('defaultProps will be removed from memo components'))) {
-      return; // Suppress this specific warning
-    }
-    originalConsoleWarn.apply(console, args);
-  };
-}
-
 // Only register service worker in production to avoid caching dev modules
 if (!import.meta.env.DEV && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {

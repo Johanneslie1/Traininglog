@@ -1,5 +1,6 @@
 import { ActivityType } from './activityTypes';
 import { Prescription } from './program';
+import { SuggestedPrescriptionSet } from './sets';
 
 // Training type enum for unified system
 export enum TrainingType {
@@ -94,6 +95,17 @@ export interface Exercise {
   // Program prescription data (when exercise comes from a program)
   prescription?: Prescription; // Prescription from program
   instructionMode?: 'structured' | 'freeform'; // Instruction mode from program
+  prescriptionAssistant?: ExercisePrescriptionAssistantData;
+}
+
+export interface ExercisePrescriptionAssistantData {
+  uiHint: string;
+  suggestedPrescription: SuggestedPrescriptionSet[];
+  progressionNote: string;
+  warnings: string[];
+  alternatives: string[];
+  source?: 'llm' | 'fallback';
+  generatedAt?: string;
 }
 
 export type MuscleGroup =
@@ -159,6 +171,8 @@ export interface ExerciseLog {
   instructionMode?: 'structured' | 'freeform';
   /** Freeform coach instructions */
   instructions?: string;
+  /** Assistant-generated suggestion payload for log editor */
+  prescriptionAssistant?: ExercisePrescriptionAssistantData;
 }
 
 export type ExerciseType = Exercise['type'];

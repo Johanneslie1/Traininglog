@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { DragDropContext, Droppable, Draggable, DropResult, DragStart, DragUpdate } from 'react-beautiful-dnd';
+import { DragDropContext, Droppable, Draggable, DropResult, DragStart, DragUpdate } from '@hello-pangea/dnd';
 import { ExerciseData } from '../services/exerciseDataService';
 import { UnifiedExerciseData } from '../utils/unifiedExerciseUtils';
 import { SupersetGroup } from '../types/session';
