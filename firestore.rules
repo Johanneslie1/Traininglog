@@ -209,10 +209,7 @@ service cloud.firestore {
       // Athletes can read announcements where they are recipients.
       allow read: if isAuthenticated() && (
         resource.data.createdBy == request.auth.uid ||
-        (
-          resource.data.recipientUserIds is list &&
-          request.auth.uid in resource.data.recipientUserIds
-        )
+        request.auth.uid in resource.data.recipientUserIds
       );
 
       // Create is allowed for authenticated users creating as themselves.
