@@ -63,6 +63,17 @@ const ACCESS_CACHE_TTL_MS = 30 * 1000;
 const coachAccessCache = new Map<string, CoachAccessSnapshot>();
 const coachAccessInFlight = new Map<string, Promise<CoachAccessSnapshot>>();
 
+export function invalidateCoachAccessCache(coachId?: string): void {
+  if (coachId) {
+    coachAccessCache.delete(coachId);
+    coachAccessInFlight.delete(coachId);
+    return;
+  }
+
+  coachAccessCache.clear();
+  coachAccessInFlight.clear();
+}
+
 // Ensure user is authenticated
 async function ensureAuth() {
   const auth = getAuth();
@@ -204,7 +215,12 @@ async function getCoachAccessSnapshot(forceRefresh = false): Promise<CoachAccess
 export const verifyCoachAthleteRelationship = async (athleteId: string): Promise<boolean> => {
   try {
     const accessSnapshot = await getCoachAccessSnapshot();
-    return accessSnapshot.athleteIds.has(athleteId);
+    if (accessSnapshot.athleteIds.has(athleteId)) {
+      return true;
+    }
+
+    const refreshedSnapshot = await getCoachAccessSnapshot(true);
+    return refreshedSnapshot.athleteIds.has(athleteId);
   } catch (error) {
     console.error('[coachService] Error verifying coach-athlete relationship:', error);
     return false;
@@ -407,11 +423,18 @@ export const getAthleteExerciseLogs = async (
     }
     
     const exercisesRef = collection(db, 'users', athleteId, 'exercises');
-    let q = query(exercisesRef, orderBy('date', 'desc'));
-    
-    // Note: Firestore doesn't support date range queries directly on string dates
-    // We'll filter in memory after fetching
-    const snapshot = await getDocs(q);
+    let snapshot;
+
+    try {
+      const sortedQuery = query(exercisesRef, orderBy('date', 'desc'));
+      snapshot = await getDocs(sortedQuery);
+    } catch (error) {
+      if (!isPermissionDenied(error)) {
+        throw error;
+      }
+
+      snapshot = await getDocs(exercisesRef);
+    }
     
     let logs = snapshot.docs.map(doc => {
       const data = doc.data();
@@ -423,6 +446,8 @@ export const getAthleteExerciseLogs = async (
       } as AthleteExerciseLog;
     });
     
+    logs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
     // Filter by date range if provided
     if (startDate || endDate) {
       logs = logs.filter(log => {

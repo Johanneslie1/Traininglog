@@ -2,9 +2,9 @@ import {
   collection,
   doc,
   getDocs,
+  getDoc,
   query,
   where,
-  orderBy,
   setDoc
 } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
@@ -25,6 +25,25 @@ async function ensureAuth() {
     throw new Error('Auth state changed unexpectedly');
   }
   return user;
+}
+
+type UserRole = 'athlete' | 'coach';
+
+async function getCurrentUserRole(userId: string): Promise<UserRole | null> {
+  const userDoc = await getDoc(doc(db, 'users', userId));
+  if (!userDoc.exists()) {
+    return null;
+  }
+
+  const data = userDoc.data() as { role?: unknown };
+  return data.role === 'coach' || data.role === 'athlete' ? data.role : null;
+}
+
+async function ensureCoachRole(userId: string): Promise<void> {
+  const role = await getCurrentUserRole(userId);
+  if (role !== 'coach') {
+    throw new Error('Only coaches can create or review coach announcements');
+  }
 }
 
 function removeUndefinedFields<T>(obj: T): T {
@@ -49,6 +68,7 @@ export const createCoachAnnouncement = async (
   input: CreateCoachAnnouncementInput
 ): Promise<string> => {
   const user = await ensureAuth();
+  await ensureCoachRole(user.uid);
   const trimmedMessage = input.message.trim();
 
   if (!trimmedMessage) {
@@ -84,32 +104,39 @@ export const createCoachAnnouncement = async (
 
 export const getCoachAnnouncements = async (): Promise<CoachAnnouncement[]> => {
   const user = await ensureAuth();
+  await ensureCoachRole(user.uid);
 
   const q = query(
     collection(db, ANNOUNCEMENTS_COLLECTION),
-    where('createdBy', '==', user.uid),
-    orderBy('createdAt', 'desc')
+    where('createdBy', '==', user.uid)
   );
   const snapshot = await getDocs(q);
 
   return snapshot.docs.map((docSnap) => ({
     id: docSnap.id,
     ...docSnap.data()
-  })) as CoachAnnouncement[];
+  }))
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) as CoachAnnouncement[];
 };
 
 export const getAnnouncementsForAthlete = async (): Promise<CoachAnnouncement[]> => {
   const user = await ensureAuth();
 
+  // Athletes are read-only recipients for coach announcements.
+  const role = await getCurrentUserRole(user.uid);
+  if (role === 'coach') {
+    return [];
+  }
+
   const q = query(
     collection(db, ANNOUNCEMENTS_COLLECTION),
-    where('recipientUserIds', 'array-contains', user.uid),
-    orderBy('createdAt', 'desc')
+    where('recipientUserIds', 'array-contains', user.uid)
   );
   const snapshot = await getDocs(q);
 
   return snapshot.docs.map((docSnap) => ({
     id: docSnap.id,
     ...docSnap.data()
-  })) as CoachAnnouncement[];
+  }))
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) as CoachAnnouncement[];
 };

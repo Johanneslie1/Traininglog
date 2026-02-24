@@ -18,21 +18,17 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read: if isAuthenticated() && isOwner(userId);
+      // User profiles are readable to authenticated users (used by team/coach flows).
+      // Mutations remain owner-only.
+      allow read: if isAuthenticated();
       allow write: if isAuthenticated() && isOwner(userId);
       
       // Nested exercises collection under users - CRUD permissions
-      // NOTE: Coach access - Coaches can view athlete exercise logs through the application.
-      // The coachService.ts verifies coach-athlete relationship via team membership before
-      // fetching data. Firestore rules cannot efficiently verify team membership across
-      // multiple teams, so we rely on application-level authorization.
+      // NOTE: Coach access is enforced by application-level relationship checks in coachService.
+      // Firestore rules allow authenticated reads for this collection to support coach views.
       match /exercises/{exerciseId} {
-        // Allow read if authenticated and owns either parent or document
-        // Application code (coachService) enforces coach-athlete relationship
-        allow read: if isAuthenticated() && (
-          isOwner(userId) || 
-          (resource != null && resource.data.userId == request.auth.uid)
-        );
+        // Read access for authenticated users; app enforces coach-athlete authorization
+        allow read: if isAuthenticated();
         
         // Allow create if authenticated and document belongs to user
         allow create: if isAuthenticated() && 
@@ -51,7 +47,7 @@ service cloud.firestore {
       // Nested exerciseLogs collection under users
       // NOTE: Same coach access pattern as exercises collection above
       match /exerciseLogs/{logId} {
-        allow read: if isAuthenticated() && isOwner(userId);
+        allow read: if isAuthenticated();
         allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
         allow update: if isAuthenticated() && isOwner(userId) && resource.data.userId == request.auth.uid;
         allow delete: if isAuthenticated() && isOwner(userId) && resource.data.userId == request.auth.uid;
@@ -205,19 +201,28 @@ service cloud.firestore {
 
     // Coach announcements collection
     match /coachAnnouncements/{announcementId} {
+      function isCoach() {
+        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'coach';
+      }
+
       // Coaches can read announcements they created.
       // Athletes can read announcements where they are recipients.
       allow read: if isAuthenticated() && (
         resource.data.createdBy == request.auth.uid ||
-        request.auth.uid in resource.data.recipientUserIds
+        (
+          resource.data.recipientUserIds is list &&
+          request.auth.uid in resource.data.recipientUserIds
+        )
       );
 
       // Create is allowed for authenticated users creating as themselves.
       allow create: if isAuthenticated() &&
+        isCoach() &&
         request.resource.data.createdBy == request.auth.uid;
 
       // Only creator can update/delete.
       allow update, delete: if isAuthenticated() &&
+        isCoach() &&
         resource.data.createdBy == request.auth.uid;
     }
 

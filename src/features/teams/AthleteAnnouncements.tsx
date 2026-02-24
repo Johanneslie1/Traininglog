@@ -1,13 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ChatAltIcon } from '@heroicons/react/outline';
 import toast from 'react-hot-toast';
-import { getSharedPrograms } from '@/services/programService';
-import { getSharedSessionsForAthlete } from '@/services/sessionService';
 import { getAnnouncementsForAthlete } from '@/services/announcementService';
 
 interface AnnouncementItem {
   id: string;
-  source: 'program' | 'session' | 'announcement';
+  source: 'announcement';
   title: string;
   coachName: string;
   message: string;
@@ -22,33 +20,7 @@ const AthleteAnnouncements: React.FC = () => {
     const loadAnnouncements = async () => {
       try {
         setLoading(true);
-        const [programAssignments, sessionAssignments] = await Promise.all([
-          getSharedPrograms(),
-          getSharedSessionsForAthlete()
-        ]);
         const dedicatedAnnouncements = await getAnnouncementsForAthlete();
-
-        const programItems: AnnouncementItem[] = programAssignments
-          .filter((item: any) => !!item.coachMessage)
-          .map((item: any) => ({
-            id: `program-${item.assignmentId || item.id}`,
-            source: 'program',
-            title: item.originalProgram?.name || 'Assigned Program',
-            coachName: item.sharedByName || 'Coach',
-            message: item.coachMessage,
-            timestamp: item.assignedAt
-          }));
-
-        const sessionItems: AnnouncementItem[] = sessionAssignments
-          .filter((item) => !!item.coachMessage)
-          .map((item) => ({
-            id: `session-${item.id}`,
-            source: 'session',
-            title: item.sessionData?.name || 'Assigned Session',
-            coachName: 'Coach',
-            message: item.coachMessage || '',
-            timestamp: item.assignedAt
-          }));
 
         const coachAnnouncements: AnnouncementItem[] = dedicatedAnnouncements.map((item) => ({
           id: `announcement-${item.id}`,
@@ -59,7 +31,7 @@ const AthleteAnnouncements: React.FC = () => {
           timestamp: item.createdAt
         }));
 
-        setItems([...coachAnnouncements, ...programItems, ...sessionItems]);
+        setItems(coachAnnouncements);
       } catch (error) {
         console.error('Error loading athlete announcements:', error);
         toast.error('Failed to load announcements');
@@ -88,7 +60,7 @@ const AthleteAnnouncements: React.FC = () => {
   return (
     <div className="p-4 max-w-5xl mx-auto">
       <h2 className="text-2xl font-bold text-white mb-1">Coach Announcements</h2>
-      <p className="text-sm text-gray-400 mb-5">Messages attached to your assigned programs and sessions</p>
+      <p className="text-sm text-gray-400 mb-5">Read-only messages sent by your coach</p>
 
       {sortedItems.length === 0 ? (
         <div className="bg-bg-secondary border border-border rounded-xl p-8 text-center text-gray-400">
