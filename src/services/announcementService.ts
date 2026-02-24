@@ -112,11 +112,13 @@ export const getCoachAnnouncements = async (): Promise<CoachAnnouncement[]> => {
   );
   const snapshot = await getDocs(q);
 
-  return snapshot.docs.map((docSnap) => ({
+  const announcements = snapshot.docs.map((docSnap) => ({
     id: docSnap.id,
-    ...docSnap.data()
-  }))
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) as CoachAnnouncement[];
+    ...(docSnap.data() as Omit<CoachAnnouncement, 'id'>)
+  })) as CoachAnnouncement[];
+
+  announcements.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  return announcements;
 };
 
 export const getAnnouncementsForAthlete = async (): Promise<CoachAnnouncement[]> => {
@@ -134,9 +136,11 @@ export const getAnnouncementsForAthlete = async (): Promise<CoachAnnouncement[]>
   );
   const snapshot = await getDocs(q);
 
-  return snapshot.docs.map((docSnap) => ({
+  const announcements = snapshot.docs.map((docSnap) => ({
     id: docSnap.id,
-    ...docSnap.data()
-  }))
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) as CoachAnnouncement[];
+    ...(docSnap.data() as Omit<CoachAnnouncement, 'id'>)
+  })) as CoachAnnouncement[];
+
+  announcements.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  return announcements;
 };
