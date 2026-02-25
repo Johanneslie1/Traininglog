@@ -17,6 +17,7 @@ interface SportActivityPickerProps {
   onActivityLogged: () => void;
   selectedDate?: Date;
   editingExercise?: UnifiedExerciseData | null; // Add editing exercise prop
+  isWarmupMode?: boolean;
 }
 
 const SportActivityPicker: React.FC<SportActivityPickerProps> = ({
@@ -24,7 +25,8 @@ const SportActivityPicker: React.FC<SportActivityPickerProps> = ({
   onBack,
   onActivityLogged,
   selectedDate = new Date(),
-  editingExercise = null
+  editingExercise = null,
+  isWarmupMode = false
 }) => {
   const [data, setData] = useState<SportActivity[]>([]);
   const [selected, setSelected] = useState<SportActivity | null>(null);
@@ -122,6 +124,7 @@ const SportActivityPicker: React.FC<SportActivityPickerProps> = ({
               userId: user.id,
               sets: sets,
               activityType: ActivityType.SPORT,
+              isWarmup: isWarmupMode,
               prescription: exercise.prescription,
               instructionMode: exercise.instructionMode,
               instructions: Array.isArray(exercise.instructions)

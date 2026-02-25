@@ -2,6 +2,30 @@ import { Prescription, NumberOrRange } from '@/types/program';
 import { ExerciseSet } from '@/types/sets';
 import { ActivityType } from '@/types/activityTypes';
 
+const LEGACY_ENDURANCE_DURATION_SECONDS_THRESHOLD = 300;
+
+const normalizeLegacyEnduranceDurationMinutesValue = (value: number): number => {
+  if (!Number.isFinite(value)) return 0;
+  if (value > LEGACY_ENDURANCE_DURATION_SECONDS_THRESHOLD) {
+    return Math.round((value / 60) * 10) / 10;
+  }
+  return value;
+};
+
+export function normalizeEnduranceDurationMinutes(
+  value: NumberOrRange | undefined
+): NumberOrRange | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value === 'number') {
+    return normalizeLegacyEnduranceDurationMinutesValue(value);
+  }
+
+  return {
+    min: normalizeLegacyEnduranceDurationMinutesValue(value.min),
+    max: normalizeLegacyEnduranceDurationMinutesValue(value.max),
+  };
+}
+
 /**
  * Get the value from a NumberOrRange (returns midpoint for ranges)
  */
@@ -83,7 +107,7 @@ export function prescriptionToSets(
       case ActivityType.ENDURANCE:
       case ActivityType.SPORT:
         if (prescription.duration) {
-          set.duration = getNumberValue(prescription.duration);
+          set.duration = getNumberValue(normalizeEnduranceDurationMinutes(prescription.duration));
         }
         if (prescription.distance) {
           set.distance = getNumberValue(prescription.distance);
@@ -191,8 +215,7 @@ export function formatPrescription(
     case ActivityType.ENDURANCE:
     case ActivityType.SPORT:
       if (prescription.duration) {
-        const mins = Math.floor(getNumberValue(prescription.duration) / 60);
-        parts.push(`${mins} min`);
+        parts.push(`${formatNumberRange(normalizeEnduranceDurationMinutes(prescription.duration))} min`);
       }
       if (prescription.distance) {
         parts.push(`${formatNumberRange(prescription.distance)} km`);
@@ -265,7 +288,7 @@ export function formatPrescriptionBadge(
 
     case ActivityType.ENDURANCE:
     case ActivityType.SPORT:
-      const duration = prescription.duration ? `${Math.floor(getNumberValue(prescription.duration) / 60)}min` : '';
+      const duration = prescription.duration ? `${formatNumberRange(normalizeEnduranceDurationMinutes(prescription.duration))}min` : '';
       const distance = prescription.distance ? `${formatNumberRange(prescription.distance)}km` : '';
       const intensity = prescription.intensity ? `@ ${prescription.intensity}/10` : '';
       return [duration, distance, intensity].filter(Boolean).join(' ');

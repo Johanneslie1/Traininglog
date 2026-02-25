@@ -1,5 +1,7 @@
 import { Exercise, ExercisePrescriptionAssistantData } from '@/types/exercise';
 import { ActivityType } from '@/types/activityTypes';
+import { normalizeActivityType } from '@/types/activityLog';
+import { normalizeEnduranceDurationMinutes } from '@/utils/prescriptionUtils';
 import { SuggestedPrescriptionSet } from '@/types/sets';
 import { NumberOrRange, Prescription } from '@/types/program';
 import { collection, getDocs, query, where } from 'firebase/firestore';
@@ -242,7 +244,7 @@ const inferFatigue = (recentHistory: AssistantHistoryEntry[], warmupDone: boolea
 };
 
 const buildFallbackSuggestion = (input: AssistantInput): ExercisePrescriptionAssistantData => {
-  const activityType = input.exercise.activityType || ActivityType.RESISTANCE;
+  const activityType = normalizeActivityType(input.exercise.activityType);
   const prescription = input.exercise.prescription;
   const recentHistory = input.userContext.recentHistory || [];
   const warnings: string[] = [];
@@ -257,7 +259,10 @@ const buildFallbackSuggestion = (input: AssistantInput): ExercisePrescriptionAss
   const restSec = prescription?.rest ?? DEFAULT_REST_SECONDS;
 
   const repsRange = parseRangeValue(prescription?.reps);
-  const durationRange = parseRangeValue(prescription?.duration);
+  const durationRange =
+    activityType === ActivityType.ENDURANCE || activityType === ActivityType.SPORT
+      ? parseRangeValue(normalizeEnduranceDurationMinutes(prescription?.duration))
+      : parseRangeValue(prescription?.duration);
   const distanceRange = parseRangeValue(prescription?.distance);
 
   const oneRepMax = input.userContext.oneRepMax ?? estimateOneRepMax(recentHistory);
@@ -305,10 +310,16 @@ const buildFallbackSuggestion = (input: AssistantInput): ExercisePrescriptionAss
   const repsHint = repsRange ? `${repsRange.min}-${repsRange.max} reps` : null;
   const nonResistanceHint = activityType === ActivityType.RESISTANCE
     ? null
-    : [
-        durationRange ? `${durationRange.min}-${durationRange.max} min` : null,
-        distanceRange ? `${distanceRange.min}-${distanceRange.max} km` : null,
-      ].filter(Boolean).join(' • ');
+    : (() => {
+        const isEnduranceLike = activityType === ActivityType.ENDURANCE || activityType === ActivityType.SPORT;
+        const durationUnit = isEnduranceLike ? 'min' : 's';
+        const distanceUnit = isEnduranceLike ? 'km' : 'm';
+
+        return [
+          durationRange ? `${durationRange.min}-${durationRange.max} ${durationUnit}` : null,
+          distanceRange ? `${distanceRange.min}-${distanceRange.max} ${distanceUnit}` : null,
+        ].filter(Boolean).join(' • ');
+      })();
 
   const uiHint = buildUiHint(
     setsLabel,
@@ -475,7 +486,7 @@ const fetchRecentHistory = async (userId: string, exerciseName: string): Promise
 export const generateExercisePrescriptionAssistant = async (
   params: AssistantGenerateParams
 ): Promise<ExercisePrescriptionAssistantData> => {
-  const activityType = params.exercise.activityType || ActivityType.RESISTANCE;
+  const activityType = normalizeActivityType(params.exercise.activityType);
   const sessionDate = params.sessionContext?.date || new Date().toISOString().slice(0, 10);
 
   const recentHistory = params.userContext?.recentHistory

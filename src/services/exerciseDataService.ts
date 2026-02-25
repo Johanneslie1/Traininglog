@@ -15,6 +15,7 @@ export interface ExerciseData {
   deviceId?: string;
   supersetId?: string; // Add superset support
   activityType?: ActivityType; // Add activity type support using proper enum
+  isWarmup?: boolean;
   sharedSessionAssignmentId?: string;
   sharedSessionId?: string;
   sharedSessionExerciseId?: string;
@@ -60,6 +61,7 @@ export class ExerciseDataService {
           userId: exercise.userId || userId,
           deviceId: exercise.deviceId || window.navigator.userAgent,
           ...(exercise.activityType && { activityType: exercise.activityType }),
+          ...(typeof exercise.isWarmup === 'boolean' && { isWarmup: exercise.isWarmup }),
           ...(exercise.prescription && { prescription: exercise.prescription }),
           ...(exercise.instructionMode && { instructionMode: exercise.instructionMode }),
           ...(exercise.instructions && { instructions: exercise.instructions }),
@@ -113,6 +115,7 @@ export class ExerciseDataService {
             userId: data.userId,
             deviceId: data.deviceId,
             ...(data.activityType && { activityType: data.activityType }),
+            ...(typeof data.isWarmup === 'boolean' && { isWarmup: data.isWarmup }),
             ...(data.prescription && { prescription: data.prescription }),
             ...(data.instructionMode && { instructionMode: data.instructionMode }),
             ...(data.instructions && { instructions: data.instructions }),

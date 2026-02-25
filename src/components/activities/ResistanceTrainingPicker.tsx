@@ -17,6 +17,7 @@ interface ResistanceTrainingPickerProps {
   onActivityLogged: () => void;
   selectedDate?: Date;
   editingExercise?: UnifiedExerciseData | null;
+  isWarmupMode?: boolean;
 }
 
 const muscleGroups: Category[] = [
@@ -36,7 +37,8 @@ const ResistanceTrainingPicker: React.FC<ResistanceTrainingPickerProps> = ({
   onBack,
   onActivityLogged,
   selectedDate = new Date(),
-  editingExercise = null
+  editingExercise = null,
+  isWarmupMode = false
 }) => {
   const [view, setView] = useState<ViewState>('main');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
@@ -86,7 +88,8 @@ const ResistanceTrainingPicker: React.FC<ResistanceTrainingPickerProps> = ({
             exerciseName: exercise.name,
             userId: user.id,
             sets: sets,
-            activityType: ActivityType.RESISTANCE
+            activityType: ActivityType.RESISTANCE,
+            isWarmup: isWarmupMode
           },
           selectedDate || new Date()
         );
@@ -154,6 +157,7 @@ const ResistanceTrainingPicker: React.FC<ResistanceTrainingPickerProps> = ({
               userId: user.id,
               sets: sets,
               activityType: ActivityType.RESISTANCE,
+              isWarmup: isWarmupMode,
               prescription: selectedExercise.prescription,
               instructionMode: selectedExercise.instructionMode,
               instructions: Array.isArray(selectedExercise.instructions)

@@ -11,19 +11,51 @@ import otherActivitiesExercises from '../data/exercises/other.json';
 // Import your existing resistance training system
 import { allExercises } from '../data/exercises';
 
+function normalizeActivityTypeFromValue(value: string): ActivityType | undefined {
+  const normalized = value.trim().replace(/^['"]+|['"]+$/g, '').toLowerCase();
+
+  switch (normalized) {
+    case ActivityType.RESISTANCE:
+    case 'strength':
+    case 'bodyweight':
+    case 'plyometric':
+    case 'plyometrics':
+      return ActivityType.RESISTANCE;
+    case ActivityType.ENDURANCE:
+    case 'cardio':
+      return ActivityType.ENDURANCE;
+    case ActivityType.SPORT:
+    case 'team_sports':
+    case 'teamsports':
+      return ActivityType.SPORT;
+    case ActivityType.STRETCHING:
+    case 'flexibility':
+      return ActivityType.STRETCHING;
+    case ActivityType.SPEED_AGILITY:
+    case 'speed_agility':
+    case 'speedagility':
+      return ActivityType.SPEED_AGILITY;
+    case ActivityType.OTHER:
+    case 'outdoor':
+      return ActivityType.OTHER;
+    default:
+      return undefined;
+  }
+}
+
 // Convert JSON exercise to internal Exercise type
-function convertToExercise(jsonExercise: any): Exercise {
-  // Normalize activity type casing (JSON may use uppercase enum-like strings)
-  const rawActivityType: string = (jsonExercise.activityType || jsonExercise.type || '').toString();
-  const normalizedActivityType = rawActivityType.toLowerCase(); // Match ActivityType enum values
+function convertToExercise(jsonExercise: any, fallbackActivityType?: ActivityType): Exercise {
+  const rawActivityType = (jsonExercise.activityType ?? '').toString();
+  const inferredActivityType = normalizeActivityTypeFromValue(rawActivityType);
+  const canonicalActivityType = inferredActivityType || fallbackActivityType || ActivityType.OTHER;
 
   return {
     id: jsonExercise.id,
     name: jsonExercise.name,
     category: jsonExercise.category,
     description: jsonExercise.description || '',
-    type: jsonExercise.type || normalizedActivityType,
-    activityType: normalizedActivityType as ActivityType,
+    type: jsonExercise.type || canonicalActivityType,
+    activityType: canonicalActivityType,
     difficulty: jsonExercise.difficulty || 'intermediate',
     equipment: jsonExercise.equipment || [],
     instructions: jsonExercise.instructions || [],
@@ -80,19 +112,19 @@ export function loadExerciseDatabases(): Record<ActivityType, Exercise[]> {
       }));
     }
     if (Array.isArray(enduranceExercises)) {
-      loaded[ActivityType.ENDURANCE] = enduranceExercises.map(convertToExercise);
+      loaded[ActivityType.ENDURANCE] = enduranceExercises.map(ex => convertToExercise(ex, ActivityType.ENDURANCE));
     }
     if (Array.isArray(sportsExercises)) {
-      loaded[ActivityType.SPORT] = sportsExercises.map(convertToExercise);
+      loaded[ActivityType.SPORT] = sportsExercises.map(ex => convertToExercise(ex, ActivityType.SPORT));
     }
     if (Array.isArray(flexibilityExercises)) {
-      loaded[ActivityType.STRETCHING] = flexibilityExercises.map(convertToExercise);
+      loaded[ActivityType.STRETCHING] = flexibilityExercises.map(ex => convertToExercise(ex, ActivityType.STRETCHING));
     }
     if (Array.isArray(speedAgilityExercises)) {
-      loaded[ActivityType.SPEED_AGILITY] = speedAgilityExercises.map(convertToExercise);
+      loaded[ActivityType.SPEED_AGILITY] = speedAgilityExercises.map(ex => convertToExercise(ex, ActivityType.SPEED_AGILITY));
     }
     if (Array.isArray(otherActivitiesExercises)) {
-      loaded[ActivityType.OTHER] = otherActivitiesExercises.map(convertToExercise);
+      loaded[ActivityType.OTHER] = otherActivitiesExercises.map(ex => convertToExercise(ex, ActivityType.OTHER));
     }
   } catch (err) {
     console.error('Error loading exercise databases:', err);

@@ -32,6 +32,7 @@ interface LogOptionsProps {
   onExerciseAdded?: () => void;
   selectedDate?: Date;
   editingExercise?: UnifiedExerciseData | null; // Add editing exercise prop
+  initialWarmupMode?: boolean;
 }
 
 type ViewState = 'main' | 'setEditor' | 'programPicker' | 'copyPrevious' | 'sport' | 'stretching' | 'endurance' | 'other' | 'speedAgility' | 'resistance' | 'editExercise' | 'selectType';
@@ -99,10 +100,11 @@ const activityTypes = [
   }
 ];
 
-export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExercise }: LogOptionsProps): JSX.Element => {
+export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExercise, initialWarmupMode = false }: LogOptionsProps): JSX.Element => {
   const [view, setView] = useState<ViewState>('main');
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [isWarmupMode, setIsWarmupMode] = useState(false);
   
   const user = useSelector((state: RootState) => state.auth.user);
 
@@ -110,8 +112,12 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
   useEffect(() => {
     if (editingExercise) {
       setView('editExercise');
+      setIsWarmupMode(Boolean(editingExercise.isWarmup));
+      return;
     }
-  }, [editingExercise]);
+
+    setIsWarmupMode(initialWarmupMode);
+  }, [editingExercise, initialWarmupMode]);
 
   const handleTrainingTypeSelected = (type: TrainingType) => {
     switch(type) {
@@ -177,6 +183,7 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
             userId,
             sets: sets,
             activityType: exercise.activityType,
+            isWarmup: isWarmupMode || Boolean((exercise as any).isWarmup),
             prescription: exercise.prescription,
             instructionMode: exercise.instructionMode,
             instructions: typeof exercise.instructions === 'string'
@@ -196,6 +203,7 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
           sets,
           timestamp: selectedDate || new Date(),
           activityType: exercise.activityType,
+          isWarmup: isWarmupMode || Boolean((exercise as any).isWarmup),
           prescription: exercise.prescription,
           instructionMode: exercise.instructionMode,
           instructions: typeof exercise.instructions === 'string'
@@ -240,7 +248,8 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
           exerciseName: exercise.exerciseName,
           userId: user.id,
           sets: exercise.sets || [],
-          ...(exercise.activityType && { activityType: exercise.activityType })
+          ...(exercise.activityType && { activityType: exercise.activityType }),
+          isWarmup: isWarmupMode || Boolean((exercise as any).isWarmup)
         };
 
         console.log('💾 Saving copied exercise:', exerciseLogData);
@@ -291,6 +300,7 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
         }}
         selectedDate={selectedDate}
         editingExercise={editingExercise} // Pass editing exercise
+        isWarmupMode={isWarmupMode}
       />
     );
   }
@@ -306,6 +316,7 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
         }}
         selectedDate={selectedDate}
         editingExercise={editingExercise}
+        isWarmupMode={isWarmupMode}
       />
     );
   }
@@ -318,6 +329,7 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
         onActivityLogged={() => { onExerciseAdded?.(); setView('main'); }}
         selectedDate={selectedDate}
         editingExercise={editingExercise}
+        isWarmupMode={isWarmupMode}
       />
     );
   }
@@ -333,6 +345,7 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
         }}
         selectedDate={selectedDate}
         editingExercise={editingExercise} // Pass editing exercise
+        isWarmupMode={isWarmupMode}
       />
     );
   }
@@ -347,6 +360,7 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
           setView('main');
         }}
         selectedDate={selectedDate}
+        isWarmupMode={isWarmupMode}
       />
     );
   }
@@ -362,6 +376,7 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
         }}
         selectedDate={selectedDate}
         editingExercise={editingExercise}
+        isWarmupMode={isWarmupMode}
       />
     );
   }
@@ -411,6 +426,7 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
               userId: user.id,
               sets: sets,
               activityType: selectedExercise.activityType,
+              isWarmup: isWarmupMode,
               prescription: selectedExercise.prescription,
               instructionMode: selectedExercise.instructionMode,
               instructions: typeof selectedExercise.instructions === 'string'
@@ -499,6 +515,7 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
               userId: user.id,
               sets: sets,
               activityType: editingExercise.activityType,
+              isWarmup: isWarmupMode,
               prescription: editingExercise.prescription,
               instructionMode: editingExercise.instructionMode,
               instructions: editingExercise.instructions,
@@ -567,6 +584,17 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
                 />
               ))}
             </div>
+            <button
+              onClick={() => setIsWarmupMode((current) => !current)}
+              className={`w-full px-4 py-3 rounded-xl border transition-colors text-left ${
+                isWarmupMode
+                  ? 'bg-blue-600/20 border-blue-500 text-blue-200'
+                  : 'bg-white/10 border-border text-text-primary hover:bg-white/15'
+              }`}
+            >
+              <div className="font-semibold">{isWarmupMode ? '🔥 Warm-up mode enabled' : 'Warm-up mode disabled'}</div>
+              <div className="text-sm opacity-80">Logs from this dialog will be saved as warm-up entries.</div>
+            </button>
           </section>
 
           {/* Activity Types Section */}

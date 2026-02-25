@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import type { Exercise } from '@/types/exercise';
 import type { ExerciseSet } from '@/types/sets';
 import { ActivityType } from '@/types/activityTypes';
+import { normalizeActivityType } from '@/types/activityLog';
 import { DifficultyCategory } from '@/types/difficulty';
 import { toast } from 'react-hot-toast';
 import { SwipeableSetRow } from './SwipeableSetRow';
@@ -298,7 +299,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
     try {
       return prescriptionToSets(
         prescription,
-        exercise.activityType || ActivityType.RESISTANCE
+        normalizeActivityType(exercise.activityType)
       );
     } catch {
       return [] as ExerciseSet[];
@@ -1009,7 +1010,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
 
         <div className="mt-3 sticky top-0 z-20">
           <PrescriptionGuideCard
-            activityType={exercise.activityType || ActivityType.RESISTANCE}
+            activityType={normalizeActivityType(exercise.activityType)}
             prescription={prescription}
             instructionMode={instructionMode}
             instructionsText={instructionsText}

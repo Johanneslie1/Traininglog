@@ -1,7 +1,13 @@
 import { ExerciseSet } from './sets';
+import { ActivityType as CanonicalActivityType } from './activityTypes';
 
-// Activity types for the new activity logs collection
-export type ActivityType = 'endurance' | 'team_sports' | 'outdoor' | 'flexibility' | 'speedAgility';
+// Transitional support for legacy values stored in older documents
+export type LegacyActivityType = 'team_sports' | 'outdoor' | 'flexibility' | 'speed_agility';
+
+// Accept both canonical and legacy values at boundaries; normalize before persistence/use
+export type ActivityType = CanonicalActivityType | LegacyActivityType;
+
+export type NormalizedActivityType = CanonicalActivityType;
 
 // Base interface for activity logs
 export interface ActivityLog {
@@ -10,7 +16,7 @@ export interface ActivityLog {
   /** Name of the activity performed */
   activityName: string;
   /** Type of activity */
-  activityType: ActivityType;
+  activityType: NormalizedActivityType;
   /** Categories this activity belongs to */
   categories?: string[];
   /** Array of sets/sessions performed */
@@ -33,6 +39,44 @@ export type ActivityLogInput = {
   activityType: ActivityType;
   categories?: string[];
   notes?: string;
+};
+
+export const normalizeActivityType = (
+  activityType: ActivityType | string | undefined
+): NormalizedActivityType => {
+  const normalizedInput = String(activityType ?? '')
+    .trim()
+    .replace(/^['"]+|['"]+$/g, '')
+    .toLowerCase();
+
+  switch (normalizedInput) {
+    case CanonicalActivityType.RESISTANCE:
+    case 'strength':
+    case 'plyometric':
+    case 'plyometrics':
+    case 'bodyweight':
+      return CanonicalActivityType.RESISTANCE;
+    case CanonicalActivityType.ENDURANCE:
+    case 'cardio':
+      return CanonicalActivityType.ENDURANCE;
+    case CanonicalActivityType.SPORT:
+    case 'team_sports':
+    case 'teamsports':
+      return CanonicalActivityType.SPORT;
+    case CanonicalActivityType.STRETCHING:
+    case 'flexibility':
+      return CanonicalActivityType.STRETCHING;
+    case CanonicalActivityType.SPEED_AGILITY:
+    case 'speed_agility':
+    case 'speedagility':
+      return CanonicalActivityType.SPEED_AGILITY;
+    case CanonicalActivityType.OTHER:
+    case 'outdoor':
+      return CanonicalActivityType.OTHER;
+    default:
+      console.warn('🔄 normalizeActivityType: Unknown activity type:', activityType, 'defaulting to OTHER');
+      return CanonicalActivityType.OTHER;
+  }
 };
 
 // Enhanced exercise log for strength/plyometric exercises
@@ -95,20 +139,27 @@ export const getCollectionTypeFromExerciseType = (exerciseType: string): 'streng
 // Helper function to map exercise types to activity types
 export const mapExerciseTypeToActivityType = (exerciseType: string): ActivityType => {
   switch (exerciseType) {
+    case 'strength':
+    case 'plyometric':
+    case 'plyometrics':
+    case 'bodyweight':
+      return CanonicalActivityType.RESISTANCE;
     case 'endurance':
-      return 'endurance';
+    case 'cardio':
+      return CanonicalActivityType.ENDURANCE;
     case 'team_sports':
     case 'teamSports':
-      return 'team_sports';    case 'speed_agility':
+      return CanonicalActivityType.SPORT;
+    case 'speed_agility':
     case 'speedAgility':
-      return 'speedAgility';
+      return CanonicalActivityType.SPEED_AGILITY;
     case 'other':
     case 'outdoor':
-      return 'outdoor';
+      return CanonicalActivityType.OTHER;
     case 'flexibility':
-      return 'flexibility';
+      return CanonicalActivityType.STRETCHING;
     default:
-      console.warn('🔄 mapExerciseTypeToActivityType: Unknown exercise type:', exerciseType, 'defaulting to endurance');
-      return 'endurance'; // Default fallback
+      console.warn('🔄 mapExerciseTypeToActivityType: Unknown exercise type:', exerciseType, 'defaulting to OTHER');
+      return CanonicalActivityType.OTHER;
   }
 };

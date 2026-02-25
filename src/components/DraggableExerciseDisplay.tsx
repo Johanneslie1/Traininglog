@@ -29,6 +29,8 @@ interface DraggableExerciseDisplayProps {
   onReorderExercises: (exercises: UnifiedExerciseData[]) => void;
   oneRepMaxByExerciseKey?: Record<string, OneRepMaxPrediction>;
   getPerformanceKey: (exercise: UnifiedExerciseData) => string;
+  listId?: string;
+  compactMode?: boolean;
 }
 
 const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
@@ -37,9 +39,29 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
   onDeleteExercise,
   onReorderExercises,
   oneRepMaxByExerciseKey = {},
-  getPerformanceKey
+  getPerformanceKey,
+  listId = 'main',
+  compactMode = false
 }) => {
   const { state, updateExerciseOrder } = useSupersets();
+
+  const getExerciseLocalKey = useCallback((exercise: UnifiedExerciseData, index: number) => {
+    if (exercise.id) {
+      return exercise.id;
+    }
+
+    const timestampValue = exercise.timestamp
+      ? new Date(exercise.timestamp as Date | string | number).getTime()
+      : 'no-time';
+
+    return [
+      listId,
+      exercise.exerciseName || 'unnamed',
+      exercise.activityType || 'resistance',
+      timestampValue,
+      index
+    ].join('-');
+  }, [listId]);
   
   // Initialize hidden exercises from localStorage
   const [hiddenExercises, setHiddenExercises] = useState<Set<string>>(loadHiddenExercises);
@@ -51,6 +73,7 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
   // Store previous order for undo functionality
   const previousOrderRef = useRef<UnifiedExerciseData[] | null>(null);
   const [canUndo, setCanUndo] = useState(false);
+  const lastSyncedOrderKeyRef = useRef<string>('');
 
   // Handle drag start
   const handleDragStart = (_start: DragStart) => {
@@ -132,11 +155,18 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
   
   // Effect to update exercise IDs in the superset context when exercises change
   useEffect(() => {
+    if (listId !== 'main') {
+      return;
+    }
+
     const exerciseIds = exercises.map(exercise => exercise.id || '').filter(id => id !== '');
-    if (exerciseIds.length > 0) {
+    const orderKey = exerciseIds.join('|');
+
+    if (exerciseIds.length > 0 && orderKey !== lastSyncedOrderKeyRef.current) {
+      lastSyncedOrderKeyRef.current = orderKey;
       updateExerciseOrder(exerciseIds);
     }
-  }, [exercises, updateExerciseOrder]);
+  }, [exercises, updateExerciseOrder, listId]);
 
   // Effect to clean up hidden state for deleted exercises
   useEffect(() => {
@@ -155,6 +185,7 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
       superset: SupersetGroup | null;
       exercises: ExerciseData[];
       originalIndices: number[]; // Track original indices for numbering
+      groupKey: string;
     }[] = [];
     
     const processedExerciseIds = new Set<string>();
@@ -177,24 +208,28 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
         groups.push({
           superset,
           exercises: supersetExercises,
-          originalIndices: supersetIndices
+          originalIndices: supersetIndices,
+          groupKey: `superset-${superset.id}`
         });
       }
     });
     
     // Add remaining individual exercises
     exercises.forEach((ex, index) => {
-      if (ex.id && !processedExerciseIds.has(ex.id)) {
+      const localKey = getExerciseLocalKey(ex, index);
+
+      if (!ex.id || !processedExerciseIds.has(ex.id)) {
         groups.push({
           superset: null,
           exercises: [ex],
-          originalIndices: [index]
+          originalIndices: [index],
+          groupKey: localKey
         });
       }
     });
     
     return groups;
-  }, [exercises, state.supersets]);
+  }, [exercises, getExerciseLocalKey, state.supersets]);
 
   if (exercises.length === 0) {
     return (
@@ -224,7 +259,7 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
         onDragUpdate={handleDragUpdate}
         onDragEnd={handleDragEnd}
       >
-        <Droppable droppableId="exercises">
+        <Droppable droppableId={`exercises-${listId}`}>
           {(provided, droppableSnapshot) => (
             <div 
               {...provided.droppableProps}
@@ -235,11 +270,12 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
             >
               {groupedExercises.map((group, groupIndex) => {
                 const isDropTarget = isDragging && dragOverIndex === groupIndex;
+                const draggableKey = `${listId}-${group.groupKey}`;
                 
                 return (
                   <Draggable
-                    key={group.exercises[0].id || `group-${groupIndex}`}
-                    draggableId={group.exercises[0].id || `group-${groupIndex}`}
+                    key={draggableKey}
+                    draggableId={draggableKey}
                     index={groupIndex}
                   >
                     {(provided, snapshot) => (
@@ -300,11 +336,12 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
                                       oneRepMaxPrediction={oneRepMaxByExerciseKey[getPerformanceKey(exercise)]}
                                       exerciseNumber={groupIndex + 1}
                                       subNumber={exerciseIndex + 1}
+                                      forceCompact={compactMode}
                                       onEdit={() => onEditExercise(exercise)}
                                       onDelete={() => onDeleteExercise(exercise)}
                                       showActions={true}
-                                      isHidden={hiddenExercises.has(exercise.id || '')}
-                                      onToggleVisibility={() => toggleExerciseVisibility(exercise.id || '')}
+                                      isHidden={hiddenExercises.has(getExerciseLocalKey(exercise, group.originalIndices[exerciseIndex] ?? exerciseIndex))}
+                                      onToggleVisibility={() => toggleExerciseVisibility(getExerciseLocalKey(exercise, group.originalIndices[exerciseIndex] ?? exerciseIndex))}
                                     />
                                   </div>
                                 </div>
@@ -318,11 +355,12 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
                               exercise={group.exercises[0]}
                               oneRepMaxPrediction={oneRepMaxByExerciseKey[getPerformanceKey(group.exercises[0])]}
                               exerciseNumber={groupIndex + 1}
+                              forceCompact={compactMode}
                               onEdit={() => onEditExercise(group.exercises[0])}
                               onDelete={() => onDeleteExercise(group.exercises[0])}
                               showActions={true}
-                              isHidden={hiddenExercises.has(group.exercises[0].id || '')}
-                              onToggleVisibility={() => toggleExerciseVisibility(group.exercises[0].id || '')}
+                              isHidden={hiddenExercises.has(getExerciseLocalKey(group.exercises[0], group.originalIndices[0] ?? groupIndex))}
+                              onToggleVisibility={() => toggleExerciseVisibility(getExerciseLocalKey(group.exercises[0], group.originalIndices[0] ?? groupIndex))}
                             />
                           </div>
                         )}

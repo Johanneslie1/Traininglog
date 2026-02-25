@@ -15,13 +15,15 @@ interface OtherActivityPickerProps {
   onBack: () => void;
   onActivityLogged: () => void;
   selectedDate?: Date;
+  isWarmupMode?: boolean;
 }
 
 const OtherActivityPicker: React.FC<OtherActivityPickerProps> = ({
   onClose,
   onBack,
   onActivityLogged,
-  selectedDate = new Date()
+  selectedDate = new Date(),
+  isWarmupMode = false
 }) => {
   const [data, setData] = useState<OtherActivity[]>([]);
   const [selected, setSelected] = useState<OtherActivity | null>(null);
@@ -87,7 +89,8 @@ const OtherActivityPicker: React.FC<OtherActivityPickerProps> = ({
               exerciseName: selected.name,
               userId: user.id,
               sets: sets,
-              activityType: ActivityType.OTHER
+              activityType: ActivityType.OTHER,
+              isWarmup: isWarmupMode
             };
 
             console.log('💾 OtherActivityPicker: Calling addExerciseLog with:', exerciseLogData);

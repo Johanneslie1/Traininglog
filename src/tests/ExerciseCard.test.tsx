@@ -149,4 +149,30 @@ describe('ExerciseCard', () => {  it('should display speed & agility exercises i
     expect(screen.getByText('Best Set')).toBeInTheDocument();
     expect(screen.getByText('90kg × 4')).toBeInTheDocument();
   });
+
+  it('shows warm-up badge in compact mode', () => {
+    const warmupExercise: UnifiedExerciseData = {
+      id: 'test-warmup-1',
+      exerciseName: 'Bodyweight Squat',
+      activityType: ActivityType.RESISTANCE,
+      timestamp: new Date(),
+      userId: 'test-user',
+      isWarmup: true,
+      sets: [{
+        weight: 0,
+        reps: 12,
+        difficulty: DifficultyCategory.EASY,
+      }]
+    };
+
+    render(
+      <ExerciseCard
+        exercise={warmupExercise}
+        showActions={false}
+        forceCompact={true}
+      />
+    );
+
+    expect(screen.getByText('Warm-up')).toBeInTheDocument();
+  });
 });

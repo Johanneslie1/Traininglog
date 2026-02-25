@@ -19,8 +19,8 @@ export interface Prescription {
   intensity?: number; // Target intensity (1-10) for non-resistance
   
   // Endurance fields
-  duration?: NumberOrRange; // seconds or minutes
-  distance?: NumberOrRange; // km or meters
+  duration?: NumberOrRange; // minutes for endurance/sport, seconds for stretching/speed drills
+  distance?: NumberOrRange; // km for endurance/sport, meters for speed drills
   
   // Programming details
   rest?: number; // Rest between sets in seconds
@@ -47,6 +47,7 @@ export interface ProgramSession {
   id: string;
   name: string;
   exercises: ProgramExercise[];
+  isWarmupSession?: boolean;
   notes?: string;
   order?: number;
   userId: string;  // Add userId for permissions

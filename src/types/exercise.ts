@@ -155,6 +155,8 @@ export interface ExerciseLog {
   exerciseType?: string;
   /** Activity type for non-resistance exercises */
   activityType?: string;
+  /** Marks this exercise log as warm-up */
+  isWarmup?: boolean;
   /** Shared session assignment link (if exercise was imported from assigned session) */
   sharedSessionAssignmentId?: string;
   /** Shared session document id */

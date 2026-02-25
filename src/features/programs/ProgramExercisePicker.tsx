@@ -3,6 +3,7 @@ import { Program, ProgramSession } from '@/types/program';
 import { Exercise } from '@/types/exercise';
 import { ExerciseSet } from '@/types/sets';
 import { ActivityType } from '@/types/activityTypes';
+import { normalizeActivityType } from '@/types/activityLog';
 import { formatPrescriptionBadge } from '@/utils/prescriptionUtils';
 import ProgramCard from './ProgramCard';
 import { usePrograms } from '@/context/ProgramsContext';
@@ -87,22 +88,27 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
       // Prescription and assistant metadata stay on exercise for guide/hints.
       const sets: ExerciseSet[] = [];
 
+      const activityType = normalizeActivityType(exercise.activityType);
+      const isResistance = activityType === ActivityType.RESISTANCE;
+
       return {
         exercise: {
           id: exercise.id,
           name: exercise.name,
-          type: 'strength' as const,
+          type: (isResistance ? 'strength' : 'cardio') as 'strength' | 'cardio',
           category: 'compound' as const,
           primaryMuscles: [],
           secondaryMuscles: [],
           instructions: exercise.instructions ? [exercise.instructions] : [],
           description: exercise.notes || '',
-          defaultUnit: 'kg' as const,
+          defaultUnit: isResistance ? ('kg' as const) : ('time' as const),
           metrics: {
-            trackWeight: true,
-            trackReps: true,
+            trackWeight: isResistance,
+            trackReps: isResistance,
+            trackTime: !isResistance,
           },
-          activityType: exercise.activityType,
+          activityType,
+          isWarmup: session?.isWarmupSession === true,
           // Include prescription data for logger components
           prescription: exercise.prescription,
           instructionMode: exercise.instructionMode,
@@ -187,23 +193,24 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
       const chosen = enriched.filter(e => selectedMap[e.id]); 
       const mapped = chosen.map(e => ({ 
         exercise: { 
+          ...(e as any),
           id: e.id, 
           name: e.name, 
-          type: (e.activityType === ActivityType.RESISTANCE ? 'strength' : 'cardio') as any, 
+          type: (normalizeActivityType(e.activityType as ActivityType) === ActivityType.RESISTANCE ? 'strength' : 'cardio') as any, 
           category: (e.category || 'general') as any, 
           primaryMuscles: e.primaryMuscles || [], 
           secondaryMuscles: e.secondaryMuscles || [], 
-          instructions: [], 
+          instructions: Array.isArray((e as any).instructions) ? (e as any).instructions : [], 
           description: e.description || '', 
-          defaultUnit: 'kg' as const, 
+          defaultUnit: normalizeActivityType(e.activityType as ActivityType) === ActivityType.RESISTANCE ? ('kg' as const) : ('time' as const), 
           metrics: { 
-            trackWeight: e.activityType === ActivityType.RESISTANCE, 
-            trackReps: e.activityType === ActivityType.RESISTANCE, 
-            trackTime: e.activityType !== ActivityType.RESISTANCE 
+            trackWeight: normalizeActivityType(e.activityType as ActivityType) === ActivityType.RESISTANCE, 
+            trackReps: normalizeActivityType(e.activityType as ActivityType) === ActivityType.RESISTANCE, 
+            trackTime: normalizeActivityType(e.activityType as ActivityType) !== ActivityType.RESISTANCE 
           },
-          activityType: e.activityType as ActivityType
+          activityType: normalizeActivityType(e.activityType as ActivityType)
         } as Exercise, 
-        sets: e.activityType === ActivityType.RESISTANCE ? Array(3).fill({ reps: 5, weight: 0, difficulty: 'MODERATE' as const }) : [] 
+        sets: normalizeActivityType(e.activityType as ActivityType) === ActivityType.RESISTANCE ? Array(3).fill({ reps: 5, weight: 0, difficulty: 'MODERATE' as const }) : [] 
       })); 
       onSelectExercises(mapped); 
       onClose(); 
@@ -363,7 +370,7 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
                               <div className="mt-2 flex flex-wrap gap-2">
                                 {exercise.prescription && exercise.instructionMode === 'structured' ? (
                                   <span className="inline-flex items-center px-2 py-1 rounded bg-blue-500/20 text-blue-300 text-sm">
-                                    📋 {formatPrescriptionBadge(exercise.prescription, exercise.activityType || ActivityType.RESISTANCE)}
+                                    📋 {formatPrescriptionBadge(exercise.prescription, normalizeActivityType(exercise.activityType))}
                                   </span>
                                 ) : exercise.instructions && exercise.instructionMode === 'freeform' ? (
                                   <span className="inline-flex items-center px-2 py-1 rounded bg-purple-500/20 text-purple-300 text-sm italic">

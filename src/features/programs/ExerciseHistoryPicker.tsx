@@ -3,6 +3,7 @@ import { Exercise } from '@/types/exercise';
 import { ExerciseSet } from '@/types/sets';
 import { ExerciseLog } from '@/types/exercise';
 import { ActivityType } from '@/types/activityTypes';
+import { normalizeActivityType } from '@/types/activityLog';
 import { auth } from '@/services/firebase/config';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '@/services/firebase/config';
@@ -237,25 +238,30 @@ export const ExerciseHistoryPicker: React.FC<ExerciseHistoryPickerProps> = ({
       return logDate === selectedDate;
     });
 
-    const exercisesToAdd = dayLogs.map(log => ({
+    const exercisesToAdd = dayLogs.map(log => {
+      const activityType = normalizeActivityType(log.activityType);
+      const isResistance = activityType === ActivityType.RESISTANCE;
+
+      return {
       exercise: {
         id: `exercise-${log.exerciseName.toLowerCase().replace(/\s+/g, '-')}`,
         name: log.exerciseName,
-        type: 'strength' as const,
+        type: (isResistance ? 'strength' : 'cardio') as 'strength' | 'cardio',
         category: 'compound' as const,
         primaryMuscles: [],
         secondaryMuscles: [],
         instructions: [],
         description: `Copied from ${selectedDate}`,
-        defaultUnit: 'kg' as const,
+        defaultUnit: isResistance ? ('kg' as const) : ('time' as const),
         metrics: {
-          trackWeight: true,
-          trackReps: true,
+          trackWeight: isResistance,
+          trackReps: isResistance,
+          trackTime: !isResistance,
         },
-        activityType: (log.activityType as ActivityType) || ActivityType.RESISTANCE // Use stored activityType or default to RESISTANCE
+        activityType
       },
       sets: log.sets
-    }));
+    }});
 
     onSelectExercises(exercisesToAdd);
   };
@@ -265,22 +271,26 @@ export const ExerciseHistoryPicker: React.FC<ExerciseHistoryPickerProps> = ({
       const stat = exerciseStats.find(s => s.name === exerciseName);
       if (!stat) return null;
 
+      const activityType = normalizeActivityType(stat.exerciseLog.activityType);
+      const isResistance = activityType === ActivityType.RESISTANCE;
+
       return {
         exercise: {
           id: `exercise-${exerciseName.toLowerCase().replace(/\s+/g, '-')}`,
           name: exerciseName,
-          type: 'strength' as const,
+          type: (isResistance ? 'strength' : 'cardio') as 'strength' | 'cardio',
           category: 'compound' as const,
           primaryMuscles: [],
           secondaryMuscles: [],
           instructions: [],
           description: `Added from exercise history`,
-          defaultUnit: 'kg' as const,
+          defaultUnit: isResistance ? ('kg' as const) : ('time' as const),
           metrics: {
-            trackWeight: true,
-            trackReps: true,
+            trackWeight: isResistance,
+            trackReps: isResistance,
+            trackTime: !isResistance,
           },
-          activityType: (stat.exerciseLog.activityType as ActivityType) || ActivityType.RESISTANCE // Use stored activityType or default to RESISTANCE
+          activityType
         },
         sets: stat.exerciseLog.sets
       };

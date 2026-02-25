@@ -16,6 +16,7 @@ interface ExerciseCardProps {
   subNumber?: number; // Add sub-number for exercises within a superset
   isHidden?: boolean;
   onToggleVisibility?: () => void;
+  forceCompact?: boolean;
 }
 
 const getDifficultyColor = (difficulty?: string): string => {
@@ -39,7 +40,8 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
   exerciseNumber,
   subNumber,
   isHidden = false,
-  onToggleVisibility
+  onToggleVisibility,
+  forceCompact = false
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showSetDetails, setShowSetDetails] = useState(false);
@@ -79,12 +81,15 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
 
   // Render the exercise content based on type and visibility
   const renderExerciseContent = () => {
-    if (isHidden) {
+    if (isHidden || forceCompact) {
       // Compact view when hidden
       return (
         <div className="text-sm text-text-secondary">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
+              {exercise.isWarmup && (
+                <span className="px-2 py-1 bg-blue-600 text-white text-xs rounded-full">Warm-up</span>
+              )}
               {/* Activity type badge if applicable */}
               {exercise.activityType && exercise.activityType !== ActivityType.RESISTANCE && (
                 <span className={`px-2 py-1 ${getActivityTypeInfo(exercise.activityType).color} ${getActivityTypeInfo(exercise.activityType).textColor} text-xs rounded-full`}>

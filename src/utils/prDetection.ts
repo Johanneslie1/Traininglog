@@ -15,6 +15,10 @@ export function detectPR(
   historicalExercises: UnifiedExerciseData[],
   userId: string
 ): PersonalRecord | null {
+  if (currentExercise.isWarmup) {
+    return null;
+  }
+
   if (!currentExercise.sets || currentExercise.sets.length === 0) {
     return null;
   }
@@ -134,7 +138,7 @@ export function getExercisePRs(
   
   // Filter exercises by name
   const exerciseHistory = exercises.filter(
-    ex => ex.exerciseName.toLowerCase() === exerciseName.toLowerCase()
+    ex => !ex.isWarmup && ex.exerciseName.toLowerCase() === exerciseName.toLowerCase()
   );
   
   let best1RM = 0;

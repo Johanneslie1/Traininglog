@@ -17,9 +17,10 @@ interface EnduranceActivityPickerProps {
   onActivityLogged: () => void;
   selectedDate?: Date;
   editingExercise?: any | null;
+  isWarmupMode?: boolean;
 }
 
-const EnduranceActivityPicker: React.FC<EnduranceActivityPickerProps> = ({ onClose, onBack, onActivityLogged, selectedDate = new Date(), editingExercise = null }) => {
+const EnduranceActivityPicker: React.FC<EnduranceActivityPickerProps> = ({ onClose, onBack, onActivityLogged, selectedDate = new Date(), editingExercise = null, isWarmupMode = false }) => {
   const [selected, setSelected] = useState<EnduranceExercise | null>(null);
   const [view, setView] = useState<'list' | 'logging'>('list');
   const user = useSelector((state: RootState) => state.auth.user);
@@ -74,6 +75,7 @@ const EnduranceActivityPicker: React.FC<EnduranceActivityPickerProps> = ({ onClo
               userId: user.id,
               sets: sets,
               activityType: ActivityType.ENDURANCE,
+              isWarmup: isWarmupMode,
               prescription: exercise.prescription,
               instructionMode: exercise.instructionMode,
               instructions: Array.isArray(exercise.instructions)

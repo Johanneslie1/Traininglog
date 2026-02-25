@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ExerciseSet } from '@/types/sets';
 import { UnifiedExerciseData } from '@/utils/unifiedExerciseUtils';
 import { ActivityType } from '@/types/activityTypes';
+import { normalizeActivityType } from '@/types/activityLog';
 
 interface ActivityExerciseCardProps {
   exercise: UnifiedExerciseData;
@@ -14,7 +15,7 @@ interface ActivityExerciseCardProps {
 
 // Activity type color configuration - shared across the app
 export const getActivityTypeInfo = (activityType?: ActivityType) => {
-  const type = activityType || ActivityType.RESISTANCE;
+  const type = normalizeActivityType(activityType);
   switch (type) {
     case ActivityType.RESISTANCE:
       return { 
@@ -86,7 +87,7 @@ export const getActivityTypeInfo = (activityType?: ActivityType) => {
 const calculateMetrics = (sets: ExerciseSet[], activityType?: ActivityType) => {
   if (!sets || sets.length === 0) return null;
 
-  const type = activityType || ActivityType.RESISTANCE;
+  const type = normalizeActivityType(activityType);
 
   switch (type) {
     case ActivityType.RESISTANCE: {
@@ -152,7 +153,7 @@ const ActivityExerciseCard: React.FC<ActivityExerciseCardProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(!compact);
   
-  const activityType = exercise.activityType || ActivityType.RESISTANCE;
+  const activityType = normalizeActivityType(exercise.activityType);
   const typeInfo = getActivityTypeInfo(activityType);
   const metrics = calculateMetrics(exercise.sets, activityType);
 

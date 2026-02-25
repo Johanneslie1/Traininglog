@@ -7,6 +7,7 @@ import { SwipeableSetRow } from '@/components/SwipeableSetRow';
 import { InlineEditableValue } from '@/components/InlineEditableValue';
 import { DifficultyCategory } from '@/types/difficulty';
 import { ActivityType } from '@/types/activityTypes';
+import { normalizeActivityType } from '@/types/activityLog';
 import { toast } from 'react-hot-toast';
 import { useExerciseHistory } from '@/hooks/useExerciseHistory';
 import { ExerciseHistorySummary } from '@/components/ExerciseHistorySummary';
@@ -131,7 +132,7 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
     try {
       return prescriptionToSets(
         exercise.prescription,
-        exercise.activityType || ActivityType.RESISTANCE
+        normalizeActivityType(exercise.activityType)
       );
     } catch {
       return [] as ExerciseSet[];
@@ -412,7 +413,7 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
 
         <div className="sticky top-0 z-20 pb-2 bg-bg-secondary/95 backdrop-blur-sm">
           <PrescriptionGuideCard
-            activityType={exercise.activityType || ActivityType.RESISTANCE}
+            activityType={normalizeActivityType(exercise.activityType)}
             prescription={exercise.prescription}
             instructionMode={exercise.instructionMode}
             instructionsText={instructionsText}

@@ -4,6 +4,7 @@
  */
 
 import { ActivityType } from '@/types/activityTypes';
+import { normalizeActivityType } from '@/types/activityLog';
 
 export interface ActivityTypeColorInfo {
   label: string;
@@ -19,7 +20,7 @@ export interface ActivityTypeColorInfo {
  * @returns Object with color class names
  */
 export function getActivityTypeColors(activityType?: ActivityType): ActivityTypeColorInfo {
-  const type = activityType || ActivityType.RESISTANCE;
+  const type = normalizeActivityType(activityType);
   
   switch (type) {
     case ActivityType.RESISTANCE:
@@ -87,7 +88,7 @@ export function getActivityTypeColors(activityType?: ActivityType): ActivityType
  * @returns Object with CSS variable names
  */
 export function getActivityTypeCSSVars(activityType?: ActivityType) {
-  const type = activityType || ActivityType.RESISTANCE;
+  const type = normalizeActivityType(activityType);
   
   const varMap: Record<ActivityType, { main: string; bg: string }> = {
     [ActivityType.RESISTANCE]: {
@@ -125,7 +126,7 @@ export function getActivityTypeCSSVars(activityType?: ActivityType) {
  * @returns Hex color string
  */
 export function getActivityTypeHexColor(activityType?: ActivityType): string {
-  const type = activityType || ActivityType.RESISTANCE;
+  const type = normalizeActivityType(activityType);
   
   const hexMap: Record<ActivityType, string> = {
     [ActivityType.RESISTANCE]: '#2563EB', // Blue
@@ -145,7 +146,7 @@ export function getActivityTypeHexColor(activityType?: ActivityType): string {
  * @returns Emoji string
  */
 export function getActivityTypeIcon(activityType?: ActivityType): string {
-  const type = activityType || ActivityType.RESISTANCE;
+  const type = normalizeActivityType(activityType);
   
   const iconMap: Record<ActivityType, string> = {
     [ActivityType.RESISTANCE]: '💪',

@@ -1,8 +1,9 @@
-import { db } from './firebase/config';
-import { collection, query, getDocs, orderBy, where, Timestamp } from 'firebase/firestore';
 import { getUserWorkouts } from './firebase/workouts';
-import { ExerciseLog } from '@/types/exercise';
 import { DifficultyCategory } from '@/types/difficulty';
+import { ActivityType } from '@/types/activityTypes';
+import { normalizeActivityType } from '@/types/activityLog';
+import { getExerciseLogs as getFirebaseExerciseLogs } from '@/services/firebase/exerciseLogs';
+import { getActivityLogs as getFirebaseActivityLogs } from '@/services/firebase/activityLogs';
 
 export interface ExportOptions {
   includeSessions?: boolean;
@@ -21,6 +22,29 @@ const safeDateToISOString = (date: Date | any): string => {
   if (isNaN(d.getTime())) return '';
   
   return d.toISOString();
+};
+
+const DEFAULT_EXPORT_START_DATE = new Date('1970-01-01T00:00:00.000Z');
+
+const getDateRange = (startDate?: Date, endDate?: Date) => ({
+  start: startDate || DEFAULT_EXPORT_START_DATE,
+  end: endDate || new Date(),
+});
+
+const toDurationSec = (duration: number | undefined, activityType: ActivityType): number => {
+  if (!duration || duration <= 0) return 0;
+  if (activityType === ActivityType.ENDURANCE || activityType === ActivityType.SPORT) {
+    return Math.round(duration * 60);
+  }
+  return duration;
+};
+
+const toDistanceMeters = (distance: number | undefined, activityType: ActivityType): number => {
+  if (!distance || distance <= 0) return 0;
+  if (activityType === ActivityType.ENDURANCE || activityType === ActivityType.SPORT) {
+    return Math.round(distance * 1000);
+  }
+  return distance;
 };
 
 export const exportData = async (userId: string, options: ExportOptions = {}) => {
@@ -72,58 +96,37 @@ export const exportData = async (userId: string, options: ExportOptions = {}) =>
 
     // Export exercise logs
     if (includeExerciseLogs || includeSets) {
-      // Build query with optional date range filtering
-      const exercisesRef = collection(db, 'users', userId, 'exercises');
-      let exerciseLogsQuery;
-      
-      if (startDate && endDate) {
-        exerciseLogsQuery = query(
-          exercisesRef,
-          where('timestamp', '>=', Timestamp.fromDate(startDate)),
-          where('timestamp', '<=', Timestamp.fromDate(endDate)),
-          orderBy('timestamp', 'desc')
-        );
-      } else if (startDate) {
-        exerciseLogsQuery = query(
-          exercisesRef,
-          where('timestamp', '>=', Timestamp.fromDate(startDate)),
-          orderBy('timestamp', 'desc')
-        );
-      } else if (endDate) {
-        exerciseLogsQuery = query(
-          exercisesRef,
-          where('timestamp', '<=', Timestamp.fromDate(endDate)),
-          orderBy('timestamp', 'desc')
-        );
-      } else {
-        exerciseLogsQuery = query(
-          exercisesRef,
-          orderBy('timestamp', 'desc')
-        );
-      }
+      const { start, end } = getDateRange(startDate, endDate);
+      const [exerciseLogs, activityLogs] = await Promise.all([
+        getFirebaseExerciseLogs(userId, start, end),
+        getFirebaseActivityLogs(userId, start, end)
+      ]);
 
-      const exerciseLogsSnapshot = await getDocs(exerciseLogsQuery);
-      const exerciseLogs: ExerciseLog[] = [];
-
-      exerciseLogsSnapshot.forEach(doc => {
-        const data = doc.data();
-        const log: ExerciseLog = {
-          id: doc.id,
-          exerciseName: data.exerciseName,
-          sets: data.sets || [],
-          timestamp: data.timestamp?.toDate?.() || (data.timestamp && !isNaN(new Date(data.timestamp).getTime()) ? new Date(data.timestamp) : new Date()),
-          deviceId: data.deviceId,
-          userId: data.userId,
-          exerciseType: data.exerciseType,
-          activityType: data.activityType
-        };
-        exerciseLogs.push(log);
-      });
+      const unifiedLogs = [
+        ...exerciseLogs.map((log) => ({
+          id: log.id,
+          exerciseName: log.exerciseName,
+          sets: log.sets || [],
+          timestamp: log.timestamp,
+          userId: log.userId || userId,
+          activityType: log.activityType ? normalizeActivityType(log.activityType) : ActivityType.RESISTANCE,
+          collectionType: 'exercise',
+        })),
+        ...activityLogs.map((log) => ({
+          id: log.id,
+          exerciseName: log.activityName,
+          sets: log.sets || [],
+          timestamp: log.timestamp,
+          userId: log.userId || userId,
+          activityType: normalizeActivityType(log.activityType),
+          collectionType: 'activity',
+        }))
+      ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
       if (includeExerciseLogs) {
-        results.exerciseLogs = exerciseLogs.map(log => {
+        results.exerciseLogs = unifiedLogs.map(log => {
           const totalReps = log.sets.reduce((sum, set) => sum + (set.reps || 0), 0);
-          const maxWeight = Math.max(...log.sets.map(set => set.weight || 0));
+          const maxWeight = log.sets.length > 0 ? Math.max(...log.sets.map(set => set.weight || 0)) : 0;
           const totalVolume = log.sets.reduce((sum, set) => sum + ((set.reps || 0) * (set.weight || 0)), 0);
           const averageRPE = log.sets.length > 0
             ? log.sets.reduce((sum, set) => sum + (set.rpe || 0), 0) / log.sets.length
@@ -135,8 +138,8 @@ export const exportData = async (userId: string, options: ExportOptions = {}) =>
             exerciseLogId: log.id,
             exerciseId: '', // TODO: get exercise ID
             exerciseName: log.exerciseName,
-            category: log.exerciseType || '',
-            type: log.activityType || '',
+            category: log.collectionType,
+            type: log.activityType,
             setCount: log.sets.length,
             totalReps,
             maxWeight,
@@ -149,21 +152,21 @@ export const exportData = async (userId: string, options: ExportOptions = {}) =>
       }
 
       if (includeSets) {
-        results.sets = exerciseLogs.flatMap(log =>
+        results.sets = unifiedLogs.flatMap(log =>
           log.sets.map((set, index) => ({
             userId,
             sessionId: '', // TODO: link to session
             exerciseLogId: log.id,
             exerciseName: log.exerciseName,
-            exerciseType: log.exerciseType || '',
-            activityType: log.activityType || '',
+            exerciseType: log.collectionType,
+            activityType: log.activityType,
             loggedDate: log.timestamp ? log.timestamp.toISOString().split('T')[0] : '',
             loggedTimestamp: safeDateToISOString(log.timestamp),
             setNumber: index + 1,
             reps: set.reps || 0,
             weight: set.weight || 0,
-            durationSec: set.duration || 0,
-            distanceMeters: set.distance || 0,
+            durationSec: toDurationSec(set.duration, log.activityType),
+            distanceMeters: toDistanceMeters(set.distance, log.activityType),
             rpe: set.rpe || 0,
             rir: set.rir || 0,
             restTimeSec: set.restTime || 0,

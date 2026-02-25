@@ -17,6 +17,7 @@ interface SpeedAgilityActivityPickerProps {
   onActivityLogged: () => void;
   selectedDate?: Date;
   editingExercise?: UnifiedExerciseData | null;
+  isWarmupMode?: boolean;
 }
 
 const SpeedAgilityActivityPicker: React.FC<SpeedAgilityActivityPickerProps> = ({
@@ -24,7 +25,8 @@ const SpeedAgilityActivityPicker: React.FC<SpeedAgilityActivityPickerProps> = ({
   onBack,
   onActivityLogged,
   selectedDate = new Date(),
-  editingExercise = null
+  editingExercise = null,
+  isWarmupMode = false
 }) => {
   const [selectedActivity, setSelectedActivity] = useState<SpeedAgilityActivity | null>(null);
   const [view, setView] = useState<'list' | 'logging'>('list');
@@ -191,6 +193,7 @@ const SpeedAgilityActivityPicker: React.FC<SpeedAgilityActivityPickerProps> = ({
               userId: user.id,
               sets: sets,
               activityType: ActivityType.SPEED_AGILITY,
+              isWarmup: isWarmupMode,
               prescription: exercise.prescription,
               instructionMode: exercise.instructionMode,
               instructions: Array.isArray(exercise.instructions)

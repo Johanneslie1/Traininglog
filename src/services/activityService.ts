@@ -11,6 +11,11 @@ import {
 } from '@/types/activityTypes';
 import { activityDatabases, getActivitiesByType } from '@/data/activityDatabase';
 import { loadExerciseDatabases, getExercisesByActivityType } from './exerciseDatabaseService';
+import {
+  addActivityLog as addFirebaseActivityLog,
+  getActivityLogs as getFirebaseActivityLogs,
+  deleteActivityLog as deleteFirebaseActivityLog
+} from '@/services/firebase/activityLogs';
 
 /**
  * Service for managing different types of activity exercises
@@ -245,6 +250,75 @@ class ActivityService {
  */
 class ActivityLoggingService {
 
+  private mapLogDataToSets(logData: any): any[] {
+    switch (logData.activityType) {
+      case ActivityType.RESISTANCE:
+        return (logData.sets || []).map((set: any) => ({
+          weight: set.weight || 0,
+          reps: set.reps || 0,
+          rpe: set.rpe,
+          restTime: set.restTime,
+          notes: set.notes
+        }));
+      case ActivityType.SPORT:
+        return (logData.sessions || []).map((session: any) => ({
+          duration: session.duration || 0,
+          distance: session.distance,
+          calories: session.calories,
+          intensity: session.intensity,
+          score: session.score,
+          opponent: session.opponent,
+          performance: session.performance,
+          notes: session.notes
+        }));
+      case ActivityType.STRETCHING:
+        return (logData.stretches || []).map((stretch: any) => ({
+          duration: stretch.duration || 0,
+          holdTime: stretch.holdTime,
+          intensity: stretch.intensity,
+          flexibility: stretch.flexibility,
+          stretchType: stretch.stretchType,
+          bodyPart: stretch.bodyPart,
+          notes: stretch.notes
+        }));
+      case ActivityType.ENDURANCE:
+        return (logData.sessions || []).map((session: any) => ({
+          duration: session.duration || 0,
+          distance: session.distance,
+          pace: session.pace,
+          averageHeartRate: session.averageHeartRate,
+          maxHeartRate: session.maxHeartRate,
+          calories: session.calories,
+          elevation: session.elevation,
+          rpe: session.rpe,
+          hrZone1: session.hrZone1,
+          hrZone2: session.hrZone2,
+          hrZone3: session.hrZone3,
+          notes: session.notes
+        }));
+      case ActivityType.SPEED_AGILITY:
+        return (logData.sessions || []).map((session: any) => ({
+          reps: session.reps || 0,
+          duration: session.time,
+          distance: session.distance,
+          height: session.height,
+          restTime: session.restTime,
+          rpe: session.rpe,
+          notes: session.notes
+        }));
+      case ActivityType.OTHER:
+      default:
+        return (logData.customData || []).map((data: any) => ({
+          duration: data.duration,
+          calories: data.calories,
+          heartRate: data.heartRate,
+          intensity: data.intensity,
+          notes: data.notes,
+          ...(data.customValues || {})
+        }));
+    }
+  }
+
   /**
    * Create a resistance exercise log
    */
@@ -460,21 +534,19 @@ class ActivityLoggingService {
    * Generic save method - would integrate with Firebase
    */
   private async saveActivityLog(logData: Omit<ActivityLog, 'id'>): Promise<string> {
-    // This would save to Firebase/database
-    // For now, save to localStorage and return mock ID
-    const logId = `log-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
-    const logWithId = {
-      ...logData,
-      id: logId
-    };
+    const sets = this.mapLogDataToSets(logData);
 
-    // Save to localStorage for demo
-    const existingLogs = JSON.parse(localStorage.getItem('activity-logs') || '[]');
-    existingLogs.push(logWithId);
-    localStorage.setItem('activity-logs', JSON.stringify(existingLogs));
+    const logId = await addFirebaseActivityLog(
+      {
+        activityName: logData.activityName,
+        userId: logData.userId,
+        sets,
+        activityType: logData.activityType,
+        notes: logData.notes
+      },
+      logData.timestamp
+    );
 
-    console.log('Activity log saved:', logWithId);
     return logId;
   }
 
@@ -487,34 +559,25 @@ class ActivityLoggingService {
     endDate?: Date,
     activityType?: ActivityType
   ): Promise<ActivityLog[]> {
-    // This would query the database
-    // For demo, get from localStorage
-    const logs: ActivityLog[] = JSON.parse(localStorage.getItem('activity-logs') || '[]');
-    
-    let filteredLogs = logs.filter(log => log.userId === userId);
+    const queryStart = startDate || new Date('1970-01-01T00:00:00.000Z');
+    const queryEnd = endDate || new Date('9999-12-31T23:59:59.999Z');
 
-    if (startDate) {
-      filteredLogs = filteredLogs.filter(log => 
-        new Date(log.timestamp) >= startDate
-      );
-    }
+    const logs = await getFirebaseActivityLogs(userId, queryStart, queryEnd);
 
-    if (endDate) {
-      filteredLogs = filteredLogs.filter(log => 
-        new Date(log.timestamp) <= endDate
-      );
-    }
+    const filteredLogs = activityType
+      ? logs.filter((log) => log.activityType === activityType)
+      : logs;
 
-    if (activityType) {
-      filteredLogs = filteredLogs.filter(log => 
-        log.activityType === activityType
-      );
-    }
-
-    return filteredLogs.map(log => ({
-      ...log,
-      timestamp: new Date(log.timestamp)
-    }));
+    return filteredLogs.map((log) => ({
+      id: log.id,
+      activityId: log.id,
+      activityType: log.activityType as ActivityType,
+      activityName: log.activityName,
+      userId: log.userId,
+      timestamp: log.timestamp,
+      notes: log.notes,
+      sessions: log.sets
+    } as any));
   }
 
   /**
@@ -522,13 +585,7 @@ class ActivityLoggingService {
    */
   async deleteActivityLog(logId: string, userId: string): Promise<boolean> {
     try {
-      // This would delete from database
-      // For demo, remove from localStorage
-      const logs: ActivityLog[] = JSON.parse(localStorage.getItem('activity-logs') || '[]');
-      const filteredLogs = logs.filter(log => 
-        !(log.id === logId && log.userId === userId)
-      );
-      localStorage.setItem('activity-logs', JSON.stringify(filteredLogs));
+      await deleteFirebaseActivityLog(logId, userId);
       return true;
     } catch (error) {
       console.error('Error deleting activity log:', error);

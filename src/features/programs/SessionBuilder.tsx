@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Exercise } from '@/types/exercise';
 import { ProgramSession, ProgramExercise, Prescription } from '@/types/program';
 import { ActivityType } from '@/types/activityTypes';
+import { normalizeActivityType } from '@/types/activityLog';
 import { formatPrescriptionBadge } from '@/utils/prescriptionUtils';
 import PrescriptionEditor from './PrescriptionEditor';
 import ExerciseHistoryPicker from './ExerciseHistoryPicker';
@@ -26,6 +27,7 @@ type ViewState = 'main' | 'exerciseSelection' | 'search' | 'programPicker' | 'co
 interface SessionBuilderState {
   sessionName: string;
   sessionNotes: string;
+  isWarmupSession: boolean;
   exercises: Exercise[];
 }
 
@@ -42,18 +44,24 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
     {
       sessionName: initialSession?.name || sessionName,
       sessionNotes: initialSession?.notes || '',
+      isWarmupSession: initialSession?.isWarmupSession === true,
       exercises: initialSession?.exercises?.map(ex => ({
+        ...(ex as any),
         id: ex.id,
         name: ex.name,
-        type: 'strength' as const,
+        type: (normalizeActivityType(ex.activityType) === ActivityType.RESISTANCE ? 'strength' : 'cardio') as 'strength' | 'cardio',
         category: 'compound' as const,
         primaryMuscles: [],
         secondaryMuscles: [],
         instructions: [],
         description: ex.notes || '',
-        defaultUnit: 'kg' as const,
-        metrics: { trackWeight: true, trackReps: true },
-        activityType: ex.activityType || ActivityType.RESISTANCE
+        defaultUnit: normalizeActivityType(ex.activityType) === ActivityType.RESISTANCE ? ('kg' as const) : ('time' as const),
+        metrics: {
+          trackWeight: normalizeActivityType(ex.activityType) === ActivityType.RESISTANCE,
+          trackReps: normalizeActivityType(ex.activityType) === ActivityType.RESISTANCE,
+          trackTime: normalizeActivityType(ex.activityType) !== ActivityType.RESISTANCE,
+        },
+        activityType: normalizeActivityType(ex.activityType)
       })) || [],
     }
   );
@@ -62,7 +70,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
 
   // Helper function to get activity type display info
   const getActivityTypeInfo = (activityType?: ActivityType) => {
-    const type = activityType || ActivityType.RESISTANCE;
+    const type = normalizeActivityType(activityType);
     switch (type) {
       case ActivityType.RESISTANCE:
         return { label: 'Resistance', color: 'bg-activity-resistance', textColor: 'text-blue-100' };
@@ -85,15 +93,17 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
   const [selectedExercises, setSelectedExercises] = useState<Exercise[]>(persistedState.exercises);
   const [currentSessionName, setCurrentSessionName] = useState(persistedState.sessionName);
   const [sessionNotes, setSessionNotes] = useState(persistedState.sessionNotes);
+  const [isWarmupSession, setIsWarmupSession] = useState(persistedState.isWarmupSession);
   
   // Update persisted state whenever these values change
   useEffect(() => {
     setPersistedState({
       sessionName: currentSessionName,
       sessionNotes: sessionNotes,
+      isWarmupSession,
       exercises: selectedExercises,
     });
-  }, [currentSessionName, sessionNotes, selectedExercises, setPersistedState]);
+  }, [currentSessionName, sessionNotes, isWarmupSession, selectedExercises, setPersistedState]);
   const [editingExerciseName, setEditingExerciseName] = useState<number | null>(null);
   const [tempExerciseName, setTempExerciseName] = useState('');
   const [lastAction, setLastAction] = useState<{
@@ -401,7 +411,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
         exerciseRef,
         order: index,
         notes: item.description || '',
-        activityType: item.activityType || ActivityType.RESISTANCE, // Default to RESISTANCE for backward compatibility
+        activityType: normalizeActivityType(item.activityType),
         instructionMode: prescriptionData?.instructionMode,
         prescription: prescriptionData?.prescription,
         instructions: prescriptionData?.instructions,
@@ -423,6 +433,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
       id: initialSession?.id || '',
       name: currentSessionName.trim(),
       exercises,
+      isWarmupSession,
       notes: sessionNotes.trim()
     };
 
@@ -451,17 +462,22 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
         onExercisesSelected={(exercises) => {
           // Convert ExerciseData to Exercise format
           const exercisesToAdd = exercises.map(ex => ({
+            ...(ex as any),
             id: ex.id || `temp-${Date.now()}`,
             name: ex.exerciseName,
-            type: 'strength' as const,
+            type: (normalizeActivityType(ex.activityType) === ActivityType.RESISTANCE ? 'strength' : 'cardio') as 'strength' | 'cardio',
             category: 'compound' as const,
             primaryMuscles: [],
             secondaryMuscles: [],
             instructions: [],
             description: '',
-            defaultUnit: 'kg' as const,
-            metrics: { trackWeight: true, trackReps: true },
-            activityType: ex.activityType || ActivityType.RESISTANCE // Use stored activityType or default to RESISTANCE
+            defaultUnit: normalizeActivityType(ex.activityType) === ActivityType.RESISTANCE ? ('kg' as const) : ('time' as const),
+            metrics: {
+              trackWeight: normalizeActivityType(ex.activityType) === ActivityType.RESISTANCE,
+              trackReps: normalizeActivityType(ex.activityType) === ActivityType.RESISTANCE,
+              trackTime: normalizeActivityType(ex.activityType) !== ActivityType.RESISTANCE,
+            },
+            activityType: normalizeActivityType(ex.activityType),
           }));
           setSelectedExercises(prev => [...prev, ...exercisesToAdd]);
           setView('main');
@@ -585,6 +601,19 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
               className="w-full px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-[#8B5CF6] resize-none"
             />
           </div>
+
+          <button
+            type="button"
+            onClick={() => setIsWarmupSession((current) => !current)}
+            className={`w-full text-left px-4 py-3 rounded-xl border transition-colors ${
+              isWarmupSession
+                ? 'bg-blue-600/20 border-blue-500 text-blue-200'
+                : 'bg-[#2a2a2a] border-white/10 text-gray-200 hover:bg-[#333]'
+            }`}
+          >
+            <div className="font-semibold">{isWarmupSession ? '🔥 Warm-up session enabled' : 'Warm-up session disabled'}</div>
+            <div className="text-sm opacity-80">All exercises in this session will be logged as warm-up when imported/logged.</div>
+          </button>
         </div>
 
         {/* Exercises Section */}
@@ -736,7 +765,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
                                             <p className="text-sm text-gray-300 italic">{exercisePrescriptions[exerciseIndex].instructions}</p>
                                           ) : (
                                             <span className="inline-block px-2 py-1 bg-blue-500/20 text-blue-300 text-sm rounded">
-                                              {formatPrescriptionBadge(exercisePrescriptions[exerciseIndex].prescription, exercise.activityType || ActivityType.RESISTANCE)}
+                                              {formatPrescriptionBadge(exercisePrescriptions[exerciseIndex].prescription, normalizeActivityType(exercise.activityType))}
                                             </span>
                                           )}
                                         </div>
@@ -812,7 +841,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
                             {editingPrescription === exerciseIndex && (
                               <div className="mt-4 pt-4 border-t border-white/10">
                                 <PrescriptionEditor
-                                  activityType={exercise.activityType || ActivityType.RESISTANCE}
+                                  activityType={normalizeActivityType(exercise.activityType)}
                                   initialPrescription={exercisePrescriptions[exerciseIndex]?.prescription}
                                   initialInstructionMode={exercisePrescriptions[exerciseIndex]?.instructionMode}
                                   initialInstructions={exercisePrescriptions[exerciseIndex]?.instructions}

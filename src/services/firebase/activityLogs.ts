@@ -13,7 +13,7 @@ import {
 } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { db } from './config';
-import { ActivityLog, ActivityLogInput } from '@/types/activityLog';
+import { ActivityLog, ActivityLogInput, normalizeActivityType, mapExerciseTypeToActivityType } from '@/types/activityLog';
 
 // Helper function to clean undefined values from objects
 const cleanObject = (obj: any): any => {
@@ -73,13 +73,15 @@ export const addActivityLog = async (
       throw new Error(`User ID mismatch: auth.uid=${currentUser.uid}, provided=${logData.userId}`);
     }
 
+    const normalizedActivityType = normalizeActivityType(logData.activityType);
+
     const activityData = cleanObject({
       ...logData,
       timestamp: Timestamp.fromDate(selectedDate || new Date()),
       deviceId: window.navigator.userAgent,
       userId: logData.userId,
       sets: Array.isArray(logData.sets) ? logData.sets.map(set => cleanObject(set)).filter(set => set && Object.keys(set).length > 0) : [],
-      activityType: logData.activityType,
+      activityType: normalizedActivityType,
       categories: logData.categories || []
     });
 
@@ -151,9 +153,10 @@ export const getActivityLogs = async (userId: string, startDate: Date, endDate: 
     
     const activities = querySnapshot.docs.map((doc) => {
       const data = doc.data();
+      const normalizedActivityType = normalizeActivityType(data.activityType);
       console.log('📖 Processing activity document:', doc.id, {
         activityName: data.activityName,
-        activityType: data.activityType,
+        activityType: normalizedActivityType,
         timestamp: data.timestamp?.toDate?.()?.toISOString(),
         categories: data.categories
       });
@@ -165,7 +168,7 @@ export const getActivityLogs = async (userId: string, startDate: Date, endDate: 
         timestamp: data.timestamp.toDate(),
         deviceId: data.deviceId || 'legacy',
         userId: data.userId,
-        activityType: data.activityType,
+        activityType: normalizedActivityType,
         categories: data.categories || [],
         notes: data.notes
       } as ActivityLog;
@@ -218,12 +221,14 @@ export const migrateExercisesToActivities = async (userId: string, exerciseIds: 
         
         // Only migrate non-strength exercises
         if (data.exerciseType && data.exerciseType !== 'strength' && data.exerciseType !== 'plyometric') {
+          const normalizedActivityType = mapExerciseTypeToActivityType(data.exerciseType);
+
           // Create new activity document
           const newActivityRef = doc(db, 'users', userId, 'activities', exerciseId);
           const activityData = {
             ...data,
             activityName: data.exerciseName,
-            activityType: data.exerciseType
+            activityType: normalizedActivityType
           };
           // Remove old field names
           delete (activityData as any).exerciseName;

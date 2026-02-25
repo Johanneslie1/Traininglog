@@ -25,6 +25,10 @@ import { MUSCLE_COLORS } from '@/utils/chartDataFormatters';
  * Provides data processing and calculations for analytics features
  */
 export class AnalyticsService {
+  private static excludeWarmups(exercises: UnifiedExerciseData[]): UnifiedExerciseData[] {
+    return exercises.filter((exercise) => !exercise.isWarmup);
+  }
+
   /**
    * Fetch exercises within a date range with optional filters
    * @param userId - User ID
@@ -76,7 +80,7 @@ export class AnalyticsService {
       );
     }
     
-    return filtered;
+    return this.excludeWarmups(filtered);
   }
 
   /**
@@ -99,11 +103,13 @@ export class AnalyticsService {
     exercises: UnifiedExerciseData[],
     groupBy: 'exercise' | 'day' = 'exercise'
   ): VolumeDataPoint[] {
+    const filteredExercises = this.excludeWarmups(exercises);
+
     if (groupBy === 'exercise') {
       // Group by exercise name
       const exerciseMap = new Map<string, UnifiedExerciseData[]>();
       
-      exercises.forEach(ex => {
+      filteredExercises.forEach(ex => {
         const existing = exerciseMap.get(ex.exerciseName) || [];
         exerciseMap.set(ex.exerciseName, [...existing, ex]);
       });
@@ -151,7 +157,7 @@ export class AnalyticsService {
       // Group by day only
       const dateMap = new Map<string, UnifiedExerciseData[]>();
       
-      exercises.forEach(ex => {
+      filteredExercises.forEach(ex => {
         const dateStr = ex.timestamp.toISOString().split('T')[0];
         const existing = dateMap.get(dateStr) || [];
         dateMap.set(dateStr, [...existing, ex]);
@@ -199,10 +205,11 @@ export class AnalyticsService {
     exercises: UnifiedExerciseData[],
     userId: string
   ): PersonalRecord[] {
+    const filteredExercises = this.excludeWarmups(exercises);
     const records: PersonalRecord[] = [];
     
     // Get all PRs by exercise
-    const allPRs = getAllPRsByExercise(exercises, userId);
+    const allPRs = getAllPRsByExercise(filteredExercises, userId);
     
     // Flatten to array
     allPRs.forEach(prMap => {
@@ -225,11 +232,12 @@ export class AnalyticsService {
     exercises: UnifiedExerciseData[],
     exerciseDatabase: Exercise[]
   ): MuscleVolumeData[] {
+    const filteredExercises = this.excludeWarmups(exercises);
     const muscleVolumeMap = new Map<MuscleGroup, number>();
     const muscleSetsMap = new Map<MuscleGroup, number>();
     const muscleExercisesMap = new Map<MuscleGroup, Set<string>>();
     
-    exercises.forEach(loggedEx => {
+    filteredExercises.forEach(loggedEx => {
       // Find exercise in database to get muscle groups
       const dbExercise = exerciseDatabase.find(
         db => db.name.toLowerCase() === loggedEx.exerciseName.toLowerCase()
@@ -300,10 +308,11 @@ export class AnalyticsService {
     startDate: Date,
     endDate: Date
   ): TrainingFrequencyData[] {
+    const filteredExercises = this.excludeWarmups(exercises);
     const frequencyMap = new Map<string, UnifiedExerciseData[]>();
     
     // Group exercises by date
-    exercises.forEach(ex => {
+    filteredExercises.forEach(ex => {
       const dateStr = ex.timestamp.toISOString().split('T')[0];
       const existing = frequencyMap.get(dateStr) || [];
       frequencyMap.set(dateStr, [...existing, ex]);
@@ -364,21 +373,23 @@ export class AnalyticsService {
     userId: string,
     exerciseDatabase: Exercise[]
   ): AnalyticsSummary {
-    const totalVolume = exercises.reduce(
+    const filteredExercises = this.excludeWarmups(exercises);
+
+    const totalVolume = filteredExercises.reduce(
       (sum, ex) => sum + this.calculateExerciseVolume(ex),
       0
     );
     
     const workoutDays = new Set(
-      exercises.map(ex => ex.timestamp.toISOString().split('T')[0])
+      filteredExercises.map(ex => ex.timestamp.toISOString().split('T')[0])
     ).size;
     
-    const totalSets = exercises.reduce(
+    const totalSets = filteredExercises.reduce(
       (sum, ex) => sum + (ex.sets?.length || 0),
       0
     );
     
-    const uniqueExercises = new Set(exercises.map(ex => ex.exerciseName)).size;
+    const uniqueExercises = new Set(filteredExercises.map(ex => ex.exerciseName)).size;
     
     const averageVolumePerWorkout = workoutDays > 0 ? totalVolume / workoutDays : 0;
     
@@ -389,16 +400,16 @@ export class AnalyticsService {
     // Get recent PRs (last 7 days)
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const recentPRs = this.detectPersonalRecords(exercises, userId).filter(
+    const recentPRs = this.detectPersonalRecords(filteredExercises, userId).filter(
       pr => pr.date >= sevenDaysAgo
     );
     
     // Calculate muscle balance
-    const muscleVolumes = this.calculateMuscleVolumes(exercises, exerciseDatabase);
+    const muscleVolumes = this.calculateMuscleVolumes(filteredExercises, exerciseDatabase);
     const muscleGroupBalance = this.calculateMuscleBalance(muscleVolumes);
     
     // Calculate consistency
-    const frequencyData = this.calculateTrainingFrequency(exercises, startDate, endDate);
+    const frequencyData = this.calculateTrainingFrequency(filteredExercises, startDate, endDate);
     const consistencyScore = this.calculateConsistencyScore(frequencyData);
     
     // Calculate current streak
@@ -559,23 +570,26 @@ export class AnalyticsService {
     currentExercises: UnifiedExerciseData[],
     previousExercises: UnifiedExerciseData[]
   ): PeriodComparison {
-    const currentVolume = currentExercises.reduce(
+    const filteredCurrentExercises = this.excludeWarmups(currentExercises);
+    const filteredPreviousExercises = this.excludeWarmups(previousExercises);
+
+    const currentVolume = filteredCurrentExercises.reduce(
       (sum, ex) => sum + this.calculateExerciseVolume(ex),
       0
     );
     const currentWorkouts = new Set(
-      currentExercises.map(ex => ex.timestamp.toISOString().split('T')[0])
+      filteredCurrentExercises.map(ex => ex.timestamp.toISOString().split('T')[0])
     ).size;
-    const currentExerciseCount = new Set(currentExercises.map(ex => ex.exerciseName)).size;
+    const currentExerciseCount = new Set(filteredCurrentExercises.map(ex => ex.exerciseName)).size;
     
-    const previousVolume = previousExercises.reduce(
+    const previousVolume = filteredPreviousExercises.reduce(
       (sum, ex) => sum + this.calculateExerciseVolume(ex),
       0
     );
     const previousWorkouts = new Set(
-      previousExercises.map(ex => ex.timestamp.toISOString().split('T')[0])
+      filteredPreviousExercises.map(ex => ex.timestamp.toISOString().split('T')[0])
     ).size;
-    const previousExerciseCount = new Set(previousExercises.map(ex => ex.exerciseName)).size;
+    const previousExerciseCount = new Set(filteredPreviousExercises.map(ex => ex.exerciseName)).size;
     
     const volumeChange = previousVolume > 0 
       ? Math.round(((currentVolume - previousVolume) / previousVolume) * 100 * 10) / 10

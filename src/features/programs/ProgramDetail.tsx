@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Program, ProgramSession } from '@/types/program';
 import { ActivityType } from '@/types/activityTypes';
+import { normalizeActivityType } from '@/types/activityLog';
 import { formatPrescription } from '@/utils/prescriptionUtils';
 import SessionBuilder from './SessionBuilder';
 import { PencilIcon, TrashIcon, ChevronDownIcon, ArrowLeftIcon, DuplicateIcon, ShareIcon } from '@heroicons/react/outline';
@@ -40,7 +41,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
 
   // Helper function to get activity type display info
   const getActivityTypeInfo = (activityType?: ActivityType) => {
-    const type = activityType || ActivityType.RESISTANCE;
+    const type = normalizeActivityType(activityType);
     switch (type) {
       case ActivityType.RESISTANCE:
         return { label: 'Resistance', color: 'bg-blue-600', textColor: 'text-blue-100' };
@@ -502,7 +503,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                           </div>
                           {exercise.prescription && exercise.instructionMode === 'structured' ? (
                             <div className="text-sm text-blue-400">
-                              📋 {formatPrescription(exercise.prescription, exercise.activityType || ActivityType.RESISTANCE)}
+                              📋 {formatPrescription(exercise.prescription, normalizeActivityType(exercise.activityType))}
                             </div>
                           ) : exercise.instructions && exercise.instructionMode === 'freeform' ? (
                             <div className="text-sm text-purple-400 italic">

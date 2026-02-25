@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { CreateUniversalExerciseDialog } from '@/components/exercises/CreateUniversalExerciseDialog';
 import { ActivityType } from '@/types/activityTypes';
+import { normalizeActivityType } from '@/types/activityLog';
 import { useAuth } from '@/hooks/useAuth';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/services/firebase/config';
@@ -107,7 +108,7 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
 
       const typeFilteredExercises = querySnapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))
-        .filter((exercise: any) => (exercise.activityType || ActivityType.RESISTANCE) === activityType);
+        .filter((exercise: any) => normalizeActivityType(exercise.activityType) === activityType);
 
       setCustomExercises(typeFilteredExercises);
     } catch (error) {

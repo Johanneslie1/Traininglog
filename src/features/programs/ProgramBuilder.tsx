@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Program, ProgramSession } from '@/types/program';
 import { ActivityType } from '@/types/activityTypes';
+import { normalizeActivityType } from '@/types/activityLog';
 import { PlusIcon, BookmarkIcon, TrashIcon, PencilIcon, MenuIcon } from '@heroicons/react/outline';
 import SessionBuilder from './SessionBuilder';
 import { auth } from '@/services/firebase/config';
@@ -58,7 +59,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
 
   // Helper function to get activity type display info
   const getActivityTypeInfo = (activityType?: ActivityType) => {
-    const type = activityType || ActivityType.RESISTANCE;
+    const type = normalizeActivityType(activityType);
     switch (type) {
       case ActivityType.RESISTANCE:
         return { label: 'Resistance', color: 'bg-activity-resistance', textColor: 'text-white' };
@@ -85,7 +86,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
 
     sessions.forEach(session => {
       session.exercises.forEach(exercise => {
-        const type = exercise.activityType || ActivityType.RESISTANCE;
+        const type = normalizeActivityType(exercise.activityType);
         activityCounts[type] = (activityCounts[type] || 0) + 1;
         uniqueTypes.add(type);
         totalExercises++;

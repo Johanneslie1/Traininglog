@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { ActivityType } from '@/types/activityTypes';
 import { Prescription } from '@/types/program';
 import { formatPrescription } from '@/utils/prescriptionUtils';
+import { normalizeEnduranceDurationMinutes } from '@/utils/prescriptionUtils';
 
 interface PrescriptionGuideCardProps {
   activityType: ActivityType;
@@ -51,8 +52,8 @@ const buildDetailRows = (prescription: Prescription | undefined, activityType: A
     }
     case ActivityType.ENDURANCE:
     case ActivityType.SPORT: {
-      const duration = formatRange(prescription.duration);
-      if (duration) rows.push({ label: 'Duration', value: `${duration}s` });
+      const duration = formatRange(normalizeEnduranceDurationMinutes(prescription.duration));
+      if (duration) rows.push({ label: 'Duration', value: `${duration} min` });
       const distance = formatRange(prescription.distance);
       if (distance) rows.push({ label: 'Distance', value: `${distance} km` });
       if (prescription.intensity) rows.push({ label: 'Intensity', value: `${prescription.intensity}/10` });

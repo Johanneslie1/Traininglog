@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Prescription } from '@/types/program';
 import { ActivityType } from '@/types/activityTypes';
-import { formatPrescription, validatePrescription } from '@/utils/prescriptionUtils';
+import { formatPrescription, normalizeEnduranceDurationMinutes, validatePrescription } from '@/utils/prescriptionUtils';
 import { toast } from 'react-hot-toast';
 
 interface PrescriptionEditorProps {
@@ -25,6 +25,27 @@ const PrescriptionEditor: React.FC<PrescriptionEditorProps> = ({
   onSave,
   onCancel,
 }) => {
+  const normalizedInitialDuration =
+    (activityType === ActivityType.ENDURANCE || activityType === ActivityType.SPORT)
+      ? normalizeEnduranceDurationMinutes(initialPrescription?.duration)
+      : initialPrescription?.duration;
+
+  const getInitialDurationValue = (): number => {
+    if (typeof normalizedInitialDuration === 'number') {
+      return normalizedInitialDuration;
+    }
+
+    if (activityType === ActivityType.ENDURANCE || activityType === ActivityType.SPORT) {
+      return 20;
+    }
+
+    if (activityType === ActivityType.STRETCHING) {
+      return 30;
+    }
+
+    return 60;
+  };
+
   const [instructionMode, setInstructionMode] = useState<'structured' | 'freeform'>(initialInstructionMode);
   const [freeformText, setFreeformText] = useState(initialInstructions || '');
   const [isSaving, setIsSaving] = useState(false);
@@ -51,7 +72,7 @@ const PrescriptionEditor: React.FC<PrescriptionEditorProps> = ({
   const [weightMax, setWeightMax] = useState<number>(80);
 
   const [duration, setDuration] = useState<number>(
-    (initialPrescription?.duration as number) || 1200
+    getInitialDurationValue()
   );
   const [durationRange, setDurationRange] = useState(false);
   const [durationMin, setDurationMin] = useState<number>(600);
@@ -71,6 +92,11 @@ const PrescriptionEditor: React.FC<PrescriptionEditorProps> = ({
   // Initialize ranges if initial prescription has range values
   useEffect(() => {
     if (initialPrescription) {
+      const normalizedDurationValue =
+        (activityType === ActivityType.ENDURANCE || activityType === ActivityType.SPORT)
+          ? normalizeEnduranceDurationMinutes(initialPrescription.duration)
+          : initialPrescription.duration;
+
       if (typeof initialPrescription.sets === 'object') {
         setSetsRange(true);
         setSetsMin(initialPrescription.sets.min);
@@ -88,8 +114,12 @@ const PrescriptionEditor: React.FC<PrescriptionEditorProps> = ({
       }
       if (typeof initialPrescription.duration === 'object') {
         setDurationRange(true);
-        setDurationMin(initialPrescription.duration.min);
-        setDurationMax(initialPrescription.duration.max);
+        if (typeof normalizedDurationValue === 'object') {
+          setDurationMin(normalizedDurationValue.min);
+          setDurationMax(normalizedDurationValue.max);
+        }
+      } else if (typeof normalizedDurationValue === 'number') {
+        setDuration(normalizedDurationValue);
       }
       if (typeof initialPrescription.distance === 'object') {
         setDistanceRange(true);
@@ -97,7 +127,7 @@ const PrescriptionEditor: React.FC<PrescriptionEditorProps> = ({
         setDistanceMax(initialPrescription.distance.max);
       }
     }
-  }, [initialPrescription]);
+  }, [initialPrescription, activityType]);
 
   const handleSave = () => {
     setIsSaving(true);
@@ -462,7 +492,7 @@ const PrescriptionEditor: React.FC<PrescriptionEditorProps> = ({
             <>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Duration (seconds)
+                  Duration (minutes)
                 </label>
                 <div className="flex items-center gap-2">
                   {durationRange ? (

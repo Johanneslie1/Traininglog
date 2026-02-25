@@ -1,4 +1,8 @@
 import type { Program, ProgramSession } from '@/types/program';
+import type { ActivityType } from '@/types/activityTypes';
+import { normalizeActivityType } from '@/types/activityLog';
+import { normalizeEnduranceDurationMinutes } from '@/utils/prescriptionUtils';
+import speedAgilityExercises from '@/data/exercises/speedAgility.json';
 import { db } from './firebase/firebase';
 import {
   collection,
@@ -46,6 +50,37 @@ function removeUndefinedFields<T>(obj: T): T {
     return cleaned;
   }
   return obj;
+}
+
+function buildProgramExercisePayload(
+  exercise: {
+    id?: string;
+    name: string;
+    notes?: string;
+    order?: number;
+    exerciseRef?: string;
+    activityType?: ActivityType;
+    instructionMode?: 'structured' | 'freeform';
+    prescription?: any;
+    instructions?: string;
+  },
+  fallbackOrder: number,
+  options?: { generateIdIfMissing?: boolean }
+) {
+  const payload: any = {
+    id: exercise.id || (options?.generateIdIfMissing ? crypto.randomUUID() : undefined),
+    name: exercise.name,
+    notes: exercise.notes || '',
+    order: exercise.order ?? fallbackOrder
+  };
+
+  if (exercise.exerciseRef) payload.exerciseRef = exercise.exerciseRef;
+  if (exercise.activityType) payload.activityType = normalizeActivityType(exercise.activityType);
+  if (exercise.instructionMode) payload.instructionMode = exercise.instructionMode;
+  if (exercise.prescription) payload.prescription = exercise.prescription;
+  if (exercise.instructions) payload.instructions = exercise.instructions;
+
+  return removeUndefinedFields(payload);
 }
 
 class ProgramValidationError extends Error {
@@ -152,6 +187,7 @@ export const getPrograms = async (): Promise<Program[]> => {
               return {
                 id: sessionDoc.id,
                 name: sessionData.name,
+                isWarmupSession: sessionData.isWarmupSession === true,
                 notes: sessionData.notes || '',
                 exercises: (sessionData.exercises || [])
                   .map((ex: any, exIndex: number) => {
@@ -164,7 +200,7 @@ export const getPrograms = async (): Promise<Program[]> => {
                       order: ex.order ?? exIndex,
                       notes: ex.notes || '',
                       exerciseRef: ex.exerciseRef,
-                      activityType: ex.activityType,
+                      activityType: ex.activityType ? normalizeActivityType(ex.activityType) : undefined,
                       // Include prescription fields
                       instructionMode: ex.instructionMode,
                       prescription: ex.prescription,
@@ -290,21 +326,7 @@ export const createProgram = async (program: Omit<Program, 'id' | 'createdAt' | 
           // Ensure exercises array exists and preserve all exercise reference fields
           // Assign order based on array index to maintain insertion order
           exercises: (session.exercises || []).map((ex: any, exIndex: number) => {
-            const exerciseData: any = {
-              id: ex.id,
-              name: ex.name,
-              notes: ex.notes || '',
-              order: ex.order ?? exIndex
-            };
-            
-            // Only add optional fields if they exist
-            if (ex.exerciseRef) exerciseData.exerciseRef = ex.exerciseRef;
-            if (ex.activityType) exerciseData.activityType = ex.activityType;
-            if (ex.instructionMode) exerciseData.instructionMode = ex.instructionMode;
-            if (ex.prescription) exerciseData.prescription = ex.prescription;
-            if (ex.instructions) exerciseData.instructions = ex.instructions;
-            
-            return exerciseData;
+            return buildProgramExercisePayload(ex, exIndex);
           })
         });
         
@@ -369,12 +391,7 @@ export const replaceProgram = async (programId: string, program: Program): Promi
       const sessionRef = doc(collection(programRef, 'sessions'));
       // Process exercises with proper order and clean undefined fields
       const processedExercises = (session.exercises || []).map((ex: any, exIndex: number) => {
-        const exerciseData: any = {
-          ...ex,
-          order: ex.order ?? exIndex
-        };
-        // Remove any undefined fields from the exercise (including nested prescription fields)
-        return removeUndefinedFields(exerciseData);
+        return buildProgramExercisePayload(ex, exIndex);
       });
       
       const sessionData = removeUndefinedFields({
@@ -483,7 +500,18 @@ export const deleteSession = async (programId: string, sessionId: string): Promi
 // Create a new session in a program
 export const createSession = async (programId: string, session: {
   name: string;
-  exercises: Array<{ id?: string; name: string; notes?: string; order?: number; }>;
+  exercises: Array<{
+    id?: string;
+    name: string;
+    notes?: string;
+    order?: number;
+    exerciseRef?: string;
+    activityType?: ActivityType;
+    instructionMode?: 'structured' | 'freeform';
+    prescription?: any;
+    instructions?: string;
+  }>;
+  isWarmupSession?: boolean;
   notes?: string;
   order?: number;
 }): Promise<string> => {
@@ -522,37 +550,14 @@ export const createSession = async (programId: string, session: {
         instructions: exercise.instructions
       });
       
-      // Build exercise object with only defined fields
-      const exerciseData: any = {
-        id: exerciseId,
-        name: exercise.name,
-        notes: exercise.notes || '',
-        order: exercise.order ?? exIndex
-      };
-      
-      // Only add exerciseRef if it exists
-      if (exercise.exerciseRef) {
-        exerciseData.exerciseRef = exercise.exerciseRef;
-      }
-      
-      // Only add activityType if it exists
-      if (exercise.activityType) {
-        exerciseData.activityType = exercise.activityType;
-      }
+      const exerciseData = buildProgramExercisePayload({
+        ...exercise,
+        id: exerciseId
+      }, exIndex, { generateIdIfMissing: true });
 
-      // Add prescription fields if they exist
-      if (exercise.instructionMode) {
-        exerciseData.instructionMode = exercise.instructionMode;
-        console.log('[createSession] Added instructionMode:', exerciseData.instructionMode);
-      }
-      if (exercise.prescription) {
-        exerciseData.prescription = exercise.prescription;
-        console.log('[createSession] Added prescription:', exerciseData.prescription);
-      }
-      if (exercise.instructions) {
-        exerciseData.instructions = exercise.instructions;
-        console.log('[createSession] Added instructions length:', exerciseData.instructions?.length);
-      }
+      console.log('[createSession] Added instructionMode:', exerciseData.instructionMode);
+      console.log('[createSession] Added prescription:', exerciseData.prescription);
+      console.log('[createSession] Added instructions length:', exerciseData.instructions?.length);
 
       return exerciseData;
     });
@@ -567,6 +572,7 @@ export const createSession = async (programId: string, session: {
       id: sessionRef.id,
       name: session.name,
       exercises: processedExercises,
+      isWarmupSession: session.isWarmupSession === true,
       notes: session.notes || '',
       order: session.order ?? 0,
       userId: user.uid,
@@ -617,7 +623,7 @@ export const updateSession = async (programId: string, sessionId: string, exerci
   notes?: string;
   order?: number;
   exerciseRef?: string;
-  activityType?: string;
+  activityType?: ActivityType;
   instructionMode?: 'structured' | 'freeform';
   prescription?: any;
   instructions?: string;
@@ -669,36 +675,14 @@ export const updateSession = async (programId: string, sessionId: string, exerci
       });
 
       // Build exercise object with all relevant fields
-      const exerciseData: any = {
-        id: exerciseId,
-        name: exercise.name,
-        notes: exercise.notes || '',
-        order: exercise.order ?? exIndex
-      };
-      
-      // Only add exerciseRef if it exists
-      if (exercise.exerciseRef) {
-        exerciseData.exerciseRef = exercise.exerciseRef;
-      }
-      
-      // Only add activityType if it exists
-      if (exercise.activityType) {
-        exerciseData.activityType = exercise.activityType;
-      }
+      const exerciseData: any = buildProgramExercisePayload({
+        ...exercise,
+        id: exerciseId
+      }, exIndex, { generateIdIfMissing: true });
 
-      // Add prescription fields if they exist
-      if (exercise.instructionMode) {
-        exerciseData.instructionMode = exercise.instructionMode;
-        console.log('[updateSession] Added instructionMode:', exerciseData.instructionMode);
-      }
-      if (exercise.prescription) {
-        exerciseData.prescription = exercise.prescription;
-        console.log('[updateSession] Added prescription:', exerciseData.prescription);
-      }
-      if (exercise.instructions) {
-        exerciseData.instructions = exercise.instructions;
-        console.log('[updateSession] Added instructions length:', exerciseData.instructions?.length);
-      }
+      console.log('[updateSession] Added instructionMode:', exerciseData.instructionMode);
+      console.log('[updateSession] Added prescription:', exerciseData.prescription);
+      console.log('[updateSession] Added instructions length:', exerciseData.instructions?.length);
 
       // Process sets data if available (for backward compatibility)
       if (exercise.setsData) {
@@ -801,13 +785,14 @@ export const duplicateProgram = async (programId: string): Promise<Program> => {
       return {
         id: crypto.randomUUID(), // Generate new ID for duplicate
         name: sessionData.name,
+        isWarmupSession: sessionData.isWarmupSession === true,
         exercises: (sessionData.exercises || []).map((ex: any) => ({
           id: crypto.randomUUID(), // Generate new ID for each exercise
           name: ex.name,
           exerciseRef: ex.exerciseRef,
           notes: ex.notes || '',
           order: ex.order,
-          activityType: ex.activityType,
+          activityType: ex.activityType ? normalizeActivityType(ex.activityType) : undefined,
           // Preserve prescription fields
           instructionMode: ex.instructionMode,
           prescription: ex.prescription,
@@ -899,7 +884,7 @@ export const duplicateSession = async (programId: string, sessionId: string): Pr
       exerciseRef: ex.exerciseRef,
       notes: ex.notes || '',
       order: ex.order,
-      activityType: ex.activityType,
+      activityType: ex.activityType ? normalizeActivityType(ex.activityType) : undefined,
       // Preserve prescription fields
       instructionMode: ex.instructionMode,
       prescription: ex.prescription,
@@ -909,6 +894,7 @@ export const duplicateSession = async (programId: string, sessionId: string): Pr
     const newSessionData = {
       name: `${sessionData.name} (Copy)`,
       exercises: duplicatedExercises,
+      isWarmupSession: sessionData.isWarmupSession === true,
       notes: sessionData.notes || '',
       order: maxOrder + 1
     };
@@ -934,6 +920,7 @@ export const duplicateSession = async (programId: string, sessionId: string): Pr
     const duplicatedSession: ProgramSession = {
       id: newSessionDoc.id,
       name: newSessionDocData.name,
+      isWarmupSession: newSessionDocData.isWarmupSession === true,
       exercises: newSessionDocData.exercises || [],
       notes: newSessionDocData.notes,
       order: newSessionDocData.order,
@@ -1009,6 +996,140 @@ export const createTestProgram = async (): Promise<void> => {
     console.error('[TEST] Error in test:', error);
     throw error;
   }
+};
+
+type ProgramMigrationSummary = {
+  scannedPrograms: number;
+  updatedSessions: number;
+  updatedExercises: number;
+};
+
+const speedAgilityNameSet = new Set(
+  (Array.isArray(speedAgilityExercises) ? speedAgilityExercises : [])
+    .map((exercise: any) => String(exercise?.name || '').trim().toLowerCase())
+    .filter(Boolean)
+);
+
+const speedAgilityIdSet = new Set(
+  (Array.isArray(speedAgilityExercises) ? speedAgilityExercises : [])
+    .map((exercise: any) => String(exercise?.id || '').trim().toLowerCase())
+    .filter(Boolean)
+);
+
+const isLikelySpeedAgilityExercise = (exercise: any): boolean => {
+  const rawId = String(exercise?.id || '').trim().toLowerCase();
+  const rawName = String(exercise?.name || '').trim().toLowerCase();
+  const rawRef = String(exercise?.exerciseRef || '').trim().toLowerCase();
+  const rawDrillType = String(exercise?.drillType || '').trim().toLowerCase();
+
+  if (!rawId && !rawName && !rawRef && !rawDrillType) return false;
+  if (speedAgilityIdSet.has(rawId) || speedAgilityNameSet.has(rawName)) return true;
+  if (rawId.startsWith('sap') || rawRef.includes('sap')) return true;
+  if (rawRef.includes('speedagility') || rawRef.includes('speed-agility')) return true;
+
+  return [
+    'sprint',
+    'agility',
+    'reaction',
+    'acceleration',
+    'change_of_direction',
+    'change of direction',
+    'ladder',
+    'cone',
+    'plyometric',
+    'plyometrics',
+  ].includes(rawDrillType);
+};
+
+const normalizeProgramExerciseForMigration = (exercise: any): { normalized: any; changed: boolean } => {
+  const normalized = { ...exercise };
+  let changed = false;
+
+  const normalizedActivityType = exercise?.activityType
+    ? normalizeActivityType(exercise.activityType)
+    : undefined;
+
+  if (normalizedActivityType && exercise.activityType !== normalizedActivityType) {
+    normalized.activityType = normalizedActivityType;
+    changed = true;
+  }
+
+  const shouldForceSpeedAgility =
+    isLikelySpeedAgilityExercise(exercise) &&
+    (!normalizedActivityType || normalizedActivityType === 'resistance');
+
+  if (shouldForceSpeedAgility) {
+    normalized.activityType = 'speedAgility' as ActivityType;
+    changed = true;
+  }
+
+  const activityType = normalized.activityType as ActivityType | undefined;
+  if (
+    normalized.prescription &&
+    (activityType === 'endurance' || activityType === 'sport') &&
+    normalized.prescription.duration !== undefined
+  ) {
+    const normalizedDuration = normalizeEnduranceDurationMinutes(normalized.prescription.duration);
+    if (JSON.stringify(normalizedDuration) !== JSON.stringify(normalized.prescription.duration)) {
+      normalized.prescription = {
+        ...normalized.prescription,
+        duration: normalizedDuration,
+      };
+      changed = true;
+    }
+  }
+
+  return { normalized, changed };
+};
+
+export const migrateLegacyProgramSessionData = async (): Promise<ProgramMigrationSummary> => {
+  const summary: ProgramMigrationSummary = {
+    scannedPrograms: 0,
+    updatedSessions: 0,
+    updatedExercises: 0,
+  };
+
+  const user = await ensureAuth();
+  const programsRef = collection(db, PROGRAMS_COLLECTION);
+  const programsQuery = query(programsRef, where('userId', '==', user.uid));
+  const programsSnapshot = await getDocs(programsQuery);
+
+  summary.scannedPrograms = programsSnapshot.size;
+
+  for (const programDoc of programsSnapshot.docs) {
+    const sessionsRef = collection(db, `${PROGRAMS_COLLECTION}/${programDoc.id}/sessions`);
+    const sessionsSnapshot = await getDocs(sessionsRef);
+
+    for (const sessionDoc of sessionsSnapshot.docs) {
+      const sessionData = sessionDoc.data();
+      const exercises = Array.isArray(sessionData.exercises) ? sessionData.exercises : [];
+
+      let sessionChanged = false;
+      let sessionExerciseUpdates = 0;
+
+      const updatedExercises = exercises.map((exercise: any) => {
+        const { normalized, changed } = normalizeProgramExerciseForMigration(exercise);
+        if (changed) {
+          sessionChanged = true;
+          sessionExerciseUpdates += 1;
+        }
+        return normalized;
+      });
+
+      if (sessionChanged) {
+        await updateDoc(sessionDoc.ref, {
+          exercises: updatedExercises,
+          updatedAt: serverTimestamp(),
+        });
+
+        summary.updatedSessions += 1;
+        summary.updatedExercises += sessionExerciseUpdates;
+      }
+    }
+  }
+
+  console.log('[programService] Legacy program session migration summary:', summary);
+  return summary;
 };
 
 // ========== PROGRAM SHARING FUNCTIONS ==========

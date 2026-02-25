@@ -26,6 +26,7 @@ import { getAllExercisesByDate, UnifiedExerciseData, deleteExercise } from '../.
 import { FloatingActionButton, EmptyState, ExerciseListSkeleton } from '../../components/ui';
 import { updateSharedSessionStatus } from '@/services/sessionService';
 import { ActivityType } from '@/types/activityTypes';
+import { normalizeActivityType } from '@/types/activityLog';
 import { SharedSessionAssignment } from '@/types/program';
 import { generateExercisePrescriptionAssistant } from '@/services/exercisePrescriptionAssistantService';
 import toast from 'react-hot-toast';
@@ -68,6 +69,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   }, [normalizeDate]);
   
   type UIState = {
+    showEntryChoice: boolean;
     showLogOptions: boolean;
     showSetLogger: boolean;
     showWorkoutSummary: boolean;
@@ -77,6 +79,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
 
   // State management
   const [uiState, setUiState] = useState<UIState>({
+    showEntryChoice: false,
     showLogOptions: false,
     showSetLogger: false,
     showWorkoutSummary: false,
@@ -92,6 +95,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   const [exercises, setExercises] = useState<UnifiedExerciseData[]>([]);
   const [loading, setLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [logOptionsWarmupMode, setLogOptionsWarmupMode] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<ExerciseData | null>(null);
   const [editingExercise, setEditingExercise] = useState<UnifiedExerciseData | null>(null);
   const [oneRepMaxByExerciseKey, setOneRepMaxByExerciseKey] = useState<Record<string, OneRepMaxPrediction>>({});
@@ -105,6 +109,20 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
       exerciseName: exercise.exerciseName,
       sharedSessionExerciseId: exercise.sharedSessionExerciseId
     });
+  }, []);
+
+  const toSafeDate = useCallback((value: unknown): Date => {
+    if (
+      value &&
+      typeof value === 'object' &&
+      'toDate' in (value as Record<string, unknown>) &&
+      typeof (value as { toDate?: unknown }).toDate === 'function'
+    ) {
+      return (value as { toDate: () => Date }).toDate();
+    }
+
+    const parsed = value ? new Date(value as string | number | Date) : new Date();
+    return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
   }, []);
 
   const hasMeaningfulSetData = useCallback((set: ExerciseSet): boolean => {
@@ -181,6 +199,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     userId: userId,
     deviceId: exercise.deviceId || localStorage.getItem('device_id') || '',
     activityType: exercise.activityType as ActivityType | undefined,
+    isWarmup: exercise.isWarmup,
     sharedSessionAssignmentId: exercise.sharedSessionAssignmentId,
     sharedSessionId: exercise.sharedSessionId,
     sharedSessionExerciseId: exercise.sharedSessionExerciseId,
@@ -231,9 +250,10 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
           id: doc.id,
           exerciseName: data.exerciseName,
           sets: data.sets,
-          timestamp: data.timestamp.toDate(),
+          timestamp: toSafeDate(data.timestamp),
           deviceId: data.deviceId,
           activityType: data.activityType,
+          isWarmup: data.isWarmup,
           sharedSessionAssignmentId: data.sharedSessionAssignmentId,
           sharedSessionId: data.sharedSessionId,
           sharedSessionExerciseId: data.sharedSessionExerciseId,
@@ -287,7 +307,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     } finally {
       setLoading(false);
     }
-  }, [user?.id, areDatesEqual, normalizeDate, getDateRange, convertToExerciseData, loadSupersetsForDate]);
+  }, [user?.id, areDatesEqual, normalizeDate, getDateRange, convertToExerciseData, loadSupersetsForDate, toSafeDate]);
   
   const handleCloseSetLogger = useCallback(() => {
     setSelectedExercise(null);
@@ -326,6 +346,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
           instructionMode: selectedExerciseWithMeta.instructionMode,
           instructions: selectedExerciseWithMeta.instructions,
           prescriptionAssistant: metadata?.prescriptionAssistant || selectedExerciseWithMeta.prescriptionAssistant,
+          isWarmup: selectedExerciseWithMeta.isWarmup,
           ...(selectedExerciseWithMeta.sharedSessionAssignmentId && {
             sharedSessionAssignmentId: selectedExerciseWithMeta.sharedSessionAssignmentId
           }),
@@ -436,6 +457,16 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     updateUiState('showLogOptions', true);
   };
 
+  const openLogOptionsForMode = useCallback((isWarmup: boolean) => {
+    setLogOptionsWarmupMode(isWarmup);
+    setEditingExercise(null);
+    setUiState(prev => ({
+      ...prev,
+      showEntryChoice: false,
+      showLogOptions: true
+    }));
+  }, []);
+
   // Handle exercise reordering with persistence
   const handleReorderExercises = useCallback((reorderedExercises: ExerciseData[]) => {
     // Update the UI immediately
@@ -476,6 +507,23 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     
     console.log('✅ Exercise order saved');
   }, [selectedDate, user, saveSupersetsForDate]);
+
+  const warmupExercises = exercises.filter((exercise) => exercise.isWarmup === true);
+  const mainSessionExercises = exercises.filter((exercise) => exercise.isWarmup !== true);
+  const displayMainSessionExercises =
+    mainSessionExercises.length > 0 || warmupExercises.length > 0
+      ? mainSessionExercises
+      : exercises;
+
+  const handleWarmupReorder = useCallback((reorderedWarmups: UnifiedExerciseData[]) => {
+    const nonWarmupExercises = exercises.filter((exercise) => exercise.isWarmup !== true);
+    handleReorderExercises([...reorderedWarmups, ...nonWarmupExercises]);
+  }, [exercises, handleReorderExercises]);
+
+  const handleMainSessionReorder = useCallback((reorderedMainExercises: UnifiedExerciseData[]) => {
+    const currentWarmups = exercises.filter((exercise) => exercise.isWarmup === true);
+    handleReorderExercises([...currentWarmups, ...reorderedMainExercises]);
+  }, [exercises, handleReorderExercises]);
 
   // Load exercises when date or user changes
   useEffect(() => {
@@ -599,7 +647,8 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
         const importedExercisesForUi: UnifiedExerciseData[] = [];
 
         for (const exercise of sharedSessionAssignment.sessionData.exercises) {
-          const activityType = exercise.activityType || ActivityType.RESISTANCE;
+          const activityType = normalizeActivityType(exercise.activityType);
+          const isWarmup = sharedSessionAssignment.sessionData.isWarmupSession === true;
           const sets: ExerciseSet[] = [];
           const prescriptionAssistant = await generateExercisePrescriptionAssistant({
             exercise: {
@@ -629,6 +678,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
                   ? exercise.instructions[0]
                   : undefined,
               prescriptionAssistant,
+              isWarmup,
               sharedSessionAssignmentId: sharedSessionAssignment.id,
               sharedSessionId: sharedSessionAssignment.sharedSessionId,
               sharedSessionExerciseId: exercise.id,
@@ -645,6 +695,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
             userId: user.id,
             sets,
             activityType,
+            isWarmup,
             sharedSessionAssignmentId: sharedSessionAssignment.id,
             sharedSessionId: sharedSessionAssignment.sharedSessionId,
             sharedSessionExerciseId: exercise.id,
@@ -721,15 +772,42 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
               />
             ) : (
               <div className="space-y-4">
-                {/* Exercise display with drag and drop */}
-                <DraggableExerciseDisplay
-                  exercises={exercises}
-                  onEditExercise={handleEditExercise}
-                  onDeleteExercise={handleDeleteExercise}
-                  onReorderExercises={handleReorderExercises}
-                  oneRepMaxByExerciseKey={oneRepMaxByExerciseKey}
-                  getPerformanceKey={getPerformanceKey}
-                />
+                {warmupExercises.length > 0 && (
+                  <section className="space-y-2">
+                    <div className="px-1">
+                      <h3 className="text-sm font-semibold text-blue-300">Warm-up</h3>
+                    </div>
+                    <DraggableExerciseDisplay
+                      exercises={warmupExercises}
+                      onEditExercise={handleEditExercise}
+                      onDeleteExercise={handleDeleteExercise}
+                      onReorderExercises={handleWarmupReorder}
+                      oneRepMaxByExerciseKey={oneRepMaxByExerciseKey}
+                      getPerformanceKey={getPerformanceKey}
+                      listId="warmup"
+                      compactMode={true}
+                    />
+                  </section>
+                )}
+
+                {displayMainSessionExercises.length > 0 && (
+                  <section className="space-y-2">
+                    {warmupExercises.length > 0 && (
+                      <div className="px-1">
+                        <h3 className="text-sm font-semibold text-text-primary">Main Session</h3>
+                      </div>
+                    )}
+                    <DraggableExerciseDisplay
+                      exercises={displayMainSessionExercises}
+                      onEditExercise={handleEditExercise}
+                      onDeleteExercise={handleDeleteExercise}
+                      onReorderExercises={handleMainSessionReorder}
+                      oneRepMaxByExerciseKey={oneRepMaxByExerciseKey}
+                      getPerformanceKey={getPerformanceKey}
+                      listId="main"
+                    />
+                  </section>
+                )}
               </div>
             )}
           </div>
@@ -738,10 +816,38 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
 
       {/* Floating Action Button */}
       <FloatingActionButton
-        onClick={() => updateUiState('showLogOptions', true)}
+        onClick={() => updateUiState('showEntryChoice', true)}
         label="Add Exercise"
         position="bottom-right"
       />
+
+      {uiState.showEntryChoice && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-2xl bg-bg-secondary border border-border p-4 space-y-3">
+            <h3 className="text-lg font-semibold text-text-primary">What would you like to log?</h3>
+            <button
+              onClick={() => openLogOptionsForMode(false)}
+              className="w-full text-left px-4 py-3 rounded-xl bg-bg-tertiary hover:bg-hover-overlay transition-colors"
+            >
+              <div className="font-medium text-text-primary">Log Exercise</div>
+              <div className="text-sm text-text-tertiary">Regular exercise logging</div>
+            </button>
+            <button
+              onClick={() => openLogOptionsForMode(true)}
+              className="w-full text-left px-4 py-3 rounded-xl bg-bg-tertiary hover:bg-hover-overlay transition-colors"
+            >
+              <div className="font-medium text-text-primary">Log Warm-up Exercise</div>
+              <div className="text-sm text-text-tertiary">Mark as warm-up with compact display</div>
+            </button>
+            <button
+              onClick={() => updateUiState('showEntryChoice', false)}
+              className="w-full px-4 py-2 rounded-lg text-text-tertiary hover:text-text-primary hover:bg-hover-overlay transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
       {/* Program Modal */}
       {uiState.showProgramModal && (
         <ProgramModal
@@ -777,14 +883,17 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
           <LogOptions 
             onClose={() => {
               updateUiState('showLogOptions', false);
+              setLogOptionsWarmupMode(false);
               setEditingExercise(null); // Clear editing state when closing
             }}
             onExerciseAdded={() => {
               loadExercises(selectedDate);
+              setLogOptionsWarmupMode(false);
               setEditingExercise(null); // Clear editing state after saving
             }}
             selectedDate={selectedDate}
             editingExercise={editingExercise} // Pass editing exercise
+            initialWarmupMode={logOptionsWarmupMode}
           />
         </div>
       )}

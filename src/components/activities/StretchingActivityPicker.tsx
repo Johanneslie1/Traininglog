@@ -17,6 +17,7 @@ interface StretchingActivityPickerProps {
 	onActivityLogged: () => void;
 	selectedDate?: Date;
 	editingExercise?: any | null;
+	isWarmupMode?: boolean;
 }
 
 const StretchingActivityPicker: React.FC<StretchingActivityPickerProps> = ({
@@ -24,7 +25,8 @@ const StretchingActivityPicker: React.FC<StretchingActivityPickerProps> = ({
 	onBack,
 	onActivityLogged,
 	selectedDate = new Date(),
-	editingExercise = null
+	editingExercise = null,
+	isWarmupMode = false
 }) => {
 	const [selected, setSelected] = useState<StretchingExercise | null>(null);
 	const [view, setView] = useState<'list' | 'logging'>('list');
@@ -78,6 +80,7 @@ const StretchingActivityPicker: React.FC<StretchingActivityPickerProps> = ({
 							userId: user.id,
 							sets: sets,
 							activityType: ActivityType.STRETCHING,
+							isWarmup: isWarmupMode,
 							prescription: exercise.prescription,
 							instructionMode: exercise.instructionMode,
 							instructions: Array.isArray(exercise.instructions)

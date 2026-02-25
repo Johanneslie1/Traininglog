@@ -1,134 +1,19 @@
 import { ExerciseData } from '@/services/exerciseDataService';
-import { ActivityLog, ActivityType } from '@/types/activityTypes';
-import { activityLoggingService } from '@/services/activityService';
+import { ActivityType } from '@/types/activityTypes';
+import { normalizeActivityType, type ActivityLog as StoredActivityLog } from '@/types/activityLog';
 import { getExerciseLogs } from '@/services/firebase/exerciseLogs';
 import { deleteExerciseLog } from '@/services/firebase/exerciseLogs';
+import {
+  getActivityLogs as getFirebaseActivityLogs,
+  deleteActivityLog as deleteFirebaseActivityLog
+} from '@/services/firebase/activityLogs';
 import { getExerciseLogs as getLocalExerciseLogs } from '@/utils/localStorageUtils';
 import { deleteLocalExerciseLog } from '@/utils/localStorageUtils';
-import { ExerciseSet } from '@/types/sets';
 
 // Extended ExerciseData to support activity types
 export interface UnifiedExerciseData extends ExerciseData {
   activityType?: ActivityType;
-  activityData?: ActivityLog;
-}
-
-/**
- * Convert ActivityLog to ExerciseData format for unified display
- */
-function convertActivityLogToExerciseData(activityLog: ActivityLog): UnifiedExerciseData {
-  console.log('🔄 Converting activity log:', {
-    activityType: activityLog.activityType,
-    activityName: activityLog.activityName,
-    rawLog: activityLog
-  });
-
-  const baseData: UnifiedExerciseData = {
-    id: activityLog.id,
-    exerciseName: activityLog.activityName,
-    timestamp: activityLog.timestamp,
-    userId: activityLog.userId,
-    sets: [],
-    // Add activity type indicator for UI
-    activityType: activityLog.activityType,
-    activityData: activityLog // Store original activity data
-  };
-
-  // Convert activity sessions to sets format for display
-  if (activityLog.activityType === ActivityType.RESISTANCE) {
-    // Already in the right format, this shouldn't happen but handle it
-    baseData.sets = (activityLog as any).sessions || [];
-  } else if (activityLog.activityType === ActivityType.SPORT) {
-    const sportLog = activityLog as any;
-    baseData.sets = sportLog.sessions?.map((session: any, index: number) => ({
-      setNumber: index + 1,
-      duration: session.duration,
-      distance: session.distance,
-      calories: session.calories,
-      intensity: session.intensity,
-      score: session.score,
-      notes: session.notes,
-      // Add other sport-specific fields
-      ...(session.opponent && { opponent: session.opponent }),
-      ...(session.performance && { performance: session.performance }),
-      ...(session.skills && { skills: session.skills })
-    } as ExerciseSet)) || [];
-  } else if (activityLog.activityType === ActivityType.STRETCHING) {
-    const stretchLog = activityLog as any;
-    // Handle both 'stretches' and 'sessions' field names for backward compatibility
-    const dataArray = stretchLog.stretches || stretchLog.sessions || [];
-    baseData.sets = dataArray.map((session: any, index: number) => ({
-      setNumber: index + 1,
-      reps: session.reps,
-      intensity: session.intensity,
-      notes: session.notes,
-      ...(session.holdTime && { holdTime: session.holdTime }),
-      ...(session.flexibility && { flexibility: session.flexibility }),
-      ...(session.stretchType && { stretchType: session.stretchType }),
-      ...(session.bodyPart && { bodyPart: session.bodyPart })
-    } as ExerciseSet)) || [];
-  } else if (activityLog.activityType === ActivityType.ENDURANCE) {
-    const enduranceLog = activityLog as any;
-    baseData.sets = enduranceLog.sessions?.map((session: any, index: number) => ({
-      setNumber: index + 1,
-      duration: session.duration,
-      ...(session.distance && { distance: session.distance }),
-      ...(session.pace && { pace: session.pace }),
-      ...(session.averageHeartRate && { averageHeartRate: session.averageHeartRate }),
-      ...(session.averageHR && { averageHeartRate: session.averageHR }), // Handle both field names
-      ...(session.maxHeartRate && { maxHeartRate: session.maxHeartRate }),
-      ...(session.maxHR && { maxHeartRate: session.maxHR }), // Handle both field names
-      ...(session.calories && { calories: session.calories }),
-      ...(session.elevation && { elevation: session.elevation }),
-      ...(session.rpe && { rpe: session.rpe }),
-      ...(session.hrZone1 && { hrZone1: session.hrZone1 }),
-      ...(session.hrZone2 && { hrZone2: session.hrZone2 }),
-      ...(session.hrZone3 && { hrZone3: session.hrZone3 }),
-      notes: session.notes
-    } as ExerciseSet)) || [];
-  } else if (activityLog.activityType === ActivityType.OTHER) {
-    const otherLog = activityLog as any;
-    // Other activities use 'customData' field
-    const dataArray = otherLog.customData || otherLog.sessions || [];
-    baseData.sets = dataArray.map((session: any, index: number) => ({
-      setNumber: index + 1,
-      duration: session.duration,
-      ...(session.calories && { calories: session.calories }),
-      ...(session.heartRate && { heartRate: session.heartRate }),
-      ...(session.intensity && { intensity: session.intensity }),
-      notes: session.notes,
-      // Include any custom values
-      ...(session.customValues && session.customValues),
-      // Include any additional fields
-      ...Object.keys(session).reduce((acc, key) => {
-        if (!['sessionNumber', 'duration', 'calories', 'heartRate', 'intensity', 'notes', 'customValues'].includes(key)) {
-          acc[key] = session[key];
-        }
-        return acc;
-      }, {} as any)
-    } as ExerciseSet)) || [];
-  } else if (activityLog.activityType === ActivityType.SPEED_AGILITY) {
-    const speedAgilityLog = activityLog as any;
-    baseData.sets = speedAgilityLog.sessions?.map((session: any, index: number) => ({
-      setNumber: index + 1,
-      reps: session.reps,
-      ...(session.distance && { distance: session.distance }),
-      ...(session.height && { height: session.height }),
-      ...(session.restTime && { restTime: session.restTime }),
-      rpe: session.rpe,
-      notes: session.notes
-    } as ExerciseSet)) || [];
-  }
-
-  console.log('✅ Converted data result:', {
-    id: baseData.id,
-    exerciseName: baseData.exerciseName,
-    activityType: baseData.activityType,
-    sets: baseData.sets,
-    firstSet: baseData.sets[0]
-  });
-
-  return baseData;
+  activityData?: StoredActivityLog;
 }
 
 /**
@@ -154,7 +39,8 @@ export async function getAllExercisesByDate(
       userId: log.userId || userId,
       sets: log.sets || [],
       deviceId: log.deviceId,
-      activityType: (log.activityType as ActivityType) || ActivityType.RESISTANCE,
+      activityType: log.activityType ? normalizeActivityType(log.activityType) : ActivityType.RESISTANCE,
+      isWarmup: log.isWarmup,
       sharedSessionAssignmentId: log.sharedSessionAssignmentId,
       sharedSessionId: log.sharedSessionId,
       sharedSessionExerciseId: log.sharedSessionExerciseId,
@@ -166,14 +52,22 @@ export async function getAllExercisesByDate(
       prescriptionAssistant: log.prescriptionAssistant
     }));
 
-    const activityLogs = await activityLoggingService.getActivityLogs(
+    const activityLogs = await getFirebaseActivityLogs(
       userId,
       startOfDay,
       endOfDay
     );
 
-    // Convert activity logs to ExerciseData format
-    const activityExercises = activityLogs.map(convertActivityLogToExerciseData);
+    const activityExercises: UnifiedExerciseData[] = activityLogs.map((log) => ({
+      id: log.id,
+      exerciseName: log.activityName,
+      timestamp: log.timestamp || date,
+      userId: log.userId || userId,
+      sets: log.sets || [],
+      deviceId: log.deviceId,
+      activityType: normalizeActivityType(log.activityType),
+      activityData: log
+    }));
 
     // Combine and sort by timestamp
     const allExercises = [...resistanceExercises, ...activityExercises];
@@ -202,7 +96,8 @@ export async function getAllExercisesByDate(
         userId: log.userId || userId,
         sets: log.sets || [],
         deviceId: log.deviceId,
-        activityType: (log.activityType as ActivityType) || ActivityType.RESISTANCE,
+        activityType: log.activityType ? normalizeActivityType(log.activityType) : ActivityType.RESISTANCE,
+        isWarmup: log.isWarmup,
         sharedSessionAssignmentId: log.sharedSessionAssignmentId,
         sharedSessionId: log.sharedSessionId,
         sharedSessionExerciseId: log.sharedSessionExerciseId,
@@ -247,6 +142,18 @@ export async function deleteExercise(exercise: UnifiedExerciseData, userId: stri
         errors.push(`Firestore: ${errorMsg}`);
         console.warn('⚠️ Firestore deletion failed:', errorMsg);
       }
+
+      if (exercise.activityType && exercise.activityType !== ActivityType.RESISTANCE) {
+        try {
+          await deleteFirebaseActivityLog(exercise.id, userId);
+          firestoreDeleted = true;
+          console.log('✅ Deleted activity log from Firestore activities collection:', exercise.id);
+        } catch (activityDeleteError) {
+          const errorMsg = activityDeleteError instanceof Error ? activityDeleteError.message : 'Unknown Firestore activity delete error';
+          errors.push(`Firestore activity: ${errorMsg}`);
+          console.warn('⚠️ Firestore activity deletion failed:', errorMsg);
+        }
+      }
     }
 
     // Always try to delete from localStorage
@@ -260,15 +167,6 @@ export async function deleteExercise(exercise: UnifiedExerciseData, userId: stri
           !(log.exerciseName === exercise.exerciseName && new Date(log.timestamp).getTime() === new Date(exercise.timestamp).getTime())
         );
         localStorage.setItem('exercise_logs', JSON.stringify(filteredExerciseLogs));
-      }
-
-      // Also delete from activity logs localStorage (for activity types)
-      if (exercise.activityType && exercise.activityType !== ActivityType.RESISTANCE) {
-        const activityLogs: ActivityLog[] = JSON.parse(localStorage.getItem('activity-logs') || '[]');
-        const filteredActivityLogs = activityLogs.filter(log => 
-          !(log.id === exercise.id && log.userId === userId)
-        );
-        localStorage.setItem('activity-logs', JSON.stringify(filteredActivityLogs));
       }
 
       localStorageDeleted = true;
@@ -307,7 +205,7 @@ export async function deleteExercise(exercise: UnifiedExerciseData, userId: stri
  */
 export async function deleteActivityLog(logId: string, userId: string): Promise<void> {
   try {
-    await activityLoggingService.deleteActivityLog(logId, userId);
+    await deleteFirebaseActivityLog(logId, userId);
     console.log('✅ Activity log deleted successfully:', logId);
   } catch (error) {
     console.error('❌ Error deleting activity log:', error);
@@ -326,6 +224,7 @@ export function isActivityExercise(exercise: UnifiedExerciseData): boolean {
  * Get activity type display info
  */
 export function getActivityTypeDisplay(activityType?: ActivityType) {
+  const normalizedType = normalizeActivityType(activityType);
   const displayMap = {
     [ActivityType.RESISTANCE]: { emoji: '🏋️‍♂️', name: 'Resistance' },
     [ActivityType.SPORT]: { emoji: '⚽', name: 'Sports' },
@@ -335,5 +234,5 @@ export function getActivityTypeDisplay(activityType?: ActivityType) {
     [ActivityType.SPEED_AGILITY]: { emoji: '⚡', name: 'Speed & Agility' }
   };
 
-  return displayMap[activityType || ActivityType.RESISTANCE] || displayMap[ActivityType.RESISTANCE];
+  return displayMap[normalizedType];
 }

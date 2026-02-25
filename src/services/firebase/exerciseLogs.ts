@@ -18,6 +18,38 @@ import { ExercisePrescriptionAssistantData } from '@/types/exercise';
 import { ActivityType } from '@/types/activityTypes';
 import { findBestOneRepMaxSet, OneRepMaxPrediction } from '@/utils/oneRepMax';
 
+const LOCAL_EXERCISE_LOGS_KEY = 'exercise_logs';
+
+const upsertLocalExerciseLog = (entry: ExerciseLog): void => {
+  try {
+    const existingRaw = localStorage.getItem(LOCAL_EXERCISE_LOGS_KEY);
+    const existing: ExerciseLog[] = existingRaw ? JSON.parse(existingRaw) : [];
+
+    const normalizedEntry = {
+      ...entry,
+      timestamp: entry.timestamp instanceof Date ? entry.timestamp.toISOString() : new Date(entry.timestamp).toISOString()
+    } as unknown as ExerciseLog;
+
+    const existingIndex = existing.findIndex((log) => log.id === entry.id);
+    const updated = existingIndex >= 0
+      ? [...existing.slice(0, existingIndex), normalizedEntry, ...existing.slice(existingIndex + 1)]
+      : [...existing, normalizedEntry];
+
+    localStorage.setItem(LOCAL_EXERCISE_LOGS_KEY, JSON.stringify(updated));
+  } catch (error) {
+    console.warn('⚠️ Failed to upsert local exercise backup:', error);
+  }
+};
+
+const parseTimestamp = (value: unknown): Date => {
+  if (value && typeof value === 'object' && 'toDate' in (value as Record<string, unknown>) && typeof (value as { toDate?: unknown }).toDate === 'function') {
+    return (value as { toDate: () => Date }).toDate();
+  }
+
+  const parsed = value ? new Date(value as string | number | Date) : new Date();
+  return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+};
+
 const removeUndefinedFields = <T>(obj: T): T => {
   if (Array.isArray(obj)) {
     return obj.map(removeUndefinedFields) as unknown as T;
@@ -41,6 +73,7 @@ type ExerciseLogInput = {
   userId: string;
   sets: ExerciseSet[];
   activityType?: string; // Add activity type to the input type
+  isWarmup?: boolean;
   prescription?: Prescription;
   instructionMode?: 'structured' | 'freeform';
   instructions?: string;
@@ -71,6 +104,7 @@ export const addExerciseLog = async (
       userId: logData.userId,
       sets: Array.isArray(logData.sets) ? logData.sets : [], // Ensure sets is always an array
       ...(logData.activityType && { activityType: logData.activityType }), // Include activityType if provided
+      ...(typeof logData.isWarmup === 'boolean' && { isWarmup: logData.isWarmup }),
       ...(logData.sharedSessionAssignmentId && { sharedSessionAssignmentId: logData.sharedSessionAssignmentId }),
       ...(logData.sharedSessionId && { sharedSessionId: logData.sharedSessionId }),
       ...(logData.sharedSessionExerciseId && { sharedSessionExerciseId: logData.sharedSessionExerciseId }),
@@ -116,6 +150,27 @@ export const addExerciseLog = async (
 
     // Save the document
     await setDoc(docRef, exerciseData);
+
+    upsertLocalExerciseLog({
+      id: docId,
+      exerciseName: logData.exerciseName,
+      sets: logData.sets,
+      timestamp: selectedDate || new Date(),
+      deviceId: window.navigator.userAgent,
+      userId: logData.userId,
+      activityType: logData.activityType,
+      isWarmup: logData.isWarmup,
+      sharedSessionAssignmentId: logData.sharedSessionAssignmentId,
+      sharedSessionId: logData.sharedSessionId,
+      sharedSessionExerciseId: logData.sharedSessionExerciseId,
+      sharedSessionDateKey: logData.sharedSessionDateKey,
+      sharedSessionExerciseCompleted: logData.sharedSessionExerciseCompleted,
+      prescription: logData.prescription,
+      instructionMode: logData.instructionMode,
+      instructions: logData.instructions,
+      prescriptionAssistant: logData.prescriptionAssistant
+    });
+
     console.log('✅ Exercise saved successfully with ID:', docId);
     return docId;
     
@@ -131,6 +186,27 @@ export const addExerciseLog = async (
     if (firebaseError.code === 'permission-denied') {
       throw new Error('Permission denied. Please check your authentication.');
     }
+
+    upsertLocalExerciseLog({
+      id: existingId || `local-${Date.now()}`,
+      exerciseName: logData.exerciseName,
+      sets: Array.isArray(logData.sets) ? logData.sets : [],
+      timestamp: selectedDate || new Date(),
+      deviceId: window.navigator.userAgent,
+      userId: logData.userId,
+      activityType: logData.activityType,
+      isWarmup: logData.isWarmup,
+      sharedSessionAssignmentId: logData.sharedSessionAssignmentId,
+      sharedSessionId: logData.sharedSessionId,
+      sharedSessionExerciseId: logData.sharedSessionExerciseId,
+      sharedSessionDateKey: logData.sharedSessionDateKey,
+      sharedSessionExerciseCompleted: logData.sharedSessionExerciseCompleted,
+      prescription: logData.prescription,
+      instructionMode: logData.instructionMode,
+      instructions: logData.instructions,
+      prescriptionAssistant: logData.prescriptionAssistant
+    });
+
     throw new Error('Failed to add exercise log: ' + (firebaseError.message || 'Unknown error'));
   }
 };
@@ -262,10 +338,11 @@ export const getExerciseLogs = async (userId: string, startDate: Date, endDate: 
         id: doc.id,
         exerciseName: data.exerciseName,
         sets: data.sets,
-        timestamp: data.timestamp.toDate(),
+        timestamp: parseTimestamp(data.timestamp),
         deviceId: data.deviceId || 'legacy',
         userId: data.userId,
         activityType: data.activityType,
+        isWarmup: data.isWarmup,
         sharedSessionAssignmentId: data.sharedSessionAssignmentId,
         sharedSessionId: data.sharedSessionId,
         sharedSessionExerciseId: data.sharedSessionExerciseId,
@@ -308,6 +385,10 @@ export const getBestHistoricalOneRepMax = async ({
 
   logsByNameSnapshot.docs.forEach((docSnapshot) => {
     const data = docSnapshot.data();
+
+    if (data.isWarmup === true) {
+      return;
+    }
 
     if (data.activityType && data.activityType !== ActivityType.RESISTANCE) {
       return;

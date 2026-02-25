@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { SharedSessionAssignment } from '@/types/program';
 import { getSharedSessionsForAthlete, updateSharedSessionStatus } from '@/services/sessionService';
 import { ActivityType } from '@/types/activityTypes';
+import { normalizeActivityType } from '@/types/activityLog';
 import { formatPrescription } from '@/utils/prescriptionUtils';
 import { ClockIcon, CheckCircleIcon, UserIcon } from '@heroicons/react/outline';
 import { useNavigate } from 'react-router-dom';
@@ -111,7 +112,7 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
   };
 
   const getActivityTypeInfo = (activityType?: ActivityType) => {
-    const type = activityType || ActivityType.RESISTANCE;
+    const type = normalizeActivityType(activityType);
     switch (type) {
       case ActivityType.RESISTANCE:
         return { label: 'Resistance', color: 'bg-blue-600', textColor: 'text-blue-100' };
@@ -243,6 +244,11 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
                           {session.name}
                         </h3>
                         <div className="flex items-center gap-2 text-sm text-gray-400 flex-wrap">
+                          {session.isWarmupSession && (
+                            <span className="px-2 py-0.5 rounded-full bg-blue-900/40 text-blue-200 text-xs font-medium">
+                              Warm-up session
+                            </span>
+                          )}
                           <span className="flex items-center gap-1">
                             <ClockIcon className="w-4 h-4" />
                             {formatDate(assignment.assignedAt)}
@@ -337,7 +343,7 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
                                 </div>
                                 {exercise.prescription && exercise.instructionMode === 'structured' && (
                                   <div className="text-sm text-blue-400 ml-8">
-                                    📋 {formatPrescription(exercise.prescription, exercise.activityType || ActivityType.RESISTANCE)}
+                                    📋 {formatPrescription(exercise.prescription, normalizeActivityType(exercise.activityType))}
                                   </div>
                                 )}
                                 {exercise.instructions && exercise.instructionMode === 'freeform' && (
