@@ -38,9 +38,19 @@ export const getExercisesByDateRange = async (
         id: doc.id,
         exerciseName: data.exerciseName,
         sets: data.sets || [],
-        timestamp: data.timestamp.toDate(),
+        timestamp: typeof data.timestamp?.toDate === 'function' ? data.timestamp.toDate() : new Date(data.timestamp),
         deviceId: data.deviceId || '',
-        userId: userId
+        userId: userId,
+        activityType: data.activityType,
+        exerciseType: data.exerciseType,
+        isWarmup: data.isWarmup,
+        supersetId: data.supersetId,
+        supersetLabel: data.supersetLabel,
+        supersetName: data.supersetName,
+        prescription: data.prescription,
+        instructionMode: data.instructionMode,
+        instructions: data.instructions,
+        prescriptionAssistant: data.prescriptionAssistant
       } as ExerciseLog;
     });
 

@@ -41,4 +41,26 @@ describe('resolveActivityTypeFromExerciseLike', () => {
 
     expect(resolved).toBe(ActivityType.RESISTANCE);
   });
+
+  test('infers resistance from set shape when activityType is missing', () => {
+    const resolved = resolveActivityTypeFromExerciseLike({
+      sets: [{ setNumber: 1, weight: 80, reps: 5 }],
+    });
+
+    expect(resolved).toBe(ActivityType.RESISTANCE);
+  });
+
+  test('can override conflicting explicit type when configured', () => {
+    const resolved = resolveActivityTypeFromExerciseLike(
+      {
+        activityType: ActivityType.ENDURANCE,
+        sets: [{ setNumber: 1, weight: 40, reps: 12 }],
+      },
+      {
+        preferHintOverExplicit: true,
+      }
+    );
+
+    expect(resolved).toBe(ActivityType.RESISTANCE);
+  });
 });

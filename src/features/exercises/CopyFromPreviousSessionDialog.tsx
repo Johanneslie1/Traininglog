@@ -4,6 +4,7 @@ import { getExerciseLogsByDate } from '@/utils/localStorageUtils';
 import { getExercisesByDateRange } from '@/services/firebase/queries';
 import { SearchIcon, XIcon, CheckIcon } from '@heroicons/react/solid';
 import { ActivityType } from '@/types/activityTypes';
+import { resolveActivityTypeFromExerciseLike } from '@/utils/activityTypeResolver';
 
 interface Props {
   isOpen: boolean;
@@ -74,28 +75,38 @@ const CopyFromPreviousSessionDialog: React.FC<Props> = ({
           timestamp: exercise.timestamp,
           userId: userId,
           deviceId: exercise.deviceId || '',
-          ...(exercise.activityType && { 
-            activityType: Object.values(ActivityType).includes(exercise.activityType as ActivityType) 
-              ? exercise.activityType as ActivityType 
-              : ActivityType.RESISTANCE 
-          })
+          activityType: resolveActivityTypeFromExerciseLike(
+            {
+              ...exercise,
+              sets: exercise.sets as unknown as Array<Record<string, unknown>>,
+            },
+            {
+              fallback: ActivityType.RESISTANCE,
+              preferHintOverExplicit: true,
+            }
+          )
         }));
 
         // Convert local exercises to ExerciseData, excluding those already in Firebase
         const localData = localExercises
           .filter(local => !firebaseData.some(fb => fb.id === local.id))
           .map(exercise => ({
-            id: exercise.id,
-            exerciseName: exercise.exerciseName,
-            sets: exercise.sets,
-            timestamp: new Date(exercise.timestamp),
-            userId: userId,
-            deviceId: exercise.deviceId || '',
-            ...(exercise.activityType && { 
-              activityType: Object.values(ActivityType).includes(exercise.activityType as ActivityType) 
-                ? exercise.activityType as ActivityType 
-                : ActivityType.RESISTANCE 
-            })
+          id: exercise.id,
+          exerciseName: exercise.exerciseName,
+          sets: exercise.sets,
+          timestamp: new Date(exercise.timestamp),
+          userId: userId,
+          deviceId: exercise.deviceId || '',
+          activityType: resolveActivityTypeFromExerciseLike(
+            {
+              ...exercise,
+              sets: exercise.sets as unknown as Array<Record<string, unknown>>,
+            },
+            {
+              fallback: ActivityType.RESISTANCE,
+              preferHintOverExplicit: true,
+            }
+          )
           }));
 
         // Combine and sort by timestamp
@@ -118,7 +129,17 @@ const CopyFromPreviousSessionDialog: React.FC<Props> = ({
             sets: ex.sets,
             timestamp: new Date(ex.timestamp),
             userId: userId,
-            deviceId: ex.deviceId || ''
+            deviceId: ex.deviceId || '',
+            activityType: resolveActivityTypeFromExerciseLike(
+              {
+                ...ex,
+                sets: ex.sets as unknown as Array<Record<string, unknown>>,
+              },
+              {
+                fallback: ActivityType.RESISTANCE,
+                preferHintOverExplicit: true,
+              }
+            )
           })));
           setSelectedExercises(new Set());
           console.log('⚠️ Fallback to local storage successful');

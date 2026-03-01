@@ -120,6 +120,26 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
     setIsWarmupMode(initialWarmupMode);
   }, [editingExercise, initialWarmupMode]);
 
+  const resolveEffectiveActivityType = (exerciseLike: {
+    activityType?: unknown;
+    type?: unknown;
+    trainingType?: unknown;
+    exerciseType?: unknown;
+    drillType?: unknown;
+    stretchType?: unknown;
+    sportType?: unknown;
+    enduranceType?: unknown;
+    teamBased?: unknown;
+    defaultUnit?: unknown;
+    metrics?: Record<string, unknown>;
+    sets?: Array<Record<string, unknown>>;
+  }): ActivityType => {
+    return resolveActivityTypeFromExerciseLike(exerciseLike, {
+      fallback: ActivityType.RESISTANCE,
+      preferHintOverExplicit: true,
+    });
+  };
+
   const handleTrainingTypeSelected = (type: TrainingType) => {
     switch(type) {
       case TrainingType.STRENGTH:
@@ -246,11 +266,16 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
           continue;
         }
 
+        const resolvedActivityType = resolveEffectiveActivityType({
+          ...exercise,
+          sets: (exercise.sets || []) as unknown as Array<Record<string, unknown>>,
+        });
+
         const exerciseLogData = {
           exerciseName: exercise.exerciseName,
           userId: user.id,
           sets: exercise.sets || [],
-          ...(exercise.activityType && { activityType: exercise.activityType }),
+          activityType: resolvedActivityType,
           isWarmup: isWarmupMode || Boolean((exercise as any).isWarmup)
         };
 
@@ -463,17 +488,22 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
   }
 
   if (view === 'editExercise' && editingExercise) {
+    const effectiveActivityType = resolveEffectiveActivityType({
+      ...editingExercise,
+      sets: (editingExercise.sets || []) as unknown as Array<Record<string, unknown>>,
+    });
+
     // Convert UnifiedExerciseData to Exercise format for UniversalSetLogger
     const exerciseForLogger: Exercise = {
       id: editingExercise.id || `edit-${Date.now()}`,
       name: editingExercise.exerciseName,
       description: editingExercise.exerciseName,
-      activityType: editingExercise.activityType,
-      type: editingExercise.activityType === ActivityType.RESISTANCE ? 'strength' :
-            editingExercise.activityType === ActivityType.ENDURANCE ? 'endurance' :
-            editingExercise.activityType === ActivityType.STRETCHING ? 'flexibility' :
-            editingExercise.activityType === ActivityType.SPORT ? 'teamSports' :
-            editingExercise.activityType === ActivityType.SPEED_AGILITY ? 'speed_agility' : 'other',
+      activityType: effectiveActivityType,
+      type: effectiveActivityType === ActivityType.RESISTANCE ? 'strength' :
+        effectiveActivityType === ActivityType.ENDURANCE ? 'endurance' :
+        effectiveActivityType === ActivityType.STRETCHING ? 'flexibility' :
+        effectiveActivityType === ActivityType.SPORT ? 'teamSports' :
+        effectiveActivityType === ActivityType.SPEED_AGILITY ? 'speed_agility' : 'other',
       category: 'general',
       equipment: [],
       instructions: editingExercise.instructions ? [editingExercise.instructions] : [],
@@ -482,13 +512,13 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
       secondaryMuscles: [],
       targetAreas: [],
       metrics: {
-        trackWeight: editingExercise.activityType === ActivityType.RESISTANCE,
+        trackWeight: effectiveActivityType === ActivityType.RESISTANCE,
         trackReps: true,
-        trackTime: editingExercise.activityType !== ActivityType.RESISTANCE,
-        trackDistance: editingExercise.activityType === ActivityType.ENDURANCE,
+        trackTime: effectiveActivityType !== ActivityType.RESISTANCE,
+        trackDistance: effectiveActivityType === ActivityType.ENDURANCE,
         trackRPE: true
       },
-      defaultUnit: editingExercise.activityType === ActivityType.RESISTANCE ? 'kg' : 'time',
+      defaultUnit: effectiveActivityType === ActivityType.RESISTANCE ? 'kg' : 'time',
       prescription: editingExercise.prescription,
       instructionMode: editingExercise.instructionMode,
       prescriptionAssistant: editingExercise.prescriptionAssistant
@@ -516,7 +546,10 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
               exerciseName: editingExercise.exerciseName,
               userId: user.id,
               sets: sets,
-              activityType: editingExercise.activityType,
+              activityType: resolveEffectiveActivityType({
+                ...editingExercise,
+                sets: (sets || []) as unknown as Array<Record<string, unknown>>,
+              }),
               isWarmup: isWarmupMode,
               prescription: editingExercise.prescription,
               instructionMode: editingExercise.instructionMode,

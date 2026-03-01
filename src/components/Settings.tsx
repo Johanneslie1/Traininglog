@@ -294,9 +294,8 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center" onClick={onClose}>
-      <div className="bg-bg-primary rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl mx-4" onClick={(e) => e.stopPropagation()}>
-        <div className="flex flex-col h-full">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-start sm:items-center justify-center overflow-y-auto p-4" onClick={onClose}>
+      <div className="bg-bg-primary rounded-xl w-full max-w-2xl h-[90vh] max-h-[90vh] flex flex-col overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
           {/* Header */}
           <div className="p-6 border-b border-border">
             <div className="flex items-center justify-between">
@@ -313,7 +312,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
           </div>
 
           {/* Settings List */}
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 min-h-0 overflow-y-auto p-6">
             <div className="space-y-4">
               {/* Theme Setting */}
               <div className="flex items-center justify-between">
@@ -545,7 +544,6 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
               App Version 1.0.0
             </div>
           </div>
-        </div>
       </div>
     </div>
   );

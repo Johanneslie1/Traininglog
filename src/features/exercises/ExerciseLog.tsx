@@ -16,8 +16,11 @@ import WorkoutSummary from './WorkoutSummary';
 import { db } from '../../services/firebase/config';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { getExerciseLogsByDate, saveExerciseLog } from '../../utils/localStorageUtils';
-import { addExerciseLog } from '../../services/firebase/exerciseLogs';
-import { getBestHistoricalOneRepMax } from '@/services/firebase/exerciseLogs';
+import {
+  addExerciseLog,
+  getBestHistoricalOneRepMax,
+  repairExerciseLogActivityTypes
+} from '@/services/firebase/exerciseLogs';
 import SideMenu from '../../components/SideMenu';
 import Settings from '../../components/Settings';
 import DraggableExerciseDisplay from '../../components/DraggableExerciseDisplay';
@@ -73,7 +76,6 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   }, [normalizeDate]);
   
   type UIState = {
-    showEntryChoice: boolean;
     showLogOptions: boolean;
     showSetLogger: boolean;
     showWorkoutSummary: boolean;
@@ -83,7 +85,6 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
 
   // State management
   const [uiState, setUiState] = useState<UIState>({
-    showEntryChoice: false,
     showLogOptions: false,
     showSetLogger: false,
     showWorkoutSummary: false,
@@ -300,6 +301,26 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
         return 0;
       });
 
+      try {
+        const repairedCount = await repairExerciseLogActivityTypes(
+          userId,
+          combinedExercises
+            .filter((exercise) => Boolean(exercise.id))
+            .map((exercise) => ({
+              id: exercise.id,
+              exerciseName: exercise.exerciseName,
+              sets: exercise.sets,
+              activityType: exercise.activityType,
+            }))
+        );
+
+        if (repairedCount > 0) {
+          console.log(`🔧 Repaired activityType on ${repairedCount} exercise log(s)`);
+        }
+      } catch (repairError) {
+        console.warn('⚠️ ActivityType repair pass failed (continuing without blocking UI):', repairError);
+      }
+
       setExercises(combinedExercises);
     } catch (error) {
       console.error('Error fetching exercises:', error);
@@ -484,15 +505,11 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     updateUiState('showLogOptions', true);
   };
 
-  const openLogOptionsForMode = useCallback((isWarmup: boolean) => {
-    setLogOptionsWarmupMode(isWarmup);
+  const openLogOptions = useCallback(() => {
+    setLogOptionsWarmupMode(false);
     setEditingExercise(null);
-    setUiState(prev => ({
-      ...prev,
-      showEntryChoice: false,
-      showLogOptions: true
-    }));
-  }, []);
+    updateUiState('showLogOptions', true);
+  }, [updateUiState]);
 
   // Handle exercise reordering with persistence
   const handleReorderExercises = useCallback((reorderedExercises: ExerciseData[]) => {
@@ -849,38 +866,10 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
 
       {/* Floating Action Button */}
       <FloatingActionButton
-        onClick={() => updateUiState('showEntryChoice', true)}
+        onClick={openLogOptions}
         label="Add Exercise"
         position="bottom-right"
       />
-
-      {uiState.showEntryChoice && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
-          <div className="w-full max-w-md rounded-2xl bg-bg-secondary border border-border p-4 space-y-3">
-            <h3 className="text-lg font-semibold text-text-primary">What would you like to log?</h3>
-            <button
-              onClick={() => openLogOptionsForMode(false)}
-              className="w-full text-left px-4 py-3 rounded-xl bg-bg-tertiary hover:bg-hover-overlay transition-colors"
-            >
-              <div className="font-medium text-text-primary">Log Exercise</div>
-              <div className="text-sm text-text-tertiary">Regular exercise logging</div>
-            </button>
-            <button
-              onClick={() => openLogOptionsForMode(true)}
-              className="w-full text-left px-4 py-3 rounded-xl bg-bg-tertiary hover:bg-hover-overlay transition-colors"
-            >
-              <div className="font-medium text-text-primary">Log Warm-up Exercise</div>
-              <div className="text-sm text-text-tertiary">Mark as warm-up with compact display</div>
-            </button>
-            <button
-              onClick={() => updateUiState('showEntryChoice', false)}
-              className="w-full px-4 py-2 rounded-lg text-text-tertiary hover:text-text-primary hover:bg-hover-overlay transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
       {/* Program Modal */}
       {uiState.showProgramModal && (
         <ProgramModal

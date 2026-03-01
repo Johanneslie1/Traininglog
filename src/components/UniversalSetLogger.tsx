@@ -8,10 +8,6 @@ import { toast } from 'react-hot-toast';
 import { SwipeableSetRow } from './SwipeableSetRow';
 import { useExerciseHistory } from '@/hooks/useExerciseHistory';
 import { ExerciseHistorySummary } from './ExerciseHistorySummary';
-import TemplateSelector from './templates/TemplateSelector';
-import CustomTemplateManager from './templates/CustomTemplateManager';
-import { WorkoutTemplate } from '@/types/workoutTemplate';
-import { applyTemplate } from '@/services/workoutTemplateService';
 import { Prescription } from '@/types/program';
 import { prescriptionToSets } from '@/utils/prescriptionUtils';
 import PrescriptionGuideCard from '@/components/exercises/PrescriptionGuideCard';
@@ -272,10 +268,6 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
   const [assistantLoading, setAssistantLoading] = useState(false);
   const generatedAssistantRef = useRef(Boolean(prescriptionAssistant || exercise.prescriptionAssistant));
   
-  // Template system state
-  const [showTemplateSelector, setShowTemplateSelector] = useState(false);
-  const [showTemplateManager, setShowTemplateManager] = useState(false);
-  
   // Track unique IDs for sets to prevent key issues
   const [setIds, setSetIds] = useState<string[]>([]);
   
@@ -478,32 +470,6 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
       toast.success('Copied previous set values');
     }
   }, [sets]);
-
-  // Handle template application
-  const handleApplyTemplate = useCallback((template: WorkoutTemplate) => {
-    // Calculate base weight from last set if available
-    const lastWeight = sets.length > 0 && sets[0].weight ? sets[0].weight : undefined;
-    
-    // Apply template to generate sets
-    const templateSets = applyTemplate(template, lastWeight);
-    
-    // Merge with exercise type defaults
-    const mergedSets = templateSets.map(templateSet => ({
-      ...getDefaultSet(exerciseType),
-      ...templateSet
-    })) as ExerciseSet[];
-    
-    setSets(mergedSets);
-    
-    // Generate new IDs for template sets
-    const newIds = mergedSets.map((_, index) => `set-${exercise.name}-${index}-${Date.now()}`);
-    setSetIds(newIds);
-    
-    toast.success(`Applied "${template.name}" template with ${mergedSets.length} sets`, {
-      duration: 2000,
-      icon: '✨',
-    });
-  }, [sets, exerciseType, exercise.name]);
 
   // Handle copying last values from exercise history
   const handleCopyLastHistoryValues = useCallback((historySets: ExerciseSet[]) => {
@@ -1158,14 +1124,6 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
           );
         })}
 
-        {/* Template Button - Apply workout patterns */}
-        <button
-          onClick={() => setShowTemplateSelector(true)}
-          className="w-full py-2.5 sm:py-3 rounded-lg bg-accent-primary/20 hover:bg-accent-primary/30 active:bg-accent-primary/40 text-accent-300 font-medium transition-colors border border-accent-500/30 touch-manipulation"
-        >
-          ✨ Apply Template
-        </button>
-
         {/* Add Set Button */}
         <button
           onClick={addSet}
@@ -1223,23 +1181,6 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
         </div>
       </div>
 
-      {/* Template Selector Modal */}
-      <TemplateSelector
-        isOpen={showTemplateSelector}
-        onClose={() => setShowTemplateSelector(false)}
-        onSelectTemplate={handleApplyTemplate}
-        onManageCustomTemplates={() => {
-          setShowTemplateSelector(false);
-          setShowTemplateManager(true);
-        }}
-        baseWeight={sets.length > 0 && sets[0].weight ? sets[0].weight : undefined}
-      />
-
-      {/* Custom Template Manager Modal */}
-      <CustomTemplateManager
-        isOpen={showTemplateManager}
-        onClose={() => setShowTemplateManager(false)}
-      />
     </div>
   );
 };

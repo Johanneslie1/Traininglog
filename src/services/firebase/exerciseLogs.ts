@@ -17,6 +17,7 @@ import { Prescription } from '@/types/program';
 import { ExercisePrescriptionAssistantData } from '@/types/exercise';
 import { ActivityType } from '@/types/activityTypes';
 import { findBestOneRepMaxSet, OneRepMaxPrediction } from '@/utils/oneRepMax';
+import { resolveActivityTypeFromExerciseLike } from '@/utils/activityTypeResolver';
 
 const LOCAL_EXERCISE_LOGS_KEY = 'exercise_logs';
 
@@ -375,6 +376,66 @@ export const getExerciseLogs = async (userId: string, startDate: Date, endDate: 
     console.error('❌ Error fetching exercise logs:', error);
     throw new Error('Failed to fetch exercises');
   }
+};
+
+type RepairEntry = {
+  id?: string;
+  exerciseName?: string;
+  sets?: ExerciseSet[];
+  activityType?: string;
+};
+
+export const repairExerciseLogActivityTypes = async (
+  userId: string,
+  entries: RepairEntry[]
+): Promise<number> => {
+  if (!userId || !Array.isArray(entries) || entries.length === 0) {
+    return 0;
+  }
+
+  let updatedCount = 0;
+
+  await Promise.all(
+    entries.map(async (entry) => {
+      if (!entry.id) {
+        return;
+      }
+
+      const resolvedType = resolveActivityTypeFromExerciseLike(
+        {
+          activityType: entry.activityType,
+          sets: (entry.sets || []) as unknown as Array<Record<string, unknown>>,
+          type: entry.activityType,
+        },
+        {
+          fallback: ActivityType.RESISTANCE,
+          preferHintOverExplicit: true,
+        }
+      );
+
+      if (resolvedType === entry.activityType) {
+        return;
+      }
+
+      try {
+        await setDoc(
+          doc(db, 'users', userId, 'exercises', entry.id),
+          { activityType: resolvedType },
+          { merge: true }
+        );
+
+        updatedCount += 1;
+      } catch (error) {
+        console.warn('⚠️ Failed to repair activityType for exercise log:', {
+          id: entry.id,
+          exerciseName: entry.exerciseName,
+          error
+        });
+      }
+    })
+  );
+
+  return updatedCount;
 };
 
 type BestOneRepMaxParams = {

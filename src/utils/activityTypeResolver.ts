@@ -13,11 +13,13 @@ type ActivityTypeLike = {
   teamBased?: unknown;
   defaultUnit?: unknown;
   metrics?: Record<string, unknown>;
+  sets?: Array<Record<string, unknown>>;
 };
 
 type ResolveOptions = {
   fallback?: ActivityType;
   preferHintOverOther?: boolean;
+  preferHintOverExplicit?: boolean;
 };
 
 const toLowerString = (value: unknown): string =>
@@ -66,6 +68,37 @@ const fromShapeHints = (value: ActivityTypeLike): ActivityType | undefined => {
   if (value.sportType || value.teamBased === true) return ActivityType.SPORT;
   if (value.enduranceType) return ActivityType.ENDURANCE;
 
+  const sets = Array.isArray(value.sets) ? value.sets : [];
+  if (sets.length > 0) {
+    const hasResistanceMarkers = sets.some((set) => {
+      const weight = set.weight;
+      const reps = set.reps;
+      return (
+        (typeof weight === 'number' && weight > 0) ||
+        (typeof reps === 'number' && reps > 0)
+      );
+    });
+
+    if (hasResistanceMarkers) {
+      return ActivityType.RESISTANCE;
+    }
+
+    const hasEnduranceMarkers = sets.some((set) => {
+      const duration = set.duration;
+      const distance = set.distance;
+      const averageHeartRate = set.averageHeartRate;
+      return (
+        (typeof duration === 'number' && duration > 0) ||
+        (typeof distance === 'number' && distance > 0) ||
+        (typeof averageHeartRate === 'number' && averageHeartRate > 0)
+      );
+    });
+
+    if (hasEnduranceMarkers) {
+      return ActivityType.ENDURANCE;
+    }
+  }
+
   const metrics = value.metrics || {};
   const trackWeight = Boolean(metrics.trackWeight);
   const trackReps = Boolean(metrics.trackReps);
@@ -108,6 +141,10 @@ export const resolveActivityTypeFromExerciseLike = (
     fromShapeHints(value);
 
   if (explicit) {
+    if (options?.preferHintOverExplicit && hintType && hintType !== explicit) {
+      return hintType;
+    }
+
     if (
       explicit === ActivityType.OTHER &&
       (options?.preferHintOverOther ?? true) &&
