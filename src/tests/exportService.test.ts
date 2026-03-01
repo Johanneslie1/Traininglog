@@ -225,4 +225,34 @@ describe('exportService serialization', () => {
     expect(setA?.supersetLabel).toBe('1a');
     expect(setB?.supersetLabel).toBe('1b');
   });
+
+  it('infers non-resistance activity type from set metrics when activityType is missing', async () => {
+    mockedWorkouts.getUserWorkouts.mockResolvedValue([]);
+    mockedExerciseLogs.getExerciseLogs.mockResolvedValue([
+      {
+        id: 'legacy-endurance-1',
+        exerciseName: 'Morning Run',
+        sets: [
+          {
+            duration: 35,
+            distance: 6.2,
+            pace: '5:38',
+            averageHeartRate: 149,
+          },
+        ],
+        timestamp: new Date('2026-03-01T08:30:00.000Z'),
+        userId: 'user-1',
+      },
+    ]);
+    mockedActivityLogs.getActivityLogs.mockResolvedValue([]);
+
+    const result = await exportData('user-1', {
+      includeSessions: false,
+      includeExerciseLogs: true,
+      includeSets: true,
+    });
+
+    expect(result.exerciseLogs[0].type).toBe(ActivityType.ENDURANCE);
+    expect(result.sets[0].activityType).toBe(ActivityType.ENDURANCE);
+  });
 });

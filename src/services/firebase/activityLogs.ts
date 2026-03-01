@@ -142,17 +142,6 @@ export const getActivityLogs = async (userId: string, startDate: Date, endDate: 
       throw new Error('userId is required to fetch activity logs');
     }
 
-    const auth = getAuth();
-    const currentUserId = auth.currentUser?.uid;
-    if (!currentUserId) {
-      return [];
-    }
-
-    if (currentUserId !== userId) {
-      console.warn('⚠️ Skipping activity fetch for non-owner userId (rules do not allow this query).');
-      return [];
-    }
-
     // Query from the user's activities subcollection
     const activitiesRef = collection(db, 'users', userId, 'activities');
     const q = query(
