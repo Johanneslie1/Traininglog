@@ -1,7 +1,7 @@
 import { getUserWorkouts } from './firebase/workouts';
 import { DifficultyCategory } from '@/types/difficulty';
 import { ActivityType } from '@/types/activityTypes';
-import { normalizeActivityType } from '@/types/activityLog';
+import { mapExerciseTypeToActivityType, normalizeActivityType } from '@/types/activityLog';
 import { getExerciseLogs as getFirebaseExerciseLogs } from '@/services/firebase/exerciseLogs';
 import { getActivityLogs as getFirebaseActivityLogs } from '@/services/firebase/activityLogs';
 import { SupersetGroup } from '@/types/session';
@@ -83,6 +83,50 @@ const toDistanceMeters = (distance: number | undefined, activityType: ActivityTy
     return Math.round(distance * 1000);
   }
   return distance;
+};
+
+const inferActivityTypeFromSetShape = (sets: Array<Record<string, any>>): ActivityType | undefined => {
+  if (!Array.isArray(sets) || sets.length === 0) {
+    return undefined;
+  }
+
+  const hasMetric = (predicate: (set: Record<string, any>) => boolean): boolean =>
+    sets.some((set) => predicate(set || {}));
+
+  if (hasMetric((set) => set.drillMetric !== undefined || set.restTime !== undefined || set.height !== undefined)) {
+    return ActivityType.SPEED_AGILITY;
+  }
+
+  if (hasMetric((set) => set.stretchType !== undefined || set.holdTime !== undefined || set.flexibility !== undefined || set.bodyPart !== undefined)) {
+    return ActivityType.STRETCHING;
+  }
+
+  if (hasMetric((set) => set.score !== undefined || set.opponent !== undefined || set.teamBased === true)) {
+    return ActivityType.SPORT;
+  }
+
+  if (hasMetric((set) => set.pace !== undefined || set.elevation !== undefined || set.hrZone1 !== undefined || set.hrZone2 !== undefined || set.hrZone3 !== undefined || set.hrZone4 !== undefined || set.hrZone5 !== undefined)) {
+    return ActivityType.ENDURANCE;
+  }
+
+  if (hasMetric((set) => set.duration !== undefined || set.time !== undefined || set.distance !== undefined || set.calories !== undefined || set.heartRate !== undefined || set.averageHeartRate !== undefined || set.maxHeartRate !== undefined)) {
+    return ActivityType.OTHER;
+  }
+
+  return undefined;
+};
+
+const resolveExportActivityType = (log: Record<string, any>, defaultType: ActivityType = ActivityType.OTHER): ActivityType => {
+  if (log.activityType) {
+    return normalizeActivityType(log.activityType);
+  }
+
+  if (log.exerciseType) {
+    return normalizeActivityType(mapExerciseTypeToActivityType(String(log.exerciseType)));
+  }
+
+  const inferredFromSets = inferActivityTypeFromSetShape(Array.isArray(log.sets) ? log.sets : []);
+  return inferredFromSets || defaultType;
 };
 
 const removeUndefinedFields = <T>(obj: T): T => {
@@ -235,7 +279,7 @@ export const exportData = async (userId: string, options: ExportOptions = {}) =>
           sets: log.sets || [],
           timestamp: log.timestamp,
           userId: log.userId || userId,
-          activityType: log.activityType ? normalizeActivityType(log.activityType) : ActivityType.RESISTANCE,
+          activityType: resolveExportActivityType(log as Record<string, any>, ActivityType.RESISTANCE),
           supersetId: (log as any).supersetId,
           supersetLabel: (log as any).supersetLabel,
           supersetName: (log as any).supersetName,
@@ -247,7 +291,7 @@ export const exportData = async (userId: string, options: ExportOptions = {}) =>
           sets: log.sets || [],
           timestamp: log.timestamp,
           userId: log.userId || userId,
-          activityType: normalizeActivityType(log.activityType),
+          activityType: resolveExportActivityType(log as Record<string, any>, ActivityType.OTHER),
           supersetId: (log as any).supersetId,
           supersetLabel: (log as any).supersetLabel,
           supersetName: (log as any).supersetName,

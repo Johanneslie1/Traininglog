@@ -31,7 +31,7 @@ const SupersetActionsButton: React.FC<SupersetActionsButtonProps> = ({ exerciseI
   };
 
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
+    const handleClickOutside = () => {
       if (showActions) {
         setShowActions(false);
       }
