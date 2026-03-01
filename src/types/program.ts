@@ -1,4 +1,5 @@
 import { ActivityType } from './activityTypes';
+import { SupersetGroup } from './session';
 
 // Prescription types for structured programming
 export type NumberOrRange = number | { min: number; max: number };
@@ -47,6 +48,9 @@ export interface ProgramSession {
   id: string;
   name: string;
   exercises: ProgramExercise[];
+  // Session-level superset grouping + deterministic ordering metadata
+  supersets?: SupersetGroup[];
+  exerciseOrder?: string[];
   isWarmupSession?: boolean;
   notes?: string;
   order?: number;
@@ -59,6 +63,10 @@ export interface ProgramExercise {
   exerciseRef?: string; // Firestore document reference path (e.g., 'exercises/abc123')
   notes?: string; // Session-specific notes for this exercise
   order?: number;
+  // Per-exercise superset metadata (resolved from session-level grouping)
+  supersetId?: string;
+  supersetLabel?: string;
+  supersetName?: string;
   activityType?: ActivityType; // Cached activity type (synced from exercise database)
   
   // Prescription system - what the coach prescribes (not actual logged data)

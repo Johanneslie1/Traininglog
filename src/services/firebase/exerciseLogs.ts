@@ -73,6 +73,9 @@ type ExerciseLogInput = {
   userId: string;
   sets: ExerciseSet[];
   activityType?: string; // Add activity type to the input type
+  supersetId?: string;
+  supersetLabel?: string;
+  supersetName?: string;
   isWarmup?: boolean;
   prescription?: Prescription;
   instructionMode?: 'structured' | 'freeform';
@@ -104,6 +107,9 @@ export const addExerciseLog = async (
       userId: logData.userId,
       sets: Array.isArray(logData.sets) ? logData.sets : [], // Ensure sets is always an array
       ...(logData.activityType && { activityType: logData.activityType }), // Include activityType if provided
+      ...(logData.supersetId && { supersetId: logData.supersetId }),
+      ...(logData.supersetLabel && { supersetLabel: logData.supersetLabel }),
+      ...(logData.supersetName && { supersetName: logData.supersetName }),
       ...(typeof logData.isWarmup === 'boolean' && { isWarmup: logData.isWarmup }),
       ...(logData.sharedSessionAssignmentId && { sharedSessionAssignmentId: logData.sharedSessionAssignmentId }),
       ...(logData.sharedSessionId && { sharedSessionId: logData.sharedSessionId }),
@@ -159,6 +165,9 @@ export const addExerciseLog = async (
       deviceId: window.navigator.userAgent,
       userId: logData.userId,
       activityType: logData.activityType,
+      supersetId: logData.supersetId,
+      supersetLabel: logData.supersetLabel,
+      supersetName: logData.supersetName,
       isWarmup: logData.isWarmup,
       sharedSessionAssignmentId: logData.sharedSessionAssignmentId,
       sharedSessionId: logData.sharedSessionId,
@@ -195,6 +204,9 @@ export const addExerciseLog = async (
       deviceId: window.navigator.userAgent,
       userId: logData.userId,
       activityType: logData.activityType,
+      supersetId: logData.supersetId,
+      supersetLabel: logData.supersetLabel,
+      supersetName: logData.supersetName,
       isWarmup: logData.isWarmup,
       sharedSessionAssignmentId: logData.sharedSessionAssignmentId,
       sharedSessionId: logData.sharedSessionId,
@@ -342,6 +354,9 @@ export const getExerciseLogs = async (userId: string, startDate: Date, endDate: 
         deviceId: data.deviceId || 'legacy',
         userId: data.userId,
         activityType: data.activityType,
+        supersetId: data.supersetId,
+        supersetLabel: data.supersetLabel,
+        supersetName: data.supersetName,
         isWarmup: data.isWarmup,
         sharedSessionAssignmentId: data.sharedSessionAssignmentId,
         sharedSessionId: data.sharedSessionId,

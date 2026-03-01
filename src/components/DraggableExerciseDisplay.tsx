@@ -13,6 +13,7 @@ import ExerciseCard from './ExerciseCard';
 import SupersetActionsButton from './SupersetActionsButton';
 import toast from 'react-hot-toast';
 import { OneRepMaxPrediction } from '@/utils/oneRepMax';
+import { buildSupersetDisplayTitle, buildSupersetLabels } from '@/utils/supersetUtils';
 
 // Haptic feedback utility
 const triggerHapticFeedback = (intensity: 'light' | 'medium' | 'heavy' = 'light') => {
@@ -180,6 +181,16 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
   }, [exercises, hiddenExercises]);
   
   // Group exercises by supersets
+  const exerciseOrder = React.useMemo(
+    () => exercises.map((exercise) => exercise.id).filter((id): id is string => Boolean(id)),
+    [exercises]
+  );
+
+  const labelsByExerciseId = React.useMemo(
+    () => buildSupersetLabels(state.supersets, exerciseOrder),
+    [state.supersets, exerciseOrder]
+  );
+
   const groupedExercises = React.useMemo(() => {
     const groups: {
       superset: SupersetGroup | null;
@@ -190,8 +201,21 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
     
     const processedExerciseIds = new Set<string>();
     
+    const sortedSupersets = [...state.supersets].sort((a, b) => {
+      const aFirstExerciseId = a.exerciseIds.find((exerciseId) => labelsByExerciseId[exerciseId]);
+      const bFirstExerciseId = b.exerciseIds.find((exerciseId) => labelsByExerciseId[exerciseId]);
+      const aIndex = aFirstExerciseId ? labelsByExerciseId[aFirstExerciseId]?.supersetIndex ?? Number.MAX_SAFE_INTEGER : Number.MAX_SAFE_INTEGER;
+      const bIndex = bFirstExerciseId ? labelsByExerciseId[bFirstExerciseId]?.supersetIndex ?? Number.MAX_SAFE_INTEGER : Number.MAX_SAFE_INTEGER;
+
+      if (aIndex !== bIndex) {
+        return aIndex - bIndex;
+      }
+
+      return (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER);
+    });
+
     // Process supersets first
-    state.supersets.forEach(superset => {
+    sortedSupersets.forEach(superset => {
       const supersetExercises: ExerciseData[] = [];
       const supersetIndices: number[] = [];
       
@@ -229,7 +253,7 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
     });
     
     return groups;
-  }, [exercises, getExerciseLocalKey, state.supersets]);
+  }, [exercises, getExerciseLocalKey, labelsByExerciseId, state.supersets]);
 
   if (exercises.length === 0) {
     return (
@@ -308,8 +332,7 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
                               <div className="flex items-center gap-2">
                                 <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                                 <h3 className="text-sm font-medium text-text-primary flex items-center">
-                                  <span className="text-[#2196F3]">Superset:</span>
-                                  <span className="ml-1">{group.superset.name}</span>
+                                  <span className="text-[#2196F3]">{buildSupersetDisplayTitle(group.superset, labelsByExerciseId)}</span>
                                   <span className="ml-2 text-xs text-[#2196F3]/70">
                                     ({group.exercises.length})
                                   </span>
@@ -334,8 +357,7 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
                                     <ExerciseCard
                                       exercise={exercise}
                                       oneRepMaxPrediction={oneRepMaxByExerciseKey[getPerformanceKey(exercise)]}
-                                      exerciseNumber={groupIndex + 1}
-                                      subNumber={exerciseIndex + 1}
+                                      supersetLabel={exercise.id ? labelsByExerciseId[exercise.id]?.label : undefined}
                                       forceCompact={compactMode}
                                       onEdit={() => onEditExercise(exercise)}
                                       onDelete={() => onDeleteExercise(exercise)}

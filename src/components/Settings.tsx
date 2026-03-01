@@ -159,7 +159,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
         if (data.exerciseLogs.length > 0) {
           downloadCSV(
             data.exerciseLogs,
-            ['userId', 'sessionId', 'exerciseLogId', 'exerciseId', 'exerciseName', 'category', 'type', 'setCount', 'totalReps', 'maxWeight', 'totalVolume', 'averageRPE', 'notes', 'createdAt'],
+            ['userId', 'sessionId', 'exerciseLogId', 'exerciseId', 'exerciseName', 'supersetId', 'supersetLabel', 'supersetName', 'category', 'type', 'setCount', 'totalReps', 'maxWeight', 'totalVolume', 'averageRPE', 'notes', 'createdAt'],
             'exercise_logs.csv'
           );
         }
@@ -167,7 +167,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
         if (data.sets.length > 0) {
           downloadCSV(
             data.sets,
-            ['userId', 'sessionId', 'exerciseLogId', 'exerciseName', 'exerciseType', 'activityType', 'loggedDate', 'loggedTimestamp', 'setNumber', 'reps', 'weight', 'durationSec', 'distanceMeters', 'rpe', 'rir', 'restTimeSec', 'isWarmup', 'setVolume', 'comment', 'notes', 'hrZone1', 'hrZone2', 'hrZone3', 'hrZone4', 'hrZone5', 'averageHR', 'maxHR', 'heartRate', 'calories', 'height', 'explosivePower', 'reactivePower', 'time', 'performance', 'stretchType', 'intensity', 'bodyPart', 'holdTime', 'flexibility', 'pace', 'elevation'],
+            ['userId', 'sessionId', 'exerciseLogId', 'exerciseName', 'exerciseType', 'activityType', 'supersetId', 'supersetLabel', 'supersetName', 'loggedDate', 'loggedTimestamp', 'setNumber', 'reps', 'weight', 'duration', 'distance', 'durationSec', 'distanceMeters', 'rpe', 'rir', 'restTime', 'restTimeSec', 'isWarmup', 'setVolume', 'comment', 'notes', 'hrZone1', 'hrZone2', 'hrZone3', 'hrZone4', 'hrZone5', 'averageHeartRate', 'maxHeartRate', 'averageHR', 'maxHR', 'heartRate', 'calories', 'height', 'drillMetric', 'score', 'opponent', 'performance', 'stretchType', 'intensity', 'bodyPart', 'holdTime', 'flexibility', 'pace', 'elevation'],
             'exercise_sets.csv'
           );
         }

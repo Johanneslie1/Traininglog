@@ -5,6 +5,7 @@ import { ExerciseSet } from '@/types/sets';
 import { ActivityType } from '@/types/activityTypes';
 import { normalizeActivityType } from '@/types/activityLog';
 import { formatPrescriptionBadge } from '@/utils/prescriptionUtils';
+import { resolveActivityTypeFromExerciseLike } from '@/utils/activityTypeResolver';
 import ProgramCard from './ProgramCard';
 import { usePrograms } from '@/context/ProgramsContext';
 import UniversalExercisePicker from '@/components/activities/UniversalExercisePicker';
@@ -88,7 +89,7 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
       // Prescription and assistant metadata stay on exercise for guide/hints.
       const sets: ExerciseSet[] = [];
 
-      const activityType = normalizeActivityType(exercise.activityType);
+      const activityType = resolveActivityTypeFromExerciseLike(exercise, { fallback: ActivityType.RESISTANCE });
       const isResistance = activityType === ActivityType.RESISTANCE;
 
       return {

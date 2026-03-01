@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useSupersets } from '../context/SupersetContext';
 
 interface FloatingSupersetControlsProps {}
@@ -10,9 +10,6 @@ const FloatingSupersetControls: React.FC<FloatingSupersetControlsProps> = () => 
     createSuperset
   } = useSupersets();
   
-  const [supersetName, setSupersetName] = useState('');
-  const [isNaming, setIsNaming] = useState(false);
-  
   if (!state.isCreating || state.selectedExercises.length === 0) {
     return null;
   }
@@ -22,26 +19,12 @@ const FloatingSupersetControls: React.FC<FloatingSupersetControlsProps> = () => 
       alert('Please select at least 2 exercises to create a superset');
       return;
     }
-    
-    // If we're not in naming mode, show the input field
-    if (!isNaming) {
-      setIsNaming(true);
-      return;
-    }
-    
-    // Otherwise create the superset
-    createSuperset(supersetName || undefined);
-    setSupersetName('');
-    setIsNaming(false);
+
+    createSuperset();
   };
   
   const handleCancel = () => {
-    if (isNaming) {
-      setIsNaming(false);
-      setSupersetName('');
-    } else {
-      cancelCreating();
-    }
+    cancelCreating();
   };
   
   return (
@@ -53,23 +36,9 @@ const FloatingSupersetControls: React.FC<FloatingSupersetControlsProps> = () => 
         </span>
       </div>
 
-      {isNaming ? (
-        <div className="mb-3">
-          <input
-            type="text"
-            placeholder="Superset name (optional)"
-            value={supersetName}
-            onChange={(e) => setSupersetName(e.target.value)}
-            className="w-full px-3 py-2 bg-bg-tertiary text-text-primary rounded-lg border border-border focus:border-accent-primary focus:outline-none"
-            maxLength={30}
-            autoFocus
-          />
-        </div>
-      ) : (
-        <p className="text-sm text-gray-400 mb-3">
-          Select exercises and save to create a superset
-        </p>
-      )}
+      <p className="text-sm text-gray-400 mb-3">
+        Select exercises and save to create a superset
+      </p>
 
       <div className="flex gap-2">
         <button
@@ -80,7 +49,7 @@ const FloatingSupersetControls: React.FC<FloatingSupersetControlsProps> = () => 
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
-          {isNaming ? 'Save Superset' : 'Save'}
+          Save
         </button>
         <button
           onClick={handleCancel}

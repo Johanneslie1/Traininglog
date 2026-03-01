@@ -200,8 +200,14 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
           userId: editingSession.userId
         };
         
-        console.log('[ProgramDetail] Updating session, exercises being passed:', updatedSession.exercises);
-        await updateSession(program.id, editingSession.id, updatedSession.exercises);
+        console.log('[ProgramDetail] Updating session with payload:', {
+          id: updatedSession.id,
+          name: updatedSession.name,
+          exerciseCount: updatedSession.exercises?.length || 0,
+          supersetCount: updatedSession.supersets?.length || 0,
+          exerciseOrderCount: updatedSession.exerciseOrder?.length || 0
+        });
+        await updateSession(program.id, editingSession.id, updatedSession);
         
         // Update local state
         const updatedSessions = sessions.map(s => 

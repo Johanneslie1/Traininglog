@@ -16,6 +16,7 @@ import { db } from '@/services/firebase/config';
 import { normalizeActivityType } from '@/types/activityLog';
 import { ActivityType } from '@/types/activityTypes';
 import { normalizeEnduranceDurationMinutes } from '@/utils/prescriptionUtils';
+import { resolveActivityTypeFromExerciseLike } from '@/utils/activityTypeResolver';
 
 const BATCH_LIMIT = 450;
 
@@ -60,12 +61,10 @@ const normalizeProgramExercise = (exercise: any) => {
   const normalized = { ...exercise };
   let changed = false;
 
-  if (exercise.activityType) {
-    const normalizedType = normalizeActivityType(exercise.activityType);
-    if (normalizedType !== exercise.activityType) {
-      normalized.activityType = normalizedType;
-      changed = true;
-    }
+  const resolvedType = resolveActivityTypeFromExerciseLike(exercise, { fallback: ActivityType.RESISTANCE });
+  if (resolvedType !== exercise.activityType) {
+    normalized.activityType = resolvedType;
+    changed = true;
   }
 
   const effectiveActivityType: ActivityType | undefined = normalized.activityType

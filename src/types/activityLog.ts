@@ -27,6 +27,12 @@ export interface ActivityLog {
   deviceId?: string;
   /** User ID who owns this activity log */
   userId: string;
+  /** Superset group identifier */
+  supersetId?: string;
+  /** Deterministic per-exercise superset label (e.g. 1a, 1b) */
+  supersetLabel?: string;
+  /** Optional superset display name */
+  supersetName?: string;
   /** Additional notes */
   notes?: string;
 }
@@ -37,6 +43,9 @@ export type ActivityLogInput = {
   userId: string;
   sets: ExerciseSet[];
   activityType: ActivityType;
+  supersetId?: string;
+  supersetLabel?: string;
+  supersetName?: string;
   categories?: string[];
   notes?: string;
 };

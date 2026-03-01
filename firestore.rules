@@ -52,6 +52,27 @@ service cloud.firestore {
         allow update: if isAuthenticated() && isOwner(userId) && resource.data.userId == request.auth.uid;
         allow delete: if isAuthenticated() && isOwner(userId) && resource.data.userId == request.auth.uid;
       }
+
+      // Nested activities collection under users
+      // Stores non-resistance logs (sport/endurance/stretching/speed-agility/other)
+      match /activities/{activityId} {
+        // Owner-only reads to align with collection ownership and avoid cross-user exposure
+        allow read: if isAuthenticated() && isOwner(userId);
+
+        // Owner can create activity documents for themselves
+        allow create: if isAuthenticated() &&
+          isOwner(userId) &&
+          request.resource.data.userId == request.auth.uid;
+
+        // Owner can update/delete their own activity documents
+        allow update: if isAuthenticated() &&
+          isOwner(userId) &&
+          resource.data.userId == request.auth.uid &&
+          request.resource.data.userId == request.auth.uid;
+        allow delete: if isAuthenticated() &&
+          isOwner(userId) &&
+          resource.data.userId == request.auth.uid;
+      }
     }
 
     // Top-level exerciseLogs collection (if still in use)

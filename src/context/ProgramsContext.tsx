@@ -12,7 +12,7 @@ interface ProgramsContextType {
   refresh: () => void;
   addProgram: (program: Omit<Program, 'id' | 'userId'>) => Promise<void>;
   updateProgram: (id: string, updated: Partial<Program>) => Promise<void>;
-  updateSessionInProgram: (programId: string, sessionId: string, exercises: any[]) => Promise<void>;
+  updateSessionInProgram: (programId: string, sessionId: string, sessionData: Partial<Program['sessions'][number]> & { exercises: any[] }) => Promise<void>;
   deleteProgram: (id: string) => Promise<void>;
   duplicateProgram: (id: string) => Promise<Program>;
   duplicateSession: (programId: string, sessionId: string) => Promise<void>;
@@ -118,8 +118,12 @@ export const ProgramsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     fetchPrograms(true);
   };
 
-  const updateSessionInProgram = async (programId: string, sessionId: string, exercises: any[]) => {
-    await programService.updateSession(programId, sessionId, exercises);
+  const updateSessionInProgram = async (
+    programId: string,
+    sessionId: string,
+    sessionData: Partial<Program['sessions'][number]> & { exercises: any[] }
+  ) => {
+    await programService.updateSession(programId, sessionId, sessionData);
     fetchPrograms(true);
   };
 

@@ -26,6 +26,7 @@ import { auth } from '@/services/firebase/config';
 import { saveExerciseLog } from '@/utils/localStorageUtils';
 import { generateExercisePrescriptionAssistant } from '@/services/exercisePrescriptionAssistantService';
 import { ExercisePrescriptionAssistantData } from '@/types/exercise';
+import { resolveActivityTypeFromExerciseLike } from '@/utils/activityTypeResolver';
 
 interface LogOptionsProps {
   onClose: () => void;
@@ -163,11 +164,12 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
       
       for (const { exercise } of exercises) {
         const sets: ExerciseSet[] = [];
+        const resolvedActivityType = resolveActivityTypeFromExerciseLike(exercise, { fallback: ActivityType.RESISTANCE });
         const prescriptionAssistant = await generateExercisePrescriptionAssistant({
           exercise: {
             id: exercise.id,
             name: exercise.name,
-            activityType: exercise.activityType,
+            activityType: resolvedActivityType,
             prescription: exercise.prescription
           },
           userId,
@@ -182,7 +184,7 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
             exerciseName: exercise.name,
             userId,
             sets: sets,
-            activityType: exercise.activityType,
+            activityType: resolvedActivityType,
             isWarmup: isWarmupMode || Boolean((exercise as any).isWarmup),
             prescription: exercise.prescription,
             instructionMode: exercise.instructionMode,
@@ -202,7 +204,7 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
           userId,
           sets,
           timestamp: selectedDate || new Date(),
-          activityType: exercise.activityType,
+          activityType: resolvedActivityType,
           isWarmup: isWarmupMode || Boolean((exercise as any).isWarmup),
           prescription: exercise.prescription,
           instructionMode: exercise.instructionMode,

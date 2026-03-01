@@ -13,7 +13,9 @@ export interface ExerciseData {
   userId: string;
   sets: ExerciseSet[];
   deviceId?: string;
-  supersetId?: string; // Add superset support
+  supersetId?: string;
+  supersetLabel?: string;
+  supersetName?: string;
   activityType?: ActivityType; // Add activity type support using proper enum
   isWarmup?: boolean;
   sharedSessionAssignmentId?: string;
@@ -60,6 +62,9 @@ export class ExerciseDataService {
           timestamp: exercise.timestamp,
           userId: exercise.userId || userId,
           deviceId: exercise.deviceId || window.navigator.userAgent,
+          ...(exercise.supersetId && { supersetId: exercise.supersetId }),
+          ...(exercise.supersetLabel && { supersetLabel: exercise.supersetLabel }),
+          ...(exercise.supersetName && { supersetName: exercise.supersetName }),
           ...(exercise.activityType && { activityType: exercise.activityType }),
           ...(typeof exercise.isWarmup === 'boolean' && { isWarmup: exercise.isWarmup }),
           ...(exercise.prescription && { prescription: exercise.prescription }),
@@ -114,6 +119,9 @@ export class ExerciseDataService {
             timestamp: data.timestamp.toDate(),
             userId: data.userId,
             deviceId: data.deviceId,
+            ...(data.supersetId && { supersetId: data.supersetId }),
+            ...(data.supersetLabel && { supersetLabel: data.supersetLabel }),
+            ...(data.supersetName && { supersetName: data.supersetName }),
             ...(data.activityType && { activityType: data.activityType }),
             ...(typeof data.isWarmup === 'boolean' && { isWarmup: data.isWarmup }),
             ...(data.prescription && { prescription: data.prescription }),

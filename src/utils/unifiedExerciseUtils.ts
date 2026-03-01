@@ -31,7 +31,22 @@ export async function getAllExercisesByDate(
     const endOfDay = new Date(date);
     endOfDay.setHours(23, 59, 59, 999);
 
-    const resistanceExerciseLogs = await getExerciseLogs(userId, startOfDay, endOfDay);
+    const [resistanceResult, activityResult] = await Promise.allSettled([
+      getExerciseLogs(userId, startOfDay, endOfDay),
+      getFirebaseActivityLogs(userId, startOfDay, endOfDay),
+    ]);
+
+    const resistanceExerciseLogs = resistanceResult.status === 'fulfilled' ? resistanceResult.value : [];
+    const activityLogs = activityResult.status === 'fulfilled' ? activityResult.value : [];
+
+    if (resistanceResult.status === 'rejected') {
+      console.warn('⚠️ Resistance logs fetch failed in getAllExercisesByDate:', resistanceResult.reason);
+    }
+
+    if (activityResult.status === 'rejected') {
+      console.warn('⚠️ Activity logs fetch failed in getAllExercisesByDate:', activityResult.reason);
+    }
+
     const resistanceExercises: UnifiedExerciseData[] = resistanceExerciseLogs.map(log => ({
       id: log.id,
       exerciseName: log.exerciseName,
@@ -51,12 +66,6 @@ export async function getAllExercisesByDate(
       instructions: log.instructions,
       prescriptionAssistant: log.prescriptionAssistant
     }));
-
-    const activityLogs = await getFirebaseActivityLogs(
-      userId,
-      startOfDay,
-      endOfDay
-    );
 
     const activityExercises: UnifiedExerciseData[] = activityLogs.map((log) => ({
       id: log.id,

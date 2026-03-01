@@ -61,6 +61,25 @@ export async function exportFullBackup(userId?: string): Promise<BackupData> {
       });
     });
 
+    // Export non-resistance activities stored in activities subcollection
+    const activitiesRef = collection(db, 'users', uid, 'activities');
+    const activitiesQuery = query(activitiesRef);
+    const activitiesSnapshot = await getDocs(activitiesQuery);
+
+    activitiesSnapshot.forEach(activityDoc => {
+      const data = activityDoc.data();
+      exercises.push({
+        id: activityDoc.id,
+        exerciseName: data.activityName || data.exerciseName || '',
+        sets: data.sets || [],
+        timestamp: data.timestamp?.toDate?.() || new Date(data.timestamp || Date.now()),
+        deviceId: data.deviceId || '',
+        userId: data.userId || uid,
+        exerciseType: 'activity',
+        activityType: data.activityType || ''
+      });
+    });
+
     // Export programs
     const programsRef = collection(db, 'programs');
     const programsQuery = query(programsRef, where('userId', '==', uid));

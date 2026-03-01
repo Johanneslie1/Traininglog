@@ -82,6 +82,9 @@ export const addActivityLog = async (
       userId: logData.userId,
       sets: Array.isArray(logData.sets) ? logData.sets.map(set => cleanObject(set)).filter(set => set && Object.keys(set).length > 0) : [],
       activityType: normalizedActivityType,
+      supersetId: logData.supersetId,
+      supersetLabel: logData.supersetLabel,
+      supersetName: logData.supersetName,
       categories: logData.categories || []
     });
 
@@ -139,6 +142,17 @@ export const getActivityLogs = async (userId: string, startDate: Date, endDate: 
       throw new Error('userId is required to fetch activity logs');
     }
 
+    const auth = getAuth();
+    const currentUserId = auth.currentUser?.uid;
+    if (!currentUserId) {
+      return [];
+    }
+
+    if (currentUserId !== userId) {
+      console.warn('⚠️ Skipping activity fetch for non-owner userId (rules do not allow this query).');
+      return [];
+    }
+
     // Query from the user's activities subcollection
     const activitiesRef = collection(db, 'users', userId, 'activities');
     const q = query(
@@ -169,6 +183,9 @@ export const getActivityLogs = async (userId: string, startDate: Date, endDate: 
         deviceId: data.deviceId || 'legacy',
         userId: data.userId,
         activityType: normalizedActivityType,
+        supersetId: data.supersetId,
+        supersetLabel: data.supersetLabel,
+        supersetName: data.supersetName,
         categories: data.categories || [],
         notes: data.notes
       } as ActivityLog;
@@ -177,6 +194,11 @@ export const getActivityLogs = async (userId: string, startDate: Date, endDate: 
     console.log('📖 Retrieved activities:', activities.length);
     return activities;
   } catch (error) {
+    const firebaseError = error as { code?: string; message?: string };
+    if (firebaseError.code === 'permission-denied' || firebaseError.message?.includes('Missing or insufficient permissions')) {
+      console.warn('⚠️ Permission denied for activities collection. Returning empty activity list.');
+      return [];
+    }
     console.error('❌ Error fetching activity logs:', error);
     throw new Error('Failed to fetch activities');
   }

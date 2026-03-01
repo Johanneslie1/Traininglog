@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { ExerciseSet } from '../types/sets';
 import { UnifiedExerciseData } from '../utils/unifiedExerciseUtils';
 import { ActivityType } from '../types/activityTypes';
@@ -14,6 +14,7 @@ interface ExerciseCardProps {
   showActions?: boolean;
   exerciseNumber?: number; // Add exercise number prop
   subNumber?: number; // Add sub-number for exercises within a superset
+  supersetLabel?: string;
   isHidden?: boolean;
   onToggleVisibility?: () => void;
   forceCompact?: boolean;
@@ -31,6 +32,14 @@ const getDifficultyColor = (difficulty?: string): string => {
   }
 };
 
+const hasDisplayValue = (value: any): boolean => {
+  return value !== null &&
+         value !== undefined &&
+         value !== '' &&
+         !(typeof value === 'string' && value.trim() === '') &&
+         !(typeof value === 'number' && isNaN(value));
+};
+
 const ExerciseCard: React.FC<ExerciseCardProps> = ({
   exercise,
   oneRepMaxPrediction,
@@ -39,6 +48,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
   showActions = true,
   exerciseNumber,
   subNumber,
+  supersetLabel,
   isHidden = false,
   onToggleVisibility,
   forceCompact = false
@@ -79,6 +89,62 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
     return exercise.sets.reduce((total, set) => total + (set.weight * set.reps), 0);
   };
 
+  const isNonResistance = useMemo(() => {
+    if (exercise.activityType === ActivityType.SPEED_AGILITY) {
+      return true;
+    }
+
+    if (exercise.activityType && exercise.activityType !== ActivityType.RESISTANCE) {
+      return true;
+    }
+
+    if (exercise.sets?.[0]) {
+      const firstSet = exercise.sets[0];
+      const hasResistanceFields = (firstSet.weight !== undefined && firstSet.weight >= 0) && firstSet.reps && firstSet.reps > 0;
+      const hasActivityFields = firstSet.duration || firstSet.distance || firstSet.calories ||
+        firstSet.averageHeartRate || firstSet.holdTime || firstSet.pace;
+
+      if (!hasResistanceFields && hasActivityFields) {
+        return true;
+      }
+    }
+
+    return false;
+  }, [exercise.activityType, exercise.sets]);
+
+  const quickViewMetrics = useMemo(() => {
+    if (!isNonResistance || !exercise.sets || exercise.sets.length === 0) {
+      return [] as Array<{ label: string; value: string }>;
+    }
+
+    const hasNumericField = (field: keyof ExerciseSet): boolean =>
+      exercise.sets.some((set) => typeof set[field] === 'number' && Number.isFinite(set[field] as number));
+
+    const repsTotal = exercise.sets.reduce((sum, set) => sum + (typeof set.reps === 'number' ? set.reps : 0), 0);
+    const distanceTotal = exercise.sets.reduce((sum, set) => sum + (typeof set.distance === 'number' ? set.distance : 0), 0);
+    const maxHeight = exercise.sets.reduce((max, set) => {
+      const height = typeof set.height === 'number' ? set.height : 0;
+      return Math.max(max, height);
+    }, 0);
+
+    const summary: Array<{ label: string; value: string }> = [];
+
+    if (hasNumericField('reps')) {
+      summary.push({ label: 'Reps', value: `${repsTotal}` });
+    }
+
+    if (hasNumericField('distance')) {
+      const distanceUnit = exercise.activityType === ActivityType.ENDURANCE ? 'km' : 'm';
+      summary.push({ label: 'Distance', value: `${distanceTotal} ${distanceUnit}` });
+    }
+
+    if (hasNumericField('height')) {
+      summary.push({ label: 'Height', value: `${maxHeight} cm` });
+    }
+
+    return summary;
+  }, [exercise.activityType, exercise.sets, isNonResistance]);
+
   // Render the exercise content based on type and visibility
   const renderExerciseContent = () => {
     if (isHidden || forceCompact) {
@@ -111,39 +177,12 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
       );
     }
 
-    // Full view when expanded
-    // Check if this is a non-resistance exercise
-    const isNonResistance = (() => {
-      // Priority 1: Direct ActivityType check for speed & agility
-      if (exercise.activityType === ActivityType.SPEED_AGILITY) {
-        return true;
-      }
-
-      // Priority 2: Check other non-resistance activity types
-      if (exercise.activityType && exercise.activityType !== ActivityType.RESISTANCE) {
-        return true;
-      }
-
-      // Priority 3: Fallback detection for sets with activity-specific fields
-      if (exercise.sets?.[0]) {
-        const firstSet = exercise.sets[0];
-        const hasResistanceFields = (firstSet.weight !== undefined && firstSet.weight >= 0) && firstSet.reps && firstSet.reps > 0;
-        const hasActivityFields = firstSet.duration || firstSet.distance || firstSet.calories ||
-                                firstSet.averageHeartRate || firstSet.holdTime || firstSet.pace;
-        
-        if (!hasResistanceFields && hasActivityFields) {
-          return true;
-        }
-      }
-      return false;
-    })();
-
     if (isNonResistance) {
-      // Non-resistance activity - display all sets
+      const metricsRegionId = `exercise-metrics-${exercise.id || exercise.exerciseName.replace(/\s+/g, '-').toLowerCase()}`;
+
       return (
         <div className="text-sm text-text-secondary">
-          {/* Activity type badge */}
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex flex-wrap items-center gap-2 mb-2">
             <span className={`px-2 py-1 ${getActivityTypeInfo(exercise.activityType).color} ${getActivityTypeInfo(exercise.activityType).textColor} text-xs rounded-full`}>
               {getActivityTypeInfo(exercise.activityType).icon} {getActivityTypeInfo(exercise.activityType).label}
             </span>
@@ -152,28 +191,34 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
             </span>
           </div>
 
+          {quickViewMetrics.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-2" aria-label="Quick metrics">
+              {quickViewMetrics.map((metric) => (
+                <div key={metric.label} className="bg-data-field-bg rounded px-2 py-1.5 min-w-0">
+                  <div className="text-[11px] leading-none text-data-field-label mb-1">{metric.label}</div>
+                  <div className="text-xs font-medium text-data-field-text break-words">{metric.value}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
           <button
             onClick={() => setShowSetDetails((current) => !current)}
-            className="mb-2 text-xs text-text-tertiary hover:text-text-primary transition-colors"
+            className="mb-2 text-xs text-text-tertiary hover:text-text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary rounded"
             aria-label="Toggle set details"
+            aria-expanded={showSetDetails}
+            aria-controls={metricsRegionId}
           >
-            {showSetDetails ? 'Hide set metrics' : 'Show set metrics'}
+            {showSetDetails ? 'Hide metrics' : 'Show metrics'}
           </button>
           
-          {/* Display all sets */}
-          {showSetDetails && exercise.sets && exercise.sets.length > 0 && (
-            <div className="space-y-3">
+          <div
+            id={metricsRegionId}
+            className={`transition-opacity duration-150 ${showSetDetails ? 'opacity-100' : 'opacity-0'} ${showSetDetails ? 'max-h-none' : 'max-h-0 overflow-hidden'}`}
+          >
+            {showSetDetails && exercise.sets && exercise.sets.length > 0 && (
+              <div className="space-y-3 pt-1">
               {exercise.sets.map((set, setIndex) => {
-                // Helper function to check if a value exists and is not empty
-                const hasValue = (value: any): boolean => {
-                  return value !== null && 
-                         value !== undefined && 
-                         value !== '' && 
-                         !(typeof value === 'string' && value.trim() === '') &&
-                         !(typeof value === 'number' && isNaN(value));
-                  // Note: We don't exclude zero values as they might be legitimate (e.g., 0 calories)
-                };
-                
                 const typeInfo = getActivityTypeInfo(exercise.activityType);
                 
                 return (
@@ -184,13 +229,13 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
                     
                     {/* Volume Metrics Row */}
                     <div className="flex flex-wrap gap-3 mb-2">
-                      {hasValue(set.reps) && (
+                      {hasDisplayValue(set.reps) && (
                         <div className="bg-data-field-bg rounded p-2">
                           <div className="text-xs text-data-field-label mb-1">Reps</div>
                           <div className="text-data-field-text font-medium">{set.reps}</div>
                         </div>
                       )}
-                      {hasValue(set.duration) && (
+                      {hasDisplayValue(set.duration) && (
                         <div className="bg-data-field-bg rounded p-2">
                           <div className="text-xs text-data-field-label mb-1">Duration</div>
                           <div className="text-data-field-text font-medium">
@@ -198,7 +243,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
                           </div>
                         </div>
                       )}
-                      {hasValue(set.distance) && (
+                      {hasDisplayValue(set.distance) && (
                         <div className="bg-data-field-bg rounded p-2">
                           <div className="text-xs text-data-field-label mb-1">Distance</div>
                           <div className="text-data-field-text font-medium">
@@ -206,43 +251,43 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
                           </div>
                         </div>
                       )}
-                      {hasValue(set.calories) && (
+                      {hasDisplayValue(set.calories) && (
                         <div className="bg-data-field-bg rounded p-2">
                           <div className="text-xs text-data-field-label mb-1">Calories</div>
                           <div className="text-data-field-text font-medium">{set.calories} kcal</div>
                         </div>
                       )}
-                      {hasValue(set.holdTime) && (
+                      {hasDisplayValue(set.holdTime) && (
                         <div className="bg-data-field-bg rounded p-2">
                           <div className="text-xs text-data-field-label mb-1">Hold Time</div>
                           <div className="text-data-field-text font-medium">{set.holdTime}s</div>
                         </div>
                       )}
-                      {hasValue(set.stretchType) && (exercise.activityType === ActivityType.STRETCHING) && (
+                      {hasDisplayValue(set.stretchType) && (exercise.activityType === ActivityType.STRETCHING) && (
                         <div className="bg-data-field-bg rounded p-2">
                           <div className="text-xs text-data-field-label mb-1">Stretch Type</div>
                           <div className="text-data-field-text font-medium capitalize">{set.stretchType}</div>
                         </div>
                       )}
-                      {hasValue(set.restTime) && (exercise.activityType === ActivityType.SPEED_AGILITY) && (
+                      {hasDisplayValue(set.restTime) && (exercise.activityType === ActivityType.SPEED_AGILITY) && (
                         <div className="bg-data-field-bg rounded p-2">
                           <div className="text-xs text-data-field-label mb-1">Rest Time</div>
                           <div className="text-data-field-text font-medium">{set.restTime}s</div>
                         </div>
                       )}
-                      {hasValue(set.rpe) && (exercise.activityType === ActivityType.SPEED_AGILITY) && (
+                      {hasDisplayValue(set.rpe) && (exercise.activityType === ActivityType.SPEED_AGILITY) && (
                         <div className="bg-data-field-bg rounded p-2">
                           <div className="text-xs text-data-field-label mb-1">RPE</div>
                           <div className="text-data-field-text font-medium">{set.rpe}/10</div>
                         </div>
                       )}
-                      {hasValue(set.pace) && (
+                      {hasDisplayValue(set.pace) && (
                         <div className="bg-data-field-bg rounded p-2">
                           <div className="text-xs text-data-field-label mb-1">Pace</div>
                           <div className="text-data-field-text font-medium">{set.pace}</div>
                         </div>
                       )}
-                      {hasValue(set.elevation) && (
+                      {hasDisplayValue(set.elevation) && (
                         <div className="bg-data-field-bg rounded p-2">
                           <div className="text-xs text-data-field-label mb-1">Elevation</div>
                           <div className="text-data-field-text font-medium">{set.elevation}m</div>
@@ -251,23 +296,23 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
                     </div>
 
                     {/* Strain Metrics - Heart Rate */}
-                    {(hasValue(set.heartRate) || hasValue(set.maxHeartRate) || hasValue(set.averageHeartRate)) && (
+                    {(hasDisplayValue(set.heartRate) || hasDisplayValue(set.maxHeartRate) || hasDisplayValue(set.averageHeartRate)) && (
                       <div className="bg-status-heart-bg rounded p-2 mb-2 border border-status-heart-border">
                         <div className="text-xs text-status-heart-text mb-1 font-medium">Heart Rate</div>
                         <div className="grid grid-cols-2 gap-2 text-sm">
-                          {hasValue(set.averageHeartRate) && (
+                          {hasDisplayValue(set.averageHeartRate) && (
                             <div>
                               <span className="text-text-tertiary">Avg:</span>
                               <span className="text-text-primary ml-1">{set.averageHeartRate} bpm</span>
                             </div>
                           )}
-                          {hasValue(set.maxHeartRate) && (
+                          {hasDisplayValue(set.maxHeartRate) && (
                             <div>
                               <span className="text-text-tertiary">Max:</span>
                               <span className="text-text-primary ml-1">{set.maxHeartRate} bpm</span>
                             </div>
                           )}
-                          {hasValue(set.heartRate) && !hasValue(set.averageHeartRate) && (
+                          {hasDisplayValue(set.heartRate) && !hasDisplayValue(set.averageHeartRate) && (
                             <div>
                               <span className="text-text-tertiary">HR:</span>
                               <span className="text-text-primary ml-1">{set.heartRate} bpm</span>
@@ -278,25 +323,25 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
                     )}
 
                     {/* Intensity Metrics */}
-                    {((hasValue(set.rpe) && exercise.activityType !== ActivityType.SPEED_AGILITY) || 
-                      (hasValue(set.intensity) && exercise.activityType !== ActivityType.SPEED_AGILITY) || 
-                      hasValue(set.performance)) && (
+                    {((hasDisplayValue(set.rpe) && exercise.activityType !== ActivityType.SPEED_AGILITY) || 
+                      (hasDisplayValue(set.intensity) && exercise.activityType !== ActivityType.SPEED_AGILITY) || 
+                      hasDisplayValue(set.performance)) && (
                       <div className="bg-status-intensity-bg rounded p-2 mb-2 border border-status-intensity-border">
                         <div className="text-xs text-status-intensity-text mb-1 font-medium">Intensity</div>
                         <div className="grid grid-cols-3 gap-2 text-sm">
-                          {hasValue(set.rpe) && exercise.activityType !== ActivityType.SPEED_AGILITY && (
+                          {hasDisplayValue(set.rpe) && exercise.activityType !== ActivityType.SPEED_AGILITY && (
                             <div>
                               <span className="text-text-tertiary">RPE:</span>
                               <span className="text-text-primary ml-1">{set.rpe}/10</span>
                             </div>
                           )}
-                          {hasValue(set.intensity) && exercise.activityType !== ActivityType.SPEED_AGILITY && (
+                          {hasDisplayValue(set.intensity) && exercise.activityType !== ActivityType.SPEED_AGILITY && (
                             <div>
                               <span className="text-text-tertiary">Intensity:</span>
                               <span className="text-text-primary ml-1">{set.intensity}/10</span>
                             </div>
                           )}
-                          {hasValue(set.performance) && (
+                          {hasDisplayValue(set.performance) && (
                             <div>
                               <span className="text-text-tertiary">Performance:</span>
                               <span className="text-text-primary ml-1">{set.performance}/10</span>
@@ -307,7 +352,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
                     )}
 
                     {/* Notes - Only if they contain performance insights */}
-                    {hasValue(set.notes) && (
+                    {hasDisplayValue(set.notes) && (
                       <div className="bg-gray-800/40 rounded p-2 border-l-2 border-blue-500">
                         <div className="text-xs text-text-tertiary mb-1">Notes</div>
                         <div className="text-text-primary text-sm">{set.notes}</div>
@@ -316,8 +361,9 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
                   </div>
                 );
               })}
-            </div>
-          )}
+              </div>
+            )}
+          </div>
         </div>
       );
     } else if ('sets' in exercise && exercise.sets) {
@@ -456,9 +502,9 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           {/* Compact exercise number with optional sub-number */}
-          {exerciseNumber && (
+          {(supersetLabel || exerciseNumber) && (
             <div className="flex items-center justify-center min-w-6 h-6 bg-accent-primary text-text-primary text-xs font-bold rounded-full px-1.5">
-              {exerciseNumber}{subNumber ? String.fromCharCode(96 + subNumber) : ''}
+              {supersetLabel || `${exerciseNumber}${subNumber ? String.fromCharCode(96 + subNumber) : ''}`}
             </div>
           )}
           <h3 className="text-base font-medium text-text-primary">{exercise.exerciseName}</h3>

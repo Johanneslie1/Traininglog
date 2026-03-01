@@ -8,6 +8,7 @@ import { getExercisesByActivityType } from '@/services/exerciseDatabaseService';
 import UniversalExercisePicker from '@/components/activities/UniversalExercisePicker';
 import { enrich as sportEnrich, collectFacets as sportCollectFacets, applyFilters as sportApplyFilters } from '@/utils/sportFilters';
 import { CreateUniversalExerciseDialog } from '@/components/exercises/CreateUniversalExerciseDialog';
+import { resolveActivityTypeFromExerciseLike } from '@/utils/activityTypeResolver';
 
 /**
  * ProgramAddExerciseOptions
@@ -186,7 +187,8 @@ export const ProgramAddExerciseOptions: React.FC<ProgramAddExerciseOptionsProps>
           // Directly add exercise without set editor
           const exerciseToAdd = {
             ...exercise,
-            id: exercise.id || `temp-${exercise.name.toLowerCase().replace(/\s+/g, '-')}`
+            id: exercise.id || `temp-${exercise.name.toLowerCase().replace(/\s+/g, '-')}`,
+            activityType: resolveActivityTypeFromExerciseLike(exercise, { fallback: ActivityType.RESISTANCE })
           };
           const exerciseWithSets = {
             exercise: exerciseToAdd,
@@ -225,7 +227,8 @@ export const ProgramAddExerciseOptions: React.FC<ProgramAddExerciseOptionsProps>
                 secondaryMuscles: ex.secondaryMuscles || [],
                 instructions: ex.instructions || [],
                 metrics: ex.metrics || {},
-                defaultUnit: ex.defaultUnit || 'time'
+                defaultUnit: ex.defaultUnit || 'time',
+                activityType: resolveActivityTypeFromExerciseLike(ex, { fallback: activity })
               };
               onAddExercises([{ exercise, sets: [] }]);
               onClose();

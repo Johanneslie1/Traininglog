@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Exercise } from '@/types/exercise';
 import { ProgramSession, ProgramExercise, Prescription } from '@/types/program';
+import { SupersetGroup } from '@/types/session';
 import { ActivityType } from '@/types/activityTypes';
 import { normalizeActivityType } from '@/types/activityLog';
 import { formatPrescriptionBadge } from '@/utils/prescriptionUtils';
+import { resolveActivityTypeFromExerciseLike } from '@/utils/activityTypeResolver';
+import { buildSupersetDisplayTitle, buildSupersetLabels } from '@/utils/supersetUtils';
 import PrescriptionEditor from './PrescriptionEditor';
 import ExerciseHistoryPicker from './ExerciseHistoryPicker';
 import ProgramExercisePicker from './ProgramExercisePicker';
@@ -29,6 +32,7 @@ interface SessionBuilderState {
   sessionNotes: string;
   isWarmupSession: boolean;
   exercises: Exercise[];
+  supersets: SupersetGroup[];
 }
 
 const SessionBuilder: React.FC<SessionBuilderProps> = ({
@@ -55,14 +59,15 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
         secondaryMuscles: [],
         instructions: [],
         description: ex.notes || '',
-        defaultUnit: normalizeActivityType(ex.activityType) === ActivityType.RESISTANCE ? ('kg' as const) : ('time' as const),
+        defaultUnit: resolveActivityTypeFromExerciseLike(ex, { fallback: ActivityType.RESISTANCE }) === ActivityType.RESISTANCE ? ('kg' as const) : ('time' as const),
         metrics: {
-          trackWeight: normalizeActivityType(ex.activityType) === ActivityType.RESISTANCE,
-          trackReps: normalizeActivityType(ex.activityType) === ActivityType.RESISTANCE,
-          trackTime: normalizeActivityType(ex.activityType) !== ActivityType.RESISTANCE,
+          trackWeight: resolveActivityTypeFromExerciseLike(ex, { fallback: ActivityType.RESISTANCE }) === ActivityType.RESISTANCE,
+          trackReps: resolveActivityTypeFromExerciseLike(ex, { fallback: ActivityType.RESISTANCE }) === ActivityType.RESISTANCE,
+          trackTime: resolveActivityTypeFromExerciseLike(ex, { fallback: ActivityType.RESISTANCE }) !== ActivityType.RESISTANCE,
         },
-        activityType: normalizeActivityType(ex.activityType)
+        activityType: resolveActivityTypeFromExerciseLike(ex, { fallback: ActivityType.RESISTANCE })
       })) || [],
+      supersets: initialSession?.supersets || [],
     }
   );
 
@@ -94,6 +99,9 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
   const [currentSessionName, setCurrentSessionName] = useState(persistedState.sessionName);
   const [sessionNotes, setSessionNotes] = useState(persistedState.sessionNotes);
   const [isWarmupSession, setIsWarmupSession] = useState(persistedState.isWarmupSession);
+  const [sessionSupersets, setSessionSupersets] = useState<SupersetGroup[]>(persistedState.supersets || initialSession?.supersets || []);
+  const [isCreatingSuperset, setIsCreatingSuperset] = useState(false);
+  const [selectedSupersetExerciseIds, setSelectedSupersetExerciseIds] = useState<string[]>([]);
   
   // Update persisted state whenever these values change
   useEffect(() => {
@@ -102,8 +110,9 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
       sessionNotes: sessionNotes,
       isWarmupSession,
       exercises: selectedExercises,
+      supersets: sessionSupersets,
     });
-  }, [currentSessionName, sessionNotes, isWarmupSession, selectedExercises, setPersistedState]);
+  }, [currentSessionName, sessionNotes, isWarmupSession, selectedExercises, sessionSupersets, setPersistedState]);
   const [editingExerciseName, setEditingExerciseName] = useState<number | null>(null);
   const [tempExerciseName, setTempExerciseName] = useState('');
   const [lastAction, setLastAction] = useState<{
@@ -186,7 +195,21 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
 
   // Exercise management utilities
   const handleRemoveExercise = (index: number) => {
+    const removedExerciseId = selectedExercises[index]?.id;
     setSelectedExercises(prev => prev.filter((_, i) => i !== index));
+
+    if (removedExerciseId) {
+      setSessionSupersets((prev) =>
+        prev
+          .map((superset) => ({
+            ...superset,
+            exerciseIds: superset.exerciseIds.filter((exerciseId) => exerciseId !== removedExerciseId),
+          }))
+          .filter((superset) => superset.exerciseIds.length > 1)
+      );
+
+      setSelectedSupersetExerciseIds((prev) => prev.filter((exerciseId) => exerciseId !== removedExerciseId));
+    }
     
     // Update prescription indices after removal
     setExercisePrescriptions(prev => {
@@ -206,6 +229,44 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
       
       return updated;
     });
+  };
+
+  const toggleSupersetExerciseSelection = (exerciseId: string) => {
+    setSelectedSupersetExerciseIds((prev) =>
+      prev.includes(exerciseId)
+        ? prev.filter((id) => id !== exerciseId)
+        : [...prev, exerciseId]
+    );
+  };
+
+  const createSupersetFromSelection = () => {
+    if (selectedSupersetExerciseIds.length < 2) {
+      return;
+    }
+
+    const selectedSet = new Set(selectedSupersetExerciseIds);
+    const orderedSelection = selectedExercises
+      .map((exercise) => exercise.id)
+      .filter((id): id is string => Boolean(id) && selectedSet.has(id));
+
+    if (orderedSelection.length < 2) {
+      return;
+    }
+
+    const createdSuperset: SupersetGroup = {
+      id: crypto.randomUUID(),
+      exerciseIds: orderedSelection,
+      order: sessionSupersets.length,
+    };
+
+    setSessionSupersets((prev) => [...prev, createdSuperset]);
+    setSelectedSupersetExerciseIds([]);
+    setIsCreatingSuperset(false);
+    toast.success('Superset created');
+  };
+
+  const removeSuperset = (supersetId: string) => {
+    setSessionSupersets((prev) => prev.filter((superset) => superset.id !== supersetId));
   };
 
   const moveExercise = (index: number, direction: 'up' | 'down') => {
@@ -386,6 +447,19 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
 
     // Convert exercises to ProgramExercise format (exercise reference + prescription)
     console.log('[SessionBuilder] Current exercisePrescriptions state:', exercisePrescriptions);
+    const exerciseOrder = selectedExercises
+      .map((exercise) => exercise.id)
+      .filter((id): id is string => Boolean(id));
+
+    const cleanedSupersets = sessionSupersets
+      .map((superset, index) => ({
+        ...superset,
+        order: superset.order ?? index,
+        exerciseIds: superset.exerciseIds.filter((exerciseId) => exerciseOrder.includes(exerciseId)),
+      }))
+      .filter((superset) => superset.exerciseIds.length > 1);
+
+    const labelsByExerciseId = buildSupersetLabels(cleanedSupersets, exerciseOrder);
     
     const exercises: ProgramExercise[] = selectedExercises.map((item, index) => {
       // Ensure we have a valid exercise ID (not temporary)
@@ -404,6 +478,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
       
       // Get prescription data for this exercise
       const prescriptionData = exercisePrescriptions[index];
+      const supersetMetadata = labelsByExerciseId[exerciseId];
       
       const exerciseData = {
         id: exerciseId,
@@ -411,7 +486,10 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
         exerciseRef,
         order: index,
         notes: item.description || '',
-        activityType: normalizeActivityType(item.activityType),
+        supersetId: supersetMetadata?.supersetId,
+        supersetLabel: supersetMetadata?.label,
+        supersetName: supersetMetadata?.supersetName,
+        activityType: resolveActivityTypeFromExerciseLike(item, { fallback: ActivityType.RESISTANCE }),
         instructionMode: prescriptionData?.instructionMode,
         prescription: prescriptionData?.prescription,
         instructions: prescriptionData?.instructions,
@@ -433,6 +511,8 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
       id: initialSession?.id || '',
       name: currentSessionName.trim(),
       exercises,
+      supersets: cleanedSupersets,
+      exerciseOrder,
       isWarmupSession,
       notes: sessionNotes.trim()
     };
@@ -442,6 +522,20 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
 
     onSave(session);
   };
+
+  const exerciseOrderForPreview = selectedExercises
+    .map((exercise) => exercise.id)
+    .filter((id): id is string => Boolean(id));
+
+  const previewSupersets = sessionSupersets
+    .map((superset, index) => ({
+      ...superset,
+      order: superset.order ?? index,
+      exerciseIds: superset.exerciseIds.filter((exerciseId) => exerciseOrderForPreview.includes(exerciseId)),
+    }))
+    .filter((superset) => superset.exerciseIds.length > 1);
+
+  const previewLabelsByExerciseId = buildSupersetLabels(previewSupersets, exerciseOrderForPreview);
 
   // Conditional rendering for different views
   if (view === 'programPicker') {
@@ -642,6 +736,47 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
             </button>
           </div>
 
+          {selectedExercises.length > 1 && (
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => {
+                  setIsCreatingSuperset((prev) => !prev);
+                  setSelectedSupersetExerciseIds([]);
+                }}
+                className="px-3 py-1.5 bg-[#2a2a2a] hover:bg-[#3a3a3a] text-white rounded-lg transition-colors border border-white/10 text-sm"
+              >
+                {isCreatingSuperset ? 'Cancel Superset Selection' : 'Create Superset'}
+              </button>
+              {isCreatingSuperset && (
+                <button
+                  onClick={createSupersetFromSelection}
+                  disabled={selectedSupersetExerciseIds.length < 2}
+                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors text-sm"
+                >
+                  Create Selected ({selectedSupersetExerciseIds.length})
+                </button>
+              )}
+            </div>
+          )}
+
+          {previewSupersets.length > 0 && (
+            <div className="mb-4 space-y-2">
+              {previewSupersets.map((superset) => (
+                <div key={superset.id} className="flex items-center justify-between rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2">
+                  <div className="text-sm text-blue-200">
+                    {buildSupersetDisplayTitle(superset, previewLabelsByExerciseId)}
+                  </div>
+                  <button
+                    onClick={() => removeSuperset(superset.id)}
+                    className="text-xs text-red-300 hover:text-red-200"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
           {selectedExercises.length === 0 ? (
             <div className="text-center py-12 bg-[#1a1a1a] rounded-xl border border-white/10">
               <div className="text-gray-500 mb-4">
@@ -727,6 +862,11 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
                                       >
                                         <div className="flex items-center gap-2 mb-1 flex-wrap">
                                           <h3 className="text-lg font-medium text-white break-words">{exercise.name}</h3>
+                                          {exercise.id && previewLabelsByExerciseId[exercise.id] && (
+                                            <span className="px-2 py-0.5 text-xs rounded-full bg-blue-600/30 text-blue-200 border border-blue-400/40">
+                                              {previewLabelsByExerciseId[exercise.id].label}
+                                            </span>
+                                          )}
                                           <span className={`px-2 py-0.5 text-xs rounded-full flex-shrink-0 ${getActivityTypeInfo(exercise.activityType).color} ${getActivityTypeInfo(exercise.activityType).textColor}`}>
                                             {getActivityTypeInfo(exercise.activityType).label}
                                           </span>
@@ -787,6 +927,21 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
                               
                               {/* Exercise Controls */}
                               <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+                                {isCreatingSuperset && exercise.id && (
+                                  <button
+                                    onClick={() => toggleSupersetExerciseSelection(exercise.id!)}
+                                    className={`p-2 rounded-lg transition-colors ${
+                                      selectedSupersetExerciseIds.includes(exercise.id)
+                                        ? 'bg-blue-600 text-white'
+                                        : 'hover:bg-white/10 text-gray-400 hover:text-white'
+                                    }`}
+                                    title="Select for superset"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  </button>
+                                )}
                                 {/* Move Up */}
                                 {exerciseIndex > 0 && (
                                   <button

@@ -31,6 +31,7 @@ import { SharedSessionAssignment } from '@/types/program';
 import { generateExercisePrescriptionAssistant } from '@/services/exercisePrescriptionAssistantService';
 import toast from 'react-hot-toast';
 import { getExercisePerformanceKey, OneRepMaxPrediction } from '@/utils/oneRepMax';
+import { buildSupersetLabels } from '@/utils/supersetUtils';
 
 interface ExerciseLogProps {}
 
@@ -40,6 +41,9 @@ interface SharedSessionExerciseMeta {
   sharedSessionExerciseId?: string;
   sharedSessionDateKey?: string;
   sharedSessionExerciseCompleted?: boolean;
+  supersetId?: string;
+  supersetLabel?: string;
+  supersetName?: string;
 }
 
 interface SaveMetadata {
@@ -50,7 +54,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useSelector((state: RootState) => state.auth);
-  const { removeExerciseFromSuperset, loadSupersetsForDate, saveSupersetsForDate } = useSupersets();
+  const { state, removeExerciseFromSuperset, loadSupersetsForDate, saveSupersetsForDate } = useSupersets();
   const { selectedDate, setSelectedDate, normalizeDate } = useDate();
   
   // Date utility functions
@@ -198,6 +202,9 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     timestamp: new Date(exercise.timestamp),
     userId: userId,
     deviceId: exercise.deviceId || localStorage.getItem('device_id') || '',
+    supersetId: exercise.supersetId,
+    supersetLabel: exercise.supersetLabel,
+    supersetName: exercise.supersetName,
     activityType: exercise.activityType as ActivityType | undefined,
     isWarmup: exercise.isWarmup,
     sharedSessionAssignmentId: exercise.sharedSessionAssignmentId,
@@ -252,6 +259,9 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
           sets: data.sets,
           timestamp: toSafeDate(data.timestamp),
           deviceId: data.deviceId,
+          supersetId: data.supersetId,
+          supersetLabel: data.supersetLabel,
+          supersetName: data.supersetName,
           activityType: data.activityType,
           isWarmup: data.isWarmup,
           sharedSessionAssignmentId: data.sharedSessionAssignmentId,
@@ -334,6 +344,17 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
         timestamp: selectedDate
       };
 
+      const exerciseOrder = exercises
+        .map((exercise) => exercise.id)
+        .filter((id): id is string => Boolean(id));
+
+      if (updatedExercise.id && !exerciseOrder.includes(updatedExercise.id)) {
+        exerciseOrder.push(updatedExercise.id);
+      }
+
+      const labelsByExerciseId = buildSupersetLabels(state.supersets, exerciseOrder);
+      const supersetMetadata = updatedExercise.id ? labelsByExerciseId[updatedExercise.id] : undefined;
+
       // Save to Firestore
       const selectedExerciseWithMeta = selectedExercise as ExerciseData & SharedSessionExerciseMeta;
       const firestoreId = await addExerciseLog(
@@ -342,6 +363,9 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
           userId: user.id,
           sets: sets,
           activityType: selectedExerciseWithMeta.activityType,
+          supersetId: supersetMetadata?.supersetId || selectedExerciseWithMeta.supersetId,
+          supersetLabel: supersetMetadata?.label || selectedExerciseWithMeta.supersetLabel,
+          supersetName: supersetMetadata?.supersetName || selectedExerciseWithMeta.supersetName,
           prescription: selectedExerciseWithMeta.prescription,
           instructionMode: selectedExerciseWithMeta.instructionMode,
           instructions: selectedExerciseWithMeta.instructions,
@@ -372,6 +396,9 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
       // Save to local storage with the correct ID from Firestore
       await saveExerciseLog({
         ...updatedExercise,
+        supersetId: supersetMetadata?.supersetId || selectedExerciseWithMeta.supersetId,
+        supersetLabel: supersetMetadata?.label || selectedExerciseWithMeta.supersetLabel,
+        supersetName: supersetMetadata?.supersetName || selectedExerciseWithMeta.supersetName,
         prescriptionAssistant: metadata?.prescriptionAssistant || selectedExerciseWithMeta.prescriptionAssistant,
         id: firestoreId,
         userId: user.id
@@ -391,7 +418,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
       console.error('❌ Error saving exercise sets:', error);
       alert('Failed to save exercise sets. Please try again.');
     }
-  }, [selectedExercise, user, selectedDate, handleCloseSetLogger, loadExercises, location.state, hasMeaningfulSetData, syncSharedAssignmentCompletion, getDateKey]);
+  }, [selectedExercise, user, selectedDate, exercises, state.supersets, handleCloseSetLogger, loadExercises, location.state, hasMeaningfulSetData, syncSharedAssignmentCompletion, getDateKey]);
 
   const handleDeleteExercise = async (exercise: UnifiedExerciseData) => {
     if (!user?.id) {
@@ -683,7 +710,10 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
               sharedSessionId: sharedSessionAssignment.sharedSessionId,
               sharedSessionExerciseId: exercise.id,
               sharedSessionDateKey: dateKey,
-              sharedSessionExerciseCompleted: false
+              sharedSessionExerciseCompleted: false,
+              supersetId: exercise.supersetId,
+              supersetLabel: exercise.supersetLabel,
+              supersetName: exercise.supersetName
             },
             selectedDate
           );
@@ -701,6 +731,9 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
             sharedSessionExerciseId: exercise.id,
             sharedSessionDateKey: dateKey,
             sharedSessionExerciseCompleted: false,
+            supersetId: exercise.supersetId,
+            supersetLabel: exercise.supersetLabel,
+            supersetName: exercise.supersetName,
             prescription: exercise.prescription,
             instructionMode: exercise.instructionMode,
             instructions: typeof exercise.instructions === 'string'

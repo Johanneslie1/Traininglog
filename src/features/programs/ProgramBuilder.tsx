@@ -8,6 +8,7 @@ import { auth } from '@/services/firebase/config';
 import { usePersistedFormState } from '@/hooks/usePersistedState';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import toast from 'react-hot-toast';
+import { buildSupersetDisplayTitle, buildSupersetLabels } from '@/utils/supersetUtils';
 
 interface ProgramBuilderProps {
   onClose: () => void;
@@ -510,19 +511,49 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
                                 {session.exercises.length > 0 && (
                                   <div className="mt-4 p-4 bg-bg-secondary rounded-lg border border-border">
                                     <div className="text-xs font-medium text-text-tertiary mb-3">EXERCISES:</div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                      {session.exercises.slice(0, 6).map((exercise, idx) => (
-                                        <div key={`${session.id}-exercise-${idx}-${exercise.name}`} className="text-sm text-text-secondary flex items-center gap-2">
-                                          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${getActivityTypeInfo(exercise.activityType).color}`}></span>
-                                          <span className="truncate flex-1">
-                                            {exercise.name}
-                                          </span>
-                                          <span className={`px-1.5 py-0.5 text-xs rounded ${getActivityTypeInfo(exercise.activityType).color} ${getActivityTypeInfo(exercise.activityType).textColor}`}>
-                                            {getActivityTypeInfo(exercise.activityType).label}
-                                          </span>
-                                        </div>
-                                      ))}
-                                    </div>
+
+                                    {(() => {
+                                      const exerciseOrder = (session.exerciseOrder && session.exerciseOrder.length > 0)
+                                        ? session.exerciseOrder
+                                        : session.exercises.map((exercise) => exercise.id);
+                                      const labelsByExerciseId = buildSupersetLabels(session.supersets || [], exerciseOrder);
+
+                                      return (
+                                        <>
+                                          {(session.supersets || []).length > 0 && (
+                                            <div className="mb-3 space-y-1">
+                                              {(session.supersets || []).map((superset) => (
+                                                <div
+                                                  key={`${session.id}-superset-${superset.id}`}
+                                                  className="text-xs rounded-md border border-blue-500/30 bg-blue-500/10 px-2 py-1 text-blue-200"
+                                                >
+                                                  {buildSupersetDisplayTitle(superset, labelsByExerciseId)}
+                                                </div>
+                                              ))}
+                                            </div>
+                                          )}
+
+                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                            {session.exercises.slice(0, 6).map((exercise, idx) => (
+                                              <div key={`${session.id}-exercise-${idx}-${exercise.name}`} className="text-sm text-text-secondary flex items-center gap-2">
+                                                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${getActivityTypeInfo(exercise.activityType).color}`}></span>
+                                                {labelsByExerciseId[exercise.id]?.label && (
+                                                  <span className="px-1.5 py-0.5 text-xs rounded border border-blue-400/40 bg-blue-600/20 text-blue-200">
+                                                    {labelsByExerciseId[exercise.id].label}
+                                                  </span>
+                                                )}
+                                                <span className="truncate flex-1">
+                                                  {exercise.name}
+                                                </span>
+                                                <span className={`px-1.5 py-0.5 text-xs rounded ${getActivityTypeInfo(exercise.activityType).color} ${getActivityTypeInfo(exercise.activityType).textColor}`}>
+                                                  {getActivityTypeInfo(exercise.activityType).label}
+                                                </span>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </>
+                                      );
+                                    })()}
                                     {session.exercises.length > 6 && (
                                       <div className="text-xs text-text-tertiary mt-3 text-center">
                                         +{session.exercises.length - 6} more exercises...

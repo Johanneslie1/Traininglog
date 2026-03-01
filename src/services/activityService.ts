@@ -16,6 +16,25 @@ import {
   getActivityLogs as getFirebaseActivityLogs,
   deleteActivityLog as deleteFirebaseActivityLog
 } from '@/services/firebase/activityLogs';
+import { ExerciseSet } from '@/types/sets';
+
+const removeUndefinedFields = <T>(obj: T): T => {
+  if (Array.isArray(obj)) {
+    return obj.map(removeUndefinedFields) as unknown as T;
+  }
+
+  if (obj && typeof obj === 'object') {
+    const cleaned: Record<string, unknown> = {};
+    Object.entries(obj as Record<string, unknown>).forEach(([key, value]) => {
+      if (value !== undefined) {
+        cleaned[key] = removeUndefinedFields(value);
+      }
+    });
+    return cleaned as T;
+  }
+
+  return obj;
+};
 
 /**
  * Service for managing different types of activity exercises
@@ -250,10 +269,25 @@ class ActivityService {
  */
 class ActivityLoggingService {
 
-  private mapLogDataToSets(logData: any): any[] {
+  private normalizeSetForStorage(input: Record<string, unknown>): ExerciseSet {
+    const normalized: ExerciseSet = {
+      ...(input as unknown as Partial<ExerciseSet>),
+      duration: (input.duration as number | undefined) ?? (input.time as number | undefined),
+      averageHeartRate: (input.averageHeartRate as number | undefined) ?? (input.averageHR as number | undefined),
+      maxHeartRate: (input.maxHeartRate as number | undefined) ?? (input.maxHR as number | undefined),
+      notes: (input.notes as string | undefined) ?? (input.comment as string | undefined),
+      weight: typeof input.weight === 'number' ? (input.weight as number) : 0,
+      reps: typeof input.reps === 'number' ? (input.reps as number) : 0
+    };
+
+    return removeUndefinedFields(normalized);
+  }
+
+  private mapLogDataToSets(logData: any): ExerciseSet[] {
     switch (logData.activityType) {
       case ActivityType.RESISTANCE:
-        return (logData.sets || []).map((set: any) => ({
+        return (logData.sets || []).map((set: any) => this.normalizeSetForStorage({
+          ...set,
           weight: set.weight || 0,
           reps: set.reps || 0,
           rpe: set.rpe,
@@ -261,7 +295,8 @@ class ActivityLoggingService {
           notes: set.notes
         }));
       case ActivityType.SPORT:
-        return (logData.sessions || []).map((session: any) => ({
+        return (logData.sessions || []).map((session: any) => this.normalizeSetForStorage({
+          ...session,
           duration: session.duration || 0,
           distance: session.distance,
           calories: session.calories,
@@ -272,7 +307,8 @@ class ActivityLoggingService {
           notes: session.notes
         }));
       case ActivityType.STRETCHING:
-        return (logData.stretches || []).map((stretch: any) => ({
+        return (logData.stretches || []).map((stretch: any) => this.normalizeSetForStorage({
+          ...stretch,
           duration: stretch.duration || 0,
           holdTime: stretch.holdTime,
           intensity: stretch.intensity,
@@ -282,7 +318,8 @@ class ActivityLoggingService {
           notes: stretch.notes
         }));
       case ActivityType.ENDURANCE:
-        return (logData.sessions || []).map((session: any) => ({
+        return (logData.sessions || []).map((session: any) => this.normalizeSetForStorage({
+          ...session,
           duration: session.duration || 0,
           distance: session.distance,
           pace: session.pace,
@@ -294,10 +331,13 @@ class ActivityLoggingService {
           hrZone1: session.hrZone1,
           hrZone2: session.hrZone2,
           hrZone3: session.hrZone3,
+          hrZone4: session.hrZone4,
+          hrZone5: session.hrZone5,
           notes: session.notes
         }));
       case ActivityType.SPEED_AGILITY:
-        return (logData.sessions || []).map((session: any) => ({
+        return (logData.sessions || []).map((session: any) => this.normalizeSetForStorage({
+          ...session,
           reps: session.reps || 0,
           duration: session.time,
           distance: session.distance,
@@ -308,8 +348,15 @@ class ActivityLoggingService {
         }));
       case ActivityType.OTHER:
       default:
-        return (logData.customData || []).map((data: any) => ({
+        return (logData.customData || []).map((data: any) => this.normalizeSetForStorage({
+          ...data,
           duration: data.duration,
+          distance: data.distance,
+          height: data.height,
+          rpe: data.rpe,
+          holdTime: data.holdTime,
+          pace: data.pace,
+          elevation: data.elevation,
           calories: data.calories,
           heartRate: data.heartRate,
           intensity: data.intensity,
@@ -367,6 +414,7 @@ class ActivityLoggingService {
       userId,
       timestamp,
       sessions: sessions.map((session, index) => ({
+        ...session,
         sessionNumber: index + 1,
         duration: session.duration || 0,
         distance: session.distance, // Include distance
@@ -401,6 +449,7 @@ class ActivityLoggingService {
       userId,
       timestamp,
       stretches: stretches.map((stretch, index) => ({
+        ...stretch,
         setNumber: index + 1,
         duration: stretch.duration || 0,
         holdTime: stretch.holdTime,
@@ -437,6 +486,7 @@ class ActivityLoggingService {
       sessions: sessions.map((session, index) => {
         console.log('🏃 Processing endurance session:', session);
         return {
+          ...session,
           sessionNumber: index + 1,
           distance: session.distance,
           duration: session.duration || 0,
@@ -450,6 +500,8 @@ class ActivityLoggingService {
           hrZone1: session.hrZone1, // Add heart rate zone fields
           hrZone2: session.hrZone2,
           hrZone3: session.hrZone3,
+          hrZone4: session.hrZone4,
+          hrZone5: session.hrZone5,
           notes: session.notes
         };
       })
@@ -513,12 +565,14 @@ class ActivityLoggingService {
       sessions: sessions.map((session, index) => {
         console.log('⚡ Processing speed & agility session:', session);
         return {
+          ...session,
           sessionNumber: index + 1,
           reps: session.reps || 0,
           time: session.time, // Time for drills in seconds
           distance: session.distance, // Distance for sprint drills
           height: session.height, // Height for jumping drills
           restTime: session.restTime, // Rest between reps
+          drillMetric: session.drillMetric,
           rpe: session.rpe || 0,
           notes: session.notes
         };
@@ -536,14 +590,16 @@ class ActivityLoggingService {
   private async saveActivityLog(logData: Omit<ActivityLog, 'id'>): Promise<string> {
     const sets = this.mapLogDataToSets(logData);
 
+    const payload = removeUndefinedFields({
+      activityName: logData.activityName,
+      userId: logData.userId,
+      sets,
+      activityType: logData.activityType,
+      notes: logData.notes
+    });
+
     const logId = await addFirebaseActivityLog(
-      {
-        activityName: logData.activityName,
-        userId: logData.userId,
-        sets,
-        activityType: logData.activityType,
-        notes: logData.notes
-      },
+      payload,
       logData.timestamp
     );
 

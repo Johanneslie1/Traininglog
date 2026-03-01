@@ -155,6 +155,12 @@ export interface ExerciseLog {
   exerciseType?: string;
   /** Activity type for non-resistance exercises */
   activityType?: string;
+  /** Superset group identifier */
+  supersetId?: string;
+  /** Deterministic per-exercise superset label (e.g. 1a, 1b) */
+  supersetLabel?: string;
+  /** Optional superset display name */
+  supersetName?: string;
   /** Marks this exercise log as warm-up */
   isWarmup?: boolean;
   /** Shared session assignment link (if exercise was imported from assigned session) */

@@ -1,7 +1,8 @@
 import type { Program, ProgramSession } from '@/types/program';
-import type { ActivityType } from '@/types/activityTypes';
+import { ActivityType } from '@/types/activityTypes';
 import { normalizeActivityType } from '@/types/activityLog';
 import { normalizeEnduranceDurationMinutes } from '@/utils/prescriptionUtils';
+import { resolveActivityTypeFromExerciseLike } from '@/utils/activityTypeResolver';
 import speedAgilityExercises from '@/data/exercises/speedAgility.json';
 import { db } from './firebase/firebase';
 import {
@@ -58,6 +59,9 @@ function buildProgramExercisePayload(
     name: string;
     notes?: string;
     order?: number;
+    supersetId?: string;
+    supersetLabel?: string;
+    supersetName?: string;
     exerciseRef?: string;
     activityType?: ActivityType;
     instructionMode?: 'structured' | 'freeform';
@@ -67,15 +71,20 @@ function buildProgramExercisePayload(
   fallbackOrder: number,
   options?: { generateIdIfMissing?: boolean }
 ) {
+  const resolvedActivityType = resolveActivityTypeFromExerciseLike(exercise, { fallback: ActivityType.RESISTANCE });
+
   const payload: any = {
     id: exercise.id || (options?.generateIdIfMissing ? crypto.randomUUID() : undefined),
     name: exercise.name,
     notes: exercise.notes || '',
-    order: exercise.order ?? fallbackOrder
+    order: exercise.order ?? fallbackOrder,
+    activityType: resolvedActivityType
   };
 
   if (exercise.exerciseRef) payload.exerciseRef = exercise.exerciseRef;
-  if (exercise.activityType) payload.activityType = normalizeActivityType(exercise.activityType);
+  if (exercise.supersetId) payload.supersetId = exercise.supersetId;
+  if (exercise.supersetLabel) payload.supersetLabel = exercise.supersetLabel;
+  if (exercise.supersetName) payload.supersetName = exercise.supersetName;
   if (exercise.instructionMode) payload.instructionMode = exercise.instructionMode;
   if (exercise.prescription) payload.prescription = exercise.prescription;
   if (exercise.instructions) payload.instructions = exercise.instructions;
@@ -189,6 +198,8 @@ export const getPrograms = async (): Promise<Program[]> => {
                 name: sessionData.name,
                 isWarmupSession: sessionData.isWarmupSession === true,
                 notes: sessionData.notes || '',
+                supersets: sessionData.supersets || [],
+                exerciseOrder: sessionData.exerciseOrder || [],
                 exercises: (sessionData.exercises || [])
                   .map((ex: any, exIndex: number) => {
                     const exerciseData = {
@@ -198,6 +209,9 @@ export const getPrograms = async (): Promise<Program[]> => {
                       reps: ex.reps || 10,
                       weight: ex.weight || 0,
                       order: ex.order ?? exIndex,
+                      supersetId: ex.supersetId,
+                      supersetLabel: ex.supersetLabel,
+                      supersetName: ex.supersetName,
                       notes: ex.notes || '',
                       exerciseRef: ex.exerciseRef,
                       activityType: ex.activityType ? normalizeActivityType(ex.activityType) : undefined,
@@ -322,6 +336,8 @@ export const createProgram = async (program: Omit<Program, 'id' | 'createdAt' | 
           userId: user.uid,
           programId: programRef.id,
           order: session.order ?? index,
+          supersets: session.supersets || [],
+          exerciseOrder: session.exerciseOrder || [],
           createdAt: timestamp,
           // Ensure exercises array exists and preserve all exercise reference fields
           // Assign order based on array index to maintain insertion order
@@ -398,6 +414,8 @@ export const replaceProgram = async (programId: string, program: Program): Promi
         ...session,
         id: sessionRef.id,
         order: session.order ?? index,
+        supersets: session.supersets || [],
+        exerciseOrder: session.exerciseOrder || [],
         exercises: processedExercises,
         userId: user.uid,
         programId
@@ -511,6 +529,8 @@ export const createSession = async (programId: string, session: {
     prescription?: any;
     instructions?: string;
   }>;
+  supersets?: ProgramSession['supersets'];
+  exerciseOrder?: string[];
   isWarmupSession?: boolean;
   notes?: string;
   order?: number;
@@ -572,6 +592,8 @@ export const createSession = async (programId: string, session: {
       id: sessionRef.id,
       name: session.name,
       exercises: processedExercises,
+      supersets: session.supersets || [],
+      exerciseOrder: session.exerciseOrder || processedExercises.map((ex: any) => ex.id).filter(Boolean),
       isWarmupSession: session.isWarmupSession === true,
       notes: session.notes || '',
       order: session.order ?? 0,
@@ -613,23 +635,39 @@ export const createSession = async (programId: string, session: {
 };
 
 // Update a session's exercises
-export const updateSession = async (programId: string, sessionId: string, exercises: Array<{ 
-  id: string; 
-  name: string; 
-  sets?: number; 
-  reps?: number; 
-  weight?: number; 
-  setsData?: any[];
-  notes?: string;
-  order?: number;
-  exerciseRef?: string;
-  activityType?: ActivityType;
-  instructionMode?: 'structured' | 'freeform';
-  prescription?: any;
-  instructions?: string;
-}>): Promise<void> => {
+export const updateSession = async (
+  programId: string,
+  sessionId: string,
+  sessionDataInput: {
+    exercises: Array<{
+      id: string;
+      name: string;
+      sets?: number;
+      reps?: number;
+      weight?: number;
+      setsData?: any[];
+      notes?: string;
+      order?: number;
+      exerciseRef?: string;
+      activityType?: ActivityType;
+      supersetId?: string;
+      supersetLabel?: string;
+      supersetName?: string;
+      instructionMode?: 'structured' | 'freeform';
+      prescription?: any;
+      instructions?: string;
+    }>;
+    name?: string;
+    notes?: string;
+    order?: number;
+    isWarmupSession?: boolean;
+    supersets?: ProgramSession['supersets'];
+    exerciseOrder?: string[];
+  }
+): Promise<void> => {
   try {
     const user = await ensureAuth();
+    const exercises = Array.isArray(sessionDataInput?.exercises) ? sessionDataInput.exercises : [];
     console.log('[programService] Updating session exercises:', { programId, sessionId, exerciseCount: exercises.length });
 
     // Get program reference and verify ownership
@@ -660,68 +698,91 @@ export const updateSession = async (programId: string, sessionId: string, exerci
     console.log('[updateSession] Processing exercises, received:', exercises);
     
     const processedExercises = exercises.map((exercise, exIndex) => {
-      // Ensure valid exercise ID
-      const exerciseId = (!exercise.id || exercise.id.startsWith('temp-')) 
-        ? crypto.randomUUID() 
-        : exercise.id;
+      try {
+        // Ensure valid exercise ID
+        const exerciseId = (!exercise.id || exercise.id.startsWith('temp-'))
+          ? crypto.randomUUID()
+          : exercise.id;
 
-      console.log(`[updateSession] Processing exercise ${exIndex} (${exercise.name}):`, {
-        hasInstructionMode: !!exercise.instructionMode,
-        hasPrescription: !!exercise.prescription,
-        hasInstructions: !!exercise.instructions,
-        instructionMode: exercise.instructionMode,
-        prescription: exercise.prescription,
-        instructions: exercise.instructions
-      });
-
-      // Build exercise object with all relevant fields
-      const exerciseData: any = buildProgramExercisePayload({
-        ...exercise,
-        id: exerciseId
-      }, exIndex, { generateIdIfMissing: true });
-
-      console.log('[updateSession] Added instructionMode:', exerciseData.instructionMode);
-      console.log('[updateSession] Added prescription:', exerciseData.prescription);
-      console.log('[updateSession] Added instructions length:', exerciseData.instructions?.length);
-
-      // Process sets data if available (for backward compatibility)
-      if (exercise.setsData) {
-        const setsData = exercise.setsData.map(set => ({
-          reps: set.reps || exercise.reps || 10,
-          weight: typeof set.weight === 'number' ? set.weight : (exercise.weight || 0),
-          difficulty: set.difficulty || 'MODERATE'
-        }));
-        exerciseData.sets = setsData.length;
-        exerciseData.reps = setsData[0]?.reps || exercise.reps || 10;
-        exerciseData.weight = setsData[0]?.weight || exercise.weight || 0;
-        exerciseData.setsData = setsData;
-      } else if (exercise.sets || exercise.reps || exercise.weight !== undefined) {
-        // Legacy format support
-        const setsData = Array(exercise.sets || 3).fill({
-          reps: exercise.reps || 10,
-          weight: exercise.weight || 0,
-          difficulty: 'MODERATE'
+        console.log(`[updateSession] Processing exercise ${exIndex} (${exercise.name}):`, {
+          hasInstructionMode: !!exercise.instructionMode,
+          hasPrescription: !!exercise.prescription,
+          hasInstructions: !!exercise.instructions,
+          instructionMode: exercise.instructionMode,
+          prescription: exercise.prescription,
+          instructions: exercise.instructions
         });
-        exerciseData.sets = setsData.length;
-        exerciseData.reps = setsData[0]?.reps;
-        exerciseData.weight = setsData[0]?.weight;
-        exerciseData.setsData = setsData;
-      }
 
-      return exerciseData;
+        // Build exercise object with all relevant fields
+        const exerciseData: any = buildProgramExercisePayload({
+          ...exercise,
+          id: exerciseId
+        }, exIndex, { generateIdIfMissing: true });
+
+        console.log('[updateSession] Added instructionMode:', exerciseData.instructionMode);
+        console.log('[updateSession] Added prescription:', exerciseData.prescription);
+        console.log('[updateSession] Added instructions length:', exerciseData.instructions?.length);
+
+        // Process sets data if available (for backward compatibility)
+        if (exercise.setsData) {
+          const setsData = exercise.setsData.map(set => ({
+            reps: set.reps || exercise.reps || 10,
+            weight: typeof set.weight === 'number' ? set.weight : (exercise.weight || 0),
+            difficulty: set.difficulty || 'MODERATE'
+          }));
+          exerciseData.sets = setsData.length;
+          exerciseData.reps = setsData[0]?.reps || exercise.reps || 10;
+          exerciseData.weight = setsData[0]?.weight || exercise.weight || 0;
+          exerciseData.setsData = setsData;
+        } else if (exercise.sets || exercise.reps || exercise.weight !== undefined) {
+          // Legacy format support
+          const setsData = Array(exercise.sets || 3).fill({
+            reps: exercise.reps || 10,
+            weight: exercise.weight || 0,
+            difficulty: 'MODERATE'
+          });
+          exerciseData.sets = setsData.length;
+          exerciseData.reps = setsData[0]?.reps;
+          exerciseData.weight = setsData[0]?.weight;
+          exerciseData.setsData = setsData;
+        }
+
+        return exerciseData;
+      } catch (processingError) {
+        console.error(`[updateSession] Failed processing exercise at index ${exIndex}:`, {
+          exercise,
+          processingError
+        });
+        throw processingError;
+      }
     });
 
     // Start a transaction to ensure data consistency
     const batch = writeBatch(db);
 
+    const nextExerciseOrder = Array.isArray(sessionDataInput.exerciseOrder) && sessionDataInput.exerciseOrder.length > 0
+      ? sessionDataInput.exerciseOrder
+      : processedExercises.map((exercise: any) => exercise.id).filter(Boolean);
+
+    const nextSupersets = (sessionDataInput.supersets || [])
+      .map((superset: any, index: number) => ({
+        ...superset,
+        order: superset.order ?? index,
+        exerciseIds: (superset.exerciseIds || []).filter((exerciseId: string) => nextExerciseOrder.includes(exerciseId))
+      }))
+      .filter((superset: any) => (superset.exerciseIds || []).length > 1);
+
     // Update or create the session with all data
     const sessionData = removeUndefinedFields({
       exercises: processedExercises,
+      supersets: nextSupersets,
+      exerciseOrder: nextExerciseOrder,
       updatedAt: serverTimestamp(),
       userId: user.uid,
-      name: sessionDoc.exists() ? sessionDoc.data().name : 'New Session',
-      notes: sessionDoc.exists() ? (sessionDoc.data().notes || '') : '',
-      order: sessionDoc.exists() ? sessionDoc.data().order : 0,
+      name: sessionDataInput.name ?? (sessionDoc.exists() ? sessionDoc.data().name : 'New Session'),
+      notes: sessionDataInput.notes ?? (sessionDoc.exists() ? (sessionDoc.data().notes || '') : ''),
+      order: sessionDataInput.order ?? (sessionDoc.exists() ? sessionDoc.data().order : 0),
+      isWarmupSession: sessionDataInput.isWarmupSession ?? (sessionDoc.exists() ? sessionDoc.data().isWarmupSession === true : false),
       programId: programId  // Add reference to parent program
     });
     
@@ -1045,18 +1106,16 @@ const normalizeProgramExerciseForMigration = (exercise: any): { normalized: any;
   const normalized = { ...exercise };
   let changed = false;
 
-  const normalizedActivityType = exercise?.activityType
-    ? normalizeActivityType(exercise.activityType)
-    : undefined;
+  const normalizedActivityType = resolveActivityTypeFromExerciseLike(exercise, { fallback: ActivityType.RESISTANCE });
 
-  if (normalizedActivityType && exercise.activityType !== normalizedActivityType) {
+  if (exercise.activityType !== normalizedActivityType) {
     normalized.activityType = normalizedActivityType;
     changed = true;
   }
 
   const shouldForceSpeedAgility =
     isLikelySpeedAgilityExercise(exercise) &&
-    (!normalizedActivityType || normalizedActivityType === 'resistance');
+    normalizedActivityType === ActivityType.RESISTANCE;
 
   if (shouldForceSpeedAgility) {
     normalized.activityType = 'speedAgility' as ActivityType;

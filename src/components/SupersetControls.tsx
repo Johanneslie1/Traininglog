@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useSupersets } from '../context/SupersetContext';
+import { buildSupersetDisplayTitle, buildSupersetLabels } from '@/utils/supersetUtils';
 
 interface SupersetControlsProps {
   className?: string;
@@ -13,30 +14,19 @@ const SupersetControls: React.FC<SupersetControlsProps> = ({ className = '' }) =
     createSuperset, 
     breakSuperset 
   } = useSupersets();
-  
-  const [supersetName, setSupersetName] = useState('');
-  const [showNameInput, setShowNameInput] = useState(false);
+
+  const labelsByExerciseId = React.useMemo(() => {
+    const flattenedExerciseOrder = state.supersets.flatMap((superset) => superset.exerciseIds);
+    return buildSupersetLabels(state.supersets, flattenedExerciseOrder);
+  }, [state.supersets]);
 
   const handleCreateSuperset = () => {
     if (state.selectedExercises.length < 2) {
       alert('Please select at least 2 exercises to create a superset');
       return;
     }
-    
-    if (showNameInput) {
-      const newSuperset = createSuperset(supersetName || undefined);
-      if (newSuperset) {
-        setSupersetName('');
-        setShowNameInput(false);
-      }
-    } else {
-      setShowNameInput(true);
-    }
-  };
 
-  const handleCancelNaming = () => {
-    setSupersetName('');
-    setShowNameInput(false);
+    createSuperset();
   };
 
   if (!state.isCreating && state.supersets.length === 0) {
@@ -72,19 +62,6 @@ const SupersetControls: React.FC<SupersetControlsProps> = ({ className = '' }) =
             You'll perform them back-to-back with minimal rest.
           </p>
 
-          {showNameInput && (
-            <div className="mb-4">
-              <input
-                type="text"
-                placeholder="Superset name (optional)"
-                value={supersetName}
-                onChange={(e) => setSupersetName(e.target.value)}
-                className="w-full px-3 py-2 bg-bg-tertiary text-text-primary rounded-lg border border-border focus:border-accent-primary focus:outline-none"
-                maxLength={30}
-              />
-            </div>
-          )}
-
           <div className="flex gap-2">
             <button
               onClick={handleCreateSuperset}
@@ -94,13 +71,13 @@ const SupersetControls: React.FC<SupersetControlsProps> = ({ className = '' }) =
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              {showNameInput ? 'Create' : 'Next'}
+              Create
             </button>
             <button
-              onClick={showNameInput ? handleCancelNaming : cancelCreating}
+              onClick={cancelCreating}
               className="px-4 py-2 bg-gray-600 text-text-primary rounded-lg hover:bg-gray-700 transition-colors"
             >
-              {showNameInput ? 'Back' : 'Cancel'}
+              Cancel
             </button>
           </div>
         </div>
@@ -115,7 +92,7 @@ const SupersetControls: React.FC<SupersetControlsProps> = ({ className = '' }) =
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                  <span className="text-text-primary font-medium">{superset.name}</span>
+                  <span className="text-text-primary font-medium">{buildSupersetDisplayTitle(superset, labelsByExerciseId)}</span>
                 </div>
                 <button
                   onClick={() => breakSuperset(superset.id)}

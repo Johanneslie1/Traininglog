@@ -9,7 +9,10 @@ export interface Session {
   completed: boolean;
   exercises: {
     exerciseId: string;
-    supersetId?: string; // Add superset support
+    // Per-exercise metadata used for rendering/export of this logged entry
+    supersetId?: string;
+    supersetLabel?: string;
+    supersetName?: string;
     sets: Array<{
       weight?: number;
       reps?: number;
@@ -20,14 +23,16 @@ export interface Session {
       notes?: string;
     }>;
   }[];
-  supersets?: SupersetGroup[]; // Add superset metadata
+  // Session-level grouping metadata used to deterministically rebuild labels
+  supersets?: SupersetGroup[];
+  exerciseOrder?: string[];
 }
 
 export interface SupersetGroup {
   id: string;
   name?: string;
   exerciseIds: string[];
-  order: number;
+  order?: number;
 }
 
 export type DifficultyCategory = 'warmUp' | 'easy' | 'moderate' | 'hard' | 'failure' | 'dropSet';

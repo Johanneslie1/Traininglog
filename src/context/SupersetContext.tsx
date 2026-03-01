@@ -13,7 +13,7 @@ interface SupersetContextType {
   startCreating: () => void;
   cancelCreating: () => void;
   toggleExerciseSelection: (exerciseId: string) => void;
-  createSuperset: (name?: string) => SupersetGroup | null;
+  createSuperset: () => SupersetGroup | null;
   breakSuperset: (supersetId: string) => void;
   addSuperset: (superset: SupersetGroup) => void;
   removeSuperset: (supersetId: string) => void;
@@ -24,7 +24,6 @@ interface SupersetContextType {
   loadSupersetsForDate: (date: string) => void;
   saveSupersetsForDate: (date: string) => void;
   updateExerciseOrder: (exerciseIds: string[]) => void;
-  renameSuperset: (supersetId: string, newName: string) => void;
 }
 
 const SupersetContext = createContext<SupersetContextType | undefined>(undefined);
@@ -163,14 +162,13 @@ export const SupersetProvider: React.FC<SupersetProviderProps> = ({ children }) 
     }));
   }, []);
 
-  const createSuperset = useCallback((name?: string): SupersetGroup | null => {
+  const createSuperset = useCallback((): SupersetGroup | null => {
     if (state.selectedExercises.length < 2) {
       return null;
     }
 
     const newSuperset: SupersetGroup = {
       id: crypto.randomUUID(),
-      name: name || `Superset ${state.supersets.length + 1}`,
       exerciseIds: state.selectedExercises,
       order: state.supersets.length
     };
@@ -226,17 +224,6 @@ export const SupersetProvider: React.FC<SupersetProviderProps> = ({ children }) 
     }));
   }, []);
 
-  const renameSuperset = useCallback((supersetId: string, newName: string) => {
-    setState(prev => ({
-      ...prev,
-      supersets: prev.supersets.map(superset => 
-        superset.id === supersetId 
-          ? { ...superset, name: newName } 
-          : superset
-      )
-    }));
-  }, []);
-
   const clearAll = useCallback(() => {
     setState({
       isCreating: false,
@@ -262,8 +249,7 @@ export const SupersetProvider: React.FC<SupersetProviderProps> = ({ children }) 
     clearAll,
     loadSupersetsForDate,
     saveSupersetsForDate,
-    updateExerciseOrder,
-    renameSuperset
+    updateExerciseOrder
   };
 
   return (

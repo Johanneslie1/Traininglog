@@ -3,6 +3,7 @@ import { ExerciseData } from '@/services/exerciseDataService';
 import { SupersetGroup } from '@/types/session';
 import { useSupersets } from '@/context/SupersetContext';
 import ExerciseCard from '@/components/ExerciseCard';
+import { buildSupersetDisplayTitle, buildSupersetLabels } from '@/utils/supersetUtils';
 
 interface SupersetWorkoutDisplayProps {
   exercises: ExerciseData[];
@@ -16,6 +17,16 @@ const SupersetWorkoutDisplay: React.FC<SupersetWorkoutDisplayProps> = ({
   onDeleteExercise
 }) => {
   const { state } = useSupersets();
+
+  const exerciseOrder = React.useMemo(
+    () => exercises.map((exercise) => exercise.id).filter((id): id is string => Boolean(id)),
+    [exercises]
+  );
+
+  const labelsByExerciseId = React.useMemo(
+    () => buildSupersetLabels(state.supersets, exerciseOrder),
+    [state.supersets, exerciseOrder]
+  );
   
   // Group exercises by supersets
   const groupedExercises = React.useMemo(() => {
@@ -85,7 +96,7 @@ const SupersetWorkoutDisplay: React.FC<SupersetWorkoutDisplayProps> = ({
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-4 h-4 bg-blue-500 rounded-full animate-pulse"></div>
-                  <h3 className="text-lg font-semibold text-white">{group.superset.name}</h3>
+                  <h3 className="text-lg font-semibold text-white">{buildSupersetDisplayTitle(group.superset, labelsByExerciseId)}</h3>
                   <span className="text-sm px-2 py-1 bg-blue-500/20 text-blue-500 rounded-full">
                     {group.exercises.length} exercises
                   </span>
@@ -111,7 +122,7 @@ const SupersetWorkoutDisplay: React.FC<SupersetWorkoutDisplayProps> = ({
                     <div className="transform transition-all duration-200 hover:scale-[1.01]">
                       <ExerciseCard
                         exercise={exercise}
-                        exerciseNumber={group.originalIndices[exerciseIndex] + 1}
+                        supersetLabel={exercise.id ? labelsByExerciseId[exercise.id]?.label : undefined}
                         onEdit={() => onEditExercise(exercise)}
                         onDelete={() => onDeleteExercise(exercise)}
                         showActions={true}
