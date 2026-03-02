@@ -15,7 +15,7 @@ type ActivityTypeLike = {
   teamBased?: unknown;
   defaultUnit?: unknown;
   metrics?: Record<string, unknown>;
-  sets?: Array<Record<string, unknown>>;
+  sets?: unknown[];
 };
 
 type ResolveOptions = {
@@ -86,7 +86,9 @@ const fromShapeHints = (value: ActivityTypeLike): ActivityType | undefined => {
   if (value.sportType || value.teamBased === true) return ActivityType.SPORT;
   if (value.enduranceType) return ActivityType.ENDURANCE;
 
-  const sets = Array.isArray(value.sets) ? value.sets : [];
+  const sets = Array.isArray(value.sets)
+    ? value.sets.filter((set): set is Record<string, unknown> => typeof set === 'object' && set !== null)
+    : [];
   if (sets.length > 0) {
     const hasResistanceMarkers = sets.some((set) => {
       const weight = set.weight;

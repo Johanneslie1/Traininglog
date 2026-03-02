@@ -136,6 +136,11 @@ const removeUndefinedFields = <T>(obj: T): T => {
   return obj;
 };
 
+const readNumericSetValue = (set: Record<string, unknown>, key: string): number => {
+  const value = set[key];
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+};
+
 export const serializeSetForExport = (
   userId: string,
   log: {
@@ -393,11 +398,16 @@ export const exportData = async (userId: string, options: ExportOptions = {}) =>
       if (includeExerciseLogs) {
         results.exerciseLogs = unifiedLogs.map(log => {
           const supersetMeta = resolveSupersetMetadata(log);
-          const totalReps = log.sets.reduce((sum, set) => sum + (set.reps || 0), 0);
-          const maxWeight = log.sets.length > 0 ? Math.max(...log.sets.map(set => set.weight || 0)) : 0;
-          const totalVolume = log.sets.reduce((sum, set) => sum + ((set.reps || 0) * (set.weight || 0)), 0);
+          const totalReps = log.sets.reduce((sum, set) => sum + readNumericSetValue(set, 'reps'), 0);
+          const maxWeight = log.sets.length > 0
+            ? Math.max(...log.sets.map(set => readNumericSetValue(set, 'weight')))
+            : 0;
+          const totalVolume = log.sets.reduce(
+            (sum, set) => sum + (readNumericSetValue(set, 'reps') * readNumericSetValue(set, 'weight')),
+            0
+          );
           const averageRPE = log.sets.length > 0
-            ? log.sets.reduce((sum, set) => sum + (set.rpe || 0), 0) / log.sets.length
+            ? log.sets.reduce((sum, set) => sum + readNumericSetValue(set, 'rpe'), 0) / log.sets.length
             : 0;
 
           return {

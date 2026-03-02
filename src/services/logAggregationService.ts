@@ -23,6 +23,14 @@ type SourceLog = {
   collectionType: ExportSource;
 };
 
+const isObjectRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+const toAnySets = (value: unknown): AnySet[] => {
+  if (!Array.isArray(value)) return [];
+  return value.filter(isObjectRecord);
+};
+
 const LOCAL_EXERCISE_LOGS_KEY = 'exercise_logs';
 
 const parseTimestamp = (value: unknown): Date => {
@@ -90,7 +98,7 @@ const readLocalExerciseLogs = (userId: string, startDate: Date, endDate: Date): 
       return {
         id: String(log.id || `local-${index}-${timestamp.getTime()}`),
         exerciseName: String(log.exerciseName || log.activityName || 'Unknown exercise'),
-        sets: Array.isArray(log.sets) ? (log.sets as AnySet[]) : [],
+        sets: toAnySets(log.sets),
         timestamp,
         userId: resolvedUserId,
         activityType: typeof log.activityType === 'string' ? log.activityType : undefined,
@@ -217,51 +225,54 @@ export const getAggregatedExportLogs = async (
     throw new Error(`Failed to load export sources: ${details}`);
   }
 
-  const [exerciseLogs, activityLogs, strengthLogs, localLogs] = sourceReads.map((result) =>
-    result.status === 'fulfilled' ? result.value : []
-  );
+  const exerciseLogs = sourceReads[0].status === 'fulfilled' ? sourceReads[0].value : [];
+  const activityLogs = sourceReads[1].status === 'fulfilled' ? sourceReads[1].value : [];
+  const strengthLogs = sourceReads[2].status === 'fulfilled' ? sourceReads[2].value : [];
+  const localLogs = sourceReads[3].status === 'fulfilled' ? sourceReads[3].value : [];
 
-  const normalized: SourceLog[] = [
+  const normalizedSources: SourceLog[] = [
     ...exerciseLogs.map((log) => ({
       id: log.id,
-      exerciseName: log.exerciseName,
-      sets: log.sets || [],
+      exerciseName: log.exerciseName || '',
+      sets: toAnySets(log.sets),
       timestamp: parseTimestamp(log.timestamp),
-      userId: log.userId || userId,
+      userId: String(log.userId || userId),
       activityType: log.activityType,
       exerciseType: log.exerciseType,
-      supersetId: (log as Record<string, unknown>).supersetId as string | undefined,
-      supersetLabel: (log as Record<string, unknown>).supersetLabel as string | undefined,
-      supersetName: (log as Record<string, unknown>).supersetName as string | undefined,
+      supersetId: log.supersetId,
+      supersetLabel: log.supersetLabel,
+      supersetName: log.supersetName,
       collectionType: 'exercise' as const,
     })),
     ...activityLogs.map((log) => ({
       id: log.id,
-      exerciseName: log.activityName,
-      sets: log.sets || [],
+      exerciseName: log.activityName || '',
+      sets: toAnySets(log.sets),
       timestamp: parseTimestamp(log.timestamp),
-      userId: log.userId || userId,
+      userId: String(log.userId || userId),
       activityType: log.activityType,
-      supersetId: (log as Record<string, unknown>).supersetId as string | undefined,
-      supersetLabel: (log as Record<string, unknown>).supersetLabel as string | undefined,
-      supersetName: (log as Record<string, unknown>).supersetName as string | undefined,
+      supersetId: log.supersetId,
+      supersetLabel: log.supersetLabel,
+      supersetName: log.supersetName,
       collectionType: 'activity' as const,
     })),
     ...strengthLogs.map((log) => ({
       id: log.id,
-      exerciseName: log.exerciseName,
-      sets: log.sets || [],
+      exerciseName: log.exerciseName || '',
+      sets: toAnySets(log.sets),
       timestamp: parseTimestamp(log.timestamp),
-      userId: log.userId || userId,
+      userId: String(log.userId || userId),
       activityType: log.activityType || ActivityType.RESISTANCE,
       exerciseType: log.exerciseType,
-      supersetId: (log as Record<string, unknown>).supersetId as string | undefined,
-      supersetLabel: (log as Record<string, unknown>).supersetLabel as string | undefined,
-      supersetName: (log as Record<string, unknown>).supersetName as string | undefined,
+      supersetId: log.supersetId,
+      supersetLabel: log.supersetLabel,
+      supersetName: log.supersetName,
       collectionType: 'strength' as const,
     })),
     ...localLogs,
-  ].map((log) => ({
+  ];
+
+  const normalized: SourceLog[] = normalizedSources.map((log) => ({
     ...log,
     activityType: normalizeActivityType(
       resolveActivityTypeFromExerciseLike(

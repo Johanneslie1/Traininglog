@@ -2,6 +2,7 @@ import { db } from './firebase/config';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { ExerciseLog } from '@/types/exercise';
+import { ExerciseSet } from '@/types/sets';
 import { Program } from '@/types/program';
 import { AppSettings } from '@/context/SettingsContext';
 import { getAggregatedExportLogs } from '@/services/logAggregationService';
@@ -22,6 +23,18 @@ export interface BackupData {
 // Current schema version for migration compatibility
 const SCHEMA_VERSION = '1.0.0';
 const APP_VERSION = '1.0.0';
+
+const toNumber = (value: unknown): number =>
+  typeof value === 'number' && Number.isFinite(value) ? value : 0;
+
+const normalizeBackupSet = (set: Record<string, unknown>): ExerciseSet => {
+  const partial = set as Partial<ExerciseSet>;
+  return {
+    ...partial,
+    weight: toNumber(partial.weight),
+    reps: toNumber(partial.reps),
+  };
+};
 
 /**
  * Ensure user is authenticated and return user ID
@@ -49,7 +62,7 @@ export async function exportFullBackup(userId?: string): Promise<BackupData> {
     const exercises: ExerciseLog[] = aggregatedLogs.map((log) => ({
       id: log.id,
       exerciseName: log.exerciseName || '',
-      sets: log.sets || [],
+      sets: (log.sets || []).map(normalizeBackupSet),
       timestamp: log.timestamp,
       deviceId: '',
       userId: log.userId || uid,
