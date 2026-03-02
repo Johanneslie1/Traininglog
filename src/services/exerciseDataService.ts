@@ -5,6 +5,7 @@ import { ExerciseSet } from '@/types/sets';
 import { ActivityType } from '@/types/activityTypes';
 import { Prescription } from '@/types/program';
 import { ExercisePrescriptionAssistantData } from '@/types/exercise';
+import { resolveActivityTypeFromExerciseLike } from '@/utils/activityTypeResolver';
 
 export interface ExerciseData {
   id?: string;
@@ -54,6 +55,17 @@ export class ExerciseDataService {
       // Ensure we have authentication
       const userId = await this.ensureAuth();
 
+      const resolvedActivityType = resolveActivityTypeFromExerciseLike(
+        {
+          activityType: exercise.activityType,
+          sets: (Array.isArray(exercise.sets) ? exercise.sets : []) as unknown as Array<Record<string, unknown>>,
+        },
+        {
+          fallback: ActivityType.RESISTANCE,
+          preferHintOverOther: true,
+        }
+      );
+
       // Save to Firebase if user is online - use the same collection structure as ExerciseLog.tsx
       if (navigator.onLine) {
         const exerciseData = {
@@ -65,7 +77,7 @@ export class ExerciseDataService {
           ...(exercise.supersetId && { supersetId: exercise.supersetId }),
           ...(exercise.supersetLabel && { supersetLabel: exercise.supersetLabel }),
           ...(exercise.supersetName && { supersetName: exercise.supersetName }),
-          ...(exercise.activityType && { activityType: exercise.activityType }),
+          activityType: resolvedActivityType,
           ...(typeof exercise.isWarmup === 'boolean' && { isWarmup: exercise.isWarmup }),
           ...(exercise.prescription && { prescription: exercise.prescription }),
           ...(exercise.instructionMode && { instructionMode: exercise.instructionMode }),
@@ -84,14 +96,27 @@ export class ExerciseDataService {
 
       // Always save to localStorage as backup
       const existingData = this.getLocalExercises();
-      const updatedData = [...existingData.filter(e => e.id !== exercise.id), { ...exercise, userId: exercise.userId || userId }];
+      const updatedData = [
+        ...existingData.filter(e => e.id !== exercise.id),
+        { ...exercise, userId: exercise.userId || userId, activityType: resolvedActivityType }
+      ];
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updatedData));
 
     } catch (error) {
       console.error('Error saving exercise:', error);
       // Save to local storage even if Firebase fails
       const existingData = this.getLocalExercises();
-      const updatedData = [...existingData.filter(e => e.id !== exercise.id), exercise];
+      const resolvedActivityType = resolveActivityTypeFromExerciseLike(
+        {
+          activityType: exercise.activityType,
+          sets: (Array.isArray(exercise.sets) ? exercise.sets : []) as unknown as Array<Record<string, unknown>>,
+        },
+        {
+          fallback: ActivityType.RESISTANCE,
+          preferHintOverOther: true,
+        }
+      );
+      const updatedData = [...existingData.filter(e => e.id !== exercise.id), { ...exercise, activityType: resolvedActivityType }];
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(updatedData));
     }
   }

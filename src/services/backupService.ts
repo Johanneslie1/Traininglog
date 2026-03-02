@@ -4,6 +4,7 @@ import { getAuth } from 'firebase/auth';
 import { ExerciseLog } from '@/types/exercise';
 import { Program } from '@/types/program';
 import { AppSettings } from '@/context/SettingsContext';
+import { getAggregatedExportLogs } from '@/services/logAggregationService';
 
 export interface BackupData {
   metadata: {
@@ -41,44 +42,20 @@ export async function exportFullBackup(userId?: string): Promise<BackupData> {
   const uid = userId || await ensureAuth();
 
   try {
-    // Export exercises
-    const exercisesRef = collection(db, 'users', uid, 'exercises');
-    const exercisesQuery = query(exercisesRef);
-    const exercisesSnapshot = await getDocs(exercisesQuery);
+    const allTimeStart = new Date('1970-01-01T00:00:00.000Z');
+    const now = new Date();
+    const aggregatedLogs = await getAggregatedExportLogs(uid, allTimeStart, now);
 
-    const exercises: ExerciseLog[] = [];
-    exercisesSnapshot.forEach(doc => {
-      const data = doc.data();
-      exercises.push({
-        id: doc.id,
-        exerciseName: data.exerciseName || '',
-        sets: data.sets || [],
-        timestamp: data.timestamp?.toDate?.() || new Date(data.timestamp || Date.now()),
-        deviceId: data.deviceId || '',
-        userId: data.userId || uid,
-        exerciseType: data.exerciseType || '',
-        activityType: data.activityType || ''
-      });
-    });
-
-    // Export non-resistance activities stored in activities subcollection
-    const activitiesRef = collection(db, 'users', uid, 'activities');
-    const activitiesQuery = query(activitiesRef);
-    const activitiesSnapshot = await getDocs(activitiesQuery);
-
-    activitiesSnapshot.forEach(activityDoc => {
-      const data = activityDoc.data();
-      exercises.push({
-        id: activityDoc.id,
-        exerciseName: data.activityName || data.exerciseName || '',
-        sets: data.sets || [],
-        timestamp: data.timestamp?.toDate?.() || new Date(data.timestamp || Date.now()),
-        deviceId: data.deviceId || '',
-        userId: data.userId || uid,
-        exerciseType: 'activity',
-        activityType: data.activityType || ''
-      });
-    });
+    const exercises: ExerciseLog[] = aggregatedLogs.map((log) => ({
+      id: log.id,
+      exerciseName: log.exerciseName || '',
+      sets: log.sets || [],
+      timestamp: log.timestamp,
+      deviceId: '',
+      userId: log.userId || uid,
+      exerciseType: log.collectionType,
+      activityType: log.activityType || ''
+    }));
 
     // Export programs
     const programsRef = collection(db, 'programs');

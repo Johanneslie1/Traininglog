@@ -32,7 +32,7 @@ const parseLocalDateInput = (value: string, endOfDay = false): Date | null => {
 
 const getDateRangeFromPreset = (preset: DateRangePreset): { startDate: Date | null; endDate: Date | null } => {
   const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
   
   switch (preset) {
     case 'last7days': {

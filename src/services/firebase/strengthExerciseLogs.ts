@@ -14,6 +14,7 @@ import { db } from './config';
 import { ExerciseLog } from '@/types/exercise';
 import { ExerciseSet } from '@/types/sets';
 import { ExerciseType } from '@/config/exerciseTypes';
+import { ActivityType } from '@/types/activityTypes';
 
 type ExerciseLogInput = {
   exerciseName: string;
@@ -74,6 +75,7 @@ export const addExerciseLog = async (
       userId: logData.userId,
       sets: Array.isArray(logData.sets) ? logData.sets.map(set => cleanObject(set)).filter(set => set && Object.keys(set).length > 0) : [],
       exerciseType: exerciseTypeStr === 'plyometrics' ? 'plyometric' : exerciseTypeStr, // Normalize plyometrics
+      activityType: ActivityType.RESISTANCE,
       categories: logData.categories || []
     });
 
@@ -246,6 +248,7 @@ export const getExerciseLogs = async (userId: string, startDate: Date, endDate: 
         timestamp: data.timestamp.toDate(),
         deviceId: data.deviceId || 'legacy',
         userId: data.userId,
+        activityType: data.activityType || ActivityType.RESISTANCE,
         exerciseType: data.exerciseType || 'strength',
         categories: data.categories || [],
         type: data.exerciseType || data.type || 'strength'
@@ -254,6 +257,12 @@ export const getExerciseLogs = async (userId: string, startDate: Date, endDate: 
 
     return exercises;
   } catch (error) {
+    const firebaseError = error as { code?: string; message?: string };
+    if (firebaseError.code === 'permission-denied' || firebaseError.message?.includes('Missing or insufficient permissions')) {
+      console.warn('⚠️ Permission denied for strengthExercises collection. Returning empty strength list.');
+      return [];
+    }
+
     console.error('❌ Error fetching exercise logs:', error);
     throw new Error('Failed to fetch exercises');
   }

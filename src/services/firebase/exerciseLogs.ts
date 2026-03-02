@@ -101,13 +101,24 @@ export const addExerciseLog = async (
       throw new Error('userId is required to save exercise log');
     }
 
+    const resolvedActivityType = resolveActivityTypeFromExerciseLike(
+      {
+        activityType: logData.activityType,
+        sets: (Array.isArray(logData.sets) ? logData.sets : []) as unknown as Array<Record<string, unknown>>,
+      },
+      {
+        fallback: ActivityType.RESISTANCE,
+        preferHintOverOther: true,
+      }
+    );
+
     const exerciseData = removeUndefinedFields({
       ...logData,
       timestamp: Timestamp.fromDate(selectedDate || new Date()),
       deviceId: window.navigator.userAgent,
       userId: logData.userId,
       sets: Array.isArray(logData.sets) ? logData.sets : [], // Ensure sets is always an array
-      ...(logData.activityType && { activityType: logData.activityType }), // Include activityType if provided
+      activityType: resolvedActivityType,
       ...(logData.supersetId && { supersetId: logData.supersetId }),
       ...(logData.supersetLabel && { supersetLabel: logData.supersetLabel }),
       ...(logData.supersetName && { supersetName: logData.supersetName }),
@@ -165,7 +176,7 @@ export const addExerciseLog = async (
       timestamp: selectedDate || new Date(),
       deviceId: window.navigator.userAgent,
       userId: logData.userId,
-      activityType: logData.activityType,
+      activityType: resolvedActivityType,
       supersetId: logData.supersetId,
       supersetLabel: logData.supersetLabel,
       supersetName: logData.supersetName,
@@ -204,7 +215,16 @@ export const addExerciseLog = async (
       timestamp: selectedDate || new Date(),
       deviceId: window.navigator.userAgent,
       userId: logData.userId,
-      activityType: logData.activityType,
+      activityType: resolveActivityTypeFromExerciseLike(
+        {
+          activityType: logData.activityType,
+          sets: (Array.isArray(logData.sets) ? logData.sets : []) as unknown as Array<Record<string, unknown>>,
+        },
+        {
+          fallback: ActivityType.RESISTANCE,
+          preferHintOverOther: true,
+        }
+      ),
       supersetId: logData.supersetId,
       supersetLabel: logData.supersetLabel,
       supersetName: logData.supersetName,

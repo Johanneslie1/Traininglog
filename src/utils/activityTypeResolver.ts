@@ -3,6 +3,8 @@ import { normalizeActivityType } from '@/types/activityLog';
 
 type ActivityTypeLike = {
   activityType?: unknown;
+  name?: unknown;
+  exerciseName?: unknown;
   type?: unknown;
   trainingType?: unknown;
   exerciseType?: unknown;
@@ -20,6 +22,7 @@ type ResolveOptions = {
   fallback?: ActivityType;
   preferHintOverOther?: boolean;
   preferHintOverExplicit?: boolean;
+  preferSpeedAgilityNameHintOverResistance?: boolean;
 };
 
 const toLowerString = (value: unknown): string =>
@@ -60,6 +63,21 @@ const fromHintValue = (value: unknown): ActivityType | undefined => {
     default:
       return undefined;
   }
+};
+
+const SPEED_AGILITY_NAME_PATTERN =
+  /\b(jump|jumps|bounding|bounds|sprint|sprinter|agility|hurdle|plyo|plyometric|acceleration|deceleration|quick\s*feet|ladder|shuffle)\b/i;
+
+const fromExerciseNameHint = (value: ActivityTypeLike): ActivityType | undefined => {
+  const rawName = value.exerciseName ?? value.name;
+  const normalizedName = toLowerString(rawName);
+  if (!normalizedName) return undefined;
+
+  if (SPEED_AGILITY_NAME_PATTERN.test(normalizedName)) {
+    return ActivityType.SPEED_AGILITY;
+  }
+
+  return undefined;
 };
 
 const fromShapeHints = (value: ActivityTypeLike): ActivityType | undefined => {
@@ -134,13 +152,23 @@ export const resolveActivityTypeFromExerciseLike = (
   if (!value) return fallback;
 
   const explicit = value.activityType ? normalizeActivityType(value.activityType as string) : undefined;
+  const nameHintType = fromExerciseNameHint(value);
   const hintType =
     fromHintValue(value.trainingType) ||
     fromHintValue(value.type) ||
     fromHintValue(value.exerciseType) ||
+    nameHintType ||
     fromShapeHints(value);
 
   if (explicit) {
+    if (
+      options?.preferSpeedAgilityNameHintOverResistance &&
+      explicit === ActivityType.RESISTANCE &&
+      nameHintType === ActivityType.SPEED_AGILITY
+    ) {
+      return ActivityType.SPEED_AGILITY;
+    }
+
     if (options?.preferHintOverExplicit && hintType && hintType !== explicit) {
       return hintType;
     }

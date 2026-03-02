@@ -2,8 +2,7 @@ import { getUserWorkouts } from './firebase/workouts';
 import { DifficultyCategory } from '@/types/difficulty';
 import { ActivityType } from '@/types/activityTypes';
 import { mapExerciseTypeToActivityType, normalizeActivityType } from '@/types/activityLog';
-import { getExerciseLogs as getFirebaseExerciseLogs } from '@/services/firebase/exerciseLogs';
-import { getActivityLogs as getFirebaseActivityLogs } from '@/services/firebase/activityLogs';
+import { getAggregatedExportLogs } from '@/services/logAggregationService';
 import { SupersetGroup } from '@/types/session';
 import { buildSupersetLabels, SupersetLabelMetadata } from '@/utils/supersetUtils';
 import { normalizeDistanceMeters, normalizeDurationSeconds } from '@/utils/activityFieldContract';
@@ -65,10 +64,15 @@ const readLegacySupersetDataForDate = (dateKey: string): { supersets: SupersetGr
   }
 };
 
-const getDateRange = (startDate?: Date, endDate?: Date) => ({
-  start: startDate || DEFAULT_EXPORT_START_DATE,
-  end: endDate || new Date(),
-});
+const getDateRange = (startDate?: Date, endDate?: Date) => {
+  const start = new Date(startDate || DEFAULT_EXPORT_START_DATE);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(endDate || new Date());
+  end.setHours(23, 59, 59, 999);
+
+  return { start, end };
+};
 
 const inferActivityTypeFromSetShape = (sets: Array<Record<string, any>>): ActivityType | undefined => {
   if (!Array.isArray(sets) || sets.length === 0) {
@@ -255,37 +259,14 @@ export const exportData = async (userId: string, options: ExportOptions = {}) =>
     // Export exercise logs
     if (includeExerciseLogs || includeSets) {
       const { start, end } = getDateRange(startDate, endDate);
-      const [exerciseLogs, activityLogs] = await Promise.all([
-        getFirebaseExerciseLogs(userId, start, end),
-        getFirebaseActivityLogs(userId, start, end)
-      ]);
+      const aggregatedLogs = await getAggregatedExportLogs(userId, start, end);
 
-      const unifiedLogs = [
-        ...exerciseLogs.map((log) => ({
-          id: log.id,
-          exerciseName: log.exerciseName,
-          sets: log.sets || [],
-          timestamp: log.timestamp,
-          userId: log.userId || userId,
-          activityType: resolveExportActivityType(log as Record<string, any>, ActivityType.RESISTANCE),
-          supersetId: (log as any).supersetId,
-          supersetLabel: (log as any).supersetLabel,
-          supersetName: (log as any).supersetName,
-          collectionType: 'exercise',
-        })),
-        ...activityLogs.map((log) => ({
-          id: log.id,
-          exerciseName: log.activityName,
-          sets: log.sets || [],
-          timestamp: log.timestamp,
-          userId: log.userId || userId,
+      const unifiedLogs = aggregatedLogs
+        .map((log) => ({
+          ...log,
           activityType: resolveExportActivityType(log as Record<string, any>, ActivityType.OTHER),
-          supersetId: (log as any).supersetId,
-          supersetLabel: (log as any).supersetLabel,
-          supersetName: (log as any).supersetName,
-          collectionType: 'activity',
         }))
-      ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+        .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
       const inferredSupersetMetadataByLogId = new Map<string, {
         supersetId: string;
@@ -502,6 +483,10 @@ export const getExportPreview = async (userId: string, startDate?: Date, endDate
 
   if (logsResult.status === 'rejected') {
     console.error('Error getting exercise/set preview counts:', logsResult.reason);
+    const reason = logsResult.reason instanceof Error
+      ? logsResult.reason.message
+      : String(logsResult.reason || 'Unknown error');
+    throw new Error(`Failed to load export preview logs: ${reason}`);
   }
 
   return {

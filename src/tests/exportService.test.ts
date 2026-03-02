@@ -4,12 +4,8 @@ jest.mock('@/services/firebase/workouts', () => ({
   getUserWorkouts: jest.fn(async () => []),
 }));
 
-jest.mock('@/services/firebase/exerciseLogs', () => ({
-  getExerciseLogs: jest.fn(async () => []),
-}));
-
-jest.mock('@/services/firebase/activityLogs', () => ({
-  getActivityLogs: jest.fn(async () => []),
+jest.mock('@/services/logAggregationService', () => ({
+  getAggregatedExportLogs: jest.fn(async () => []),
 }));
 
 import { exportData, getExportPreview, serializeSetForExport } from '@/services/exportService';
@@ -18,11 +14,8 @@ import { ActivityType } from '@/types/activityTypes';
 const mockedWorkouts = jest.requireMock('@/services/firebase/workouts') as {
   getUserWorkouts: any;
 };
-const mockedExerciseLogs = jest.requireMock('@/services/firebase/exerciseLogs') as {
-  getExerciseLogs: any;
-};
-const mockedActivityLogs = jest.requireMock('@/services/firebase/activityLogs') as {
-  getActivityLogs: any;
+const mockedLogAggregationService = jest.requireMock('@/services/logAggregationService') as {
+  getAggregatedExportLogs: any;
 };
 
 const localStorageMock = {
@@ -120,7 +113,7 @@ describe('exportService serialization', () => {
 
   it('propagates persisted superset fields into exerciseLogs and sets export', async () => {
     mockedWorkouts.getUserWorkouts.mockResolvedValue([]);
-    mockedExerciseLogs.getExerciseLogs.mockResolvedValue([
+    mockedLogAggregationService.getAggregatedExportLogs.mockResolvedValue([
       {
         id: 'ex-1',
         exerciseName: 'Bench Press',
@@ -131,9 +124,9 @@ describe('exportService serialization', () => {
         supersetId: 'ss-1',
         supersetLabel: '1a',
         supersetName: 'Press Pair',
+        collectionType: 'exercise',
       },
     ]);
-    mockedActivityLogs.getActivityLogs.mockResolvedValue([]);
 
     const result = await exportData('user-1', {
       includeSessions: false,
@@ -158,7 +151,7 @@ describe('exportService serialization', () => {
 
   it('keeps export backward compatible when supersets are missing', async () => {
     mockedWorkouts.getUserWorkouts.mockResolvedValue([]);
-    mockedExerciseLogs.getExerciseLogs.mockResolvedValue([
+    mockedLogAggregationService.getAggregatedExportLogs.mockResolvedValue([
       {
         id: 'ex-legacy',
         exerciseName: 'Squat',
@@ -166,9 +159,9 @@ describe('exportService serialization', () => {
         timestamp: new Date('2026-03-01T12:00:00.000Z'),
         userId: 'user-1',
         activityType: 'resistance',
+        collectionType: 'exercise',
       },
     ]);
-    mockedActivityLogs.getActivityLogs.mockResolvedValue([]);
 
     const result = await exportData('user-1', {
       includeSessions: false,
@@ -184,7 +177,7 @@ describe('exportService serialization', () => {
 
   it('derives deterministic supersetId when only supersetLabel is present', async () => {
     mockedWorkouts.getUserWorkouts.mockResolvedValue([]);
-    mockedExerciseLogs.getExerciseLogs.mockResolvedValue([
+    mockedLogAggregationService.getAggregatedExportLogs.mockResolvedValue([
       {
         id: 'ex-a',
         exerciseName: 'Bench Press',
@@ -193,6 +186,7 @@ describe('exportService serialization', () => {
         userId: 'user-1',
         activityType: 'resistance',
         supersetLabel: '1a',
+        collectionType: 'exercise',
       },
       {
         id: 'ex-b',
@@ -202,9 +196,9 @@ describe('exportService serialization', () => {
         userId: 'user-1',
         activityType: 'resistance',
         supersetLabel: '1b',
+        collectionType: 'exercise',
       },
     ]);
-    mockedActivityLogs.getActivityLogs.mockResolvedValue([]);
 
     const result = await exportData('user-1', {
       includeSessions: false,
@@ -228,7 +222,7 @@ describe('exportService serialization', () => {
 
   it('infers non-resistance activity type from set metrics when activityType is missing', async () => {
     mockedWorkouts.getUserWorkouts.mockResolvedValue([]);
-    mockedExerciseLogs.getExerciseLogs.mockResolvedValue([
+    mockedLogAggregationService.getAggregatedExportLogs.mockResolvedValue([
       {
         id: 'legacy-endurance-1',
         exerciseName: 'Morning Run',
@@ -242,9 +236,9 @@ describe('exportService serialization', () => {
         ],
         timestamp: new Date('2026-03-01T08:30:00.000Z'),
         userId: 'user-1',
+        collectionType: 'local',
       },
     ]);
-    mockedActivityLogs.getActivityLogs.mockResolvedValue([]);
 
     const result = await exportData('user-1', {
       includeSessions: false,
@@ -261,7 +255,7 @@ describe('exportService serialization', () => {
     const endDate = new Date(2026, 2, 2, 23, 59, 59, 999);
 
     mockedWorkouts.getUserWorkouts.mockRejectedValue(new Error('session source unavailable'));
-    mockedExerciseLogs.getExerciseLogs.mockResolvedValue([
+    mockedLogAggregationService.getAggregatedExportLogs.mockResolvedValue([
       {
         id: 'ex-1',
         exerciseName: 'Bench Press',
@@ -272,16 +266,16 @@ describe('exportService serialization', () => {
         timestamp: new Date('2026-03-01T10:00:00.000Z'),
         userId: 'user-1',
         activityType: ActivityType.RESISTANCE,
+        collectionType: 'exercise',
       },
-    ]);
-    mockedActivityLogs.getActivityLogs.mockResolvedValue([
       {
         id: 'ac-1',
-        activityName: 'Easy Run',
+        exerciseName: 'Easy Run',
         sets: [{ duration: 30, distance: 5 }],
         timestamp: new Date('2026-03-01T12:00:00.000Z'),
         userId: 'user-1',
         activityType: ActivityType.ENDURANCE,
+        collectionType: 'activity',
       },
     ]);
 
@@ -293,13 +287,12 @@ describe('exportService serialization', () => {
       setCount: 3,
     });
 
-    expect(mockedExerciseLogs.getExerciseLogs).toHaveBeenCalledWith('user-1', startDate, endDate);
-    expect(mockedActivityLogs.getActivityLogs).toHaveBeenCalledWith('user-1', startDate, endDate);
+    expect(mockedLogAggregationService.getAggregatedExportLogs).toHaveBeenCalledWith('user-1', startDate, endDate);
   });
 
   it('counts zero-weight sets in export preview range', async () => {
     mockedWorkouts.getUserWorkouts.mockResolvedValue([]);
-    mockedExerciseLogs.getExerciseLogs.mockResolvedValue([
+    mockedLogAggregationService.getAggregatedExportLogs.mockResolvedValue([
       {
         id: 'ex-zw',
         exerciseName: 'Technique Bench',
@@ -310,13 +303,71 @@ describe('exportService serialization', () => {
         timestamp: new Date('2026-02-25T09:00:00.000Z'),
         userId: 'user-1',
         activityType: ActivityType.RESISTANCE,
+        collectionType: 'exercise',
       },
     ]);
-    mockedActivityLogs.getActivityLogs.mockResolvedValue([]);
 
     const preview = await getExportPreview('user-1');
 
     expect(preview.exerciseCount).toBe(1);
     expect(preview.setCount).toBe(2);
+  });
+
+  it('throws preview error when log aggregation fails', async () => {
+    mockedWorkouts.getUserWorkouts.mockResolvedValue([]);
+    mockedLogAggregationService.getAggregatedExportLogs.mockRejectedValue(new Error('source failure'));
+
+    await expect(getExportPreview('user-1')).rejects.toThrow(
+      'Failed to load export preview logs: Failed to export data: source failure'
+    );
+  });
+
+  it('includes strength and local-source logs in unified export', async () => {
+    mockedWorkouts.getUserWorkouts.mockResolvedValue([]);
+    mockedLogAggregationService.getAggregatedExportLogs.mockResolvedValue([
+      {
+        id: 'strength-1',
+        exerciseName: 'Front Squat',
+        sets: [{ reps: 5, weight: 90 }],
+        timestamp: new Date('2026-03-01T07:30:00.000Z'),
+        userId: 'user-1',
+        activityType: ActivityType.RESISTANCE,
+        collectionType: 'strength',
+      },
+      {
+        id: 'local-1',
+        exerciseName: 'Evening Walk',
+        sets: [{ duration: 40, distance: 3.2 }],
+        timestamp: new Date('2026-03-01T18:00:00.000Z'),
+        userId: 'user-1',
+        activityType: ActivityType.ENDURANCE,
+        collectionType: 'local',
+      },
+    ]);
+
+    const result = await exportData('user-1', {
+      includeSessions: false,
+      includeExerciseLogs: true,
+      includeSets: true,
+    });
+
+    expect(result.exerciseLogs).toHaveLength(2);
+    expect(result.sets).toHaveLength(2);
+    expect(result.exerciseLogs.map((row) => row.category)).toEqual(expect.arrayContaining(['strength', 'local']));
+  });
+
+  it('throws clear export error when any source fails in aggregator', async () => {
+    mockedWorkouts.getUserWorkouts.mockResolvedValue([]);
+    mockedLogAggregationService.getAggregatedExportLogs.mockRejectedValue(
+      new Error('Failed to load export sources: strength: permission-denied')
+    );
+
+    await expect(
+      exportData('user-1', {
+        includeSessions: false,
+        includeExerciseLogs: true,
+        includeSets: true,
+      })
+    ).rejects.toThrow('Failed to export data: Failed to load export sources: strength: permission-denied');
   });
 });

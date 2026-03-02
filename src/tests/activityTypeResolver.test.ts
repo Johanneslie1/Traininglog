@@ -63,4 +63,27 @@ describe('resolveActivityTypeFromExerciseLike', () => {
 
     expect(resolved).toBe(ActivityType.RESISTANCE);
   });
+
+  test('does not override explicit resistance from name hint by default', () => {
+    const resolved = resolveActivityTypeFromExerciseLike({
+      activityType: ActivityType.RESISTANCE,
+      exerciseName: 'Single Leg Box Jumps',
+    });
+
+    expect(resolved).toBe(ActivityType.RESISTANCE);
+  });
+
+  test('can override explicit resistance to speed agility from name hint when configured', () => {
+    const resolved = resolveActivityTypeFromExerciseLike(
+      {
+        activityType: ActivityType.RESISTANCE,
+        exerciseName: 'Single Leg Box Jumps',
+      },
+      {
+        preferSpeedAgilityNameHintOverResistance: true,
+      }
+    );
+
+    expect(resolved).toBe(ActivityType.SPEED_AGILITY);
+  });
 });

@@ -125,9 +125,25 @@ export const migrateLegacyDataForUser = async (userId: string): Promise<LegacyMi
   const exerciseLogsSnapshot = await getDocs(collection(db, 'users', userId, 'exercises'));
   exerciseLogsSnapshot.docs.forEach((exerciseLogDoc) => {
     const data = exerciseLogDoc.data();
-    if (!data.activityType) return;
 
-    const normalizedType = normalizeActivityType(data.activityType);
+    const resolvedType = resolveActivityTypeFromExerciseLike(
+      {
+        name: data.name,
+        exerciseName: data.name,
+        activityType: data.activityType,
+        type: data.exerciseType,
+        exerciseType: data.exerciseType,
+        sets: Array.isArray(data.sets) ? data.sets : [],
+      },
+      {
+        fallback: ActivityType.RESISTANCE,
+        preferHintOverExplicit: true,
+        preferHintOverOther: true,
+        preferSpeedAgilityNameHintOverResistance: true,
+      }
+    );
+
+    const normalizedType = normalizeActivityType(resolvedType);
     if (normalizedType !== data.activityType) {
       operations.push({
         ref: toDocRef(exerciseLogDoc),
