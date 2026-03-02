@@ -12,6 +12,24 @@ import UniversalExercisePicker from '@/components/activities/UniversalExercisePi
 import { getAllExercisesLocal } from '@/utils/allExercises';
 import { enrichAll, collectAllFacets, applyAllFilters } from '@/utils/allExercisesFilters';
 
+const mapActivityTypeToExerciseType = (activityType: ActivityType): Exercise['type'] => {
+  switch (activityType) {
+    case ActivityType.RESISTANCE:
+      return 'strength';
+    case ActivityType.ENDURANCE:
+      return 'endurance';
+    case ActivityType.STRETCHING:
+      return 'flexibility';
+    case ActivityType.SPORT:
+      return 'teamSports';
+    case ActivityType.SPEED_AGILITY:
+      return 'speedAgility';
+    case ActivityType.OTHER:
+    default:
+      return 'other';
+  }
+};
+
 interface ProgramExercisePickerProps {
   onClose: () => void;
   onSelectExercises: (exercises: { exercise: Exercise; sets: ExerciseSet[] }[]) => void;
@@ -96,7 +114,7 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
         exercise: {
           id: exercise.id,
           name: exercise.name,
-          type: (isResistance ? 'strength' : 'cardio') as 'strength' | 'cardio',
+          type: mapActivityTypeToExerciseType(activityType),
           category: 'compound' as const,
           primaryMuscles: [],
           secondaryMuscles: [],
@@ -193,11 +211,11 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
     function handleAddFromLibrary() { 
       const chosen = enriched.filter(e => selectedMap[e.id]); 
       const mapped = chosen.map(e => ({ 
-        exercise: { 
+        exercise: {
           ...(e as any),
           id: e.id, 
           name: e.name, 
-          type: (normalizeActivityType(e.activityType as ActivityType) === ActivityType.RESISTANCE ? 'strength' : 'cardio') as any, 
+          type: mapActivityTypeToExerciseType(normalizeActivityType(e.activityType as ActivityType)),
           category: (e.category || 'general') as any, 
           primaryMuscles: e.primaryMuscles || [], 
           secondaryMuscles: e.secondaryMuscles || [], 

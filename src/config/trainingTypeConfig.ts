@@ -5,7 +5,7 @@ export interface TrainingTypeDefinition {
   label: string;
   icon: string;
   description: string;
-  firestoreCollection: 'exercises' | 'activity-logs';
+  firestoreCollection: 'exercises';
   metricsConfig: MetricsConfig;
   setFields: string[];
   summaryMetric?: 'volume' | 'duration' | 'distance';
@@ -34,7 +34,7 @@ export const TRAINING_TYPE_CONFIG: Record<TrainingType, TrainingTypeDefinition> 
     label: 'Endurance / Cardio',
     icon: '🏃',
     description: 'Running, cycling, swimming, etc.',
-    firestoreCollection: 'activity-logs',
+    firestoreCollection: 'exercises',
     metricsConfig: {
       trackDuration: true,
       trackDistance: true,
@@ -44,7 +44,7 @@ export const TRAINING_TYPE_CONFIG: Record<TrainingType, TrainingTypeDefinition> 
       trackElevation: true,
       trackRPE: true
     },
-    setFields: ['duration', 'distance', 'pace', 'averageHeartRate', 'maxHeartRate', 'calories', 'elevation', 'rpe'],
+    setFields: ['duration', 'distance', 'rpe', 'averageHeartRate', 'calories', 'notes'],
     summaryMetric: 'distance'
   },
 
@@ -53,7 +53,7 @@ export const TRAINING_TYPE_CONFIG: Record<TrainingType, TrainingTypeDefinition> 
     label: 'Speed & Agility',
     icon: '⚡',
     description: 'Drills for speed, agility, and power',
-    firestoreCollection: 'activity-logs',
+    firestoreCollection: 'exercises',
     metricsConfig: {
       trackReps: true,
       trackDuration: true,
@@ -61,7 +61,7 @@ export const TRAINING_TYPE_CONFIG: Record<TrainingType, TrainingTypeDefinition> 
       trackRPE: true,
       trackHeartRate: false
     },
-    setFields: ['reps', 'duration', 'distance', 'rpe', 'comment'],
+    setFields: ['reps', 'distance', 'restTime', 'rpe', 'notes'],
     summaryMetric: 'duration'
   },
 
@@ -70,13 +70,13 @@ export const TRAINING_TYPE_CONFIG: Record<TrainingType, TrainingTypeDefinition> 
     label: 'Flexibility / Mobility',
     icon: '🧘',
     description: 'Stretching, yoga, mobility work',
-    firestoreCollection: 'activity-logs',
+    firestoreCollection: 'exercises',
     metricsConfig: {
       trackDuration: true,
       trackHoldTime: true,
       trackIntensity: true
     },
-    setFields: ['duration', 'holdTime', 'intensity', 'bodyPart', 'comment'],
+    setFields: ['holdTime', 'intensity', 'notes'],
     summaryMetric: 'duration'
   },
 
@@ -85,13 +85,13 @@ export const TRAINING_TYPE_CONFIG: Record<TrainingType, TrainingTypeDefinition> 
     label: 'Team Sports / Other',
     icon: '🏀',
     description: 'Sports, games, and other activities',
-    firestoreCollection: 'activity-logs',
+    firestoreCollection: 'exercises',
     metricsConfig: {
       trackDuration: true,
       trackRPE: true,
       trackPerformance: true
     },
-    setFields: ['duration', 'rpe', 'performance', 'comment'],
+    setFields: ['duration', 'distance', 'rpe', 'performance', 'calories', 'notes'],
     summaryMetric: 'duration'
   },
 
@@ -100,12 +100,12 @@ export const TRAINING_TYPE_CONFIG: Record<TrainingType, TrainingTypeDefinition> 
     label: 'Other Activity',
     icon: '🎯',
     description: 'Custom or miscellaneous activity',
-    firestoreCollection: 'activity-logs',
+    firestoreCollection: 'exercises',
     metricsConfig: {
       trackDuration: true,
       trackRPE: true
     },
-    setFields: ['duration', 'rpe', 'comment'],
+    setFields: ['duration', 'distance', 'rpe', 'calories', 'notes'],
     summaryMetric: 'duration'
   }
 };
@@ -114,6 +114,6 @@ export function getTrainingTypeConfig(type: TrainingType): TrainingTypeDefinitio
   return TRAINING_TYPE_CONFIG[type];
 }
 
-export function getFirestoreCollection(type: TrainingType): 'exercises' | 'activity-logs' {
+export function getFirestoreCollection(type: TrainingType): 'exercises' {
   return getTrainingTypeConfig(type).firestoreCollection;
 }

@@ -17,6 +17,19 @@ interface DateRange {
   preset: DateRangePreset;
 }
 
+const parseLocalDateInput = (value: string, endOfDay = false): Date | null => {
+  if (!value) return null;
+
+  const [year, month, day] = value.split('-').map(Number);
+  if (!year || !month || !day) return null;
+
+  if (endOfDay) {
+    return new Date(year, month - 1, day, 23, 59, 59, 999);
+  }
+
+  return new Date(year, month - 1, day, 0, 0, 0, 0);
+};
+
 const getDateRangeFromPreset = (preset: DateRangePreset): { startDate: Date | null; endDate: Date | null } => {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
@@ -110,10 +123,8 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
   };
 
   const handleCustomDateChange = (field: 'startDate' | 'endDate', value: string) => {
-    const date = value ? new Date(value) : null;
-    if (field === 'endDate' && date) {
-      date.setHours(23, 59, 59, 999);
-    }
+    const date = parseLocalDateInput(value, field === 'endDate');
+
     setDateRange(prev => ({
       ...prev,
       [field]: date,
@@ -123,7 +134,10 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
 
   const formatDateForInput = (date: Date | null): string => {
     if (!date) return '';
-    return date.toISOString().split('T')[0];
+    const year = date.getFullYear();
+    const month = `${date.getMonth() + 1}`.padStart(2, '0');
+    const day = `${date.getDate()}`.padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
   const handleExport = async () => {

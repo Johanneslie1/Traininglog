@@ -104,6 +104,8 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
 
   // Use traditional resistance training logger for strength exercises
   const [followPrescription, setFollowPrescription] = useState<boolean>(true);
+  const [showPrescriptionGuide, setShowPrescriptionGuide] = useState(false);
+  const [showRecentHistory, setShowRecentHistory] = useState(false);
   const prescriptionApplied = false;
   
   const [sets, setSets] = useState<ExerciseSet[]>(() => {
@@ -412,30 +414,82 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
         </div>
 
         <div className="sticky top-0 z-20 pb-2 bg-bg-secondary/95 backdrop-blur-sm">
-          <PrescriptionGuideCard
-            activityType={normalizeActivityType(exercise.activityType)}
-            prescription={exercise.prescription}
-            instructionMode={exercise.instructionMode}
-            instructionsText={instructionsText}
-            isEditing={isEditing}
-            followPrescription={followPrescription}
-            prescriptionApplied={prescriptionApplied}
-            onToggleFollow={!isEditing && hasPrescription ? handleTogglePrescription : undefined}
-            uiHint={exercise.prescriptionAssistant?.uiHint}
-            warnings={exercise.prescriptionAssistant?.warnings}
-            alternatives={exercise.prescriptionAssistant?.alternatives}
-            progressionNote={exercise.prescriptionAssistant?.progressionNote}
-          />
+          <button
+            type="button"
+            onClick={() => setShowPrescriptionGuide((current) => !current)}
+            className="w-full flex items-center justify-between px-3 py-2 mb-2 rounded-lg border border-primary-700/40 bg-bg-tertiary/60 text-left"
+            aria-expanded={showPrescriptionGuide}
+            aria-controls="prescription-guide-section"
+          >
+            <span className="text-sm font-semibold text-primary-300">Prescription Guide</span>
+            <span className="text-xs text-text-tertiary flex items-center gap-2">
+              {showPrescriptionGuide ? 'Hide' : 'Show'}
+              <svg
+                className={`w-4 h-4 transition-transform ${showPrescriptionGuide ? 'rotate-180' : ''}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </span>
+          </button>
+
+          {showPrescriptionGuide && (
+            <div id="prescription-guide-section">
+              <PrescriptionGuideCard
+                activityType={normalizeActivityType(exercise.activityType)}
+                prescription={exercise.prescription}
+                instructionMode={exercise.instructionMode}
+                instructionsText={instructionsText}
+                isEditing={isEditing}
+                followPrescription={followPrescription}
+                prescriptionApplied={prescriptionApplied}
+                onToggleFollow={!isEditing && hasPrescription ? handleTogglePrescription : undefined}
+                uiHint={exercise.prescriptionAssistant?.uiHint}
+                warnings={exercise.prescriptionAssistant?.warnings}
+                alternatives={exercise.prescriptionAssistant?.alternatives}
+                progressionNote={exercise.prescriptionAssistant?.progressionNote}
+              />
+            </div>
+          )}
         </div>
         
         {/* Exercise History Summary - helps with progressive overload */}
         {!isEditing && (
-          <ExerciseHistorySummary
-            exerciseName={exercise.name}
-            historyData={exerciseHistory}
-            onCopyLastValues={handleCopyLastHistoryValues}
-            compact={false}
-          />
+          <div className="mb-2">
+            <button
+              type="button"
+              onClick={() => setShowRecentHistory((current) => !current)}
+              className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-left"
+              aria-expanded={showRecentHistory}
+              aria-controls="recent-history-section"
+            >
+              <span className="text-sm font-semibold text-text-primary">Recent history</span>
+              <span className="text-xs text-text-tertiary flex items-center gap-2">
+                {showRecentHistory ? 'Hide' : 'Show'}
+                <svg
+                  className={`w-4 h-4 transition-transform ${showRecentHistory ? 'rotate-180' : ''}`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </span>
+            </button>
+
+            {showRecentHistory && (
+              <div id="recent-history-section" className="mt-2">
+                <ExerciseHistorySummary
+                  exerciseName={exercise.name}
+                  historyData={exerciseHistory}
+                  onCopyLastValues={handleCopyLastHistoryValues}
+                  compact={false}
+                />
+              </div>
+            )}
+          </div>
         )}
 
         <div className="space-y-2">

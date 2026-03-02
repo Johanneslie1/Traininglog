@@ -5,6 +5,11 @@ import { ActivityType } from '../types/activityTypes';
 import { useSupersets } from '../context/SupersetContext';
 import { getActivityTypeInfo } from './ActivityExerciseCard';
 import { OneRepMaxPrediction } from '@/utils/oneRepMax';
+import {
+  formatDurationSeconds,
+  normalizeDistanceMeters,
+  normalizeDurationSeconds,
+} from '@/utils/activityFieldContract';
 
 interface ExerciseCardProps {
   exercise: UnifiedExerciseData;
@@ -121,7 +126,6 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
       exercise.sets.some((set) => typeof set[field] === 'number' && Number.isFinite(set[field] as number));
 
     const repsTotal = exercise.sets.reduce((sum, set) => sum + (typeof set.reps === 'number' ? set.reps : 0), 0);
-    const distanceTotal = exercise.sets.reduce((sum, set) => sum + (typeof set.distance === 'number' ? set.distance : 0), 0);
     const maxHeight = exercise.sets.reduce((max, set) => {
       const height = typeof set.height === 'number' ? set.height : 0;
       return Math.max(max, height);
@@ -134,8 +138,11 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
     }
 
     if (hasNumericField('distance')) {
-      const distanceUnit = exercise.activityType === ActivityType.ENDURANCE ? 'km' : 'm';
-      summary.push({ label: 'Distance', value: `${distanceTotal} ${distanceUnit}` });
+      const normalizedDistanceTotal = exercise.sets.reduce(
+        (sum, set) => sum + normalizeDistanceMeters(set.distance, exercise.activityType || ActivityType.OTHER),
+        0
+      );
+      summary.push({ label: 'Distance', value: `${normalizedDistanceTotal} m` });
     }
 
     if (hasNumericField('height')) {
@@ -239,7 +246,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
                         <div className="bg-data-field-bg rounded p-2">
                           <div className="text-xs text-data-field-label mb-1">Duration</div>
                           <div className="text-data-field-text font-medium">
-                            {(exercise.activityType || 'unknown') === 'endurance' ? `${set.duration} min` : `${set.duration} sec`}
+                            {formatDurationSeconds(normalizeDurationSeconds(set.duration, exercise.activityType || ActivityType.OTHER))}
                           </div>
                         </div>
                       )}
@@ -247,7 +254,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
                         <div className="bg-data-field-bg rounded p-2">
                           <div className="text-xs text-data-field-label mb-1">Distance</div>
                           <div className="text-data-field-text font-medium">
-                            {(exercise.activityType || 'unknown') === 'endurance' ? `${set.distance} km` : `${set.distance} m`}
+                            {`${normalizeDistanceMeters(set.distance, exercise.activityType || ActivityType.OTHER)} m`}
                           </div>
                         </div>
                       )}
@@ -263,12 +270,6 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
                           <div className="text-data-field-text font-medium">{set.holdTime}s</div>
                         </div>
                       )}
-                      {hasDisplayValue(set.stretchType) && (exercise.activityType === ActivityType.STRETCHING) && (
-                        <div className="bg-data-field-bg rounded p-2">
-                          <div className="text-xs text-data-field-label mb-1">Stretch Type</div>
-                          <div className="text-data-field-text font-medium capitalize">{set.stretchType}</div>
-                        </div>
-                      )}
                       {hasDisplayValue(set.restTime) && (exercise.activityType === ActivityType.SPEED_AGILITY) && (
                         <div className="bg-data-field-bg rounded p-2">
                           <div className="text-xs text-data-field-label mb-1">Rest Time</div>
@@ -281,22 +282,10 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
                           <div className="text-data-field-text font-medium">{set.rpe}/10</div>
                         </div>
                       )}
-                      {hasDisplayValue(set.pace) && (
-                        <div className="bg-data-field-bg rounded p-2">
-                          <div className="text-xs text-data-field-label mb-1">Pace</div>
-                          <div className="text-data-field-text font-medium">{set.pace}</div>
-                        </div>
-                      )}
-                      {hasDisplayValue(set.elevation) && (
-                        <div className="bg-data-field-bg rounded p-2">
-                          <div className="text-xs text-data-field-label mb-1">Elevation</div>
-                          <div className="text-data-field-text font-medium">{set.elevation}m</div>
-                        </div>
-                      )}
                     </div>
 
                     {/* Strain Metrics - Heart Rate */}
-                    {(hasDisplayValue(set.heartRate) || hasDisplayValue(set.maxHeartRate) || hasDisplayValue(set.averageHeartRate)) && (
+                    {hasDisplayValue(set.averageHeartRate) && (
                       <div className="bg-status-heart-bg rounded p-2 mb-2 border border-status-heart-border">
                         <div className="text-xs text-status-heart-text mb-1 font-medium">Heart Rate</div>
                         <div className="grid grid-cols-2 gap-2 text-sm">
@@ -304,18 +293,6 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
                             <div>
                               <span className="text-text-tertiary">Avg:</span>
                               <span className="text-text-primary ml-1">{set.averageHeartRate} bpm</span>
-                            </div>
-                          )}
-                          {hasDisplayValue(set.maxHeartRate) && (
-                            <div>
-                              <span className="text-text-tertiary">Max:</span>
-                              <span className="text-text-primary ml-1">{set.maxHeartRate} bpm</span>
-                            </div>
-                          )}
-                          {hasDisplayValue(set.heartRate) && !hasDisplayValue(set.averageHeartRate) && (
-                            <div>
-                              <span className="text-text-tertiary">HR:</span>
-                              <span className="text-text-primary ml-1">{set.heartRate} bpm</span>
                             </div>
                           )}
                         </div>

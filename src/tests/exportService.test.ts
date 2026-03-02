@@ -12,7 +12,7 @@ jest.mock('@/services/firebase/activityLogs', () => ({
   getActivityLogs: jest.fn(async () => []),
 }));
 
-import { exportData, serializeSetForExport } from '@/services/exportService';
+import { exportData, getExportPreview, serializeSetForExport } from '@/services/exportService';
 import { ActivityType } from '@/types/activityTypes';
 
 const mockedWorkouts = jest.requireMock('@/services/firebase/workouts') as {
@@ -254,5 +254,69 @@ describe('exportService serialization', () => {
 
     expect(result.exerciseLogs[0].type).toBe(ActivityType.ENDURANCE);
     expect(result.sets[0].activityType).toBe(ActivityType.ENDURANCE);
+  });
+
+  it('returns best-effort preview counts when sessions source fails', async () => {
+    const startDate = new Date(2026, 1, 23, 0, 0, 0, 0);
+    const endDate = new Date(2026, 2, 2, 23, 59, 59, 999);
+
+    mockedWorkouts.getUserWorkouts.mockRejectedValue(new Error('session source unavailable'));
+    mockedExerciseLogs.getExerciseLogs.mockResolvedValue([
+      {
+        id: 'ex-1',
+        exerciseName: 'Bench Press',
+        sets: [
+          { reps: 8, weight: 0 },
+          { reps: 6, weight: 80 },
+        ],
+        timestamp: new Date('2026-03-01T10:00:00.000Z'),
+        userId: 'user-1',
+        activityType: ActivityType.RESISTANCE,
+      },
+    ]);
+    mockedActivityLogs.getActivityLogs.mockResolvedValue([
+      {
+        id: 'ac-1',
+        activityName: 'Easy Run',
+        sets: [{ duration: 30, distance: 5 }],
+        timestamp: new Date('2026-03-01T12:00:00.000Z'),
+        userId: 'user-1',
+        activityType: ActivityType.ENDURANCE,
+      },
+    ]);
+
+    const preview = await getExportPreview('user-1', startDate, endDate);
+
+    expect(preview).toEqual({
+      sessionCount: 0,
+      exerciseCount: 2,
+      setCount: 3,
+    });
+
+    expect(mockedExerciseLogs.getExerciseLogs).toHaveBeenCalledWith('user-1', startDate, endDate);
+    expect(mockedActivityLogs.getActivityLogs).toHaveBeenCalledWith('user-1', startDate, endDate);
+  });
+
+  it('counts zero-weight sets in export preview range', async () => {
+    mockedWorkouts.getUserWorkouts.mockResolvedValue([]);
+    mockedExerciseLogs.getExerciseLogs.mockResolvedValue([
+      {
+        id: 'ex-zw',
+        exerciseName: 'Technique Bench',
+        sets: [
+          { reps: 10, weight: 0 },
+          { reps: 8, weight: 0 },
+        ],
+        timestamp: new Date('2026-02-25T09:00:00.000Z'),
+        userId: 'user-1',
+        activityType: ActivityType.RESISTANCE,
+      },
+    ]);
+    mockedActivityLogs.getActivityLogs.mockResolvedValue([]);
+
+    const preview = await getExportPreview('user-1');
+
+    expect(preview.exerciseCount).toBe(1);
+    expect(preview.setCount).toBe(2);
   });
 });

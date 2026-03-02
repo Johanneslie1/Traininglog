@@ -99,7 +99,7 @@ const PrescriptionGuideCard: React.FC<PrescriptionGuideCardProps> = ({
   const [showDetails, setShowDetails] = useState(false);
   const [showFullInstructions, setShowFullInstructions] = useState(false);
 
-  const hasStructuredPrescription = !!prescription && instructionMode === 'structured';
+  const hasStructuredPrescription = !!prescription && (instructionMode === 'structured' || !instructionMode);
   const hasInstructions = !!instructionsText?.trim();
   const compactPrescription = formatPrescription(prescription, activityType);
   const details = useMemo(

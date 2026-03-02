@@ -5,9 +5,11 @@ export interface ExerciseSet {
   weight: number;
   reps: number;
   
-  // Duration & distance (endurance, flexibility)
-  duration?: number; // seconds or minutes
-  distance?: number; // km or meters
+  // Duration & distance
+  // Canonical units for non-resistance logging are seconds and meters.
+  // Legacy data may still contain minutes/km for some activity types.
+  duration?: number;
+  distance?: number;
   
   // Intensity & effort
   rpe?: number; // 1-10 Rating of Perceived Exertion

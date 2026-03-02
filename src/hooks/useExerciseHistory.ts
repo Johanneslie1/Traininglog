@@ -1,9 +1,16 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { useState, useEffect, useCallback } from 'react';
+import { collection, query, getDocs, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/services/firebase/config';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { ExerciseSet } from '@/types/sets';
+import { ActivityType } from '@/types/activityTypes';
+import { normalizeActivityType } from '@/types/activityLog';
+import {
+  normalizeDistanceMeters,
+  normalizeDurationSeconds,
+  formatDurationSeconds,
+} from '@/utils/activityFieldContract';
 
 export interface ExerciseHistoryEntry {
   id: string;
@@ -11,9 +18,10 @@ export interface ExerciseHistoryEntry {
   sets: ExerciseSet[];
   timestamp: Date;
   summary: string; // e.g., "3×10 @ 60kg"
+  activityType: ActivityType;
   totalVolume?: number; // For resistance training
-  totalDuration?: number; // For endurance
-  totalDistance?: number; // For endurance
+  totalDuration?: number; // In seconds
+  totalDistance?: number; // In meters
 }
 
 export interface ExerciseHistoryData {
@@ -26,69 +34,96 @@ export interface ExerciseHistoryData {
   copyLastValues: () => ExerciseSet[];
 }
 
-// Simple in-memory cache to avoid repeated Firestore reads
-const historyCache = new Map<string, { data: ExerciseHistoryEntry[]; timestamp: number }>();
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache
+const normalizeName = (value: string | undefined | null): string =>
+  String(value || '').trim().toLowerCase();
+
+const formatDistance = (meters: number): string => {
+  if (meters >= 1000) {
+    return `${(meters / 1000).toFixed(1)}km`;
+  }
+  return `${meters}m`;
+};
+
+const inferActivityType = (sets: ExerciseSet[], storedType?: string): ActivityType => {
+  if (storedType) {
+    return normalizeActivityType(storedType);
+  }
+
+  if (sets.some((set) => set.weight > 0 && set.reps > 0)) {
+    return ActivityType.RESISTANCE;
+  }
+
+  if (sets.some((set) => (set.holdTime || 0) > 0)) {
+    return ActivityType.STRETCHING;
+  }
+
+  if (sets.some((set) => (set.height || 0) > 0 || (set.restTime || 0) > 0)) {
+    return ActivityType.SPEED_AGILITY;
+  }
+
+  if (sets.some((set) => (set.duration || 0) > 0 || (set.distance || 0) > 0)) {
+    return ActivityType.ENDURANCE;
+  }
+
+  if (sets.some((set) => (set.reps || 0) > 0)) {
+    return ActivityType.SPEED_AGILITY;
+  }
+
+  return ActivityType.OTHER;
+};
 
 /**
  * Calculate a summary string for an exercise log
  */
-const calculateSummary = (sets: ExerciseSet[]): string => {
+export const calculateSummary = (sets: ExerciseSet[], activityType: ActivityType): string => {
   if (!sets || sets.length === 0) return 'No sets';
 
-  // Check if it's a resistance exercise (has weight and reps)
-  const hasWeightAndReps = sets.some(s => s.weight > 0 && s.reps > 0);
-  
-  if (hasWeightAndReps) {
-    // Group by weight to show like "3×10 @ 60kg"
-    const weightGroups = new Map<number, number[]>();
-    sets.forEach(s => {
-      if (s.weight > 0) {
-        const existing = weightGroups.get(s.weight) || [];
-        existing.push(s.reps);
-        weightGroups.set(s.weight, existing);
-      }
-    });
+  if (activityType === ActivityType.RESISTANCE) {
+    const resistanceSets = sets.filter((set) => set.weight > 0 && set.reps > 0);
+    if (resistanceSets.length > 0) {
+      const topSet = resistanceSets.reduce((best, current) => {
+        const currentVolume = current.weight * current.reps;
+        const bestVolume = best.weight * best.reps;
+        return currentVolume > bestVolume ? current : best;
+      }, resistanceSets[0]);
 
-    if (weightGroups.size > 0) {
-      // Find the most common weight
-      let maxWeight = 0;
-      let maxReps: number[] = [];
-      weightGroups.forEach((reps, weight) => {
-        if (weight > maxWeight) {
-          maxWeight = weight;
-          maxReps = reps;
-        }
-      });
+      return `${resistanceSets.length}×${topSet.reps} @ ${topSet.weight}kg`;
+    }
 
-      const avgReps = Math.round(maxReps.reduce((a, b) => a + b, 0) / maxReps.length);
-      return `${sets.length}×${avgReps} @ ${maxWeight}kg`;
+    const totalReps = sets.reduce((sum, set) => sum + (set.reps || 0), 0);
+    if (totalReps > 0) {
+      return `${sets.length} sets, ${totalReps} reps`;
     }
   }
 
-  // Check for duration-based exercises (endurance, sport)
-  const hasDuration = sets.some(s => (s.duration ?? 0) > 0);
-  if (hasDuration) {
-    const totalDuration = sets.reduce((sum, s) => sum + (s.duration || 0), 0);
-    const totalDistance = sets.reduce((sum, s) => sum + (s.distance || 0), 0);
-    
-    if (totalDistance > 0) {
-      return `${totalDuration}min, ${totalDistance.toFixed(1)}km`;
+  const normalizedDuration = sets.reduce(
+    (sum, set) => sum + normalizeDurationSeconds(set.duration, activityType),
+    0
+  );
+  const normalizedDistance = sets.reduce(
+    (sum, set) => sum + normalizeDistanceMeters(set.distance, activityType),
+    0
+  );
+
+  if (normalizedDuration > 0 || normalizedDistance > 0) {
+    if (normalizedDuration > 0 && normalizedDistance > 0) {
+      return `${formatDurationSeconds(normalizedDuration)}, ${formatDistance(normalizedDistance)}`;
     }
-    return `${totalDuration}min`;
+    if (normalizedDuration > 0) {
+      return formatDurationSeconds(normalizedDuration);
+    }
+    return formatDistance(normalizedDistance);
   }
 
-  // Check for hold time (flexibility)
-  const hasHoldTime = sets.some(s => (s.holdTime ?? 0) > 0);
+  const hasHoldTime = sets.some((set) => (set.holdTime ?? 0) > 0);
   if (hasHoldTime) {
-    const avgHold = Math.round(sets.reduce((sum, s) => sum + (s.holdTime || 0), 0) / sets.length);
+    const avgHold = Math.round(sets.reduce((sum, set) => sum + (set.holdTime || 0), 0) / sets.length);
     return `${sets.length} sets, ${avgHold}s hold`;
   }
 
-  // Check for reps only (bodyweight, speed/agility)
-  const hasReps = sets.some(s => s.reps > 0);
+  const hasReps = sets.some((set) => set.reps > 0);
   if (hasReps) {
-    const totalReps = sets.reduce((sum, s) => sum + s.reps, 0);
+    const totalReps = sets.reduce((sum, set) => sum + set.reps, 0);
     return `${sets.length} sets, ${totalReps} reps`;
   }
 
@@ -98,19 +133,43 @@ const calculateSummary = (sets: ExerciseSet[]): string => {
 /**
  * Calculate total volume for resistance exercises
  */
-const calculateVolume = (sets: ExerciseSet[]): number => {
-  return sets.reduce((total, set) => {
+export const calculateVolume = (sets: ExerciseSet[], activityType: ActivityType): number | undefined => {
+  if (activityType !== ActivityType.RESISTANCE) {
+    return undefined;
+  }
+
+  const volume = sets.reduce((total, set) => {
     if (set.weight > 0 && set.reps > 0) {
       return total + (set.weight * set.reps);
     }
     return total;
   }, 0);
+
+  return volume > 0 ? volume : undefined;
+};
+
+const calculateDurationSeconds = (sets: ExerciseSet[], activityType: ActivityType): number | undefined => {
+  const totalDuration = sets.reduce(
+    (sum, set) => sum + normalizeDurationSeconds(set.duration, activityType),
+    0
+  );
+
+  return totalDuration > 0 ? totalDuration : undefined;
+};
+
+const calculateDistanceMeters = (sets: ExerciseSet[], activityType: ActivityType): number | undefined => {
+  const totalDistance = sets.reduce(
+    (sum, set) => sum + normalizeDistanceMeters(set.distance, activityType),
+    0
+  );
+
+  return totalDistance > 0 ? totalDistance : undefined;
 };
 
 /**
  * Determine trend comparing current to previous performance
  */
-const determineTrend = (history: ExerciseHistoryEntry[]): { trend: 'up' | 'down' | 'same' | 'none'; details?: string } => {
+export const determineTrend = (history: ExerciseHistoryEntry[]): { trend: 'up' | 'down' | 'same' | 'none'; details?: string } => {
   if (history.length < 2) {
     return { trend: 'none' };
   }
@@ -118,10 +177,9 @@ const determineTrend = (history: ExerciseHistoryEntry[]): { trend: 'up' | 'down'
   const latest = history[0];
   const previous = history[1];
 
-  // Compare volumes for resistance exercises
   if (latest.totalVolume !== undefined && previous.totalVolume !== undefined) {
     const volumeDiff = latest.totalVolume - previous.totalVolume;
-    const percentChange = previous.totalVolume > 0 
+    const percentChange = previous.totalVolume > 0
       ? ((volumeDiff / previous.totalVolume) * 100).toFixed(0)
       : 0;
 
@@ -133,14 +191,24 @@ const determineTrend = (history: ExerciseHistoryEntry[]): { trend: 'up' | 'down'
     return { trend: 'same', details: 'Same volume' };
   }
 
-  // Compare duration for endurance exercises
+  if (latest.totalDistance !== undefined && previous.totalDistance !== undefined) {
+    const distanceDiff = latest.totalDistance - previous.totalDistance;
+
+    if (distanceDiff > 0) {
+      return { trend: 'up', details: `+${formatDistance(distanceDiff)} distance` };
+    } else if (distanceDiff < 0) {
+      return { trend: 'down', details: `-${formatDistance(Math.abs(distanceDiff))} distance` };
+    }
+    return { trend: 'same', details: 'Same distance' };
+  }
+
   if (latest.totalDuration !== undefined && previous.totalDuration !== undefined) {
     const durationDiff = latest.totalDuration - previous.totalDuration;
-    
+
     if (durationDiff > 0) {
-      return { trend: 'up', details: `+${durationDiff}min` };
+      return { trend: 'up', details: `+${formatDurationSeconds(durationDiff)}` };
     } else if (durationDiff < 0) {
-      return { trend: 'down', details: `${durationDiff}min` };
+      return { trend: 'down', details: `-${formatDurationSeconds(Math.abs(durationDiff))}` };
     }
     return { trend: 'same', details: 'Same duration' };
   }
@@ -158,7 +226,6 @@ export const useExerciseHistory = (exerciseName: string): ExerciseHistoryData =>
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useSelector((state: RootState) => state.auth);
-  const fetchedRef = useRef<string | null>(null);
 
   const fetchHistory = useCallback(async () => {
     if (!user?.id || !exerciseName) {
@@ -167,56 +234,68 @@ export const useExerciseHistory = (exerciseName: string): ExerciseHistoryData =>
       return;
     }
 
-    // Normalize exercise name for cache key
-    const normalizedName = exerciseName.toLowerCase().trim();
-    const cacheKey = `${user.id}:${normalizedName}`;
-
-    // Check cache first
-    const cached = historyCache.get(cacheKey);
-    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-      setHistory(cached.data);
-      setIsLoading(false);
-      return;
-    }
-
-    // Prevent duplicate fetches
-    if (fetchedRef.current === cacheKey) {
-      return;
-    }
-    fetchedRef.current = cacheKey;
+    const normalizedTargetName = normalizeName(exerciseName);
 
     try {
       setIsLoading(true);
       setError(null);
 
-      // Query by exercise name, then sort client-side to avoid composite-index requirement
       const exercisesRef = collection(db, 'users', user.id, 'exercises');
-      const q = query(
-        exercisesRef,
-        where('exerciseName', '==', exerciseName)
-      );
+      const activitiesRef = collection(db, 'users', user.id, 'activities');
 
-      const snapshot = await getDocs(q);
+      const [exerciseSnapshot, activitySnapshot] = await Promise.all([
+        getDocs(query(exercisesRef, orderBy('timestamp', 'desc'), limit(100))),
+        getDocs(query(activitiesRef, orderBy('timestamp', 'desc'), limit(100))),
+      ]);
 
-      const entries: ExerciseHistoryEntry[] = snapshot.docs.map(doc => {
-        const data = doc.data();
-        const sets = data.sets || [];
-        const timestamp = data.timestamp?.toDate?.() || new Date();
-        
-        return {
-          id: doc.id,
-          exerciseName: data.exerciseName,
-          sets,
-          timestamp,
-          summary: calculateSummary(sets),
-          totalVolume: calculateVolume(sets),
-          totalDuration: sets.reduce((sum: number, s: ExerciseSet) => sum + (s.duration || 0), 0) || undefined,
-          totalDistance: sets.reduce((sum: number, s: ExerciseSet) => sum + (s.distance || 0), 0) || undefined,
-        };
-      }).sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()).slice(0, 3);
+      const exerciseEntries: ExerciseHistoryEntry[] = exerciseSnapshot.docs
+        .map((doc) => {
+          const data = doc.data();
+          const entryName = data.exerciseName;
+          const sets = Array.isArray(data.sets) ? data.sets as ExerciseSet[] : [];
+          const activityType = inferActivityType(sets, data.activityType);
+          const timestamp = data.timestamp?.toDate?.() || new Date();
 
-      // Update cache
-      historyCache.set(cacheKey, { data: entries, timestamp: Date.now() });
+          return {
+            id: `exercise:${doc.id}`,
+            exerciseName: entryName,
+            sets,
+            timestamp,
+            summary: calculateSummary(sets, activityType),
+            activityType,
+            totalVolume: calculateVolume(sets, activityType),
+            totalDuration: calculateDurationSeconds(sets, activityType),
+            totalDistance: calculateDistanceMeters(sets, activityType),
+          };
+        })
+        .filter((entry) => normalizeName(entry.exerciseName) === normalizedTargetName);
+
+      const activityEntries: ExerciseHistoryEntry[] = activitySnapshot.docs
+        .map((doc) => {
+          const data = doc.data();
+          const entryName = data.activityName;
+          const sets = Array.isArray(data.sets) ? data.sets as ExerciseSet[] : [];
+          const activityType = inferActivityType(sets, data.activityType);
+          const timestamp = data.timestamp?.toDate?.() || new Date();
+
+          return {
+            id: `activity:${doc.id}`,
+            exerciseName: entryName,
+            sets,
+            timestamp,
+            summary: calculateSummary(sets, activityType),
+            activityType,
+            totalVolume: calculateVolume(sets, activityType),
+            totalDuration: calculateDurationSeconds(sets, activityType),
+            totalDistance: calculateDistanceMeters(sets, activityType),
+          };
+        })
+        .filter((entry) => normalizeName(entry.exerciseName) === normalizedTargetName);
+
+      const entries: ExerciseHistoryEntry[] = [...exerciseEntries, ...activityEntries]
+        .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+        .slice(0, 3);
+
       setHistory(entries);
     } catch (err) {
       console.error('Error fetching exercise history:', err);
@@ -258,12 +337,9 @@ export const useExerciseHistory = (exerciseName: string): ExerciseHistoryData =>
  * Clear the exercise history cache (useful after saving new exercises)
  */
 export const clearExerciseHistoryCache = (userId?: string, exerciseName?: string) => {
-  if (userId && exerciseName) {
-    const normalizedName = exerciseName.toLowerCase().trim();
-    historyCache.delete(`${userId}:${normalizedName}`);
-  } else {
-    historyCache.clear();
-  }
+  void userId;
+  void exerciseName;
+  return;
 };
 
 export default useExerciseHistory;

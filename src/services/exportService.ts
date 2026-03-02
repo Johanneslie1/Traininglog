@@ -6,6 +6,7 @@ import { getExerciseLogs as getFirebaseExerciseLogs } from '@/services/firebase/
 import { getActivityLogs as getFirebaseActivityLogs } from '@/services/firebase/activityLogs';
 import { SupersetGroup } from '@/types/session';
 import { buildSupersetLabels, SupersetLabelMetadata } from '@/utils/supersetUtils';
+import { normalizeDistanceMeters, normalizeDurationSeconds } from '@/utils/activityFieldContract';
 
 export interface ExportOptions {
   includeSessions?: boolean;
@@ -68,22 +69,6 @@ const getDateRange = (startDate?: Date, endDate?: Date) => ({
   start: startDate || DEFAULT_EXPORT_START_DATE,
   end: endDate || new Date(),
 });
-
-const toDurationSec = (duration: number | undefined, activityType: ActivityType): number => {
-  if (!duration || duration <= 0) return 0;
-  if (activityType === ActivityType.ENDURANCE || activityType === ActivityType.SPORT) {
-    return Math.round(duration * 60);
-  }
-  return duration;
-};
-
-const toDistanceMeters = (distance: number | undefined, activityType: ActivityType): number => {
-  if (!distance || distance <= 0) return 0;
-  if (activityType === ActivityType.ENDURANCE || activityType === ActivityType.SPORT) {
-    return Math.round(distance * 1000);
-  }
-  return distance;
-};
 
 const inferActivityTypeFromSetShape = (sets: Array<Record<string, any>>): ActivityType | undefined => {
   if (!Array.isArray(sets) || sets.length === 0) {
@@ -162,6 +147,9 @@ export const serializeSetForExport = (
   set: Record<string, any>,
   index: number
 ) => {
+  const normalizedDurationSec = normalizeDurationSeconds(set.duration, log.activityType);
+  const normalizedDistanceMeters = normalizeDistanceMeters(set.distance, log.activityType);
+
   return removeUndefinedFields({
     userId,
     sessionId: '',
@@ -179,8 +167,8 @@ export const serializeSetForExport = (
     weight: set.weight ?? 0,
     duration: set.duration ?? 0,
     distance: set.distance ?? 0,
-    durationSec: toDurationSec(set.duration, log.activityType),
-    distanceMeters: toDistanceMeters(set.distance, log.activityType),
+    durationSec: normalizedDurationSec,
+    distanceMeters: normalizedDistanceMeters,
     rpe: set.rpe ?? 0,
     rir: set.rir ?? 0,
     restTime: set.restTime ?? 0,
@@ -491,24 +479,36 @@ export interface ExportPreview {
  * Get a preview of how much data will be exported for the given date range
  */
 export const getExportPreview = async (userId: string, startDate?: Date, endDate?: Date): Promise<ExportPreview> => {
-  try {
-    const data = await exportData(userId, {
+  const [sessionsResult, logsResult] = await Promise.allSettled([
+    exportData(userId, {
       includeSessions: true,
+      includeExerciseLogs: false,
+      includeSets: false,
+      startDate,
+      endDate,
+    }),
+    exportData(userId, {
+      includeSessions: false,
       includeExerciseLogs: true,
       includeSets: true,
       startDate,
-      endDate
-    });
+      endDate,
+    }),
+  ]);
 
-    return {
-      sessionCount: data.sessions.length,
-      exerciseCount: data.exerciseLogs.length,
-      setCount: data.sets.length
-    };
-  } catch (error) {
-    console.error('Error getting export preview:', error);
-    return { sessionCount: 0, exerciseCount: 0, setCount: 0 };
+  if (sessionsResult.status === 'rejected') {
+    console.error('Error getting session preview count:', sessionsResult.reason);
   }
+
+  if (logsResult.status === 'rejected') {
+    console.error('Error getting exercise/set preview counts:', logsResult.reason);
+  }
+
+  return {
+    sessionCount: sessionsResult.status === 'fulfilled' ? sessionsResult.value.sessions.length : 0,
+    exerciseCount: logsResult.status === 'fulfilled' ? logsResult.value.exerciseLogs.length : 0,
+    setCount: logsResult.status === 'fulfilled' ? logsResult.value.sets.length : 0,
+  };
 };
 
 const arrayToCSV = (data: any[], headers: string[]): string => {

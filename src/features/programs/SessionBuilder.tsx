@@ -27,6 +27,24 @@ interface SessionBuilderProps {
 
 type ViewState = 'main' | 'exerciseSelection' | 'search' | 'programPicker' | 'copyPrevious' | 'history' | 'database';
 
+const mapActivityTypeToExerciseType = (activityType: ActivityType): Exercise['type'] => {
+  switch (activityType) {
+    case ActivityType.RESISTANCE:
+      return 'strength';
+    case ActivityType.ENDURANCE:
+      return 'endurance';
+    case ActivityType.STRETCHING:
+      return 'flexibility';
+    case ActivityType.SPORT:
+      return 'teamSports';
+    case ActivityType.SPEED_AGILITY:
+      return 'speedAgility';
+    case ActivityType.OTHER:
+    default:
+      return 'other';
+  }
+};
+
 interface SessionBuilderState {
   sessionName: string;
   sessionNotes: string;
@@ -49,24 +67,29 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
       sessionName: initialSession?.name || sessionName,
       sessionNotes: initialSession?.notes || '',
       isWarmupSession: initialSession?.isWarmupSession === true,
-      exercises: initialSession?.exercises?.map(ex => ({
-        ...(ex as any),
-        id: ex.id,
-        name: ex.name,
-        type: (normalizeActivityType(ex.activityType) === ActivityType.RESISTANCE ? 'strength' : 'cardio') as 'strength' | 'cardio',
-        category: 'compound' as const,
-        primaryMuscles: [],
-        secondaryMuscles: [],
-        instructions: [],
-        description: ex.notes || '',
-        defaultUnit: resolveActivityTypeFromExerciseLike(ex, { fallback: ActivityType.RESISTANCE }) === ActivityType.RESISTANCE ? ('kg' as const) : ('time' as const),
-        metrics: {
-          trackWeight: resolveActivityTypeFromExerciseLike(ex, { fallback: ActivityType.RESISTANCE }) === ActivityType.RESISTANCE,
-          trackReps: resolveActivityTypeFromExerciseLike(ex, { fallback: ActivityType.RESISTANCE }) === ActivityType.RESISTANCE,
-          trackTime: resolveActivityTypeFromExerciseLike(ex, { fallback: ActivityType.RESISTANCE }) !== ActivityType.RESISTANCE,
-        },
-        activityType: resolveActivityTypeFromExerciseLike(ex, { fallback: ActivityType.RESISTANCE })
-      })) || [],
+      exercises: initialSession?.exercises?.map(ex => {
+        const resolvedActivityType = resolveActivityTypeFromExerciseLike(ex, { fallback: ActivityType.RESISTANCE });
+        const isResistance = resolvedActivityType === ActivityType.RESISTANCE;
+
+        return {
+          ...(ex as any),
+          id: ex.id,
+          name: ex.name,
+          type: mapActivityTypeToExerciseType(resolvedActivityType),
+          category: 'compound' as const,
+          primaryMuscles: [],
+          secondaryMuscles: [],
+          instructions: [],
+          description: ex.notes || '',
+          defaultUnit: isResistance ? ('kg' as const) : ('time' as const),
+          metrics: {
+            trackWeight: isResistance,
+            trackReps: isResistance,
+            trackTime: !isResistance,
+          },
+          activityType: resolvedActivityType
+        };
+      }) || [],
       supersets: initialSession?.supersets || [],
     }
   );
@@ -555,24 +578,29 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
         currentDate={new Date()}
         onExercisesSelected={(exercises) => {
           // Convert ExerciseData to Exercise format
-          const exercisesToAdd = exercises.map(ex => ({
-            ...(ex as any),
-            id: ex.id || `temp-${Date.now()}`,
-            name: ex.exerciseName,
-            type: (normalizeActivityType(ex.activityType) === ActivityType.RESISTANCE ? 'strength' : 'cardio') as 'strength' | 'cardio',
-            category: 'compound' as const,
-            primaryMuscles: [],
-            secondaryMuscles: [],
-            instructions: [],
-            description: '',
-            defaultUnit: normalizeActivityType(ex.activityType) === ActivityType.RESISTANCE ? ('kg' as const) : ('time' as const),
-            metrics: {
-              trackWeight: normalizeActivityType(ex.activityType) === ActivityType.RESISTANCE,
-              trackReps: normalizeActivityType(ex.activityType) === ActivityType.RESISTANCE,
-              trackTime: normalizeActivityType(ex.activityType) !== ActivityType.RESISTANCE,
-            },
-            activityType: normalizeActivityType(ex.activityType),
-          }));
+          const exercisesToAdd = exercises.map(ex => {
+            const resolvedActivityType = normalizeActivityType(ex.activityType);
+            const isResistance = resolvedActivityType === ActivityType.RESISTANCE;
+
+            return {
+              ...(ex as any),
+              id: ex.id || `temp-${Date.now()}`,
+              name: ex.exerciseName,
+              type: mapActivityTypeToExerciseType(resolvedActivityType),
+              category: 'compound' as const,
+              primaryMuscles: [],
+              secondaryMuscles: [],
+              instructions: [],
+              description: '',
+              defaultUnit: isResistance ? ('kg' as const) : ('time' as const),
+              metrics: {
+                trackWeight: isResistance,
+                trackReps: isResistance,
+                trackTime: !isResistance,
+              },
+              activityType: resolvedActivityType,
+            };
+          });
           setSelectedExercises(prev => [...prev, ...exercisesToAdd]);
           setView('main');
         }}

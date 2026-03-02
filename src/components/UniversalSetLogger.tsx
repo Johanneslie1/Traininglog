@@ -10,6 +10,13 @@ import { useExerciseHistory } from '@/hooks/useExerciseHistory';
 import { ExerciseHistorySummary } from './ExerciseHistorySummary';
 import { Prescription } from '@/types/program';
 import { prescriptionToSets } from '@/utils/prescriptionUtils';
+import { resolveActivityTypeFromExerciseLike } from '@/utils/activityTypeResolver';
+import {
+  fromMinutesSeconds,
+  formatDurationSeconds,
+  hasEssentialFields,
+  toMinutesSeconds,
+} from '@/utils/activityFieldContract';
 import PrescriptionGuideCard from '@/components/exercises/PrescriptionGuideCard';
 import { ExercisePrescriptionAssistantData } from '@/types/exercise';
 import { generateExercisePrescriptionAssistant } from '@/services/exercisePrescriptionAssistantService';
@@ -53,101 +60,22 @@ const RIR_SCALE = {
 
 // Determine exercise type from exercise data
 const getExerciseType = (exercise: Exercise): string => {
-  // Check activityType first
-  if (exercise.activityType) {
-    switch (exercise.activityType) {
-      case ActivityType.RESISTANCE: return 'strength';
-      case ActivityType.ENDURANCE: return 'endurance';
-      case ActivityType.STRETCHING: return 'flexibility';
-      case ActivityType.SPORT: return 'sport';
-      case ActivityType.SPEED_AGILITY: return 'speed_agility';
-      case ActivityType.OTHER: return 'other';
-    }
+  const activityType = resolveActivityTypeFromExerciseLike(exercise, { fallback: ActivityType.RESISTANCE });
+  switch (activityType) {
+    case ActivityType.RESISTANCE:
+      return 'strength';
+    case ActivityType.ENDURANCE:
+      return 'endurance';
+    case ActivityType.STRETCHING:
+      return 'flexibility';
+    case ActivityType.SPORT:
+      return 'sport';
+    case ActivityType.SPEED_AGILITY:
+      return 'speed_agility';
+    case ActivityType.OTHER:
+    default:
+      return 'other';
   }
-
-  // Check type field
-  if (exercise.type) {
-    switch (exercise.type) {
-      case 'strength':
-      case 'bodyweight': return 'strength';
-      case 'cardio':
-      case 'endurance': return 'endurance';
-      case 'flexibility': return 'flexibility';
-      case 'teamSports': return 'sport';
-      case 'plyometrics':
-      case 'speedAgility':
-      case 'speed_agility': return 'speed_agility';
-      default: return exercise.type;
-    }
-  }
-
-  // Check exercise name for patterns
-  const exerciseName = exercise.name?.toLowerCase() || '';
-  
-  // Endurance activities
-  if (exerciseName.includes('treadmill') || 
-      exerciseName.includes('running') || 
-      exerciseName.includes('jogging') ||
-      exerciseName.includes('cycling') ||
-      exerciseName.includes('swimming') ||
-      exerciseName.includes('rowing') ||
-      exerciseName.includes('elliptical') ||
-      exerciseName.includes('cardio')) {
-    return 'endurance';
-  }
-  
-  // Sport activities
-  if (exerciseName.includes('soccer') || 
-      exerciseName.includes('football') ||
-      exerciseName.includes('basketball') ||
-      exerciseName.includes('tennis') ||
-      exerciseName.includes('volleyball') ||
-      exerciseName.includes('hockey') ||
-      exerciseName.includes('baseball') ||
-      exerciseName.includes('badminton')) {
-    return 'sport';
-  }
-  
-  // Speed & Agility activities
-  if (exerciseName.includes('high knees') ||
-      exerciseName.includes('butt kicks') ||
-      exerciseName.includes('ladder') ||
-      exerciseName.includes('cone') ||
-      exerciseName.includes('sprint') ||
-      exerciseName.includes('agility') ||
-      exerciseName.includes('plyometric') ||
-      exerciseName.includes('jump') ||
-      exerciseName.includes('hop') ||
-      exerciseName.includes('bounds')) {
-    return 'speed_agility';
-  }
-  
-  // Flexibility activities
-  if (exerciseName.includes('stretch') ||
-      exerciseName.includes('yoga') ||
-      exerciseName.includes('mobility') ||
-      exerciseName.includes('foam roll') ||
-      exerciseName.includes('massage')) {
-    return 'flexibility';
-  }
-
-  // Check category for hints
-  const category = exercise.category?.toLowerCase() || '';
-  if (category.includes('cardio') || category.includes('running') || category.includes('cycling')) {
-    return 'endurance';
-  }
-  if (category.includes('stretch') || category.includes('yoga') || category.includes('mobility')) {
-    return 'flexibility';
-  }
-  if (category.includes('sport') || category.includes('team')) {
-    return 'sport';
-  }
-  if (category.includes('plyometric') || category.includes('agility') || category.includes('speed')) {
-    return 'speed_agility';
-  }
-
-  // Default to strength
-  return 'strength';
 };
 
 // Get default set structure based on exercise type
@@ -171,16 +99,11 @@ const getDefaultSet = (exerciseType: string): ExerciseSet => {
     case 'endurance':
       return {
         ...baseSet,
-        weight: 0,
-        reps: 0,
-        duration: 0, // minutes
-        distance: 0, // km
+        duration: 0,
+        distance: 0,
         rpe: 0,
-        hrZone1: 0,
-        hrZone2: 0,
-        hrZone3: 0,
-        hrZone4: 0,
-        hrZone5: 0
+        averageHeartRate: 0,
+        calories: 0,
       };
 
     case 'flexibility':
@@ -196,24 +119,19 @@ const getDefaultSet = (exerciseType: string): ExerciseSet => {
     case 'sport':
       return {
         ...baseSet,
-        weight: 0,
-        reps: 0,
-        duration: 0, // minutes
+        duration: 0,
+        distance: 0,
         rpe: 0,
         calories: 0,
-        performance: '0'
+        performance: ''
       };
 
     case 'speed_agility':
       return {
         ...baseSet,
-        weight: 0,
         reps: 5,
-        duration: 0, // seconds per set
-        distance: 0, // meters for sprints
-        height: 0, // cm for jumps
-        restTime: 0, // seconds between sets
-        intensity: 0, // intensity rating 1-10
+        distance: 0,
+        restTime: 0,
         rpe: 0
       };
 
@@ -221,9 +139,8 @@ const getDefaultSet = (exerciseType: string): ExerciseSet => {
     default:
       return {
         ...baseSet,
-        weight: 0,
-        reps: 0,
-        duration: 0, // minutes
+        duration: 0,
+        distance: 0,
         rpe: 0
       };
   }
@@ -252,11 +169,14 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
   prescriptionAssistant,
 }) => {
   const exerciseType = getExerciseType(exercise);
+  const exerciseActivityType = resolveActivityTypeFromExerciseLike(exercise, { fallback: ActivityType.RESISTANCE });
   const [sets, setSets] = useState<ExerciseSet[]>([]);
   const { user } = useSelector((state: RootState) => state.auth);
   
   // Prescription state
   const [followPrescription, setFollowPrescription] = useState<boolean>(true);
+  const [showPrescriptionGuide, setShowPrescriptionGuide] = useState(false);
+  const [showRecentHistory, setShowRecentHistory] = useState(false);
   const prescriptionApplied = false;
   
   // Fetch exercise history for progressive overload context
@@ -500,29 +420,17 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
   }, [followPrescription]);
 
   const handleSave = () => {
-    // Option 3: Relaxed validation - only require at least one field per set
     const validSets = sets.filter(set => {
       switch (exerciseType) {
         case 'strength':
         case 'bodyweight':
-          // Only require reps > 0, weight can be zero or undefined
           return set.reps > 0;
         case 'endurance':
         case 'sport':
-        case 'other':
-          return (set.duration && set.duration > 0) ||
-                 (set.distance && set.distance > 0) ||
-                 (set.calories && set.calories > 0) ||
-                 (set.rpe && set.rpe > 0);
         case 'flexibility':
-          return (set.reps && set.reps > 0) ||
-                 (set.holdTime && set.holdTime > 0) ||
-                 (set.intensity && set.intensity > 0);
         case 'speed_agility':
-          return (set.reps > 0) ||
-                 (set.duration && set.duration > 0) ||
-                 (set.distance && set.distance > 0) ||
-                 (set.height && set.height > 0);
+        case 'other':
+          return hasEssentialFields(set, exerciseActivityType);
         default:
           return true;
       }
@@ -635,6 +543,50 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
       );
     };
 
+    const renderDurationField = () => {
+      const duration = toMinutesSeconds(sets[setIndex]?.duration);
+
+      return (
+        <div key="duration-min-sec" className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-300">Duration Minutes *</label>
+            <input
+              type="number"
+              value={duration.minutes}
+              min={0}
+              step={1}
+              inputMode="numeric"
+              onChange={(event) => {
+                const nextMinutes = Math.max(0, Number(event.target.value) || 0);
+                const nextDuration = fromMinutesSeconds(nextMinutes, duration.seconds);
+                updateSet(setIndex, 'duration', nextDuration);
+              }}
+              className="resistance-input resistance-input-control w-full px-3 py-2 bg-bg-tertiary border border-border rounded-lg text-text-primary text-center focus:outline-none focus:border-accent-primary focus:ring-1 focus:ring-accent-primary transition-colors"
+              placeholder="0"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-300">Duration Seconds *</label>
+            <input
+              type="number"
+              value={duration.seconds}
+              min={0}
+              max={59}
+              step={1}
+              inputMode="numeric"
+              onChange={(event) => {
+                const inputSeconds = Math.max(0, Math.min(59, Number(event.target.value) || 0));
+                const nextDuration = fromMinutesSeconds(duration.minutes, inputSeconds);
+                updateSet(setIndex, 'duration', nextDuration);
+              }}
+              className="resistance-input resistance-input-control w-full px-3 py-2 bg-bg-tertiary border border-border rounded-lg text-text-primary text-center focus:outline-none focus:border-accent-primary focus:ring-1 focus:ring-accent-primary transition-colors"
+              placeholder="0"
+            />
+          </div>
+        </div>
+      );
+    };
+
     // Render fields based on exercise type
     switch (exerciseType) {
       case 'strength':
@@ -674,66 +626,18 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
         break;
 
       case 'endurance':
-        fields.push(
-          <div key="duration-distance" className="grid grid-cols-2 gap-4">
-            {renderField('duration', 'Duration (minutes) *', 'number', 0.1, 0.1, '0.1-1440')}
-            {renderField('distance', 'Distance (km)', 'number', 0, 0.1, '0-500')}
-          </div>
-        );
+        fields.push(renderDurationField());
+        fields.push(renderField('distance', 'Distance (m)', 'number', 0, 1, '0-100000'));
+        fields.push(renderField('rpe', 'RPE', 'number', 1, 1, '1-10'));
         fields.push(renderField('calories', 'Calories', 'number', 0, 1, '0-9999'));
-        fields.push(
-          <div key="hr-avg-max" className="grid grid-cols-2 gap-4">
-            {renderField('averageHeartRate', 'Average HR (bpm)', 'number', 40, 1, '40-250')}
-            {renderField('maxHeartRate', 'Max HR (bpm)', 'number', 60, 1, '60-250')}
-          </div>
-        );
-        fields.push(renderField('elevation', 'Elevation Gain (m)', 'number', 0, 1, '0-9999'));
-        
-        // Heart Rate Zones (collapsible)
-        fields.push(
-          <div key="hr-zones" className="space-y-3">
-            <button
-              type="button"
-              onClick={() => {
-                const element = document.getElementById(`hr-zones-${setIndex}`);
-                if (element) {
-                  element.style.display = element.style.display === 'none' ? 'block' : 'none';
-                }
-              }}
-              className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-gray-300 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
-            >
-              <span>Heart Rate Zones (minutes)</span>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-            <div id={`hr-zones-${setIndex}`} style={{ display: 'none' }} className="space-y-3 pl-3">
-              <div className="text-xs text-gray-400 mb-2">
-                Zone 1: Recovery (50-60%) • Zone 2: Base (60-70%) • Zone 3: Tempo (70-80%) • Zone 4: Threshold (80-90%) • Zone 5: Max (90-100%)
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                {renderField('hrZone1', 'Zone 1 (min)', 'number', 0, 0.1)}
-                {renderField('hrZone2', 'Zone 2 (min)', 'number', 0, 0.1)}
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                {renderField('hrZone3', 'Zone 3 (min)', 'number', 0, 0.1)}
-                {renderField('hrZone4', 'Zone 4 (min)', 'number', 0, 0.1)}
-              </div>
-              <div className="grid grid-cols-1 gap-3">
-                {renderField('hrZone5', 'Zone 5 (min)', 'number', 0, 0.1)}
-              </div>
-            </div>          </div>
-        );
-        break;      case 'flexibility':
-        fields.push(renderField('reps', 'Repetitions', 'number', 1, 1, '1-99'));
-        fields.push(renderField('holdTime', 'Hold Time (seconds)', 'number', 1, 1, '1-600'));
-        
-        // Intensity dropdown like RPE
+        fields.push(renderField('averageHeartRate', 'Average HR (bpm)', 'number', 40, 1, '40-250'));
+        break;
+
+      case 'flexibility':
+        fields.push(renderField('holdTime', 'Hold Time (seconds) *', 'number', 1, 1, '1-600'));
         fields.push(
           <div key="intensity" className="space-y-1">
-            <label className="block text-sm font-medium text-gray-300">
-              Intensity
-            </label>
+            <label className="block text-sm font-medium text-gray-300">Intensity</label>
             <select
               value={sets[setIndex]?.intensity !== undefined ? sets[setIndex].intensity : ''}
               onChange={(e) => {
@@ -760,115 +664,42 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
             </select>
           </div>
         );
-        
-        fields.push(
-          <div key="stretch-type" className="space-y-1">
-            <label className="block text-sm font-medium text-gray-300">
-              Stretch Type
-            </label>
-            <select
-              value={sets[setIndex]?.stretchType || 'static'}
-              onChange={(e) => updateSet(setIndex, 'stretchType', e.target.value)}
-              className="w-full px-3 py-2 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:outline-none focus:border-accent-primary"
-            >
-              <option value="static">Static Stretching</option>
-              <option value="dynamic">Dynamic Stretching</option>
-              <option value="pnf">PNF (Proprioceptive Neuromuscular Facilitation)</option>
-              <option value="yoga">Yoga</option>
-              <option value="mobility">Mobility Flow</option>
-            </select>
-          </div>
-        );
-        break;      case 'sport':
-        fields.push(renderField('duration', 'Duration (minutes) *', 'number', 1, 1, '1-1440'));
-        fields.push(renderField('distance', 'Distance (km)', 'number', 0, 0.1, '0-500'));
+        break;
+
+      case 'sport':
+        fields.push(renderDurationField());
+        fields.push(renderField('distance', 'Distance (m)', 'number', 0, 1, '0-100000'));
+        fields.push(renderField('rpe', 'RPE', 'number', 1, 1, '1-10'));
         fields.push(renderField('calories', 'Calories', 'number', 0, 1, '0-9999'));
-        
-        // Performance-focused fields only
-        fields.push(
-          <div key="performance" className="space-y-1">
-            <label className="block text-sm font-medium text-gray-300">
-              Performance Rating (1-10)
-            </label>
-            <input
-              type="number"
-              inputMode="numeric"
-              min="1"
-              max="10"
-              value={sets[setIndex]?.performance !== undefined ? sets[setIndex].performance : ''}
-              onChange={(e) => {
-                const value = e.target.value;
-                
-                if (value === '') {
-                  updateSet(setIndex, 'performance', undefined);
-                } else {
-                  const numValue = Number(value);
-                  if (!isNaN(numValue) && numValue >= 1 && numValue <= 10) {
-                    updateSet(setIndex, 'performance', numValue);
-                  }
-                }
-              }}
-              className="w-full px-3 py-2 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:outline-none focus:border-accent-primary"
-              placeholder="1-10"
-            />
-          </div>
-        );
-        break;      case 'speed_agility':
+        fields.push(renderField('performance', 'Performance Rating (1-10)', 'number', 1, 1, '1-10'));
+        break;
+
+      case 'speed_agility':
         fields.push(renderField('reps', 'Reps per Set', 'number', 1, 1, '1-999'));
-        
-        // Distance and Height fields (both optional and independently editable)
-        fields.push(
-          <div key="distance-height" className="grid grid-cols-2 gap-4">
-            {renderField('distance', 'Distance (meters)', 'number', 0, 0.1, '0-1000')}
-            {renderField('height', 'Height (cm)', 'number', 0, 1, '0-400')}
-          </div>
-        );
-        
+        fields.push(renderField('distance', 'Distance (m)', 'number', 0, 1, '0-1000'));
         fields.push(renderField('restTime', 'Rest Between Sets (seconds)', 'number', 0, 1, '0-600'));
+        fields.push(renderField('rpe', 'RPE', 'number', 1, 1, '1-10'));
         break;
 
       case 'other':
       default:
-        fields.push(renderField('duration', 'Duration (minutes) *', 'number', 0.1, 0.1, '0.1-1440'));
-        fields.push(renderField('distance', 'Distance (km)', 'number', 0, 0.1, '0-500'));
+        fields.push(renderDurationField());
+        fields.push(renderField('distance', 'Distance (m)', 'number', 0, 1, '0-100000'));
+        fields.push(renderField('rpe', 'RPE', 'number', 1, 1, '1-10'));
         fields.push(renderField('calories', 'Calories', 'number', 0, 1, '0-9999'));
         break;
     }
 
-    // RPE field for most exercise types
-    if (!['flexibility', 'strength', 'bodyweight'].includes(exerciseType)) {
+    if (!['strength', 'bodyweight'].includes(exerciseType)) {
       fields.push(
-        <div key="rpe" className="space-y-1">
-          <label className="block text-sm font-medium text-gray-300">
-            RPE (Rate of Perceived Exertion)
-            <button
-              type="button"
-              onClick={() => setShowRPEHelper(!showRPEHelper)}
-              className="ml-1 text-blue-400 hover:text-blue-300"
-            >
-              ?
-            </button>
-          </label>
-          <select
-            value={sets[setIndex]?.rpe !== undefined ? sets[setIndex].rpe : ''}
-            onChange={(e) => {
-              const value = e.target.value;
-              if (value === '') {
-                updateSet(setIndex, 'rpe', undefined);
-              } else {
-                updateSet(setIndex, 'rpe', parseInt(value));
-              }
-            }}
-            className="w-full px-3 py-2 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:outline-none focus:border-accent-primary"
-          >
-            <option value="">Select RPE</option>
-            {Object.entries(RPE_SCALE).map(([value, { label }]) => (
-              <option key={value} value={value}>
-                {value} - {label}
-              </option>
-            ))}
-          </select>
-        </div>
+        <button
+          key="rpe-helper"
+          type="button"
+          onClick={() => setShowRPEHelper(!showRPEHelper)}
+          className="w-full text-left text-xs text-blue-400 hover:text-blue-300"
+        >
+          View RPE scale reference
+        </button>
       );
     }
 
@@ -975,20 +806,45 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
         </div>
 
         <div className="mt-3 sticky top-0 z-20">
-          <PrescriptionGuideCard
-            activityType={normalizeActivityType(exercise.activityType)}
-            prescription={prescription}
-            instructionMode={instructionMode}
-            instructionsText={instructionsText}
-            isEditing={isEditing}
-            followPrescription={followPrescription}
-            prescriptionApplied={prescriptionApplied}
-            onToggleFollow={!isEditing && hasPrescription ? handleTogglePrescription : undefined}
-            uiHint={assistantSuggestion?.uiHint}
-            warnings={assistantSuggestion?.warnings}
-            alternatives={assistantSuggestion?.alternatives}
-            progressionNote={assistantSuggestion?.progressionNote}
-          />
+          <button
+            type="button"
+            onClick={() => setShowPrescriptionGuide((current) => !current)}
+            className="w-full flex items-center justify-between px-3 py-2 mb-2 rounded-lg border border-primary-700/40 bg-bg-tertiary/60 text-left"
+            aria-expanded={showPrescriptionGuide}
+            aria-controls="universal-prescription-guide-section"
+          >
+            <span className="text-sm font-semibold text-primary-300">Prescription Guide</span>
+            <span className="text-xs text-text-tertiary flex items-center gap-2">
+              {showPrescriptionGuide ? 'Hide' : 'Show'}
+              <svg
+                className={`w-4 h-4 transition-transform ${showPrescriptionGuide ? 'rotate-180' : ''}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </span>
+          </button>
+
+          {showPrescriptionGuide && (
+            <div id="universal-prescription-guide-section">
+              <PrescriptionGuideCard
+                activityType={normalizeActivityType(exercise.activityType)}
+                prescription={prescription}
+                instructionMode={instructionMode}
+                instructionsText={instructionsText}
+                isEditing={isEditing}
+                followPrescription={followPrescription}
+                prescriptionApplied={prescriptionApplied}
+                onToggleFollow={!isEditing && hasPrescription ? handleTogglePrescription : undefined}
+                uiHint={assistantSuggestion?.uiHint}
+                warnings={assistantSuggestion?.warnings}
+                alternatives={assistantSuggestion?.alternatives}
+                progressionNote={assistantSuggestion?.progressionNote}
+              />
+            </div>
+          )}
         </div>
 
         {assistantLoading && (
@@ -998,12 +854,37 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
         {/* Exercise History Summary - helps with progressive overload */}
         {!isEditing && (
           <div className="mt-3">
-            <ExerciseHistorySummary
-              exerciseName={exercise.name}
-              historyData={exerciseHistory}
-              onCopyLastValues={handleCopyLastHistoryValues}
-              compact={false}
-            />
+            <button
+              type="button"
+              onClick={() => setShowRecentHistory((current) => !current)}
+              className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-left"
+              aria-expanded={showRecentHistory}
+              aria-controls="universal-recent-history-section"
+            >
+              <span className="text-sm font-semibold text-text-primary">Recent history</span>
+              <span className="text-xs text-text-tertiary flex items-center gap-2">
+                {showRecentHistory ? 'Hide' : 'Show'}
+                <svg
+                  className={`w-4 h-4 transition-transform ${showRecentHistory ? 'rotate-180' : ''}`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </span>
+            </button>
+
+            {showRecentHistory && (
+              <div id="universal-recent-history-section" className="mt-2">
+                <ExerciseHistorySummary
+                  exerciseName={exercise.name}
+                  historyData={exerciseHistory}
+                  onCopyLastValues={handleCopyLastHistoryValues}
+                  compact={false}
+                />
+              </div>
+            )}
           </div>
         )}
 
@@ -1053,8 +934,8 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
                           <span>{set.weight || 0}kg × {set.reps || 0}</span>
                         ) : exerciseType === 'endurance' ? (
                           <span>
-                            {set.duration || 0} min
-                            {set.distance ? ` • ${set.distance} km` : ''}
+                              {formatDurationSeconds(set.duration)}
+                              {set.distance ? ` • ${set.distance} m` : ''}
                           </span>
                         ) : exerciseType === 'flexibility' ? (
                           <span>
@@ -1068,7 +949,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
                             {set.height ? ` • ${set.height}cm` : ''}
                           </span>
                         ) : (
-                          <span>{set.duration || 0} min</span>
+                          <span>{formatDurationSeconds(set.duration)}</span>
                         )}
                       </div>
                     )}

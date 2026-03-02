@@ -493,6 +493,15 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
       sets: (editingExercise.sets || []) as unknown as Array<Record<string, unknown>>,
     });
 
+    const instructionsValue = editingExercise.instructions as unknown;
+    const normalizedInstructions = typeof instructionsValue === 'string'
+      ? instructionsValue
+      : Array.isArray(instructionsValue)
+        ? instructionsValue.find(
+            (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0
+          ) || ''
+        : '';
+
     // Convert UnifiedExerciseData to Exercise format for UniversalSetLogger
     const exerciseForLogger: Exercise = {
       id: editingExercise.id || `edit-${Date.now()}`,
@@ -506,7 +515,7 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
         effectiveActivityType === ActivityType.SPEED_AGILITY ? 'speed_agility' : 'other',
       category: 'general',
       equipment: [],
-      instructions: editingExercise.instructions ? [editingExercise.instructions] : [],
+      instructions: normalizedInstructions ? [normalizedInstructions] : [],
       difficulty: 'intermediate',
       primaryMuscles: [],
       secondaryMuscles: [],
@@ -553,7 +562,7 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
               isWarmup: isWarmupMode,
               prescription: editingExercise.prescription,
               instructionMode: editingExercise.instructionMode,
-              instructions: editingExercise.instructions,
+              instructions: normalizedInstructions || undefined,
               prescriptionAssistant: metadata?.prescriptionAssistant || editingExercise.prescriptionAssistant
             };
 

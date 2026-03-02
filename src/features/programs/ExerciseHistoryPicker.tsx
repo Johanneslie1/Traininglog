@@ -18,6 +18,24 @@ import {
   CalendarIcon 
 } from '@heroicons/react/outline';
 
+const mapActivityTypeToExerciseType = (activityType: ActivityType): Exercise['type'] => {
+  switch (activityType) {
+    case ActivityType.RESISTANCE:
+      return 'strength';
+    case ActivityType.ENDURANCE:
+      return 'endurance';
+    case ActivityType.STRETCHING:
+      return 'flexibility';
+    case ActivityType.SPORT:
+      return 'teamSports';
+    case ActivityType.SPEED_AGILITY:
+      return 'speedAgility';
+    case ActivityType.OTHER:
+    default:
+      return 'other';
+  }
+};
+
 interface ExerciseHistoryPickerProps {
   onClose: () => void;
   onSelectExercises: (exercises: { exercise: Exercise; sets: ExerciseSet[] }[]) => void;
@@ -246,7 +264,7 @@ export const ExerciseHistoryPicker: React.FC<ExerciseHistoryPickerProps> = ({
       exercise: {
         id: `exercise-${log.exerciseName.toLowerCase().replace(/\s+/g, '-')}`,
         name: log.exerciseName,
-        type: (isResistance ? 'strength' : 'cardio') as 'strength' | 'cardio',
+        type: mapActivityTypeToExerciseType(activityType),
         category: 'compound' as const,
         primaryMuscles: [],
         secondaryMuscles: [],
@@ -278,7 +296,7 @@ export const ExerciseHistoryPicker: React.FC<ExerciseHistoryPickerProps> = ({
         exercise: {
           id: `exercise-${exerciseName.toLowerCase().replace(/\s+/g, '-')}`,
           name: exerciseName,
-          type: (isResistance ? 'strength' : 'cardio') as 'strength' | 'cardio',
+          type: mapActivityTypeToExerciseType(activityType),
           category: 'compound' as const,
           primaryMuscles: [],
           secondaryMuscles: [],
