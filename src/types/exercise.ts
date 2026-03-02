@@ -96,6 +96,10 @@ export interface Exercise {
   prescription?: Prescription; // Prescription from program
   instructionMode?: 'structured' | 'freeform'; // Instruction mode from program
   prescriptionAssistant?: ExercisePrescriptionAssistantData;
+  // Optional superset metadata when selected/imported from a programmed session
+  supersetId?: string;
+  supersetLabel?: string;
+  supersetName?: string;
 }
 
 export interface ExercisePrescriptionAssistantData {

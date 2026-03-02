@@ -18,6 +18,8 @@ import { ExercisePrescriptionAssistantData } from '@/types/exercise';
 import { ActivityType } from '@/types/activityTypes';
 import { findBestOneRepMaxSet, OneRepMaxPrediction } from '@/utils/oneRepMax';
 import { resolveActivityTypeFromExerciseLike } from '@/utils/activityTypeResolver';
+import { SupersetGroup } from '@/types/session';
+import { buildSupersetLabels } from '@/utils/supersetUtils';
 
 const LOCAL_EXERCISE_LOGS_KEY = 'exercise_logs';
 
@@ -405,6 +407,13 @@ type RepairEntry = {
   activityType?: string;
 };
 
+type SupersetRepairEntry = {
+  id?: string;
+  supersetId?: string;
+  supersetLabel?: string;
+  supersetName?: string;
+};
+
 export const repairExerciseLogActivityTypes = async (
   userId: string,
   entries: RepairEntry[]
@@ -449,6 +458,69 @@ export const repairExerciseLogActivityTypes = async (
         console.warn('⚠️ Failed to repair activityType for exercise log:', {
           id: entry.id,
           exerciseName: entry.exerciseName,
+          error
+        });
+      }
+    })
+  );
+
+  return updatedCount;
+};
+
+export const backfillExerciseLogSupersetMetadata = async (
+  userId: string,
+  entries: SupersetRepairEntry[],
+  supersets: SupersetGroup[],
+  exerciseOrder: string[] = []
+): Promise<number> => {
+  if (!userId || !Array.isArray(entries) || entries.length === 0 || !Array.isArray(supersets) || supersets.length === 0) {
+    return 0;
+  }
+
+  const labelsByExerciseId = buildSupersetLabels(supersets, exerciseOrder);
+  let updatedCount = 0;
+
+  await Promise.all(
+    entries.map(async (entry) => {
+      if (!entry.id) {
+        return;
+      }
+
+      const metadata = labelsByExerciseId[entry.id];
+      if (!metadata) {
+        return;
+      }
+
+      const nextSupersetId = entry.supersetId || metadata.supersetId;
+      const nextSupersetLabel = entry.supersetLabel || metadata.label;
+      const nextSupersetName = entry.supersetName || metadata.supersetName;
+
+      const needsUpdate =
+        nextSupersetId !== entry.supersetId ||
+        nextSupersetLabel !== entry.supersetLabel ||
+        nextSupersetName !== entry.supersetName;
+
+      if (!needsUpdate) {
+        return;
+      }
+
+      const patch = removeUndefinedFields({
+        supersetId: nextSupersetId,
+        supersetLabel: nextSupersetLabel,
+        supersetName: nextSupersetName,
+      });
+
+      try {
+        await setDoc(
+          doc(db, 'users', userId, 'exercises', entry.id),
+          patch,
+          { merge: true }
+        );
+
+        updatedCount += 1;
+      } catch (error) {
+        console.warn('⚠️ Failed to backfill superset metadata for exercise log:', {
+          id: entry.id,
           error
         });
       }

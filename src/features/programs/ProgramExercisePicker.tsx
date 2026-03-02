@@ -32,7 +32,16 @@ const mapActivityTypeToExerciseType = (activityType: ActivityType): Exercise['ty
 
 interface ProgramExercisePickerProps {
   onClose: () => void;
-  onSelectExercises: (exercises: { exercise: Exercise; sets: ExerciseSet[] }[]) => void;
+  onSelectExercises: (exercises: ProgramExerciseSelection[]) => void;
+}
+
+export interface ProgramExerciseSelection {
+  exercise: Exercise;
+  sets: ExerciseSet[];
+  sourceSessionId?: string;
+  sourceProgramSupersetId?: string;
+  sourceProgramSupersetLabel?: string;
+  sourceProgramSupersetName?: string;
 }
 
 export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
@@ -97,7 +106,7 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
   const handleAddSelected = () => {
     if (!selectedProgram) return;
     
-    const exercisesToAdd = selectedExercises.map(sel => {
+    const exercisesToAdd = selectedExercises.map((sel): ProgramExerciseSelection | null => {
       const session = selectedProgram.sessions?.find(s => s.id === sel.sessionId);
       const exercise = session?.exercises.find(e => e.id === sel.exerciseId);
       
@@ -131,10 +140,17 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
           // Include prescription data for logger components
           prescription: exercise.prescription,
           instructionMode: exercise.instructionMode,
+          supersetId: exercise.supersetId,
+          supersetLabel: exercise.supersetLabel,
+          supersetName: exercise.supersetName,
         },
-        sets
+        sets,
+        sourceSessionId: session?.id,
+        sourceProgramSupersetId: exercise.supersetId,
+        sourceProgramSupersetLabel: exercise.supersetLabel,
+        sourceProgramSupersetName: exercise.supersetName,
       };
-    }).filter((ex): ex is NonNullable<typeof ex> => ex !== null);
+    }).filter((ex): ex is ProgramExerciseSelection => ex !== null);
 
     onSelectExercises(exercisesToAdd);
     onClose();

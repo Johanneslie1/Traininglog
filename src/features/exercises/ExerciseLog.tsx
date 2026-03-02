@@ -18,6 +18,7 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 import { getExerciseLogsByDate, saveExerciseLog } from '../../utils/localStorageUtils';
 import {
   addExerciseLog,
+  backfillExerciseLogSupersetMetadata,
   getBestHistoricalOneRepMax,
   repairExerciseLogActivityTypes
 } from '@/services/firebase/exerciseLogs';
@@ -35,6 +36,7 @@ import { generateExercisePrescriptionAssistant } from '@/services/exercisePrescr
 import toast from 'react-hot-toast';
 import { getExercisePerformanceKey, OneRepMaxPrediction } from '@/utils/oneRepMax';
 import { buildSupersetLabels } from '@/utils/supersetUtils';
+import { SupersetGroup } from '@/types/session';
 
 interface ExerciseLogProps {}
 
@@ -108,6 +110,24 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   const getDateKey = useCallback((date: Date): string => {
     return normalizeDate(date).toISOString().split('T')[0];
   }, [normalizeDate]);
+
+  const getPersistedSupersetStateForDate = useCallback((dateKey: string): { supersets: SupersetGroup[]; exerciseOrder: string[] } => {
+    try {
+      const supersetsRaw = localStorage.getItem(`superset_data_${dateKey}`);
+      const exerciseOrderRaw = localStorage.getItem(`exercise_order_${dateKey}`);
+
+      const supersetsParsed = supersetsRaw ? JSON.parse(supersetsRaw) : [];
+      const orderParsed = exerciseOrderRaw ? JSON.parse(exerciseOrderRaw) : [];
+
+      return {
+        supersets: Array.isArray(supersetsParsed) ? supersetsParsed : [],
+        exerciseOrder: Array.isArray(orderParsed) ? orderParsed : [],
+      };
+    } catch (error) {
+      console.warn('⚠️ Could not parse persisted superset state for date:', dateKey, error);
+      return { supersets: [], exerciseOrder: [] };
+    }
+  }, []);
 
   const getPerformanceKey = useCallback((exercise: UnifiedExerciseData): string => {
     return getExercisePerformanceKey({
@@ -321,6 +341,31 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
         console.warn('⚠️ ActivityType repair pass failed (continuing without blocking UI):', repairError);
       }
 
+      try {
+        const { supersets: persistedSupersets, exerciseOrder: persistedExerciseOrder } =
+          getPersistedSupersetStateForDate(dateString);
+
+        if (persistedSupersets.length > 0) {
+          const repairedSupersetCount = await backfillExerciseLogSupersetMetadata(
+            userId,
+            combinedExercises.map((exercise) => ({
+              id: exercise.id,
+              supersetId: exercise.supersetId,
+              supersetLabel: exercise.supersetLabel,
+              supersetName: exercise.supersetName,
+            })),
+            persistedSupersets,
+            persistedExerciseOrder
+          );
+
+          if (repairedSupersetCount > 0) {
+            console.log(`🔧 Backfilled superset metadata on ${repairedSupersetCount} exercise log(s)`);
+          }
+        }
+      } catch (supersetRepairError) {
+        console.warn('⚠️ Superset metadata backfill failed (continuing without blocking UI):', supersetRepairError);
+      }
+
       setExercises(combinedExercises);
     } catch (error) {
       console.error('Error fetching exercises:', error);
@@ -338,7 +383,16 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     } finally {
       setLoading(false);
     }
-  }, [user?.id, areDatesEqual, normalizeDate, getDateRange, convertToExerciseData, loadSupersetsForDate, toSafeDate]);
+  }, [
+    user?.id,
+    areDatesEqual,
+    normalizeDate,
+    getDateRange,
+    convertToExerciseData,
+    loadSupersetsForDate,
+    toSafeDate,
+    getPersistedSupersetStateForDate,
+  ]);
   
   const handleCloseSetLogger = useCallback(() => {
     setSelectedExercise(null);

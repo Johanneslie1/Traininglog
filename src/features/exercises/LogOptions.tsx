@@ -9,6 +9,7 @@ import { RootState } from '@/store/store';
 import CopyFromPreviousSessionDialog from './CopyFromPreviousSessionDialog';
 import CategoryButton, { Category } from './CategoryButton';
 import ProgramExercisePicker from '@/features/programs/ProgramExercisePicker';
+import { ProgramExerciseSelection } from '@/features/programs/ProgramExercisePicker';
 import { UniversalSetLogger } from '@/components/UniversalSetLogger';
 import { addExerciseLog } from '@/services/firebase/exerciseLogs';
 import SportActivityPicker from '@/components/activities/SportActivityPicker';
@@ -27,6 +28,8 @@ import { saveExerciseLog } from '@/utils/localStorageUtils';
 import { generateExercisePrescriptionAssistant } from '@/services/exercisePrescriptionAssistantService';
 import { ExercisePrescriptionAssistantData } from '@/types/exercise';
 import { resolveActivityTypeFromExerciseLike } from '@/utils/activityTypeResolver';
+import { useSupersets } from '@/context/SupersetContext';
+import { SupersetGroup } from '@/types/session';
 
 interface LogOptionsProps {
   onClose: () => void;
@@ -108,6 +111,7 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
   const [isWarmupMode, setIsWarmupMode] = useState(false);
   
   const user = useSelector((state: RootState) => state.auth.user);
+  const { state: supersetState, addSuperset } = useSupersets();
 
   // If we're editing an exercise, go directly to edit view
   useEffect(() => {
@@ -164,7 +168,7 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
         setView('main');
     }
   };
-  const handleProgramSelected = async (exercises: { exercise: Exercise; sets: ExerciseSet[] }[]) => {
+  const handleProgramSelected = async (exercises: ProgramExerciseSelection[]) => {
     const userId = user?.id || auth.currentUser?.uid;
 
     if (!userId) {
@@ -178,13 +182,43 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
     }
 
     try {
+      const createRuntimeSupersetId = (): string => {
+        if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+          return crypto.randomUUID();
+        }
+        return `superset-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+      };
+
       // Check if any exercises have pre-filled sets (from prescriptions)
       const hasPrefilledSets = exercises.some(ex => ex.sets && ex.sets.length > 0);
       let savedCount = 0;
+      const runtimeSupersetIdBySourceKey = new Map<string, string>();
+      const importedSupersetGroupsById = new Map<string, { name?: string; exerciseIds: string[] }>();
       
-      for (const { exercise } of exercises) {
+      for (const selection of exercises) {
+        const { exercise } = selection;
         const sets: ExerciseSet[] = [];
         const resolvedActivityType = resolveActivityTypeFromExerciseLike(exercise, { fallback: ActivityType.RESISTANCE });
+
+        const sourceSupersetToken =
+          selection.sourceProgramSupersetId ||
+          selection.sourceProgramSupersetLabel ||
+          exercise.supersetId ||
+          exercise.supersetLabel;
+
+        let runtimeSupersetId: string | undefined;
+        if (sourceSupersetToken) {
+          const sourceGroupKey = `${selection.sourceSessionId || 'session'}::${sourceSupersetToken}`;
+          runtimeSupersetId = runtimeSupersetIdBySourceKey.get(sourceGroupKey);
+          if (!runtimeSupersetId) {
+            runtimeSupersetId = createRuntimeSupersetId();
+            runtimeSupersetIdBySourceKey.set(sourceGroupKey, runtimeSupersetId);
+          }
+        }
+
+        const runtimeSupersetLabel = selection.sourceProgramSupersetLabel || exercise.supersetLabel;
+        const runtimeSupersetName = selection.sourceProgramSupersetName || exercise.supersetName;
+
         const prescriptionAssistant = await generateExercisePrescriptionAssistant({
           exercise: {
             id: exercise.id,
@@ -208,6 +242,9 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
             isWarmup: isWarmupMode || Boolean((exercise as any).isWarmup),
             prescription: exercise.prescription,
             instructionMode: exercise.instructionMode,
+            supersetId: runtimeSupersetId,
+            supersetLabel: runtimeSupersetLabel,
+            supersetName: runtimeSupersetName,
             instructions: typeof exercise.instructions === 'string'
               ? exercise.instructions
               : Array.isArray(exercise.instructions)
@@ -226,6 +263,9 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
           timestamp: selectedDate || new Date(),
           activityType: resolvedActivityType,
           isWarmup: isWarmupMode || Boolean((exercise as any).isWarmup),
+          supersetId: runtimeSupersetId,
+          supersetLabel: runtimeSupersetLabel,
+          supersetName: runtimeSupersetName,
           prescription: exercise.prescription,
           instructionMode: exercise.instructionMode,
           instructions: typeof exercise.instructions === 'string'
@@ -236,8 +276,31 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
           prescriptionAssistant
         });
 
+        if (runtimeSupersetId) {
+          const group = importedSupersetGroupsById.get(runtimeSupersetId) || {
+            name: runtimeSupersetName,
+            exerciseIds: []
+          };
+          group.name = group.name || runtimeSupersetName;
+          group.exerciseIds.push(createdId);
+          importedSupersetGroupsById.set(runtimeSupersetId, group);
+        }
+
         savedCount += 1;
       }
+
+      const nextOrderStart = supersetState.supersets.length;
+      Array.from(importedSupersetGroupsById.entries())
+        .filter(([, group]) => group.exerciseIds.length >= 2)
+        .forEach(([id, group], index) => {
+          const nextSuperset: SupersetGroup = {
+            id,
+            name: group.name,
+            exerciseIds: group.exerciseIds,
+            order: nextOrderStart + index,
+          };
+          addSuperset(nextSuperset);
+        });
 
       onExerciseAdded?.();
       onClose();
