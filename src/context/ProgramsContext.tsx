@@ -9,7 +9,7 @@ interface ProgramsContextType {
   programs: Program[];
   isLoading: boolean;
   error: string | null;
-  refresh: () => void;
+  refresh: () => Promise<void>;
   addProgram: (program: Omit<Program, 'id' | 'userId'>) => Promise<void>;
   updateProgram: (id: string, updated: Partial<Program>) => Promise<void>;
   updateSessionInProgram: (programId: string, sessionId: string, sessionData: Partial<Program['sessions'][number]> & { exercises: any[] }) => Promise<void>;

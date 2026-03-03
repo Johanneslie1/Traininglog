@@ -166,7 +166,7 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => navigate('/shared-programs')}
+              onClick={() => navigate('/teams?tab=programs')}
               className="px-4 py-2.5 bg-bg-tertiary text-text-primary rounded-xl hover:bg-bg-quaternary transition-all duration-200 flex items-center gap-2 font-medium shadow-lg"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

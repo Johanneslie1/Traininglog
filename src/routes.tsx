@@ -27,10 +27,26 @@ const SpeedAgilityPlyoPage = lazy(() => import('@/pages/SpeedAgilityPlyoPage'));
 // Wrapper to fetch program by id and render ProgramDetail
 const ProgramDetailWrapper: React.FC = () => {
   const { id } = useParams();
-  const { programs, updateProgram } = usePrograms();
+  const { programs, updateProgram, refresh, isLoading } = usePrograms();
   const navigate = useNavigate();
+  const [hasRequestedRefresh, setHasRequestedRefresh] = React.useState(false);
   const program = programs.find((p: Program) => p.id === id);
-  if (!program) return <div className="text-text-primary p-4">Program not found</div>;
+
+  React.useEffect(() => {
+    if (!program && !isLoading && !hasRequestedRefresh) {
+      setHasRequestedRefresh(true);
+      void refresh();
+    }
+  }, [program, isLoading, hasRequestedRefresh, refresh]);
+
+  if (!program) {
+    if (isLoading || !hasRequestedRefresh) {
+      return <div className="text-text-primary p-4">Loading program...</div>;
+    }
+
+    return <div className="text-text-primary p-4">Program not found</div>;
+  }
+
   return <ProgramDetail program={program} onBack={() => navigate('/programs')} onUpdate={updated => updateProgram(program.id, updated)} />;
 };
 

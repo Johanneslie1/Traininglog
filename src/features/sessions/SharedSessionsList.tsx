@@ -87,10 +87,15 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
   };
 
   const handleLogSession = (assignment: SharedSessionAssignment) => {
+    const sharedSessionImportRequestId = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `${assignment.id}-${Date.now()}`;
+
     // Navigate to logging with the session exercises pre-loaded
     navigate('/', { 
       state: { 
         sharedSessionAssignment: assignment,
+        sharedSessionImportRequestId,
         exercises: assignment.sessionData.exercises 
       } 
     });

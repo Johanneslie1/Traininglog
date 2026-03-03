@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getSharedPrograms, copySharedProgram, updateAssignmentStatus } from '@/services/programService';
+import { usePrograms } from '@/context/ProgramsContext';
 import { Program } from '@/types/program';
 import { 
   DocumentDuplicateIcon, 
@@ -31,6 +32,7 @@ interface SharedProgramListProps {
 
 const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false }) => {
   const navigate = useNavigate();
+  const { refresh: refreshPrograms } = usePrograms();
   const [sharedPrograms, setSharedPrograms] = useState<SharedProgramData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -83,6 +85,8 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
       try {
         const newProgramId = await copySharedProgram(sharedProgramId);
         toast.success(`Program copied successfully!`);
+
+        await refreshPrograms();
         
         // Refresh the list to update status
         await loadSharedPrograms();

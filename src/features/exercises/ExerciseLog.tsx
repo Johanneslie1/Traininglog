@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { SupersetProvider, useSupersets } from '../../context/SupersetContext';
 import { useDate } from '../../context/DateContext';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -26,7 +26,7 @@ import DraggableExerciseDisplay from '../../components/DraggableExerciseDisplay'
 import FloatingSupersetControls from '../../components/FloatingSupersetControls';
 import { getAllExercisesByDate, UnifiedExerciseData, deleteExercise } from '../../utils/unifiedExerciseUtils';
 import { FloatingActionButton, EmptyState, ExerciseListSkeleton } from '../../components/ui';
-import { updateSharedSessionStatus } from '@/services/sessionService';
+import { getSharedSessionAssignment, updateSharedSessionStatus } from '@/services/sessionService';
 import { ActivityType } from '@/types/activityTypes';
 import { normalizeActivityType } from '@/types/activityLog';
 import { SharedSessionAssignment } from '@/types/program';
@@ -56,7 +56,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useSelector((state: RootState) => state.auth);
-  const { state, removeExerciseFromSuperset, loadSupersetsForDate, saveSupersetsForDate } = useSupersets();
+  const { state, removeExerciseFromSuperset, loadSupersetsForDate, saveSupersetsForDate, updateExerciseOrder } = useSupersets();
   const { selectedDate, setSelectedDate, normalizeDate } = useDate();
   
   // Date utility functions
@@ -101,6 +101,8 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   const [logOptionsWarmupMode, setLogOptionsWarmupMode] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<ExerciseData | null>(null);
   const [editingExercise, setEditingExercise] = useState<UnifiedExerciseData | null>(null);
+  const sharedImportInFlightRef = useRef<string | null>(null);
+  const processedSharedImportRequestsRef = useRef<Set<string>>(new Set());
 
   const getDateKey = useCallback((date: Date): string => {
     return normalizeDate(date).toISOString().split('T')[0];
@@ -469,10 +471,13 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
 
       console.log('✅ Exercise saved to local storage');
 
-      const sharedSessionAssignment = (location.state as { sharedSessionAssignment?: SharedSessionAssignment } | null)?.sharedSessionAssignment;
-      if (selectedExerciseWithMeta.sharedSessionAssignmentId && sharedSessionAssignment?.id === selectedExerciseWithMeta.sharedSessionAssignmentId) {
-        const dateKey = selectedExerciseWithMeta.sharedSessionDateKey || getDateKey(selectedDate);
-        await syncSharedAssignmentCompletion(sharedSessionAssignment, user.id, dateKey);
+      if (selectedExerciseWithMeta.sharedSessionAssignmentId) {
+        const latestAssignment = await getSharedSessionAssignment(selectedExerciseWithMeta.sharedSessionAssignmentId);
+
+        if (latestAssignment) {
+          const dateKey = selectedExerciseWithMeta.sharedSessionDateKey || getDateKey(selectedDate);
+          await syncSharedAssignmentCompletion(latestAssignment, user.id, dateKey);
+        }
       }
 
       handleCloseSetLogger();
@@ -481,7 +486,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
       console.error('❌ Error saving exercise sets:', error);
       alert('Failed to save exercise sets. Please try again.');
     }
-  }, [selectedExercise, user, selectedDate, exercises, state.supersets, handleCloseSetLogger, loadExercises, location.state, hasMeaningfulSetData, syncSharedAssignmentCompletion, getDateKey]);
+  }, [selectedExercise, user, selectedDate, exercises, state.supersets, handleCloseSetLogger, loadExercises, hasMeaningfulSetData, syncSharedAssignmentCompletion, getDateKey]);
 
   const handleDeleteExercise = async (exercise: UnifiedExerciseData) => {
     if (!user?.id) {
@@ -632,34 +637,69 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   }, [selectedDate, selectedExercise, areDatesEqual, handleCloseSetLogger]);
 
   useEffect(() => {
-    const sharedSessionAssignment = (location.state as { sharedSessionAssignment?: SharedSessionAssignment } | null)?.sharedSessionAssignment;
+    const routeState = location.state as {
+      sharedSessionAssignment?: SharedSessionAssignment;
+      sharedSessionImportRequestId?: string;
+    } | null;
+    const sharedSessionAssignment = routeState?.sharedSessionAssignment;
 
     if (!sharedSessionAssignment || !user?.id) {
       return;
     }
 
+    const importRequestId = routeState?.sharedSessionImportRequestId || `${location.key}-${sharedSessionAssignment.id}`;
+
+    if (processedSharedImportRequestsRef.current.has(importRequestId)) {
+      return;
+    }
+
+    if (sharedImportInFlightRef.current === importRequestId) {
+      return;
+    }
+
+    processedSharedImportRequestsRef.current.add(importRequestId);
+    sharedImportInFlightRef.current = importRequestId;
+    navigate(location.pathname, { replace: true, state: null });
+
     const addAssignedSessionToLog = async () => {
       try {
         const dateKey = getDateKey(selectedDate);
-        const existingImportedExercises = await getImportedSharedSessionExerciseDocs(
-          sharedSessionAssignment.id,
-          dateKey,
-          user.id
-        );
+        const sourceExercises = sharedSessionAssignment.sessionData.exercises || [];
+        const sourceExerciseOrder = sharedSessionAssignment.sessionData.exerciseOrder?.length
+          ? sharedSessionAssignment.sessionData.exerciseOrder
+          : sourceExercises.map((exercise) => exercise.id);
+        const sessionSupersets = Array.isArray(sharedSessionAssignment.sessionData.supersets)
+          ? sharedSessionAssignment.sessionData.supersets
+          : [];
+        const sourceLabelsByExerciseId = buildSupersetLabels(sessionSupersets, sourceExerciseOrder);
+        const sourceSupersetByExerciseId = new Map<string, {
+          supersetId?: string;
+          supersetLabel?: string;
+          supersetName?: string;
+        }>();
 
-        if (existingImportedExercises.length > 0) {
-          await loadExercises(selectedDate);
-          toast('Assigned session already added for this date', { icon: 'ℹ️', duration: 2200 });
-          navigate(location.pathname, { replace: true, state: null });
-          return;
-        }
+        sessionSupersets.forEach((superset) => {
+          superset.exerciseIds.forEach((exerciseId) => {
+            const labelInfo = sourceLabelsByExerciseId[exerciseId];
+            sourceSupersetByExerciseId.set(exerciseId, {
+              supersetId: superset.id,
+              supersetLabel: labelInfo?.label,
+              supersetName: superset.name
+            });
+          });
+        });
 
         const importedExercisesForUi: UnifiedExerciseData[] = [];
+        const sourceToCreatedExerciseId = new Map<string, string>();
 
-        for (const exercise of sharedSessionAssignment.sessionData.exercises) {
+        for (const [index, exercise] of sourceExercises.entries()) {
           const activityType = normalizeActivityType(exercise.activityType);
           const isWarmup = sharedSessionAssignment.sessionData.isWarmupSession === true;
           const sets: ExerciseSet[] = [];
+          const sourceSupersetMeta = sourceSupersetByExerciseId.get(exercise.id);
+          const supersetId = exercise.supersetId ?? sourceSupersetMeta?.supersetId;
+          const supersetLabel = exercise.supersetLabel ?? sourceSupersetMeta?.supersetLabel;
+          const supersetName = exercise.supersetName ?? sourceSupersetMeta?.supersetName;
           const prescriptionAssistant = await generateExercisePrescriptionAssistant({
             exercise: {
               id: exercise.id,
@@ -694,17 +734,22 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
               sharedSessionExerciseId: exercise.id,
               sharedSessionDateKey: dateKey,
               sharedSessionExerciseCompleted: false,
-              supersetId: exercise.supersetId,
-              supersetLabel: exercise.supersetLabel,
-              supersetName: exercise.supersetName
+              supersetId,
+              supersetLabel,
+              supersetName
             },
             selectedDate
           );
 
+          sourceToCreatedExerciseId.set(exercise.id, createdExerciseId);
+
+          const uiTimestamp = new Date(selectedDate);
+          uiTimestamp.setMilliseconds(index * 100);
+
           importedExercisesForUi.push({
             id: createdExerciseId,
             exerciseName: exercise.name,
-            timestamp: selectedDate,
+            timestamp: uiTimestamp,
             userId: user.id,
             sets,
             activityType,
@@ -714,9 +759,9 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
             sharedSessionExerciseId: exercise.id,
             sharedSessionDateKey: dateKey,
             sharedSessionExerciseCompleted: false,
-            supersetId: exercise.supersetId,
-            supersetLabel: exercise.supersetLabel,
-            supersetName: exercise.supersetName,
+            supersetId,
+            supersetLabel,
+            supersetName,
             prescription: exercise.prescription,
             instructionMode: exercise.instructionMode,
             instructions: typeof exercise.instructions === 'string'
@@ -750,23 +795,105 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
               return timeA - timeB;
             });
           });
+
+          const mappedSessionSupersets: SupersetGroup[] = sessionSupersets.reduce<SupersetGroup[]>((acc, superset, index) => {
+              const mappedExerciseIds = superset.exerciseIds
+                .map((sourceExerciseId) => sourceToCreatedExerciseId.get(sourceExerciseId))
+                .filter((exerciseId): exerciseId is string => Boolean(exerciseId));
+
+              if (mappedExerciseIds.length < 2) {
+                return acc;
+              }
+
+              acc.push({
+                id: `${superset.id}-${importRequestId}`,
+                name: superset.name,
+                order: superset.order ?? index,
+                exerciseIds: mappedExerciseIds
+              });
+
+              return acc;
+            }, []);
+
+          const mappedPerExerciseSupersets: SupersetGroup[] = [];
+          if (mappedSessionSupersets.length === 0) {
+            const groupedBySupersetId = new Map<string, { name?: string; exerciseIds: string[] }>();
+
+            importedExercisesForUi.forEach((exercise) => {
+              if (!exercise.id || !exercise.supersetId) {
+                return;
+              }
+
+              const key = exercise.supersetId;
+              const existing = groupedBySupersetId.get(key);
+
+              if (existing) {
+                existing.exerciseIds.push(exercise.id);
+              } else {
+                groupedBySupersetId.set(key, {
+                  name: exercise.supersetName,
+                  exerciseIds: [exercise.id]
+                });
+              }
+            });
+
+            let generatedOrder = 0;
+
+            groupedBySupersetId.forEach((value, key) => {
+              if (value.exerciseIds.length < 2) {
+                return;
+              }
+
+              mappedPerExerciseSupersets.push({
+                id: `${key}-${importRequestId}`,
+                name: value.name,
+                order: generatedOrder,
+                exerciseIds: value.exerciseIds
+              });
+
+              generatedOrder += 1;
+            });
+          }
+
+          const supersetsToPersist = mappedSessionSupersets.length > 0
+            ? mappedSessionSupersets
+            : mappedPerExerciseSupersets;
+
+          if (supersetsToPersist.length > 0) {
+            const persisted = getPersistedSupersetStateForDate(dateKey);
+            const importedExerciseOrder = sourceExerciseOrder
+              .map((sourceExerciseId) => sourceToCreatedExerciseId.get(sourceExerciseId))
+              .filter((exerciseId): exerciseId is string => Boolean(exerciseId));
+
+            const mergedExerciseOrder = [
+              ...persisted.exerciseOrder.filter((exerciseId) => !importedExerciseOrder.includes(exerciseId)),
+              ...importedExerciseOrder
+            ];
+
+            const mergedSupersets = [...persisted.supersets, ...supersetsToPersist];
+
+            localStorage.setItem(`superset_data_${dateKey}`, JSON.stringify(mergedSupersets));
+            localStorage.setItem(`exercise_order_${dateKey}`, JSON.stringify(mergedExerciseOrder));
+            loadSupersetsForDate(dateKey);
+            updateExerciseOrder(mergedExerciseOrder);
+          }
         }
 
         await syncSharedAssignmentCompletion(sharedSessionAssignment, user.id, dateKey);
 
         await loadExercises(selectedDate);
         toast.success('Assigned session added to your log');
-        navigate(location.pathname, { replace: true, state: null });
       } catch (error) {
         console.error('Error adding assigned session to log:', error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         toast.error(`Could not add assigned session to log: ${errorMessage}`);
-        navigate(location.pathname, { replace: true, state: null });
+      } finally {
+        sharedImportInFlightRef.current = null;
       }
     };
 
     addAssignedSessionToLog();
-  }, [location.state, location.pathname, navigate, loadExercises, selectedDate, user?.id, getDateKey, getImportedSharedSessionExerciseDocs, syncSharedAssignmentCompletion]);
+  }, [location.state, location.pathname, location.key, navigate, loadExercises, selectedDate, user?.id, getDateKey, getPersistedSupersetStateForDate, syncSharedAssignmentCompletion, loadSupersetsForDate, updateExerciseOrder]);
 
   return (
     <div className="relative min-h-[100dvh] bg-bg-primary">
