@@ -11,11 +11,38 @@ const getCurrentUserId = (): string | null => {
 
 export const getWorkoutsByDate = async (date: Date): Promise<ExerciseLog[]> => {
   try {
-    const logs = await getExerciseLogsByDate(date);
-    // Filter out logs without IDs and ensure all required properties are present
-    return logs.filter((log): log is ExerciseLog => {
-      return !!log.id && !!log.exerciseName && !!log.sets && !!log.timestamp;
-    });
+    const userId = getCurrentUserId();
+    if (!userId) return [];
+
+    const logs = await getAllExercisesByDate(date, userId);
+
+    return logs
+      .filter(
+        (log): log is (typeof logs)[number] & { id: string; exerciseName: string } =>
+          !!log.id && !!log.exerciseName
+      )
+      .map((log) => ({
+        id: log.id,
+        exerciseName: log.exerciseName,
+        sets: log.sets || [],
+        timestamp: log.timestamp instanceof Date ? log.timestamp : new Date(log.timestamp),
+        deviceId: log.deviceId,
+        userId: log.userId,
+        activityType: log.activityType,
+        isWarmup: log.isWarmup,
+        sharedSessionAssignmentId: log.sharedSessionAssignmentId,
+        sharedSessionId: log.sharedSessionId,
+        sharedSessionExerciseId: log.sharedSessionExerciseId,
+        sharedSessionDateKey: log.sharedSessionDateKey,
+        sharedSessionExerciseCompleted: log.sharedSessionExerciseCompleted,
+        supersetId: log.supersetId,
+        supersetLabel: log.supersetLabel,
+        supersetName: log.supersetName,
+        prescription: log.prescription,
+        instructionMode: log.instructionMode,
+        instructions: log.instructions,
+        prescriptionAssistant: log.prescriptionAssistant
+      }));
   } catch (error) {
     console.error('Error getting workouts by date:', error);
     return [];

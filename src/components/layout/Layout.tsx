@@ -25,17 +25,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   // Hide Layout's fixed elements on program routes (they have their own headers)
   const isProgramRoute = location.pathname.startsWith('/programs') || location.pathname === '/program-selection';
   
-  // Only show weekly calendar on specific routes (including coaching routes)
+  // Only show calendar controls on Exercise Log route
   const showWeeklyCalendar = isAuthenticated && 
     !isProgramRoute && 
-    (
-      location.pathname === '/' || 
-      location.pathname === '/exercises' ||
-      location.pathname === '/coach' ||
-      location.pathname === '/teams' ||
-      location.pathname.startsWith('/teams/') ||
-      location.pathname.startsWith('/coach/athlete')
-    );
+    location.pathname === '/';
   
   // Navigation handlers
   const handleNavigate = (path: string) => {
@@ -81,7 +74,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       )}
 
       {/* Monthly Calendar Modal */}
-      {showMonthlyCalendar && (
+      {showWeeklyCalendar && showMonthlyCalendar && (
         <AppOverlay
           isOpen={showMonthlyCalendar}
           onClose={() => setShowMonthlyCalendar(false)}
