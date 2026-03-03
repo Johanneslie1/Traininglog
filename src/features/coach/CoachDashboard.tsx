@@ -8,6 +8,7 @@ import AthleteList from './AthleteList';
 import CoachProgramAssignmentPanel from './CoachProgramAssignmentPanel';
 import TeamList from '@/features/teams/TeamList';
 import CoachAnnouncementsPanel from '@/features/coach/CoachAnnouncementsPanel';
+import StatTile from './StatTile';
 
 interface TeamWithMembers extends Team {
   memberCount: number;
@@ -127,64 +128,66 @@ const CoachDashboard: React.FC = () => {
 
         {activeTab === 'overview' && (
           <>
-            {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-              <div className="bg-gradient-to-br from-blue-900/50 to-blue-800/30 border border-blue-700/50 rounded-lg p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-blue-300 text-sm font-medium mb-1">Total Teams</div>
-                    <div className="text-4xl font-bold">{teams.length}</div>
-                  </div>
-                  <UsersIcon className="h-12 w-12 text-blue-500/50" />
-                </div>
-              </div>
-
-              <div className="bg-gradient-to-br from-green-900/50 to-green-800/30 border border-green-700/50 rounded-lg p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-green-300 text-sm font-medium mb-1">Total Athletes</div>
-                    <div className="text-4xl font-bold">{totalAthletes}</div>
-                  </div>
-                  <ChartBarIcon className="h-12 w-12 text-green-500/50" />
-                </div>
-              </div>
-
-              <div className="bg-gradient-to-br from-purple-900/50 to-purple-800/30 border border-purple-700/50 rounded-lg p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-purple-300 text-sm font-medium mb-1">Avg per Team</div>
-                    <div className="text-4xl font-bold">
-                      {teams.length > 0 ? Math.round(totalAthletes / teams.length) : 0}
+            <div className="mb-8 bg-bg-secondary border border-border rounded-lg p-5">
+              <h2 className="text-lg font-semibold">Needs attention</h2>
+              <p className="text-sm text-text-tertiary mt-1">Choose one next step.</p>
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                <button
+                  onClick={() => handleTabChange('teams')}
+                  className="w-full bg-bg-tertiary border border-border hover:border-accent-primary rounded-lg p-4 text-left transition-colors"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-medium text-text-primary">Manage teams</p>
+                      <p className="text-xs text-text-tertiary mt-1">
+                        {teams.length === 0 ? 'Create your first team' : `${teams.length} team${teams.length !== 1 ? 's' : ''} active`}
+                      </p>
                     </div>
+                    <UsersIcon className="h-5 w-5 text-text-tertiary" />
                   </div>
-                  <ClipboardListIcon className="h-12 w-12 text-purple-500/50" />
-                </div>
+                </button>
+
+                <button
+                  onClick={() => handleTabChange('athletes')}
+                  className="w-full bg-bg-tertiary border border-border hover:border-accent-primary rounded-lg p-4 text-left transition-colors"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-medium text-text-primary">Review athlete activity</p>
+                      <p className="text-xs text-text-tertiary mt-1">
+                        {totalAthletes === 0 ? 'Invite athletes to start tracking' : `${totalAthletes} athlete${totalAthletes !== 1 ? 's' : ''} visible`}
+                      </p>
+                    </div>
+                    <ChartBarIcon className="h-5 w-5 text-text-tertiary" />
+                  </div>
+                </button>
               </div>
             </div>
 
-            {/* Quick Actions */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-              <button
-                onClick={() => handleTabChange('teams')}
-                className="bg-bg-secondary border border-border hover:border-accent-primary rounded-lg p-6 text-left transition-all group"
-              >
-                <UsersIcon className="h-8 w-8 text-primary-500 mb-3 group-hover:scale-110 transition-transform" />
-                <h3 className="text-xl font-bold mb-1">Manage Teams</h3>
-                <p className="text-text-tertiary text-sm">
-                  Create teams, manage members, and view invite codes
-                </p>
-              </button>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+              <StatTile label="Teams" value={teams.length} helper="active" />
+              <StatTile label="Athletes" value={totalAthletes} helper="visible" />
+              <StatTile
+                label="Avg per Team"
+                value={teams.length > 0 ? Math.round(totalAthletes / teams.length) : 0}
+                helper="athletes"
+              />
+            </div>
 
-              <button
-                onClick={() => handleTabChange('athletes')}
-                className="bg-bg-secondary border border-border hover:border-accent-primary rounded-lg p-6 text-left transition-all group"
-              >
-                <ChartBarIcon className="h-8 w-8 text-primary-500 mb-3 group-hover:scale-110 transition-transform" />
-                <h3 className="text-xl font-bold mb-1">Athlete Activity</h3>
-                <p className="text-text-tertiary text-sm">
-                  View athlete status and recent workload
-                </p>
-              </button>
+            <div className="bg-bg-secondary border border-border rounded-lg p-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-base font-semibold">Program workflow</h3>
+                  <p className="text-sm text-text-tertiary mt-1">Assign and track programs from one focused view.</p>
+                </div>
+                <button
+                  onClick={() => handleTabChange('programs')}
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-accent-primary hover:bg-accent-hover text-text-inverse text-sm font-medium transition-colors"
+                >
+                  <ClipboardListIcon className="h-4 w-4" />
+                  Open programs
+                </button>
+              </div>
             </div>
           </>
         )}

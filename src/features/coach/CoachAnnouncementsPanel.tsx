@@ -124,18 +124,27 @@ const CoachAnnouncementsPanel: React.FC = () => {
           <div>
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-semibold text-text-primary">Teams</h3>
-              <button
-                type="button"
-                onClick={() => setSelectedTeamIds(teams.map((team) => team.id))}
-                className="text-xs text-primary-400 hover:text-primary-300"
-              >
-                Select all
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedTeamIds(teams.map((team) => team.id))}
+                  className="text-xs text-accent-primary hover:text-accent-hover"
+                >
+                  Select all
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedTeamIds([])}
+                  className="text-xs text-text-tertiary hover:text-text-primary"
+                >
+                  Clear
+                </button>
+              </div>
             </div>
             <div className="max-h-56 overflow-y-auto space-y-2 pr-1">
               {teams.length === 0 && <div className="text-sm text-text-tertiary">No teams found</div>}
               {teams.map((team) => (
-                <label key={team.id} className="flex items-center gap-2 text-sm text-text-secondary">
+                <label key={team.id} className="flex items-center gap-2 text-sm text-text-secondary bg-bg-tertiary border border-border rounded-lg px-2.5 py-2">
                   <input
                     type="checkbox"
                     checked={selectedTeamIds.includes(team.id)}
@@ -151,18 +160,27 @@ const CoachAnnouncementsPanel: React.FC = () => {
           <div>
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-semibold text-text-primary">Athletes</h3>
-              <button
-                type="button"
-                onClick={() => setSelectedAthleteIds(athletes.map((athlete) => athlete.id))}
-                className="text-xs text-primary-400 hover:text-primary-300"
-              >
-                Select all
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedAthleteIds(athletes.map((athlete) => athlete.id))}
+                  className="text-xs text-accent-primary hover:text-accent-hover"
+                >
+                  Select all
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedAthleteIds([])}
+                  className="text-xs text-text-tertiary hover:text-text-primary"
+                >
+                  Clear
+                </button>
+              </div>
             </div>
             <div className="max-h-56 overflow-y-auto space-y-2 pr-1">
               {athletes.length === 0 && <div className="text-sm text-text-tertiary">No athletes found</div>}
               {athletes.map((athlete) => (
-                <label key={athlete.id} className="flex items-center gap-2 text-sm text-text-secondary">
+                <label key={athlete.id} className="flex items-center gap-2 text-sm text-text-secondary bg-bg-tertiary border border-border rounded-lg px-2.5 py-2">
                   <input
                     type="checkbox"
                     checked={selectedAthleteIds.includes(athlete.id)}

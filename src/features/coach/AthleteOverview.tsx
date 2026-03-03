@@ -27,6 +27,7 @@ import {
 } from '@heroicons/react/outline';
 import toast from 'react-hot-toast';
 import AthleteAssignDialog from './AthleteAssignDialog';
+import StatTile from './StatTile';
 
 type DateFilter = '7days' | '30days' | '3months' | 'all';
 
@@ -132,21 +133,21 @@ const AthleteOverview: React.FC = () => {
     switch (status) {
       case 'not-started':
         return (
-          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-700 text-gray-300">
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-bg-tertiary text-text-tertiary border border-border">
             <ClockIcon className="h-3 w-3 mr-1" />
             Not Started
           </span>
         );
       case 'in-progress':
         return (
-          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-yellow-900/30 text-yellow-400">
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-warning-bg text-warning-text border border-warning-border">
             <PlayIcon className="h-3 w-3 mr-1" />
             In Progress
           </span>
         );
       case 'completed':
         return (
-          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-900/30 text-green-400">
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-success-bg text-success-text border border-success-border">
             <CheckCircleIcon className="h-3 w-3 mr-1" />
             Completed
           </span>
@@ -158,26 +159,26 @@ const AthleteOverview: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-black">
+      <div className="flex items-center justify-center min-h-[100dvh] bg-bg-primary">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
-        <div className="ml-3 text-white">Loading athlete data...</div>
+        <div className="ml-3 text-text-primary">Loading athlete data...</div>
       </div>
     );
   }
 
   if (!stats) {
     return (
-      <div className="min-h-screen bg-black text-white p-4">
+      <div className="min-h-[100dvh] bg-bg-primary text-text-primary p-4 pb-app-content">
         <div className="max-w-5xl mx-auto">
           <button
             onClick={() => navigate('/coach')}
-            className="text-primary-500 hover:text-primary-400 mb-4 flex items-center"
+            className="text-accent-primary hover:text-accent-hover mb-4 flex items-center"
           >
             <ArrowLeftIcon className="h-4 w-4 mr-2" />
             Back to Coach Hub
           </button>
-          <div className="bg-gray-900 border border-gray-800 rounded-lg p-8 text-center">
-            <p className="text-gray-400">Athlete data not found</p>
+          <div className="bg-bg-secondary border border-border rounded-lg p-8 text-center">
+            <p className="text-text-tertiary">Athlete data not found</p>
           </div>
         </div>
       </div>
@@ -185,36 +186,36 @@ const AthleteOverview: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white p-4">
+    <div className="min-h-[100dvh] bg-bg-primary text-text-primary p-4 pb-app-content">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <button
           onClick={() => navigate('/coach')}
-          className="text-primary-500 hover:text-primary-400 mb-4 flex items-center"
+          className="text-accent-primary hover:text-accent-hover mb-4 flex items-center"
         >
           <ArrowLeftIcon className="h-4 w-4 mr-2" />
           Back to Coach Hub
         </button>
 
         {/* Athlete Info Card */}
-        <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-lg p-6 mb-6">
-          <div className="flex items-start justify-between gap-4 mb-4">
+        <div className="bg-bg-secondary border border-border rounded-lg p-6 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-primary-900/30 rounded-full flex items-center justify-center">
-                <span className="text-primary-400 text-2xl font-bold">
+              <div className="w-14 h-14 bg-bg-tertiary rounded-full flex items-center justify-center border border-border">
+                <span className="text-accent-primary text-xl font-bold">
                   A
                 </span>
               </div>
               <div>
-                <h1 className="text-3xl font-bold">Athlete #{athleteId?.slice(0, 8) || 'Unknown'}</h1>
-                <p className="text-gray-400">Member since {formatDate(new Date().toISOString())}</p>
+                <h1 className="text-2xl font-bold">Athlete #{athleteId?.slice(0, 8) || 'Unknown'}</h1>
+                <p className="text-text-tertiary text-sm">Member since {formatDate(new Date().toISOString())}</p>
               </div>
             </div>
 
             <button
               type="button"
               onClick={() => setShowAssignDialog(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium transition-colors"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-accent-primary hover:bg-accent-hover text-text-inverse rounded-lg text-sm font-medium transition-colors"
             >
               <ShareIcon className="h-4 w-4" />
               Assign Program/Session
@@ -224,93 +225,57 @@ const AthleteOverview: React.FC = () => {
           {/* Last Active */}
           {stats.lastActive && (
             <div className="flex items-center gap-2 text-sm">
-              <CalendarIcon className="h-4 w-4 text-gray-500" />
-              <span className="text-gray-400">
+              <CalendarIcon className="h-4 w-4 text-text-tertiary" />
+              <span className="text-text-tertiary">
                 Last active: {formatDate(stats.lastActive)}
               </span>
             </div>
           )}
 
-          <div className="mt-3 text-xs text-gray-500">
+          <div className="mt-3 text-xs text-text-tertiary">
             Session definition: one session = all exercises/activities logged on the same day.
           </div>
         </div>
 
-        {/* Summary Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-8">
-          <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
-            <div className="text-gray-400 text-sm mb-1">Today</div>
-            <div className="text-2xl font-bold">{stats.sessionsToday}</div>
-            <div className="text-xs text-gray-500">sessions</div>
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <StatTile label="Sessions" value={stats.sessionsLast7Days} helper="last 7 days" />
+          <StatTile label="Exercises" value={stats.exercisesLast7Days} helper="last 7 days" />
+          <StatTile label="Total Volume" value={`${(stats.totalVolume / 1000).toFixed(1)}k`} helper="kg lifted" />
+        </div>
 
-          <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
-            <div className="text-gray-400 text-sm mb-1">Last 7 Days</div>
-            <div className="text-2xl font-bold">{stats.sessionsLast7Days}</div>
-            <div className="text-xs text-gray-500">sessions</div>
-          </div>
-
-          <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
-            <div className="text-gray-400 text-sm mb-1">Today</div>
-            <div className="text-2xl font-bold">{stats.exercisesToday}</div>
-            <div className="text-xs text-gray-500">exercises</div>
-          </div>
-
-          <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
-            <div className="text-gray-400 text-sm mb-1">Last 7 Days</div>
-            <div className="text-2xl font-bold">{stats.exercisesLast7Days}</div>
-            <div className="text-xs text-gray-500">exercises</div>
-          </div>
-
-          <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
-            <div className="text-gray-400 text-sm mb-1">Total Volume</div>
-            <div className="text-2xl font-bold">{(stats.totalVolume / 1000).toFixed(1)}k</div>
-            <div className="text-xs text-gray-500">kg lifted</div>
-          </div>
-
-          <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
-            <div className="text-gray-400 text-sm mb-1">Programs</div>
-            <div className="text-2xl font-bold">{stats.programsAssigned}</div>
-            <div className="text-xs text-gray-500">assigned</div>
-          </div>
-
-          <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
-            <div className="text-gray-400 text-sm mb-1">Sessions</div>
-            <div className="text-2xl font-bold">{stats.sessionsAssigned}</div>
-            <div className="text-xs text-gray-500">assigned</div>
-          </div>
-
-          <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
-            <div className="text-gray-400 text-sm mb-1">Completed</div>
-            <div className="text-2xl font-bold">{stats.programsCompleted}</div>
-            <div className="text-xs text-gray-500">programs</div>
+        <div className="bg-bg-secondary border border-border rounded-lg p-4 mb-8">
+          <h2 className="text-base font-semibold">Assignments</h2>
+          <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <StatTile label="Programs" value={stats.programsAssigned} helper="assigned" />
+            <StatTile label="Sessions" value={stats.sessionsAssigned} helper="assigned" />
+            <StatTile label="Completed" value={stats.programsCompleted} helper="programs" />
           </div>
         </div>
 
         {/* Assigned Programs Section */}
         <div className="mb-8">
           <h2 className="text-xl font-bold mb-4 flex items-center">
-            <ClipboardListIcon className="h-6 w-6 mr-2 text-primary-500" />
+            <ClipboardListIcon className="h-6 w-6 mr-2 text-accent-primary" />
             Assigned Programs
           </h2>
 
           {assignedPrograms.length === 0 ? (
-            <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 text-center">
-              <p className="text-gray-400">No programs assigned yet</p>
+            <div className="bg-bg-secondary border border-border rounded-lg p-6 text-center">
+              <p className="text-text-tertiary">No programs assigned yet</p>
             </div>
           ) : (
             <div className="space-y-3">
               {assignedPrograms.map((assignment) => (
                 <div
                   key={assignment.id}
-                  className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-gray-700 transition-colors"
+                  className="bg-bg-secondary border border-border rounded-lg p-4 hover:border-border-hover transition-colors"
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-semibold text-white mb-1">
+                      <h3 className="font-semibold text-text-primary mb-1">
                         Program #{assignment.programId.slice(0, 8)}
                       </h3>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-text-tertiary">
                         Assigned {formatDate(assignment.assignedAt)}
                       </p>
                     </div>
@@ -325,27 +290,27 @@ const AthleteOverview: React.FC = () => {
         {/* Assigned Sessions Section */}
         <div className="mb-8">
           <h2 className="text-xl font-bold mb-4 flex items-center">
-            <CollectionIcon className="h-6 w-6 mr-2 text-primary-500" />
+            <CollectionIcon className="h-6 w-6 mr-2 text-accent-primary" />
             Assigned Sessions
           </h2>
 
           {assignedSessions.length === 0 ? (
-            <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 text-center">
-              <p className="text-gray-400">No sessions assigned yet</p>
+            <div className="bg-bg-secondary border border-border rounded-lg p-6 text-center">
+              <p className="text-text-tertiary">No sessions assigned yet</p>
             </div>
           ) : (
             <div className="space-y-3">
               {assignedSessions.map((assignment) => (
                 <div
                   key={assignment.id}
-                  className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-gray-700 transition-colors"
+                  className="bg-bg-secondary border border-border rounded-lg p-4 hover:border-border-hover transition-colors"
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-semibold text-white mb-1">
+                      <h3 className="font-semibold text-text-primary mb-1">
                         Session #{assignment.sharedSessionId?.slice(0, 8) || assignment.id.slice(0, 8)}
                       </h3>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-text-tertiary">
                         Assigned {formatDate(assignment.assignedAt)}
                       </p>
                     </div>
@@ -361,17 +326,17 @@ const AthleteOverview: React.FC = () => {
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold flex items-center">
-              <ChartBarIcon className="h-6 w-6 mr-2 text-primary-500" />
+              <ChartBarIcon className="h-6 w-6 mr-2 text-accent-primary" />
               Session & Exercise History
             </h2>
 
             {/* Date Filter */}
             <div className="flex items-center gap-2">
-              <FilterIcon className="h-4 w-4 text-gray-500" />
+              <FilterIcon className="h-4 w-4 text-text-tertiary" />
               <select
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value as DateFilter)}
-                className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="bg-bg-secondary border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-primary"
               >
                 <option value="7days">Last 7 days</option>
                 <option value="30days">Last 30 days</option>
@@ -382,29 +347,29 @@ const AthleteOverview: React.FC = () => {
           </div>
 
           {sessions.length === 0 && exercises.length === 0 ? (
-            <div className="bg-gray-900 border border-gray-800 rounded-lg p-8 text-center">
-              <p className="text-gray-400">No sessions in this time period</p>
+            <div className="bg-bg-secondary border border-border rounded-lg p-8 text-center">
+              <p className="text-text-tertiary">No sessions in this time period</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-              <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
-                <h3 className="font-semibold text-white mb-3">Session History</h3>
+              <div className="bg-bg-secondary border border-border rounded-lg p-4">
+                <h3 className="font-semibold text-text-primary mb-3">Session History</h3>
                 {sessions.length === 0 ? (
-                  <p className="text-sm text-gray-500">No session history in this period</p>
+                  <p className="text-sm text-text-tertiary">No session history in this period</p>
                 ) : (
                   <div className="space-y-3">
                     {sessions.slice(0, visibleSessions).map((session) => (
-                      <div key={session.sessionKey} className="bg-gray-800/60 rounded-lg p-3 border border-gray-800">
+                      <div key={session.sessionKey} className="bg-bg-tertiary rounded-lg p-3 border border-border">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm font-semibold text-white">{formatDate(session.date)}</p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-sm font-semibold text-text-primary">{formatDate(session.date)}</p>
+                            <p className="text-xs text-text-tertiary">
                               {session.totalExercises} exercise{session.totalExercises !== 1 ? 's' : ''}
                             </p>
                           </div>
                           <div className="text-right">
-                            <p className="text-sm text-primary-400 font-semibold">{session.totalVolume.toFixed(0)} kg</p>
-                            <p className="text-xs text-gray-500">{session.activityTypes.length} activity type{session.activityTypes.length !== 1 ? 's' : ''}</p>
+                            <p className="text-sm text-accent-primary font-semibold">{session.totalVolume.toFixed(0)} kg</p>
+                            <p className="text-xs text-text-tertiary">{session.activityTypes.length} activity type{session.activityTypes.length !== 1 ? 's' : ''}</p>
                           </div>
                         </div>
                       </div>
@@ -414,7 +379,7 @@ const AthleteOverview: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setVisibleSessions((current) => current + SESSION_PAGE_SIZE)}
-                        className="w-full py-2 text-sm font-medium text-primary-400 border border-gray-700 rounded-lg hover:border-primary-500/60 transition-colors"
+                        className="w-full py-2 text-sm font-medium text-accent-primary border border-border rounded-lg hover:border-accent-primary/60 transition-colors"
                       >
                         Load more sessions
                       </button>
@@ -423,31 +388,31 @@ const AthleteOverview: React.FC = () => {
                 )}
               </div>
 
-              <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
-                <h3 className="font-semibold text-white mb-3">Exercise History</h3>
+              <div className="bg-bg-secondary border border-border rounded-lg p-4">
+                <h3 className="font-semibold text-text-primary mb-3">Exercise History</h3>
                 {exercises.length === 0 ? (
-                  <p className="text-sm text-gray-500">No exercise history in this period</p>
+                  <p className="text-sm text-text-tertiary">No exercise history in this period</p>
                 ) : (
                   <div className="space-y-3 max-h-[560px] overflow-y-auto pr-1">
                     {exercises.slice(0, visibleExercises).map((exercise) => (
                       <div
                         key={`${exercise.sourceCollection}-${exercise.id}-${exercise.date}`}
-                        className="bg-gray-800/60 rounded-lg p-3 border border-gray-800"
+                        className="bg-bg-tertiary rounded-lg p-3 border border-border"
                       >
                         <div className="flex items-start justify-between gap-4">
                           <div>
-                            <h4 className="text-sm font-semibold text-white">{exercise.name}</h4>
-                            <p className="text-xs text-gray-500">{formatDate(exercise.date)}</p>
-                            <p className="text-xs text-gray-500 capitalize">{exercise.activityType || 'other'} • {exercise.sourceCollection}</p>
+                            <h4 className="text-sm font-semibold text-text-primary">{exercise.name}</h4>
+                            <p className="text-xs text-text-tertiary">{formatDate(exercise.date)}</p>
+                            <p className="text-xs text-text-tertiary capitalize">{exercise.activityType || 'other'} • {exercise.sourceCollection}</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-sm text-gray-300">{exercise.totalSets} sets</p>
-                            <p className="text-sm text-primary-400 font-semibold">{(exercise.totalVolume || 0).toFixed(0)} kg</p>
+                            <p className="text-sm text-text-secondary">{exercise.totalSets} sets</p>
+                            <p className="text-sm text-accent-primary font-semibold">{(exercise.totalVolume || 0).toFixed(0)} kg</p>
                           </div>
                         </div>
 
                         {exercise.notes && (
-                          <p className="mt-2 text-xs text-gray-400 italic">"{exercise.notes}"</p>
+                          <p className="mt-2 text-xs text-text-tertiary italic">"{exercise.notes}"</p>
                         )}
                       </div>
                     ))}
@@ -456,7 +421,7 @@ const AthleteOverview: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setVisibleExercises((current) => current + EXERCISE_PAGE_SIZE)}
-                        className="w-full py-2 text-sm font-medium text-primary-400 border border-gray-700 rounded-lg hover:border-primary-500/60 transition-colors"
+                        className="w-full py-2 text-sm font-medium text-accent-primary border border-border rounded-lg hover:border-accent-primary/60 transition-colors"
                       >
                         Load more exercises
                       </button>

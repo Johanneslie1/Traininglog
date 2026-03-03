@@ -34,6 +34,73 @@ export interface TeamMember {
   status: 'active' | 'inactive';
 }
 
+const buildCoachAthleteAccessId = (coachId: string, athleteId: string): string => `${coachId}_${athleteId}`;
+
+const getSharedTeamIdsForCoachAthlete = async (
+  coachId: string,
+  athleteId: string
+): Promise<string[]> => {
+  const teamsRef = collection(db, 'teams');
+  const teamsQuery = query(
+    teamsRef,
+    where('coachId', '==', coachId),
+    where('isActive', '==', true)
+  );
+  const teamsSnapshot = await getDocs(teamsQuery);
+
+  const sharedTeamIds: string[] = [];
+
+  for (const teamDoc of teamsSnapshot.docs) {
+    const memberRef = doc(db, 'teams', teamDoc.id, 'members', athleteId);
+    const memberSnapshot = await getDoc(memberRef);
+
+    if (!memberSnapshot.exists()) {
+      continue;
+    }
+
+    const memberData = memberSnapshot.data();
+    if (memberData?.status && memberData.status !== 'active') {
+      continue;
+    }
+
+    sharedTeamIds.push(teamDoc.id);
+  }
+
+  return sharedTeamIds;
+};
+
+export const syncCoachAthleteAccess = async (
+  coachId: string,
+  athleteId: string
+): Promise<void> => {
+  if (!coachId || !athleteId) {
+    return;
+  }
+
+  const sharedTeamIds = await getSharedTeamIdsForCoachAthlete(coachId, athleteId);
+  const accessRef = doc(db, 'coachAthleteAccess', buildCoachAthleteAccessId(coachId, athleteId));
+
+  if (sharedTeamIds.length === 0) {
+    const existingAccess = await getDoc(accessRef);
+    if (existingAccess.exists()) {
+      await deleteDoc(accessRef);
+    }
+    return;
+  }
+
+  await setDoc(
+    accessRef,
+    removeUndefinedFields({
+      coachId,
+      athleteId,
+      teamId: sharedTeamIds[0],
+      sharedTeamIds,
+      updatedAt: new Date().toISOString()
+    }),
+    { merge: true }
+  );
+};
+
 export const getTeamMember = async (teamId: string, userId: string): Promise<TeamMember | null> => {
   try {
     const memberRef = doc(db, 'teams', teamId, 'members', userId);
@@ -298,12 +365,18 @@ export const deleteTeam = async (teamId: string): Promise<void> => {
     if (!team || team.coachId !== user.uid) {
       throw new Error('You can only delete teams you own');
     }
+
+    const existingMembers = await getTeamMembers(teamId);
     
     const teamRef = doc(db, 'teams', teamId);
     await updateDoc(teamRef, {
       isActive: false,
       updatedAt: new Date().toISOString()
     });
+
+    await Promise.all(
+      existingMembers.map((member) => syncCoachAthleteAccess(team.coachId, member.id))
+    );
     
     console.log('[teamService] Team deactivated successfully');
   } catch (error) {
@@ -335,6 +408,11 @@ export const getTeamMembers = async (teamId: string): Promise<TeamMember[]> => {
  */
 export const addTeamMember = async (teamId: string, userId: string): Promise<void> => {
   try {
+    const team = await getTeam(teamId);
+    if (!team || !team.isActive) {
+      throw new Error('Team not found or inactive');
+    }
+
     // Get user data
     const userDoc = await getDoc(doc(db, 'users', userId));
     if (!userDoc.exists()) {
@@ -354,6 +432,7 @@ export const addTeamMember = async (teamId: string, userId: string): Promise<voi
     });
     
     await setDoc(memberRef, memberData);
+    await syncCoachAthleteAccess(team.coachId, userId);
     
     console.log('[teamService] Team member added successfully');
   } catch (error) {
@@ -377,6 +456,7 @@ export const removeTeamMember = async (teamId: string, userId: string): Promise<
     
     const memberRef = doc(db, 'teams', teamId, 'members', userId);
     await deleteDoc(memberRef);
+    await syncCoachAthleteAccess(team.coachId, userId);
     
     console.log('[teamService] Team member removed successfully');
   } catch (error) {
@@ -456,6 +536,11 @@ export const leaveTeam = async (teamId: string): Promise<void> => {
   try {
     const user = await ensureAuth();
 
+    const team = await getTeam(teamId);
+    if (!team) {
+      throw new Error('Team not found');
+    }
+
     const existingMembership = await getTeamMember(teamId, user.uid);
     if (!existingMembership) {
       throw new Error('You are not a member of this team');
@@ -463,6 +548,7 @@ export const leaveTeam = async (teamId: string): Promise<void> => {
 
     const memberRef = doc(db, 'teams', teamId, 'members', user.uid);
     await deleteDoc(memberRef);
+    await syncCoachAthleteAccess(team.coachId, user.uid);
 
     console.log('[teamService] Athlete left team successfully');
   } catch (error) {
