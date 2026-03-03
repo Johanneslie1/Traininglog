@@ -212,13 +212,13 @@ const AthleteList: React.FC = () => {
                 <div>
                   <div className="text-gray-500">This Week</div>
                   <div className="text-white font-semibold">
-                    {athlete.workoutsThisWeek || 0} workout{athlete.workoutsThisWeek !== 1 ? 's' : ''}
+                    {athlete.workoutsThisWeek || 0} session{athlete.workoutsThisWeek !== 1 ? 's' : ''}
                   </div>
                 </div>
                 <div>
                   <div className="text-gray-500">This Month</div>
                   <div className="text-white font-semibold">
-                    {athlete.workoutsThisMonth || 0} workout{athlete.workoutsThisMonth !== 1 ? 's' : ''}
+                    {athlete.workoutsThisMonth || 0} session{athlete.workoutsThisMonth !== 1 ? 's' : ''}
                   </div>
                 </div>
                 <div>

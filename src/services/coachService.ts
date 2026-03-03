@@ -3,34 +3,57 @@ import {
   getDocs,
   query,
   where,
-  orderBy
+  orderBy,
+  limit,
+  Timestamp
 } from 'firebase/firestore';
 import { db } from './firebase/firebase';
 import { getAuth } from 'firebase/auth';
-import { getCoachTeams, getTeamMembers, TeamMember } from './teamService';
-import { Exercise } from '@/types/exercise';
+import { getCoachTeams, getTeamMembers, TeamMember, syncCoachAthleteAccess } from './teamService';
+import { startOfDay, endOfDay } from '@/utils/dateUtils';
 
 export interface AthleteData extends TeamMember {
   lastActive?: string;
   workoutsThisWeek?: number;
   workoutsThisMonth?: number;
+  sessionsToday?: number;
+  sessionsLast7Days?: number;
+  exercisesToday?: number;
+  exercisesLast7Days?: number;
   totalVolume?: number;
   programsAssigned?: number;
   programsCompleted?: number;
   sessionsAssigned?: number;
 }
 
-export interface AthleteExerciseLog extends Exercise {
+export interface AthleteExerciseLog {
+  id: string;
+  name: string;
+  activityType?: string;
+  sourceCollection: 'exercises' | 'activities' | 'strengthExercises';
   date: string;
+  timestamp: Date;
   sets: any[];
   totalSets: number;
   totalVolume?: number;
   notes?: string;
 }
 
+export interface AthleteSessionHistoryItem {
+  date: string;
+  sessionKey: string;
+  totalExercises: number;
+  totalVolume: number;
+  activityTypes: string[];
+}
+
 export interface AthleteSummaryStats {
   workoutsThisWeek: number;
   workoutsThisMonth: number;
+  sessionsToday: number;
+  sessionsLast7Days: number;
+  exercisesToday: number;
+  exercisesLast7Days: number;
   totalVolume: number;
   programsAssigned: number;
   programsCompleted: number;
@@ -50,9 +73,17 @@ interface AthleteStatsOptions {
   skipRelationshipCheck?: boolean;
 }
 
+interface AthleteHistoryOptions {
+  maxResults?: number;
+}
+
 const EMPTY_STATS: AthleteSummaryStats = {
   workoutsThisWeek: 0,
   workoutsThisMonth: 0,
+  sessionsToday: 0,
+  sessionsLast7Days: 0,
+  exercisesToday: 0,
+  exercisesLast7Days: 0,
   totalVolume: 0,
   programsAssigned: 0,
   programsCompleted: 0,
@@ -159,6 +190,191 @@ function parseExerciseDate(data: any): Date | undefined {
   return undefined;
 }
 
+function getLocalDateKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function resolveLogName(data: any): string {
+  if (typeof data?.exerciseName === 'string' && data.exerciseName.trim()) {
+    return data.exerciseName.trim();
+  }
+
+  if (typeof data?.activityName === 'string' && data.activityName.trim()) {
+    return data.activityName.trim();
+  }
+
+  if (typeof data?.name === 'string' && data.name.trim()) {
+    return data.name.trim();
+  }
+
+  return 'Unknown activity';
+}
+
+function normalizeSets(value: unknown): any[] {
+  return Array.isArray(value) ? value : [];
+}
+
+function toAthleteLog(
+  sourceCollection: 'exercises' | 'activities' | 'strengthExercises',
+  id: string,
+  data: any
+): AthleteExerciseLog | null {
+  const parsedDate = parseExerciseDate(data);
+  if (!parsedDate) {
+    return null;
+  }
+
+  const sets = normalizeSets(data?.sets);
+
+  return {
+    id,
+    name: resolveLogName(data),
+    activityType: typeof data?.activityType === 'string' ? data.activityType : undefined,
+    sourceCollection,
+    date: parsedDate.toISOString(),
+    timestamp: parsedDate,
+    sets,
+    totalSets: sets.length,
+    totalVolume: calculateExerciseVolume(data),
+    notes: typeof data?.notes === 'string' ? data.notes : undefined
+  };
+}
+
+async function getAthleteUnifiedLogs(
+  athleteId: string,
+  startDate?: Date,
+  endDate?: Date,
+  options: AthleteStatsOptions & AthleteHistoryOptions = {}
+): Promise<AthleteExerciseLog[]> {
+  const hasAccess = options.skipRelationshipCheck
+    ? true
+    : await verifyCoachAthleteRelationship(athleteId);
+
+  if (!hasAccess) {
+    throw new Error('You do not have permission to view this athlete\'s data');
+  }
+
+  const sourceCollections: Array<'exercises' | 'activities' | 'strengthExercises'> = [
+    'exercises',
+    'activities',
+    'strengthExercises'
+  ];
+
+  const sourceSnapshots = await Promise.all(
+    sourceCollections.map(async (sourceCollection) => {
+      try {
+        const sourceRef = collection(db, 'users', athleteId, sourceCollection);
+        const maxResults = options.maxResults ?? 250;
+        let snapshot;
+
+        if (startDate && endDate) {
+          try {
+            const rangedQuery = query(
+              sourceRef,
+              where('timestamp', '>=', Timestamp.fromDate(startDate)),
+              where('timestamp', '<=', Timestamp.fromDate(endDate)),
+              orderBy('timestamp', 'desc'),
+              limit(maxResults)
+            );
+            snapshot = await getDocs(rangedQuery);
+          } catch {
+            snapshot = await getDocs(sourceRef);
+          }
+        } else {
+          snapshot = await getDocs(sourceRef);
+        }
+
+        return snapshot.docs
+          .map((doc) => toAthleteLog(sourceCollection, doc.id, doc.data()))
+          .filter((log): log is AthleteExerciseLog => !!log);
+      } catch (error) {
+        if (!isPermissionDenied(error)) {
+          throw error;
+        }
+
+        return [];
+      }
+    })
+  );
+
+  const allLogs = sourceSnapshots
+    .flat()
+    .filter((log) => {
+      if (startDate && log.timestamp < startDate) {
+        return false;
+      }
+
+      if (endDate && log.timestamp > endDate) {
+        return false;
+      }
+
+      return true;
+    });
+
+  const deduped = new Map<string, AthleteExerciseLog>();
+  allLogs.forEach((log) => {
+    const dedupeKey = `${log.id}|${log.name.toLowerCase()}|${log.timestamp.getTime()}`;
+    const existing = deduped.get(dedupeKey);
+
+    if (!existing || (log.totalVolume || 0) > (existing.totalVolume || 0)) {
+      deduped.set(dedupeKey, log);
+    }
+  });
+
+  const sorted = Array.from(deduped.values()).sort(
+    (a, b) => b.timestamp.getTime() - a.timestamp.getTime()
+  );
+
+  if (options.maxResults && options.maxResults > 0) {
+    return sorted.slice(0, options.maxResults);
+  }
+
+  return sorted;
+}
+
+function buildSessionHistory(logs: AthleteExerciseLog[]): AthleteSessionHistoryItem[] {
+  const bySession = new Map<string, {
+    date: string;
+    totalExercises: number;
+    totalVolume: number;
+    activityTypes: Set<string>;
+  }>();
+
+  logs.forEach((log) => {
+    const sessionKey = getLocalDateKey(log.timestamp);
+    const existing = bySession.get(sessionKey);
+
+    if (existing) {
+      existing.totalExercises += 1;
+      existing.totalVolume += log.totalVolume || 0;
+      if (log.activityType) {
+        existing.activityTypes.add(log.activityType);
+      }
+      return;
+    }
+
+    bySession.set(sessionKey, {
+      date: log.date,
+      totalExercises: 1,
+      totalVolume: log.totalVolume || 0,
+      activityTypes: new Set(log.activityType ? [log.activityType] : [])
+    });
+  });
+
+  return Array.from(bySession.entries())
+    .map(([sessionKey, value]) => ({
+      date: value.date,
+      sessionKey,
+      totalExercises: value.totalExercises,
+      totalVolume: Math.round(value.totalVolume),
+      activityTypes: Array.from(value.activityTypes)
+    }))
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+}
+
 async function buildCoachAccessSnapshot(coachId: string): Promise<CoachAccessSnapshot> {
   const teams = await getCoachTeams();
   const allMembers = await Promise.all(teams.map((team) => getTeamMembers(team.id)));
@@ -214,13 +430,29 @@ async function getCoachAccessSnapshot(forceRefresh = false): Promise<CoachAccess
  */
 export const verifyCoachAthleteRelationship = async (athleteId: string): Promise<boolean> => {
   try {
+    const { uid: coachId } = await ensureAuth();
     const accessSnapshot = await getCoachAccessSnapshot();
     if (accessSnapshot.athleteIds.has(athleteId)) {
+      try {
+        await syncCoachAthleteAccess(coachId, athleteId);
+      } catch (syncError) {
+        console.warn('[coachService] Could not sync coach-athlete access:', syncError);
+      }
       return true;
     }
 
     const refreshedSnapshot = await getCoachAccessSnapshot(true);
-    return refreshedSnapshot.athleteIds.has(athleteId);
+    const hasRelationship = refreshedSnapshot.athleteIds.has(athleteId);
+
+    if (hasRelationship) {
+      try {
+        await syncCoachAthleteAccess(coachId, athleteId);
+      } catch (syncError) {
+        console.warn('[coachService] Could not sync coach-athlete access after refresh:', syncError);
+      }
+    }
+
+    return hasRelationship;
   } catch (error) {
     console.error('[coachService] Error verifying coach-athlete relationship:', error);
     return false;
@@ -300,50 +532,47 @@ export const getAthleteSummaryStats = async (
     if (!hasAccess) {
       throw new Error('You do not have permission to view this athlete\'s data');
     }
-    
-    const now = new Date();
-    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    
-    let workouts: Array<{ date: Date; volume: number }> = [];
 
     try {
-      const exercisesRef = collection(db, 'users', athleteId, 'exercises');
-      const exercisesSnapshot = await getDocs(exercisesRef);
-
-      workouts = exercisesSnapshot.docs
-        .map((doc) => {
-          const data = doc.data();
-          const parsedDate = parseExerciseDate(data);
-
-          if (!parsedDate) {
-            return null;
-          }
-
-          return {
-            date: parsedDate,
-            volume: calculateExerciseVolume(data)
-          };
-        })
-        .filter((workout): workout is { date: Date; volume: number } => !!workout);
-    } catch (error) {
-      if (!isPermissionDenied(error)) {
-        throw error;
-      }
+      await syncCoachAthleteAccess(coachId, athleteId);
+    } catch (syncError) {
+      console.warn('[coachService] Could not sync coach-athlete access during summary fetch:', syncError);
     }
+    
+    const now = new Date();
+    const todayStart = startOfDay(now);
+    const todayEnd = endOfDay(now);
+    const oneWeekAgo = startOfDay(new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000));
+    const oneMonthAgo = startOfDay(new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000));
 
-    // Calculate stats (valid dates only)
-    const workoutsThisWeek = workouts.filter((w) => w.date >= oneWeekAgo).length;
-    const workoutsThisMonth = workouts.filter((w) => w.date >= oneMonthAgo).length;
-    const totalVolume = workouts.reduce((sum, w) => sum + w.volume, 0);
+    const athleteLogs = await getAthleteUnifiedLogs(athleteId, undefined, undefined, {
+      skipRelationshipCheck: true
+    });
 
-    // Get last active date
-    const mostRecentWorkout = workouts.length > 0
-      ? workouts.reduce((latest, current) => (current.date > latest.date ? current : latest))
-      : undefined;
+    const sessionHistory = buildSessionHistory(athleteLogs);
+    const workoutsThisWeek = sessionHistory.filter((session) => {
+      const sessionDate = new Date(session.date);
+      return sessionDate >= oneWeekAgo;
+    }).length;
+    const workoutsThisMonth = sessionHistory.filter((session) => {
+      const sessionDate = new Date(session.date);
+      return sessionDate >= oneMonthAgo;
+    }).length;
+    const totalVolume = athleteLogs.reduce((sum, log) => sum + (log.totalVolume || 0), 0);
 
-    const lastActive = mostRecentWorkout?.date && isValidDate(mostRecentWorkout.date)
-      ? mostRecentWorkout.date.toISOString()
+    const sessionsToday = sessionHistory.filter((session) => {
+      const sessionDate = new Date(session.date);
+      return sessionDate >= todayStart && sessionDate <= todayEnd;
+    }).length;
+
+    const sessionsLast7Days = workoutsThisWeek;
+
+    const exercisesToday = athleteLogs.filter((log) => log.timestamp >= todayStart && log.timestamp <= todayEnd).length;
+    const exercisesLast7Days = athleteLogs.filter((log) => log.timestamp >= oneWeekAgo).length;
+
+    const mostRecentLog = athleteLogs.length > 0 ? athleteLogs[0] : undefined;
+    const lastActive = mostRecentLog?.timestamp && isValidDate(mostRecentLog.timestamp)
+      ? mostRecentLog.timestamp.toISOString()
       : undefined;
     
     // Get program assignments
@@ -395,6 +624,10 @@ export const getAthleteSummaryStats = async (
     return {
       workoutsThisWeek,
       workoutsThisMonth,
+      sessionsToday,
+      sessionsLast7Days,
+      exercisesToday,
+      exercisesLast7Days,
       totalVolume: Math.round(totalVolume),
       programsAssigned,
       programsCompleted,
@@ -413,54 +646,28 @@ export const getAthleteSummaryStats = async (
 export const getAthleteExerciseLogs = async (
   athleteId: string,
   startDate?: Date,
-  endDate?: Date
+  endDate?: Date,
+  options: AthleteHistoryOptions = {}
 ): Promise<AthleteExerciseLog[]> => {
   try {
-    // Verify relationship
-    const hasAccess = await verifyCoachAthleteRelationship(athleteId);
-    if (!hasAccess) {
-      throw new Error('You do not have permission to view this athlete\'s data');
-    }
-    
-    const exercisesRef = collection(db, 'users', athleteId, 'exercises');
-    let snapshot;
-
-    try {
-      const sortedQuery = query(exercisesRef, orderBy('date', 'desc'));
-      snapshot = await getDocs(sortedQuery);
-    } catch (error) {
-      if (!isPermissionDenied(error)) {
-        throw error;
-      }
-
-      snapshot = await getDocs(exercisesRef);
-    }
-    
-    let logs = snapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        ...data,
-        totalSets: data.sets?.length || 0,
-        totalVolume: calculateExerciseVolume(data)
-      } as AthleteExerciseLog;
-    });
-    
-    logs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
-    // Filter by date range if provided
-    if (startDate || endDate) {
-      logs = logs.filter(log => {
-        const logDate = new Date(log.date);
-        if (startDate && logDate < startDate) return false;
-        if (endDate && logDate > endDate) return false;
-        return true;
-      });
-    }
-    
-    return logs;
+    return getAthleteUnifiedLogs(athleteId, startDate, endDate, options);
   } catch (error) {
     console.error('[coachService] Error fetching athlete exercise logs:', error);
+    throw error;
+  }
+};
+
+export const getAthleteSessionHistory = async (
+  athleteId: string,
+  startDate?: Date,
+  endDate?: Date,
+  options: AthleteHistoryOptions = {}
+): Promise<AthleteSessionHistoryItem[]> => {
+  try {
+    const logs = await getAthleteUnifiedLogs(athleteId, startDate, endDate, options);
+    return buildSessionHistory(logs);
+  } catch (error) {
+    console.error('[coachService] Error fetching athlete session history:', error);
     throw error;
   }
 };
@@ -512,6 +719,37 @@ export const getAthleteAssignedPrograms = async (athleteId: string): Promise<any
     }));
   } catch (error) {
     console.error('[coachService] Error fetching athlete assigned programs:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get assigned sessions for an athlete
+ */
+export const getAthleteAssignedSessions = async (athleteId: string): Promise<any[]> => {
+  try {
+    const { uid: coachId } = await ensureAuth();
+
+    const hasAccess = await verifyCoachAthleteRelationship(athleteId);
+    if (!hasAccess) {
+      throw new Error('You do not have permission to view this athlete\'s data');
+    }
+
+    const assignmentsRef = collection(db, 'sharedSessionAssignments');
+    const q = query(
+      assignmentsRef,
+      where('userId', '==', athleteId),
+      where('sharedBy', '==', coachId)
+    );
+
+    const snapshot = await getDocs(q);
+
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error('[coachService] Error fetching athlete assigned sessions:', error);
     throw error;
   }
 };

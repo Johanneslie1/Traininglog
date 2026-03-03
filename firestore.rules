@@ -10,6 +10,17 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
 
+    function hasCoachAthleteAccess(athleteId) {
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/coachAthleteAccess/$(request.auth.uid + '_' + athleteId)) &&
+        get(/databases/$(database)/documents/coachAthleteAccess/$(request.auth.uid + '_' + athleteId)).data.coachId == request.auth.uid &&
+        get(/databases/$(database)/documents/coachAthleteAccess/$(request.auth.uid + '_' + athleteId)).data.athleteId == athleteId &&
+        exists(/databases/$(database)/documents/teams/$(get(/databases/$(database)/documents/coachAthleteAccess/$(request.auth.uid + '_' + athleteId)).data.teamId)) &&
+        get(/databases/$(database)/documents/teams/$(get(/databases/$(database)/documents/coachAthleteAccess/$(request.auth.uid + '_' + athleteId)).data.teamId)).data.coachId == request.auth.uid &&
+        get(/databases/$(database)/documents/teams/$(get(/databases/$(database)/documents/coachAthleteAccess/$(request.auth.uid + '_' + athleteId)).data.teamId)).data.isActive == true &&
+        exists(/databases/$(database)/documents/teams/$(get(/databases/$(database)/documents/coachAthleteAccess/$(request.auth.uid + '_' + athleteId)).data.teamId)/members/$(athleteId));
+    }
+
     // Global exercises collection
     match /exercises/{exerciseId} {
       allow read: if isAuthenticated();
@@ -27,8 +38,8 @@ service cloud.firestore {
       // NOTE: Coach access is enforced by application-level relationship checks in coachService.
       // Firestore rules allow authenticated reads for this collection to support coach views.
       match /exercises/{exerciseId} {
-        // Read access for authenticated users; app enforces coach-athlete authorization
-        allow read: if isAuthenticated();
+        // Owner or authorized coach can read athlete logs
+        allow read: if isAuthenticated() && (isOwner(userId) || hasCoachAthleteAccess(userId));
         
         // Allow create if authenticated and document belongs to user
         allow create: if isAuthenticated() && 
@@ -47,7 +58,7 @@ service cloud.firestore {
       // Nested exerciseLogs collection under users
       // NOTE: Same coach access pattern as exercises collection above
       match /exerciseLogs/{logId} {
-        allow read: if isAuthenticated();
+        allow read: if isAuthenticated() && (isOwner(userId) || hasCoachAthleteAccess(userId));
         allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
         allow update: if isAuthenticated() && isOwner(userId) && resource.data.userId == request.auth.uid;
         allow delete: if isAuthenticated() && isOwner(userId) && resource.data.userId == request.auth.uid;
@@ -56,8 +67,8 @@ service cloud.firestore {
       // Nested activities collection under users
       // Stores non-resistance logs (sport/endurance/stretching/speed-agility/other)
       match /activities/{activityId} {
-        // Owner-only reads to align with collection ownership and avoid cross-user exposure
-        allow read: if isAuthenticated() && isOwner(userId);
+        // Owner or authorized coach can read athlete activity logs
+        allow read: if isAuthenticated() && (isOwner(userId) || hasCoachAthleteAccess(userId));
 
         // Owner can create activity documents for themselves
         allow create: if isAuthenticated() &&
@@ -73,6 +84,49 @@ service cloud.firestore {
           isOwner(userId) &&
           resource.data.userId == request.auth.uid;
       }
+
+      // Nested strengthExercises collection under users
+      // Supports legacy/alternative resistance logging path
+      match /strengthExercises/{exerciseId} {
+        // Owner or authorized coach can read athlete strength logs
+        allow read: if isAuthenticated() && (isOwner(userId) || hasCoachAthleteAccess(userId));
+
+        // Owner can create/update/delete their own strength exercise logs
+        allow create: if isAuthenticated() &&
+          isOwner(userId) &&
+          request.resource.data.userId == request.auth.uid;
+        allow update: if isAuthenticated() &&
+          isOwner(userId) &&
+          resource.data.userId == request.auth.uid &&
+          request.resource.data.userId == request.auth.uid;
+        allow delete: if isAuthenticated() &&
+          isOwner(userId) &&
+          resource.data.userId == request.auth.uid;
+      }
+    }
+
+    // Denormalized coach-athlete read access mapping
+    match /coachAthleteAccess/{accessId} {
+      allow read: if isAuthenticated() && (
+        resource.data.coachId == request.auth.uid ||
+        resource.data.athleteId == request.auth.uid
+      );
+
+      allow create, update: if isAuthenticated() &&
+        accessId == request.resource.data.coachId + '_' + request.resource.data.athleteId &&
+        (
+          request.auth.uid == request.resource.data.coachId ||
+          request.auth.uid == request.resource.data.athleteId
+        ) &&
+        exists(/databases/$(database)/documents/teams/$(request.resource.data.teamId)) &&
+        get(/databases/$(database)/documents/teams/$(request.resource.data.teamId)).data.isActive == true &&
+        get(/databases/$(database)/documents/teams/$(request.resource.data.teamId)).data.coachId == request.resource.data.coachId &&
+        exists(/databases/$(database)/documents/teams/$(request.resource.data.teamId)/members/$(request.resource.data.athleteId));
+
+      allow delete: if isAuthenticated() && (
+        resource.data.coachId == request.auth.uid ||
+        resource.data.athleteId == request.auth.uid
+      );
     }
 
     // Top-level exerciseLogs collection (if still in use)
