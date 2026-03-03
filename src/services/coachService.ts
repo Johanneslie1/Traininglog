@@ -1,5 +1,7 @@
 import {
   collection,
+  doc,
+  getDoc,
   getDocs,
   query,
   where,
@@ -11,6 +13,8 @@ import { db } from './firebase/firebase';
 import { getAuth } from 'firebase/auth';
 import { getCoachTeams, getTeamMembers, TeamMember, syncCoachAthleteAccess } from './teamService';
 import { startOfDay, endOfDay } from '@/utils/dateUtils';
+import { getUserWorkouts } from './firebase/workouts';
+import { downloadCSV } from './exportService';
 
 export interface AthleteData extends TeamMember {
   lastActive?: string;
@@ -61,6 +65,29 @@ export interface AthleteSummaryStats {
   lastActive?: string;
 }
 
+type CoachExportRowType = 'exercise' | 'session';
+
+interface CoachExportRow {
+  rowType: CoachExportRowType;
+  coachId: string;
+  athleteId: string;
+  athleteName: string;
+  sessionDate: string;
+  sessionId: string;
+  sessionStatus: string;
+  sessionNotes: string;
+  sessionExerciseCount: number;
+  sessionTotalVolume: number;
+  exerciseLogId: string;
+  exerciseName: string;
+  activityType: string;
+  sourceCollection: string;
+  totalSets: number;
+  exerciseVolume: number;
+  exerciseNotes: string;
+  loggedTimestamp: string;
+}
+
 interface CoachAccessSnapshot {
   coachId: string;
   teams: { id: string }[];
@@ -91,8 +118,30 @@ const EMPTY_STATS: AthleteSummaryStats = {
 };
 
 const ACCESS_CACHE_TTL_MS = 30 * 1000;
+const EXPORT_LOG_MAX_RESULTS = 10000;
 const coachAccessCache = new Map<string, CoachAccessSnapshot>();
 const coachAccessInFlight = new Map<string, Promise<CoachAccessSnapshot>>();
+
+const COACH_EXPORT_HEADERS: Array<keyof CoachExportRow> = [
+  'rowType',
+  'coachId',
+  'athleteId',
+  'athleteName',
+  'sessionDate',
+  'sessionId',
+  'sessionStatus',
+  'sessionNotes',
+  'sessionExerciseCount',
+  'sessionTotalVolume',
+  'exerciseLogId',
+  'exerciseName',
+  'activityType',
+  'sourceCollection',
+  'totalSets',
+  'exerciseVolume',
+  'exerciseNotes',
+  'loggedTimestamp'
+];
 
 export function invalidateCoachAccessCache(coachId?: string): void {
   if (coachId) {
@@ -195,6 +244,68 @@ function getLocalDateKey(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+function parseSessionDate(value: unknown): Date | undefined {
+  if (value instanceof Date && isValidDate(value)) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const parsed = new Date(value);
+    if (isValidDate(parsed)) {
+      return parsed;
+    }
+  }
+
+  if (value && typeof value === 'object') {
+    const maybeTimestamp = value as { toDate?: () => Date; seconds?: number };
+    if (typeof maybeTimestamp.toDate === 'function') {
+      const parsed = maybeTimestamp.toDate();
+      if (parsed instanceof Date && isValidDate(parsed)) {
+        return parsed;
+      }
+    }
+
+    if (typeof maybeTimestamp.seconds === 'number') {
+      const parsed = new Date(maybeTimestamp.seconds * 1000);
+      if (isValidDate(parsed)) {
+        return parsed;
+      }
+    }
+  }
+
+  return undefined;
+}
+
+function getSafeAthleteName(member: Partial<TeamMember> | null, athleteId: string): string {
+  const first = typeof member?.firstName === 'string' ? member.firstName.trim() : '';
+  const last = typeof member?.lastName === 'string' ? member.lastName.trim() : '';
+  const fullName = `${first} ${last}`.trim();
+  if (fullName) {
+    return fullName;
+  }
+
+  if (typeof member?.email === 'string' && member.email.trim()) {
+    return member.email.trim();
+  }
+
+  return `Athlete ${athleteId.slice(0, 8)}`;
+}
+
+function sanitizeFileToken(value: string): string {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '') || 'athlete';
+}
+
+function formatExportDateStamp(date: Date = new Date()): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}${month}${day}`;
 }
 
 function resolveLogName(data: any): string {
@@ -668,6 +779,299 @@ export const getAthleteSessionHistory = async (
     return buildSessionHistory(logs);
   } catch (error) {
     console.error('[coachService] Error fetching athlete session history:', error);
+    throw error;
+  }
+};
+
+interface CoachAthleteIdentity {
+  athleteId: string;
+  athleteName: string;
+}
+
+interface ExportSessionSnapshot {
+  id: string;
+  date: Date;
+  dateKey: string;
+  status: string;
+  notes: string;
+  exerciseCount: number;
+  totalVolume: number;
+}
+
+async function getCoachAthleteIdentity(athleteId: string): Promise<CoachAthleteIdentity> {
+  const hasAccess = await verifyCoachAthleteRelationship(athleteId);
+  if (!hasAccess) {
+    throw new Error('You do not have permission to export this athlete\'s data');
+  }
+
+  const accessSnapshot = await getCoachAccessSnapshot();
+  for (const members of accessSnapshot.membersByTeamId.values()) {
+    const member = members.find((item) => item.id === athleteId);
+    if (member) {
+      return {
+        athleteId,
+        athleteName: getSafeAthleteName(member, athleteId)
+      };
+    }
+  }
+
+  try {
+    const userSnapshot = await getDoc(doc(db, 'users', athleteId));
+    if (userSnapshot.exists()) {
+      const data = userSnapshot.data() as { firstName?: string; lastName?: string; email?: string };
+      return {
+        athleteId,
+        athleteName: getSafeAthleteName(
+          {
+            firstName: data?.firstName || '',
+            lastName: data?.lastName || '',
+            email: data?.email || ''
+          },
+          athleteId
+        )
+      };
+    }
+  } catch (error) {
+    if (!isPermissionDenied(error)) {
+      throw error;
+    }
+  }
+
+  return {
+    athleteId,
+    athleteName: getSafeAthleteName(null, athleteId)
+  };
+}
+
+async function getCoachAthleteIdentities(): Promise<CoachAthleteIdentity[]> {
+  const accessSnapshot = await getCoachAccessSnapshot(true);
+  const identities = new Map<string, CoachAthleteIdentity>();
+
+  for (const members of accessSnapshot.membersByTeamId.values()) {
+    members.forEach((member) => {
+      if (!identities.has(member.id)) {
+        identities.set(member.id, {
+          athleteId: member.id,
+          athleteName: getSafeAthleteName(member, member.id)
+        });
+      }
+    });
+  }
+
+  return Array.from(identities.values());
+}
+
+async function getAthleteTrainingSessions(
+  athleteId: string,
+  startDate?: Date,
+  endDate?: Date
+): Promise<ExportSessionSnapshot[]> {
+  const hasAccess = await verifyCoachAthleteRelationship(athleteId);
+  if (!hasAccess) {
+    throw new Error('You do not have permission to export this athlete\'s sessions');
+  }
+
+  const workouts = await getUserWorkouts(athleteId);
+
+  return workouts
+    .map((workout) => {
+      const parsedDate = parseSessionDate((workout as any).date);
+      if (!parsedDate) {
+        return null;
+      }
+
+      return {
+        id: workout.id,
+        date: parsedDate,
+        dateKey: getLocalDateKey(parsedDate),
+        status: typeof (workout as any).status === 'string' ? (workout as any).status : '',
+        notes: typeof (workout as any).notes === 'string' ? (workout as any).notes : '',
+        exerciseCount: Array.isArray((workout as any).exercises) ? (workout as any).exercises.length : 0,
+        totalVolume: typeof (workout as any).totalVolume === 'number' ? (workout as any).totalVolume : 0
+      } as ExportSessionSnapshot;
+    })
+    .filter((session): session is ExportSessionSnapshot => {
+      if (!session) {
+        return false;
+      }
+
+      if (startDate && session.date < startDate) {
+        return false;
+      }
+
+      if (endDate && session.date > endDate) {
+        return false;
+      }
+
+      return true;
+    })
+    .sort((a, b) => b.date.getTime() - a.date.getTime());
+}
+
+async function buildCoachExportRowsForAthlete(
+  coachId: string,
+  athlete: CoachAthleteIdentity,
+  startDate?: Date,
+  endDate?: Date
+): Promise<CoachExportRow[]> {
+  const [exerciseLogs, sessions] = await Promise.all([
+    getAthleteUnifiedLogs(athlete.athleteId, startDate, endDate, {
+      skipRelationshipCheck: true,
+      maxResults: EXPORT_LOG_MAX_RESULTS
+    }),
+    getAthleteTrainingSessions(athlete.athleteId, startDate, endDate)
+  ]);
+
+  const sessionsByDate = new Map<string, ExportSessionSnapshot[]>();
+  sessions.forEach((session) => {
+    const existing = sessionsByDate.get(session.dateKey) || [];
+    existing.push(session);
+    sessionsByDate.set(session.dateKey, existing);
+  });
+
+  const exerciseRows: CoachExportRow[] = exerciseLogs.map((log) => {
+    const dateKey = getLocalDateKey(log.timestamp);
+    const matchingSession = (sessionsByDate.get(dateKey) || [])[0];
+
+    return {
+      rowType: 'exercise',
+      coachId,
+      athleteId: athlete.athleteId,
+      athleteName: athlete.athleteName,
+      sessionDate: dateKey,
+      sessionId: matchingSession?.id || '',
+      sessionStatus: matchingSession?.status || '',
+      sessionNotes: matchingSession?.notes || '',
+      sessionExerciseCount: matchingSession?.exerciseCount || 0,
+      sessionTotalVolume: Math.round(matchingSession?.totalVolume || 0),
+      exerciseLogId: log.id,
+      exerciseName: log.name,
+      activityType: log.activityType || '',
+      sourceCollection: log.sourceCollection,
+      totalSets: log.totalSets,
+      exerciseVolume: Math.round(log.totalVolume || 0),
+      exerciseNotes: log.notes || '',
+      loggedTimestamp: log.timestamp.toISOString()
+    };
+  });
+
+  const emptySessionRows: CoachExportRow[] = sessions
+    .filter((session) => session.exerciseCount === 0)
+    .map((session) => ({
+      rowType: 'session',
+      coachId,
+      athleteId: athlete.athleteId,
+      athleteName: athlete.athleteName,
+      sessionDate: session.dateKey,
+      sessionId: session.id,
+      sessionStatus: session.status,
+      sessionNotes: session.notes,
+      sessionExerciseCount: session.exerciseCount,
+      sessionTotalVolume: Math.round(session.totalVolume || 0),
+      exerciseLogId: '',
+      exerciseName: '',
+      activityType: '',
+      sourceCollection: '',
+      totalSets: 0,
+      exerciseVolume: 0,
+      exerciseNotes: '',
+      loggedTimestamp: session.date.toISOString()
+    }));
+
+  return [...exerciseRows, ...emptySessionRows];
+}
+
+function sortCoachExportRows(rows: CoachExportRow[]): CoachExportRow[] {
+  return rows.sort((a, b) => {
+    const timeA = a.loggedTimestamp ? new Date(a.loggedTimestamp).getTime() : 0;
+    const timeB = b.loggedTimestamp ? new Date(b.loggedTimestamp).getTime() : 0;
+    if (timeA !== timeB) {
+      return timeB - timeA;
+    }
+
+    if (a.athleteName !== b.athleteName) {
+      return a.athleteName.localeCompare(b.athleteName);
+    }
+
+    if (a.rowType !== b.rowType) {
+      return a.rowType === 'exercise' ? -1 : 1;
+    }
+
+    return a.exerciseName.localeCompare(b.exerciseName);
+  });
+}
+
+export const exportAthleteSessionsCsv = async (
+  athleteId: string,
+  startDate?: Date,
+  endDate?: Date
+): Promise<{ rowCount: number; athleteName: string }> => {
+  try {
+    const { uid: coachId } = await ensureAuth();
+    const athlete = await getCoachAthleteIdentity(athleteId);
+    const rows = sortCoachExportRows(
+      await buildCoachExportRowsForAthlete(coachId, athlete, startDate, endDate)
+    );
+
+    if (rows.length === 0) {
+      throw new Error('No session data found for this athlete in the selected range');
+    }
+
+    const filename = `coach_export_${sanitizeFileToken(athlete.athleteName)}_${formatExportDateStamp()}.csv`;
+    downloadCSV(rows, COACH_EXPORT_HEADERS as string[], filename);
+
+    return { rowCount: rows.length, athleteName: athlete.athleteName };
+  } catch (error) {
+    console.error('[coachService] Error exporting athlete sessions CSV:', error);
+    throw error;
+  }
+};
+
+export const exportAllAthletesSessionsCsv = async (
+  startDate?: Date,
+  endDate?: Date
+): Promise<{ rowCount: number; athleteCount: number }> => {
+  try {
+    const { uid: coachId } = await ensureAuth();
+    const athletes = await getCoachAthleteIdentities();
+
+    if (athletes.length === 0) {
+      throw new Error('No athletes found for this coach');
+    }
+
+    const allRows: CoachExportRow[] = [];
+    const includedAthleteIds = new Set<string>();
+
+    for (const athlete of athletes) {
+      try {
+        const rows = await buildCoachExportRowsForAthlete(coachId, athlete, startDate, endDate);
+        if (rows.length > 0) {
+          rows.forEach((row) => allRows.push(row));
+          includedAthleteIds.add(athlete.athleteId);
+        }
+      } catch (error) {
+        if (isPermissionDenied(error)) {
+          continue;
+        }
+        throw error;
+      }
+    }
+
+    const sortedRows = sortCoachExportRows(allRows);
+
+    if (sortedRows.length === 0) {
+      throw new Error('No athlete session data found in the selected range');
+    }
+
+    const filename = `coach_export_all_athletes_${formatExportDateStamp()}.csv`;
+    downloadCSV(sortedRows, COACH_EXPORT_HEADERS as string[], filename);
+
+    return {
+      rowCount: sortedRows.length,
+      athleteCount: includedAthleteIds.size
+    };
+  } catch (error) {
+    console.error('[coachService] Error exporting all athletes sessions CSV:', error);
     throw error;
   }
 };

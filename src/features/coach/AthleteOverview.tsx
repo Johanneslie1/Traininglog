@@ -8,6 +8,8 @@ import {
   getAthleteSessionHistory,
   getAthleteAssignedPrograms,
   getAthleteAssignedSessions,
+  exportAthleteSessionsCsv,
+  exportAllAthletesSessionsCsv,
   AthleteExerciseLog, 
   AthleteSessionHistoryItem,
   AthleteSummaryStats 
@@ -23,13 +25,66 @@ import {
   ClockIcon,
   PlayIcon,
   ShareIcon,
-  CollectionIcon
+  CollectionIcon,
+  DownloadIcon
 } from '@heroicons/react/outline';
 import toast from 'react-hot-toast';
 import AthleteAssignDialog from './AthleteAssignDialog';
 import StatTile from './StatTile';
 
 type DateFilter = '7days' | '30days' | '3months' | 'all';
+type ExportDateRangePreset = 'last7days' | 'last30days' | 'thisMonth' | 'lastMonth' | 'allTime' | 'custom';
+
+interface ExportDateRange {
+  startDate: Date | null;
+  endDate: Date | null;
+  preset: ExportDateRangePreset;
+}
+
+const parseLocalDateInput = (value: string, endOfDay = false): Date | null => {
+  if (!value) return null;
+
+  const [year, month, day] = value.split('-').map(Number);
+  if (!year || !month || !day) return null;
+
+  if (endOfDay) {
+    return new Date(year, month - 1, day, 23, 59, 59, 999);
+  }
+
+  return new Date(year, month - 1, day, 0, 0, 0, 0);
+};
+
+const getDateRangeFromPreset = (preset: ExportDateRangePreset): { startDate: Date | null; endDate: Date | null } => {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+  switch (preset) {
+    case 'last7days': {
+      const start = new Date(today);
+      start.setDate(start.getDate() - 6);
+      start.setHours(0, 0, 0, 0);
+      return { startDate: start, endDate: today };
+    }
+    case 'last30days': {
+      const start = new Date(today);
+      start.setDate(start.getDate() - 29);
+      start.setHours(0, 0, 0, 0);
+      return { startDate: start, endDate: today };
+    }
+    case 'thisMonth': {
+      const start = new Date(now.getFullYear(), now.getMonth(), 1);
+      return { startDate: start, endDate: today };
+    }
+    case 'lastMonth': {
+      const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const end = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+      return { startDate: start, endDate: end };
+    }
+    case 'allTime':
+    default:
+      return { startDate: null, endDate: null };
+  }
+};
 
 const SESSION_PAGE_SIZE = 10;
 const EXERCISE_PAGE_SIZE = 20;
@@ -49,6 +104,13 @@ const AthleteOverview: React.FC = () => {
   const [showAssignDialog, setShowAssignDialog] = useState(false);
   const [visibleSessions, setVisibleSessions] = useState(SESSION_PAGE_SIZE);
   const [visibleExercises, setVisibleExercises] = useState(EXERCISE_PAGE_SIZE);
+  const [isExportingAthlete, setIsExportingAthlete] = useState(false);
+  const [isExportingAllAthletes, setIsExportingAllAthletes] = useState(false);
+  const [exportDateRange, setExportDateRange] = useState<ExportDateRange>({
+    startDate: null,
+    endDate: null,
+    preset: 'allTime'
+  });
 
   useEffect(() => {
     if (athleteId) {
@@ -117,6 +179,69 @@ const AthleteOverview: React.FC = () => {
       case 'all':
       default:
         return {};
+    }
+  };
+
+  const handleExportPresetChange = (preset: ExportDateRangePreset) => {
+    const { startDate, endDate } = getDateRangeFromPreset(preset);
+    setExportDateRange({ startDate, endDate, preset });
+  };
+
+  const handleCustomExportDateChange = (field: 'startDate' | 'endDate', value: string) => {
+    const date = parseLocalDateInput(value, field === 'endDate');
+    setExportDateRange((prev) => ({
+      ...prev,
+      [field]: date,
+      preset: 'custom'
+    }));
+  };
+
+  const formatDateForInput = (date: Date | null): string => {
+    if (!date) return '';
+    const year = date.getFullYear();
+    const month = `${date.getMonth() + 1}`.padStart(2, '0');
+    const day = `${date.getDate()}`.padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const handleExportAthlete = async () => {
+    if (!athleteId || isExportingAthlete || isExportingAllAthletes) {
+      return;
+    }
+
+    setIsExportingAthlete(true);
+    try {
+      const result = await exportAthleteSessionsCsv(
+        athleteId,
+        exportDateRange.startDate || undefined,
+        exportDateRange.endDate || undefined
+      );
+      toast.success(`Exported ${result.rowCount} rows for ${result.athleteName}`);
+    } catch (error) {
+      console.error('Failed to export athlete CSV:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to export athlete CSV');
+    } finally {
+      setIsExportingAthlete(false);
+    }
+  };
+
+  const handleExportAllAthletes = async () => {
+    if (isExportingAllAthletes || isExportingAthlete) {
+      return;
+    }
+
+    setIsExportingAllAthletes(true);
+    try {
+      const result = await exportAllAthletesSessionsCsv(
+        exportDateRange.startDate || undefined,
+        exportDateRange.endDate || undefined
+      );
+      toast.success(`Exported ${result.rowCount} rows across ${result.athleteCount} athletes`);
+    } catch (error) {
+      console.error('Failed to export all athletes CSV:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to export all athletes CSV');
+    } finally {
+      setIsExportingAllAthletes(false);
     }
   };
 
@@ -250,6 +375,85 @@ const AthleteOverview: React.FC = () => {
             <StatTile label="Sessions" value={stats.sessionsAssigned} helper="assigned" />
             <StatTile label="Completed" value={stats.programsCompleted} helper="programs" />
           </div>
+        </div>
+
+        <div className="bg-bg-secondary border border-border rounded-lg p-4 mb-8 space-y-4">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-base font-semibold">Coach Export</h2>
+            <div className="text-xs text-text-tertiary">CSV includes athleteName and athleteId on exercise rows</div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm text-text-secondary">Date Range</label>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { key: 'last7days' as ExportDateRangePreset, label: 'Last 7 days' },
+                { key: 'last30days' as ExportDateRangePreset, label: 'Last 30 days' },
+                { key: 'thisMonth' as ExportDateRangePreset, label: 'This month' },
+                { key: 'lastMonth' as ExportDateRangePreset, label: 'Last month' },
+                { key: 'allTime' as ExportDateRangePreset, label: 'All time' }
+              ].map(({ key, label }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => handleExportPresetChange(key)}
+                  className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                    exportDateRange.preset === key
+                      ? 'bg-accent-primary text-white'
+                      : 'bg-bg-tertiary text-text-secondary hover:bg-bg-primary'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm text-text-secondary mb-1">Start Date</label>
+              <input
+                type="date"
+                value={formatDateForInput(exportDateRange.startDate)}
+                onChange={(event) => handleCustomExportDateChange('startDate', event.target.value)}
+                className="w-full bg-bg-tertiary text-text-primary px-3 py-2 rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-accent-primary"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-text-secondary mb-1">End Date</label>
+              <input
+                type="date"
+                value={formatDateForInput(exportDateRange.endDate)}
+                onChange={(event) => handleCustomExportDateChange('endDate', event.target.value)}
+                className="w-full bg-bg-tertiary text-text-primary px-3 py-2 rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-accent-primary"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={handleExportAthlete}
+              disabled={!athleteId || isExportingAthlete || isExportingAllAthletes}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-accent-primary hover:bg-accent-hover text-text-inverse rounded-lg text-sm font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <DownloadIcon className="h-4 w-4" />
+              {isExportingAthlete ? 'Exporting athlete...' : 'Export this athlete CSV'}
+            </button>
+            <button
+              type="button"
+              onClick={handleExportAllAthletes}
+              disabled={isExportingAllAthletes || isExportingAthlete}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-bg-tertiary hover:bg-bg-primary text-text-primary rounded-lg text-sm font-medium border border-border transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <DownloadIcon className="h-4 w-4" />
+              {isExportingAllAthletes ? 'Exporting all athletes...' : 'Export all athletes CSV'}
+            </button>
+          </div>
+
+          <p className="text-xs text-text-tertiary">
+            Note: rows with rowType=session indicate sessions without logged exercises.
+          </p>
         </div>
 
         {/* Assigned Programs Section */}
