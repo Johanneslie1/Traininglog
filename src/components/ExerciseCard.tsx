@@ -4,7 +4,6 @@ import { UnifiedExerciseData } from '../utils/unifiedExerciseUtils';
 import { ActivityType } from '../types/activityTypes';
 import { useSupersets } from '../context/SupersetContext';
 import { getActivityTypeInfo } from './ActivityExerciseCard';
-import { OneRepMaxPrediction } from '@/utils/oneRepMax';
 import {
   formatDurationSeconds,
   normalizeDistanceMeters,
@@ -13,7 +12,6 @@ import {
 
 interface ExerciseCardProps {
   exercise: UnifiedExerciseData;
-  oneRepMaxPrediction?: OneRepMaxPrediction;
   onEdit?: () => void;
   onDelete?: () => void;
   showActions?: boolean;
@@ -47,7 +45,6 @@ const hasDisplayValue = (value: any): boolean => {
 
 const ExerciseCard: React.FC<ExerciseCardProps> = ({
   exercise,
-  oneRepMaxPrediction,
   onEdit,
   onDelete,
   showActions = true,
@@ -379,21 +376,6 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
                 <span className="text-text-primary">{calculateTotalVolume()}kg</span>
               </div>
 
-              {oneRepMaxPrediction && (
-                <>
-                  <div className="flex items-center justify-between">
-                    <span className="text-text-tertiary">Predicted 1RM</span>
-                    <span className="text-text-primary">{oneRepMaxPrediction.oneRepMax.toFixed(1)}kg</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-text-tertiary">Best Set</span>
-                    <span className="text-text-primary">
-                      {(oneRepMaxPrediction.bestSet.weight || 0)}kg × {(oneRepMaxPrediction.bestSet.reps || 0)}
-                    </span>
-                  </div>
-                </>
-              )}
-              
               {/* Check for performance-relevant fields in resistance sets */}
               {(() => {
                 const hasValue = (value: any): boolean => {

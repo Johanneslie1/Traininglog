@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Program } from '@/types/program';
 import { getAuth } from 'firebase/auth';
 import { usePersistedFormState } from '@/hooks/usePersistedState';
+import AppOverlay from '@/components/ui/AppOverlay';
 
 interface CreateNewProgramProps {
   onClose: () => void;
@@ -81,8 +82,13 @@ const CreateNewProgram: React.FC<CreateNewProgramProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-bg-primary bg-opacity-70 z-50 flex items-center justify-center">
-      <div className="bg-bg-secondary rounded-xl w-full max-w-md mx-4 shadow-2xl">
+    <AppOverlay
+      isOpen={true}
+      onClose={onClose}
+      className="z-50 flex items-center justify-center p-4"
+      ariaLabel="Create new program"
+    >
+      <div className="bg-bg-secondary rounded-xl w-full max-w-md shadow-2xl border border-border" onMouseDown={(event) => event.stopPropagation()}>
         {/* Header */}
         <div className="p-6 border-b border-border">
           <div className="flex items-center justify-between">
@@ -99,7 +105,7 @@ const CreateNewProgram: React.FC<CreateNewProgramProps> = ({
         {/* Content */}
         <div className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-text-secondary mb-2">
               Program Name *
             </label>
             <input
@@ -107,20 +113,20 @@ const CreateNewProgram: React.FC<CreateNewProgramProps> = ({
               placeholder="e.g., Push/Pull/Legs, Upper/Lower Split"
               value={programName}
               onChange={(e) => setProgramName(e.target.value)}
-              className="w-full px-4 py-3 bg-bg-secondary text-text-primary rounded-lg border border-border focus:border-accent-primary focus:outline-none"
+              className="w-full px-4 py-3 bg-bg-tertiary text-text-primary rounded-lg border border-border focus:border-accent-primary focus:outline-none"
               autoFocus
             />
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-text-secondary mb-2">
               Description (Optional)
             </label>
             <textarea
               placeholder="Describe your program goals, frequency, and notes..."
               value={programDescription}
               onChange={(e) => setProgramDescription(e.target.value)}
-              className="w-full px-4 py-3 bg-bg-secondary text-text-primary rounded-lg border border-border focus:border-accent-primary focus:outline-none resize-none"
+              className="w-full px-4 py-3 bg-bg-tertiary text-text-primary rounded-lg border border-border focus:border-accent-primary focus:outline-none resize-none"
               rows={4}
             />
           </div>
@@ -138,13 +144,13 @@ const CreateNewProgram: React.FC<CreateNewProgramProps> = ({
           <button 
             onClick={handleSaveProgram}
             disabled={!programName.trim() || isSubmitting}
-            className="px-6 py-3 bg-accent-primary hover:bg-accent-secondary text-text-primary rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-3 bg-accent-primary hover:bg-accent-hover text-text-inverse rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? 'Creating...' : 'Create Program'}
           </button>
         </div>
       </div>
-    </div>
+    </AppOverlay>
   );
 };
 

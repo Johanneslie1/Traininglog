@@ -4,9 +4,9 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { useDate } from '@/context/DateContext';
 import SideMenu from '../SideMenu';
-import Settings from '../Settings';
 import WeeklyCalendarHeader from '../WeeklyCalendarHeader';
 import Calendar from '../Calendar';
+import AppOverlay from '@/components/ui/AppOverlay';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -14,7 +14,6 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [showMenu, setShowMenu] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
   const { selectedDate, setSelectedDate } = useDate();
   const [showMonthlyCalendar, setShowMonthlyCalendar] = useState(false);
   const location = useLocation();
@@ -45,7 +44,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className={`min-h-screen flex flex-col ${
+    <div className={`min-h-[100dvh] flex flex-col ${
       isDarkBackground ? 'bg-bg-primary' : 'bg-bg-secondary'
     }`}>
       {/* Weekly Calendar Header - Only show on specific routes */}
@@ -59,13 +58,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       )}
 
       {/* Main Content */}
-      <main className="flex-1 relative">
+      <main className="flex-1 relative pb-app-content">
         {isProgramRoute ? (
           // Program routes handle their own layout (full-screen)
           children
         ) : (
           // Regular routes use container
-          <div className="container mx-auto px-4 py-6 pb-20">
+          <div className="container mx-auto px-4 py-6">
             {children}
           </div>
         )}
@@ -77,25 +76,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           isOpen={showMenu}
           onClose={() => setShowMenu(false)}
           onNavigateToday={() => handleNavigate('/')}
-          onOpenSettings={() => {
-            setShowMenu(false);
-            setShowSettings(true);
-          }}
-        />
-      )}
-
-      {/* Settings Modal - Rendered at layout level, independent of SideMenu */}
-      {isAuthenticated && (
-        <Settings
-          isOpen={showSettings}
-          onClose={() => setShowSettings(false)}
+          onOpenProfile={() => handleNavigate('/profile')}
         />
       )}
 
       {/* Monthly Calendar Modal */}
       {showMonthlyCalendar && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="relative max-w-2xl w-full">
+        <AppOverlay
+          isOpen={showMonthlyCalendar}
+          onClose={() => setShowMonthlyCalendar(false)}
+          className="z-[70] flex items-center justify-center p-4"
+          ariaLabel="Monthly calendar"
+        >
+          <div className="relative max-w-2xl w-full" onMouseDown={(event) => event.stopPropagation()}>
             <button
               onClick={() => setShowMonthlyCalendar(false)}
               className="absolute -top-4 -right-4 z-10 p-2 bg-bg-secondary hover:bg-bg-tertiary rounded-full shadow-lg transition-colors"
@@ -113,7 +106,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               }}
             />
           </div>
-        </div>
+        </AppOverlay>
       )}
     </div>
   );

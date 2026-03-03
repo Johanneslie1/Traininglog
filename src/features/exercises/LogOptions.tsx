@@ -30,6 +30,7 @@ import { ExercisePrescriptionAssistantData } from '@/types/exercise';
 import { resolveActivityTypeFromExerciseLike } from '@/utils/activityTypeResolver';
 import { useSupersets } from '@/context/SupersetContext';
 import { SupersetGroup } from '@/types/session';
+import AppOverlay from '@/components/ui/AppOverlay';
 
 interface LogOptionsProps {
   onClose: () => void;
@@ -653,7 +654,12 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
   }
 
   return (
-    <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex flex-col z-50">
+    <AppOverlay
+      isOpen={true}
+      onClose={onClose}
+      className="z-50 flex flex-col bg-black/90"
+      ariaLabel={editingExercise ? 'Edit exercise' : 'Add exercise'}
+    >
       {/* Header - Fixed at top */}
       <header className="sticky top-0 flex items-center justify-between p-4 bg-bg-secondary border-b border-border">
         <h2 className="text-xl font-bold text-text-primary">
@@ -785,7 +791,7 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
           searchQuery=""
         />
       )}
-    </div>
+    </AppOverlay>
   );
 };
 

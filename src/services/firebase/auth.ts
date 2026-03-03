@@ -45,6 +45,11 @@ export interface LoginData {
   password: string;
 }
 
+export interface UpdateProfileData {
+  firstName: string;
+  lastName: string;
+}
+
 // Helper function to convert Timestamp to Date
 const convertTimestamps = (data: any): User => {
   return {
@@ -187,5 +192,21 @@ export const updateUserRole = async (userId: string, role: 'athlete' | 'coach'):
   } catch (error) {
     logger.error('Error updating user role:', error);
     throw new Error('Failed to update user role');
+  }
+};
+
+export const updateUserProfile = async (userId: string, data: UpdateProfileData): Promise<void> => {
+  try {
+    const userRef = doc(db, 'users', userId);
+    await setDoc(userRef, {
+      firstName: data.firstName,
+      lastName: data.lastName,
+      updatedAt: Timestamp.now()
+    }, { merge: true });
+
+    logger.info('User profile updated successfully:', { userId });
+  } catch (error) {
+    logger.error('Error updating user profile:', error);
+    throw new Error('Failed to update profile');
   }
 };

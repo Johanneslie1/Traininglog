@@ -11,6 +11,7 @@ import { usePrograms } from '@/context/ProgramsContext';
 import UniversalExercisePicker from '@/components/activities/UniversalExercisePicker';
 import { getAllExercisesLocal } from '@/utils/allExercises';
 import { enrichAll, collectAllFacets, applyAllFilters } from '@/utils/allExercisesFilters';
+import AppOverlay from '@/components/ui/AppOverlay';
 
 const mapActivityTypeToExerciseType = (activityType: ActivityType): Exercise['type'] => {
   switch (activityType) {
@@ -159,21 +160,31 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
   // Render loading state
   if (isLoading) {
     return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[120] flex items-center justify-center">
+      <AppOverlay
+        isOpen={true}
+        onClose={onClose}
+        className="z-[120] flex items-center justify-center"
+        ariaLabel="Loading programs"
+      >
         <div className="bg-bg-secondary rounded-lg shadow-xl p-6 max-w-lg w-full mx-4">
           <div className="flex flex-col items-center space-y-4">
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
             <p className="text-text-primary">Loading programs...</p>
           </div>
         </div>
-      </div>
+      </AppOverlay>
     );
   }
 
   // Render error state
   if (error) {
     return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[120] flex items-center justify-center">
+      <AppOverlay
+        isOpen={true}
+        onClose={onClose}
+        className="z-[120] flex items-center justify-center"
+        ariaLabel="Program loading error"
+      >
         <div className="bg-bg-secondary rounded-lg shadow-xl p-6 max-w-lg w-full mx-4">
           <div className="flex flex-col items-center space-y-4">
             <div className="text-red-500 mb-4">
@@ -190,14 +201,19 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
             </button>
           </div>
         </div>
-      </div>
+      </AppOverlay>
     );
   }
 
   // Render no programs state
   if (programs.length === 0) {
     return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[120] flex items-center justify-center">
+      <AppOverlay
+        isOpen={true}
+        onClose={onClose}
+        className="z-[120] flex items-center justify-center"
+        ariaLabel="No programs"
+      >
         <div className="bg-bg-secondary rounded-lg shadow-xl p-6 max-w-lg w-full mx-4">
           <div className="flex flex-col items-center space-y-4">
             <div className="text-text-primary mb-4">
@@ -214,7 +230,7 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
             </button>
           </div>
         </div>
-      </div>
+      </AppOverlay>
     );
   }
 
@@ -251,8 +267,13 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
       onClose(); 
     }
     return (
-      <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-[120]">
-        <div className="bg-bg-secondary rounded-xl w-full max-w-5xl max-h-[90vh] flex flex-col relative">
+      <AppOverlay
+        isOpen={true}
+        onClose={onClose}
+        className="z-[120] flex items-center justify-center"
+        ariaLabel="Exercise library picker"
+      >
+        <div className="bg-bg-secondary rounded-xl w-full max-w-5xl max-h-[90vh] flex flex-col relative" onMouseDown={(event) => event.stopPropagation()}>
           <div className="absolute top-4 left-4 flex gap-2">
             <button onClick={() => setStep('programs')} className="px-3 py-1 rounded-md bg-bg-tertiary text-text-secondary hover:text-text-primary hover:bg-bg-tertiary text-sm">← Back</button>
           </div>
@@ -276,7 +297,7 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
                   <div className="flex flex-wrap gap-1">
                     <span className="px-2 py-0.5 bg-purple-600 text-text-primary text-[10px] rounded">{ex.activityType}</span>
                     {Array.isArray(ex.tags) && ex.tags.slice(0,3).map((t: string) => (
-                      <span key={t} className="px-2 py-0.5 bg-bg-tertiary text-gray-200 text-[10px] rounded">{t}</span>
+                      <span key={t} className="px-2 py-0.5 bg-bg-tertiary text-text-secondary text-[10px] rounded">{t}</span>
                     ))}
                   </div>
                   {active && (
@@ -286,12 +307,12 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
               );
             }}
           />
-          <div className="sticky bottom-0 bg-bg-secondary border-t border-gray-700 p-4 flex justify-between items-center">
+          <div className="sticky bottom-0 bg-bg-secondary border-t border-border p-4 flex justify-between items-center">
             <p className="text-xs text-text-tertiary">
               Selected: <span className="text-yellow-400 font-semibold">{selectedCount}</span>
             </p>
             <div className="flex gap-2">
-              <button onClick={() => setSelectedMap({})} className="px-3 py-2 text-xs font-medium bg-bg-tertiary border border-gray-600 rounded-md text-text-secondary hover:text-text-primary">
+              <button onClick={() => setSelectedMap({})} className="px-3 py-2 text-xs font-medium bg-bg-tertiary border border-border rounded-md text-text-secondary hover:text-text-primary">
                 Clear
               </button>
               <button
@@ -304,18 +325,23 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
             </div>
           </div>
         </div>
-      </div>
+      </AppOverlay>
     );
   }
 
   return (
-    <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-start md:items-center justify-center z-[120] overflow-y-auto overscroll-contain">
-      <div className="bg-bg-secondary rounded-xl w-full max-w-4xl my-auto flex flex-col relative min-h-0 max-h-[100dvh]">
+    <AppOverlay
+      isOpen={true}
+      onClose={onClose}
+      className="z-[120] flex items-start md:items-center justify-center overflow-y-auto overscroll-contain"
+      ariaLabel="Program exercise picker"
+    >
+      <div className="bg-bg-secondary rounded-xl w-full max-w-4xl my-auto flex flex-col relative min-h-0 max-h-[100dvh]" onMouseDown={(event) => event.stopPropagation()}>
         {/* Header */}
         <div className="sticky top-0 z-10 bg-bg-secondary p-4 md:p-6 border-b border-border">
           <div className="flex items-center gap-4">
             <h2 className="text-xl font-bold text-text-primary">{step === 'programs' ? 'Select Program' : selectedProgram?.name}</h2>
-            <button onClick={() => setStep('library')} className="px-3 py-1.5 rounded-md bg-bg-tertiary text-text-secondary hover:text-text-primary border border-gray-600 hover:border-yellow-500 text-xs">All Exercises</button>
+            <button onClick={() => setStep('library')} className="px-3 py-1.5 rounded-md bg-bg-tertiary text-text-secondary hover:text-text-primary border border-border hover:border-accent-primary text-xs">All Exercises</button>
           </div>
         </div>
 
@@ -460,7 +486,7 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
           )}
         </div>
       </div>
-    </div>
+    </AppOverlay>
   );
 };
 

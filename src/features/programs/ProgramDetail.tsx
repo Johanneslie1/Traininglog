@@ -13,7 +13,6 @@ import { auth } from '@/services/firebase/config';
 import { signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import SideMenu from '@/components/SideMenu';
-import Settings from '@/components/Settings';
 
 interface Props {
   program: Program;
@@ -33,7 +32,6 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
   const [tempName, setTempName] = useState(program.name);
   const [tempDescription, setTempDescription] = useState(program.description || '');
   const [duplicatingSessionId, setDuplicatingSessionId] = useState<string | null>(null);
-  const [showSettings, setShowSettings] = useState(false);
   const [showSideMenu, setShowSideMenu] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [sharingSession, setSharingSession] = useState<ProgramSession | null>(null);
@@ -574,16 +572,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
         isOpen={showSideMenu}
         onClose={() => setShowSideMenu(false)}
         onNavigateToday={() => navigate('/')}
-        onOpenSettings={() => {
-          setShowSideMenu(false);
-          setShowSettings(true);
-        }}
-      />
-
-      {/* Settings Modal */}
-      <Settings
-        isOpen={showSettings}
-        onClose={() => setShowSettings(false)}
+        onOpenProfile={() => navigate('/profile')}
       />
 
       {/* Share Program Dialog */}

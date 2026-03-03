@@ -11,6 +11,8 @@ import { Program } from '@/types/program';
 const Login = lazy(() => import('@/features/auth/Login'));
 const Register = lazy(() => import('@/features/auth/Register'));
 const ExerciseLog = lazy(() => import('@/features/exercises/ExerciseLog'));
+const ProfilePage = lazy(() => import('@/features/profile/ProfilePage'));
+const SettingsPage = lazy(() => import('@/features/settings/SettingsPage'));
 const ProgramList = lazy(() => import('@/features/programs/ProgramList'));
 const ProgramDetail = lazy(() => import('@/features/programs/ProgramDetail'));
 const AthleteTeamsHub = lazy(() => import('@/features/teams/AthleteTeamsHub'));
@@ -28,7 +30,7 @@ const ProgramDetailWrapper: React.FC = () => {
   const { programs, updateProgram } = usePrograms();
   const navigate = useNavigate();
   const program = programs.find((p: Program) => p.id === id);
-  if (!program) return <div className="text-white p-4">Program not found</div>;
+  if (!program) return <div className="text-text-primary p-4">Program not found</div>;
   return <ProgramDetail program={program} onBack={() => navigate('/programs')} onUpdate={updated => updateProgram(program.id, updated)} />;
 };
 
@@ -40,7 +42,7 @@ const ProgramSelectionWrapper: React.FC = () => {
   const state = location.state as { onSelect?: (exercises: { exercise: Exercise; sets: ExerciseSet[] }[]) => void } | null;
 
   if (!programs.length) {
-    return <div className="text-white p-4">No programs found</div>;
+    return <div className="text-text-primary p-4">No programs found</div>;
   }
 
   return (
@@ -97,9 +99,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-black">
+      <div className="flex items-center justify-center min-h-[100dvh] bg-bg-primary text-text-primary">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
-        <div className="ml-3 text-white">Loading authentication...</div>
+        <div className="ml-3 text-text-primary">Loading authentication...</div>
       </div>
     );
   }
@@ -122,9 +124,9 @@ const AppRoutes: React.FC = () => {
   // Remove frequent rendering log
   return (
     <Suspense fallback={
-      <div className="flex items-center justify-center min-h-screen bg-black">
+      <div className="flex items-center justify-center min-h-[100dvh] bg-bg-primary text-text-primary">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
-        <div className="ml-3 text-white">Loading...</div>
+        <div className="ml-3 text-text-primary">Loading...</div>
       </div>
     }>
       <Routes>
@@ -159,6 +161,22 @@ const AppRoutes: React.FC = () => {
           element={
             <ProtectedRoute>
               <ProgramList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <SettingsPage />
             </ProtectedRoute>
           }
         />

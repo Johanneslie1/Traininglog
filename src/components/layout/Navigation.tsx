@@ -79,7 +79,7 @@ const Navigation: React.FC = () => {
 
   return (
     <>
-      <nav className="fixed bottom-0 inset-x-0 z-40 bg-bg-primary border-t border-border backdrop-blur-sm bg-opacity-90">
+      <nav className="fixed bottom-0 inset-x-0 z-40 bg-bg-primary border-t border-border backdrop-blur-sm bg-opacity-90 pb-safe">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-around h-16">
             {menuItems.map((item) => {
@@ -118,7 +118,7 @@ const Navigation: React.FC = () => {
             
             <button
               onClick={handleCreateExercise}
-              className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-white/5 text-white"
+              className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-bg-tertiary text-text-primary"
             >
               <svg className="w-6 h-6 mr-3" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 102 0v-5h5a1 1 0 100-2h-5V4a1 1 0 00-1-1z" clipRule="evenodd" />
@@ -128,7 +128,7 @@ const Navigation: React.FC = () => {
 
             <button
               onClick={() => handleNavigate('/profile')}
-              className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-white/5 text-white"
+              className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-bg-tertiary text-text-primary"
             >
               <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />

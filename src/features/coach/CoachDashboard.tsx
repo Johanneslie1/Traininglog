@@ -85,26 +85,26 @@ const CoachDashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-black">
+      <div className="flex items-center justify-center min-h-[100dvh] bg-bg-primary">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
-        <div className="ml-3 text-white">Loading dashboard...</div>
+        <div className="ml-3 text-text-primary">Loading dashboard...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black text-white p-4">
+    <div className="min-h-[100dvh] bg-bg-primary text-text-primary p-4 pb-app-content">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-4xl font-bold mb-2">Coach Hub</h1>
-          <p className="text-gray-400">
+          <p className="text-text-tertiary">
             Overview, teams, and athlete performance in one place
           </p>
         </div>
 
         {/* Tabs */}
-        <div className="mb-8 border-b border-gray-800">
+        <div className="mb-8 border-b border-border">
           <nav className="flex gap-1 -mb-px overflow-x-auto">
             {tabs.map((tab) => {
               const isActive = activeTab === tab.id;
@@ -114,8 +114,8 @@ const CoachDashboard: React.FC = () => {
                   onClick={() => handleTabChange(tab.id)}
                   className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                     isActive
-                      ? 'border-primary-500 text-primary-400'
-                      : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-700'
+                      ? 'border-accent-primary text-accent-primary'
+                      : 'border-transparent text-text-tertiary hover:text-text-secondary hover:border-border-hover'
                   }`}
                 >
                   {tab.label}
@@ -166,22 +166,22 @@ const CoachDashboard: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
               <button
                 onClick={() => handleTabChange('teams')}
-                className="bg-gray-900 border border-gray-800 hover:border-primary-600 rounded-lg p-6 text-left transition-all group"
+                className="bg-bg-secondary border border-border hover:border-accent-primary rounded-lg p-6 text-left transition-all group"
               >
                 <UsersIcon className="h-8 w-8 text-primary-500 mb-3 group-hover:scale-110 transition-transform" />
                 <h3 className="text-xl font-bold mb-1">Manage Teams</h3>
-                <p className="text-gray-400 text-sm">
+                <p className="text-text-tertiary text-sm">
                   Create teams, manage members, and view invite codes
                 </p>
               </button>
 
               <button
                 onClick={() => handleTabChange('athletes')}
-                className="bg-gray-900 border border-gray-800 hover:border-primary-600 rounded-lg p-6 text-left transition-all group"
+                className="bg-bg-secondary border border-border hover:border-accent-primary rounded-lg p-6 text-left transition-all group"
               >
                 <ChartBarIcon className="h-8 w-8 text-primary-500 mb-3 group-hover:scale-110 transition-transform" />
                 <h3 className="text-xl font-bold mb-1">Athlete Activity</h3>
-                <p className="text-gray-400 text-sm">
+                <p className="text-text-tertiary text-sm">
                   View athlete status and recent workload
                 </p>
               </button>
@@ -197,7 +197,7 @@ const CoachDashboard: React.FC = () => {
           <div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-2xl font-bold">My Athletes</h2>
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-text-tertiary">
                 Team-linked athlete visibility
               </div>
             </div>

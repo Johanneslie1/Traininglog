@@ -9,6 +9,7 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/services/firebase/config';
 import { useAuth } from '@/hooks/useAuth';
 import { SearchIcon, XIcon } from '@heroicons/react/outline';
+import AppOverlay from '@/components/ui/AppOverlay';
 
 interface ExerciseDatabasePickerProps {
   onClose: () => void;
@@ -192,15 +193,20 @@ const ExerciseDatabasePicker: React.FC<ExerciseDatabasePickerProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-[120]">
-      <div className="bg-[#23272F] rounded-lg w-full max-w-4xl h-5/6 flex flex-col shadow-xl">
+    <AppOverlay
+      isOpen={true}
+      onClose={onClose}
+      className="z-[120] flex items-center justify-center p-4"
+      ariaLabel="Exercise database"
+    >
+      <div className="bg-bg-secondary text-text-primary rounded-lg w-full max-w-4xl h-5/6 flex flex-col shadow-xl border border-border" onMouseDown={(event) => event.stopPropagation()}>
         {/* Header */}
-        <div className="p-6 border-b border-white/10">
+        <div className="p-6 border-b border-border">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold text-white">Exercise Database</h2>
+            <h2 className="text-2xl font-bold text-text-primary">Exercise Database</h2>
             <button 
               onClick={onClose}
-              className="text-gray-400 hover:text-white text-2xl"
+              className="text-text-tertiary hover:text-text-primary text-2xl"
             >
               <XIcon className="w-6 h-6" />
             </button>
@@ -208,13 +214,13 @@ const ExerciseDatabasePicker: React.FC<ExerciseDatabasePickerProps> = ({
 
           {/* Search Bar */}
           <div className="relative mb-4">
-            <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-tertiary w-5 h-5" />
             <input
               type="text"
               placeholder="Search exercises..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-[#181A20] text-white rounded-lg border border-white/10 focus:border-blue-500 focus:outline-none"
+              className="w-full pl-10 pr-4 py-2 bg-bg-tertiary text-text-primary rounded-lg border border-border focus:border-accent-primary focus:outline-none"
             />
           </div>
 
@@ -226,8 +232,8 @@ const ExerciseDatabasePicker: React.FC<ExerciseDatabasePickerProps> = ({
                 onClick={() => setSelectedCategory(category.id)}
                 className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
                   selectedCategory === category.id
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-[#181A20] text-gray-300 hover:bg-gray-600'
+                    ? 'bg-accent-primary text-text-inverse'
+                    : 'bg-bg-tertiary text-text-secondary hover:bg-bg-quaternary hover:text-text-primary'
                 }`}
               >
                 {category.icon} {category.name}
@@ -239,12 +245,12 @@ const ExerciseDatabasePicker: React.FC<ExerciseDatabasePickerProps> = ({
         {/* Exercise List */}
         <div className="flex-1 overflow-y-auto p-6">
           {isLoading ? (
-            <div className="text-center text-gray-400 py-12">
-              <div className="animate-spin w-8 h-8 border-2 border-blue-400/30 border-t-blue-400 rounded-full mx-auto mb-4"></div>
+            <div className="text-center text-text-tertiary py-12">
+              <div className="animate-spin w-8 h-8 border-2 border-accent-primary/30 border-t-accent-primary rounded-full mx-auto mb-4"></div>
               Loading exercises...
             </div>
           ) : filteredExercises.length === 0 ? (
-            <div className="text-center text-gray-400 py-12">
+            <div className="text-center text-text-tertiary py-12">
               <p className="text-lg mb-2">No exercises found</p>
               <p className="text-sm">Try adjusting your search or category filter</p>
             </div>
@@ -256,28 +262,28 @@ const ExerciseDatabasePicker: React.FC<ExerciseDatabasePickerProps> = ({
                   onClick={() => handleExerciseToggle(exercise)}
                   className={`p-4 rounded-lg border cursor-pointer transition-all ${
                     selectedExercises.has(exercise.id)
-                      ? 'bg-blue-600/20 border-blue-500'
-                      : 'bg-[#181A20] border-white/10 hover:border-white/20'
+                      ? 'bg-accent-primary/20 border-accent-primary'
+                      : 'bg-bg-tertiary border-border hover:border-border-hover'
                   }`}
                 >
                   <div className="flex items-start justify-between mb-2">
-                    <h3 className="text-white font-medium text-sm leading-tight">{exercise.name}</h3>
+                    <h3 className="text-text-primary font-medium text-sm leading-tight">{exercise.name}</h3>
                     {selectedExercises.has(exercise.id) && (
-                      <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 ml-2">
-                        <span className="text-white text-xs">✓</span>
+                      <div className="w-5 h-5 bg-accent-primary rounded-full flex items-center justify-center flex-shrink-0 ml-2">
+                        <span className="text-text-inverse text-xs">✓</span>
                       </div>
                     )}
                   </div>
                   
                   <div className="flex flex-wrap gap-1 mb-2">
                     {(exercise.primaryMuscles || []).slice(0, 2).map((muscle, idx) => (
-                      <span key={idx} className="px-2 py-1 text-xs bg-gray-700 text-gray-300 rounded">
+                      <span key={idx} className="px-2 py-1 text-xs bg-bg-quaternary text-text-secondary rounded">
                         {muscle}
                       </span>
                     ))}
                   </div>
                   
-                  <div className="text-xs text-gray-400">
+                  <div className="text-xs text-text-tertiary">
                     {exercise.type} • {exercise.category}
                   </div>
                 </div>
@@ -287,22 +293,22 @@ const ExerciseDatabasePicker: React.FC<ExerciseDatabasePickerProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-white/10">
+        <div className="p-6 border-t border-border">
           <div className="flex items-center justify-between">
-            <div className="text-gray-400 text-sm">
+            <div className="text-text-tertiary text-sm">
               {selectedExercises.size} exercise{selectedExercises.size !== 1 ? 's' : ''} selected
             </div>
             <div className="flex gap-3">
               <button 
                 onClick={onClose}
-                className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                className="px-6 py-2 bg-bg-tertiary text-text-primary rounded-lg hover:bg-bg-quaternary"
               >
                 Cancel
               </button>
               <button 
                 onClick={handleAddSelected}
                 disabled={selectedExercises.size === 0}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 py-2 bg-accent-primary text-text-inverse rounded-lg hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Add Selected ({selectedExercises.size})
               </button>
@@ -310,7 +316,7 @@ const ExerciseDatabasePicker: React.FC<ExerciseDatabasePickerProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </AppOverlay>
   );
 };
 

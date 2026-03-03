@@ -5,6 +5,7 @@ import { getExercisesByDateRange } from '@/services/firebase/queries';
 import { SearchIcon, XIcon, CheckIcon } from '@heroicons/react/solid';
 import { ActivityType } from '@/types/activityTypes';
 import { resolveActivityTypeFromExerciseLike } from '@/utils/activityTypeResolver';
+import AppOverlay from '@/components/ui/AppOverlay';
 
 interface Props {
   isOpen: boolean;
@@ -215,8 +216,13 @@ const CopyFromPreviousSessionDialog: React.FC<Props> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 md:p-0">
-      <div className="bg-bg-secondary rounded-lg w-full max-w-4xl h-[90vh] md:h-[80vh] flex flex-col text-text-primary border border-border relative">
+    <AppOverlay
+      isOpen={isOpen}
+      onClose={onClose}
+      className="z-50 flex items-center justify-center p-4 md:p-0"
+      ariaLabel="Copy from previous session"
+    >
+      <div className="bg-bg-secondary rounded-lg w-full max-w-4xl h-[90vh] md:h-[80vh] flex flex-col text-text-primary border border-border relative" onMouseDown={(event) => event.stopPropagation()}>
         {/* Sticky Header */}
         <div className="flex justify-between items-center p-6 border-b border-border sticky top-0 bg-bg-secondary z-10">
           <h2 className="text-2xl font-medium">Copy from Previous Session</h2>
@@ -365,7 +371,7 @@ const CopyFromPreviousSessionDialog: React.FC<Props> = ({
           </div>
         </div>
       </div>
-    </div>
+    </AppOverlay>
   );
 };
 

@@ -4,6 +4,7 @@
 
 import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 interface UseBackButtonOptions {
   onBack?: () => void;
@@ -16,6 +17,22 @@ export const useBackButton = (options: UseBackButtonOptions = {}) => {
   const { onBack, preventDefaultOnRoot = true } = options;
 
   useEffect(() => {
+    let lastBackPressAt = 0;
+
+    const requestExit = () => {
+      const now = Date.now();
+      const shouldExit = now - lastBackPressAt < 1800;
+
+      if (shouldExit) {
+        window.history.back();
+        return;
+      }
+
+      lastBackPressAt = now;
+      toast('Press back again to exit', { icon: '↩️' });
+      window.history.pushState(null, '', window.location.href);
+    };
+
     const handlePopState = () => {
       // If custom back handler is provided, use it
       if (onBack) {
@@ -28,15 +45,7 @@ export const useBackButton = (options: UseBackButtonOptions = {}) => {
       const isRoot = location.pathname === '/' || location.pathname === '';
       
       if (isRoot && preventDefaultOnRoot) {
-        // On root, we could exit the app or show an exit confirmation
-        const confirmExit = window.confirm('Do you want to exit the app?');
-        if (confirmExit) {
-          // In a PWA/mobile context, this might close the app
-          window.history.back();
-        } else {
-          // Push the current state again to prevent navigation
-          window.history.pushState(null, '', window.location.href);
-        }
+        requestExit();
       } else {
         // Navigate back normally
         navigate(-1);
@@ -65,6 +74,25 @@ export const useAndroidBackButton = (callback?: () => boolean | void) => {
 
   useEffect(() => {
     let isHandlingBack = false;
+    let lastBackPressAt = 0;
+
+    const requestExit = () => {
+      const now = Date.now();
+      const shouldExit = now - lastBackPressAt < 1800;
+
+      if (shouldExit) {
+        if ((window as any).navigator?.app) {
+          (window as any).navigator.app.exitApp();
+          return;
+        }
+        window.history.back();
+        return;
+      }
+
+      lastBackPressAt = now;
+      toast('Press back again to exit', { icon: '↩️' });
+      window.history.pushState(null, '', window.location.href);
+    };
 
     const handlePopState = () => {
       if (isHandlingBack) {
@@ -90,15 +118,8 @@ export const useAndroidBackButton = (callback?: () => boolean | void) => {
       const isRoot = location.pathname === '/' || location.pathname === '';
       
       if (isRoot) {
-        console.log('[useAndroidBackButton] On root, showing exit confirmation');
-        const confirmExit = window.confirm('Do you want to exit the app?');
-        if (!confirmExit) {
-          // Prevent navigation by pushing state back
-          window.history.pushState(null, '', window.location.href);
-        } else {
-          // Allow exit - don't prevent
-          console.log('[useAndroidBackButton] User confirmed exit');
-        }
+        console.log('[useAndroidBackButton] On root, requesting app exit confirmation');
+        requestExit();
       } else {
         // Navigate back in router (HashRouter will handle this)
         console.log('[useAndroidBackButton] Navigating back via router');
@@ -124,10 +145,7 @@ export const useAndroidBackButton = (callback?: () => boolean | void) => {
       }
 
       if (isRoot) {
-        const confirmExit = window.confirm('Do you want to exit the app?');
-        if (confirmExit && (window as any).navigator?.app) {
-          (window as any).navigator.app.exitApp();
-        }
+        requestExit();
       } else {
         navigate(-1);
       }

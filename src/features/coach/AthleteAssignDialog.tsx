@@ -6,6 +6,7 @@ import { usePrograms } from '@/context/ProgramsContext';
 import { Program } from '@/types/program';
 import { shareProgram } from '@/services/programService';
 import { shareSession } from '@/services/sessionService';
+import AppOverlay from '@/components/ui/AppOverlay';
 
 interface AthleteAssignDialogProps {
   athleteId: string;
@@ -87,23 +88,33 @@ const AthleteAssignDialog: React.FC<AthleteAssignDialogProps> = ({ athleteId, on
 
   if (isLoading) {
     return (
-      <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
-        <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-md text-center">
+      <AppOverlay
+        isOpen={true}
+        onClose={onClose}
+        className="z-50 flex items-center justify-center p-4"
+        ariaLabel="Loading programs"
+      >
+        <div className="bg-bg-secondary border border-border rounded-xl p-6 w-full max-w-md text-center" onMouseDown={(event) => event.stopPropagation()}>
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600 mx-auto"></div>
-          <div className="text-white mt-3">Loading programs...</div>
+          <div className="text-text-primary mt-3">Loading programs...</div>
         </div>
-      </div>
+      </AppOverlay>
     );
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
-      <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="px-5 py-4 border-b border-gray-800 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-white">Assign to Athlete</h2>
+    <AppOverlay
+      isOpen={true}
+      onClose={onClose}
+      className="z-50 flex items-center justify-center p-4"
+      ariaLabel="Assign to athlete"
+    >
+      <div className="bg-bg-secondary border border-border rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onMouseDown={(event) => event.stopPropagation()}>
+        <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+          <h2 className="text-lg font-bold text-text-primary">Assign to Athlete</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-200 transition-colors"
+            className="text-text-tertiary hover:text-text-primary transition-colors"
             aria-label="Close dialog"
           >
             ✕
@@ -112,15 +123,15 @@ const AthleteAssignDialog: React.FC<AthleteAssignDialogProps> = ({ athleteId, on
 
         <div className="p-5 space-y-4">
           <div>
-            <div className="text-sm font-medium text-gray-300 mb-2">Assign Type</div>
+            <div className="text-sm font-medium text-text-secondary mb-2">Assign Type</div>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => handleModeChange('program')}
                 className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
                   mode === 'program'
-                    ? 'border-primary-500 bg-primary-900/20 text-primary-300'
-                    : 'border-gray-700 bg-gray-800 text-gray-300 hover:border-gray-600'
+                    ? 'border-accent-primary bg-accent-primary/20 text-accent-300'
+                    : 'border-border bg-bg-tertiary text-text-secondary hover:border-border-hover'
                 }`}
               >
                 Program
@@ -130,8 +141,8 @@ const AthleteAssignDialog: React.FC<AthleteAssignDialogProps> = ({ athleteId, on
                 onClick={() => handleModeChange('session')}
                 className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
                   mode === 'session'
-                    ? 'border-primary-500 bg-primary-900/20 text-primary-300'
-                    : 'border-gray-700 bg-gray-800 text-gray-300 hover:border-gray-600'
+                    ? 'border-accent-primary bg-accent-primary/20 text-accent-300'
+                    : 'border-border bg-bg-tertiary text-text-secondary hover:border-border-hover'
                 }`}
               >
                 Session
@@ -140,11 +151,11 @@ const AthleteAssignDialog: React.FC<AthleteAssignDialogProps> = ({ athleteId, on
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Program</label>
+            <label className="block text-sm font-medium text-text-secondary mb-2">Program</label>
             <select
               value={selectedProgramId}
               onChange={(event) => handleProgramChange(event.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full bg-bg-tertiary border border-border rounded-lg px-3 py-2 text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-primary"
             >
               <option value="">Select a program</option>
               {coachPrograms.map((program) => (
@@ -157,12 +168,12 @@ const AthleteAssignDialog: React.FC<AthleteAssignDialogProps> = ({ athleteId, on
 
           {mode === 'session' && (
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Session</label>
+              <label className="block text-sm font-medium text-text-secondary mb-2">Session</label>
               <select
                 value={selectedSessionId}
                 onChange={(event) => setSelectedSessionId(event.target.value)}
                 disabled={!selectedProgram}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="w-full bg-bg-tertiary border border-border rounded-lg px-3 py-2 text-text-primary disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-accent-primary"
               >
                 <option value="">Select a session</option>
                 {(selectedProgram?.sessions || []).map((session) => (
@@ -175,29 +186,29 @@ const AthleteAssignDialog: React.FC<AthleteAssignDialogProps> = ({ athleteId, on
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Message (optional)</label>
+            <label className="block text-sm font-medium text-text-secondary mb-2">Message (optional)</label>
             <textarea
               rows={3}
               value={coachMessage}
               onChange={(event) => setCoachMessage(event.target.value.slice(0, 500))}
               placeholder="Add context or instructions for the athlete"
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full bg-bg-tertiary border border-border rounded-lg px-3 py-2 text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-accent-primary"
             />
-            <div className="mt-1 text-xs text-gray-500">{coachMessage.length}/500 characters</div>
+            <div className="mt-1 text-xs text-text-tertiary">{coachMessage.length}/500 characters</div>
           </div>
 
           {coachPrograms.length === 0 && (
-            <div className="text-sm text-yellow-400 bg-yellow-900/20 border border-yellow-700/40 rounded-lg p-3">
+            <div className="text-sm text-warning-text bg-warning-bg border border-warning-border rounded-lg p-3">
               No programs available. Create a program first.
             </div>
           )}
         </div>
 
-        <div className="px-5 py-4 border-t border-gray-800 flex items-center justify-end gap-3">
+        <div className="px-5 py-4 border-t border-border flex items-center justify-end gap-3">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-sm font-medium transition-colors"
+            className="px-4 py-2 bg-bg-tertiary hover:bg-bg-quaternary text-text-primary rounded-lg text-sm font-medium transition-colors"
           >
             Cancel
           </button>
@@ -205,13 +216,13 @@ const AthleteAssignDialog: React.FC<AthleteAssignDialogProps> = ({ athleteId, on
             type="button"
             onClick={handleAssign}
             disabled={submitting || coachPrograms.length === 0}
-            className="px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors"
+            className="px-4 py-2 bg-accent-primary hover:bg-accent-hover disabled:opacity-60 disabled:cursor-not-allowed text-text-inverse rounded-lg text-sm font-medium transition-colors"
           >
             {submitting ? 'Assigning...' : mode === 'program' ? 'Assign Program' : 'Assign Session'}
           </button>
         </div>
       </div>
-    </div>
+    </AppOverlay>
   );
 };
 

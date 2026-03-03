@@ -19,11 +19,9 @@ import { getExerciseLogsByDate, saveExerciseLog } from '../../utils/localStorage
 import {
   addExerciseLog,
   backfillExerciseLogSupersetMetadata,
-  getBestHistoricalOneRepMax,
   repairExerciseLogActivityTypes
 } from '@/services/firebase/exerciseLogs';
 import SideMenu from '../../components/SideMenu';
-import Settings from '../../components/Settings';
 import DraggableExerciseDisplay from '../../components/DraggableExerciseDisplay';
 import FloatingSupersetControls from '../../components/FloatingSupersetControls';
 import { getAllExercisesByDate, UnifiedExerciseData, deleteExercise } from '../../utils/unifiedExerciseUtils';
@@ -34,7 +32,6 @@ import { normalizeActivityType } from '@/types/activityLog';
 import { SharedSessionAssignment } from '@/types/program';
 import { generateExercisePrescriptionAssistant } from '@/services/exercisePrescriptionAssistantService';
 import toast from 'react-hot-toast';
-import { getExercisePerformanceKey, OneRepMaxPrediction } from '@/utils/oneRepMax';
 import { buildSupersetLabels } from '@/utils/supersetUtils';
 import { SupersetGroup } from '@/types/session';
 
@@ -101,11 +98,9 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   // Exercise data loading
   const [exercises, setExercises] = useState<UnifiedExerciseData[]>([]);
   const [loading, setLoading] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
   const [logOptionsWarmupMode, setLogOptionsWarmupMode] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<ExerciseData | null>(null);
   const [editingExercise, setEditingExercise] = useState<UnifiedExerciseData | null>(null);
-  const [oneRepMaxByExerciseKey, setOneRepMaxByExerciseKey] = useState<Record<string, OneRepMaxPrediction>>({});
 
   const getDateKey = useCallback((date: Date): string => {
     return normalizeDate(date).toISOString().split('T')[0];
@@ -127,13 +122,6 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
       console.warn('⚠️ Could not parse persisted superset state for date:', dateKey, error);
       return { supersets: [], exerciseOrder: [] };
     }
-  }, []);
-
-  const getPerformanceKey = useCallback((exercise: UnifiedExerciseData): string => {
-    return getExercisePerformanceKey({
-      exerciseName: exercise.exerciseName,
-      sharedSessionExerciseId: exercise.sharedSessionExerciseId
-    });
   }, []);
 
   const toSafeDate = useCallback((value: unknown): Date => {
@@ -644,82 +632,6 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   }, [selectedDate, selectedExercise, areDatesEqual, handleCloseSetLogger]);
 
   useEffect(() => {
-    let cancelled = false;
-
-    const loadOneRepMaxPredictions = async () => {
-      if (!user?.id) {
-        if (!cancelled) {
-          setOneRepMaxByExerciseKey({});
-        }
-        return;
-      }
-
-      const resistanceExercises = exercises.filter((exercise) =>
-        !exercise.activityType || exercise.activityType === ActivityType.RESISTANCE
-      );
-
-      const uniqueExercises = Array.from(
-        new Map(
-          resistanceExercises.map((exercise) => [
-            getPerformanceKey(exercise),
-            {
-              key: getPerformanceKey(exercise),
-              exerciseName: exercise.exerciseName,
-              sharedSessionExerciseId: exercise.sharedSessionExerciseId
-            }
-          ])
-        ).values()
-      );
-
-      if (uniqueExercises.length === 0) {
-        if (!cancelled) {
-          setOneRepMaxByExerciseKey({});
-        }
-        return;
-      }
-
-      const predictions = await Promise.all(
-        uniqueExercises.map(async (exerciseMeta) => {
-          const prediction = await getBestHistoricalOneRepMax({
-            userId: user.id,
-            exerciseName: exerciseMeta.exerciseName,
-            sharedSessionExerciseId: exerciseMeta.sharedSessionExerciseId
-          });
-
-          return {
-            key: exerciseMeta.key,
-            prediction
-          };
-        })
-      );
-
-      if (cancelled) {
-        return;
-      }
-
-      const nextMap: Record<string, OneRepMaxPrediction> = {};
-      predictions.forEach(({ key, prediction }) => {
-        if (prediction) {
-          nextMap[key] = prediction;
-        }
-      });
-
-      setOneRepMaxByExerciseKey(nextMap);
-    };
-
-    loadOneRepMaxPredictions().catch((error) => {
-      console.error('Error loading 1RM predictions:', error);
-      if (!cancelled) {
-        setOneRepMaxByExerciseKey({});
-      }
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [exercises, user?.id, getPerformanceKey]);
-
-  useEffect(() => {
     const sharedSessionAssignment = (location.state as { sharedSessionAssignment?: SharedSessionAssignment } | null)?.sharedSessionAssignment;
 
     if (!sharedSessionAssignment || !user?.id) {
@@ -857,9 +769,9 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   }, [location.state, location.pathname, navigate, loadExercises, selectedDate, user?.id, getDateKey, getImportedSharedSessionExerciseDocs, syncSharedAssignmentCompletion]);
 
   return (
-    <div className="relative min-h-screen bg-bg-primary">
+    <div className="relative min-h-[100dvh] bg-bg-primary">
       {/* Main Content */}
-      <main className="px-4 pb-24 pt-4">
+      <main className="px-4 pt-4 pb-app-content">
         <div className="relative flex flex-col h-full">
           <div className="flex-grow">
             {loading ? (
@@ -886,8 +798,6 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
                       onEditExercise={handleEditExercise}
                       onDeleteExercise={handleDeleteExercise}
                       onReorderExercises={handleWarmupReorder}
-                      oneRepMaxByExerciseKey={oneRepMaxByExerciseKey}
-                      getPerformanceKey={getPerformanceKey}
                       listId="warmup"
                       compactMode={true}
                     />
@@ -906,8 +816,6 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
                       onEditExercise={handleEditExercise}
                       onDeleteExercise={handleDeleteExercise}
                       onReorderExercises={handleMainSessionReorder}
-                      oneRepMaxByExerciseKey={oneRepMaxByExerciseKey}
-                      getPerformanceKey={getPerformanceKey}
                       listId="main"
                     />
                   </section>
@@ -941,37 +849,26 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
         isOpen={uiState.showMenu}
         onClose={() => updateUiState('showMenu', false)}
         onNavigateToday={() => setSelectedDate(new Date())}
-        onOpenSettings={() => {
-          updateUiState('showMenu', false);
-          setShowSettings(true);
-        }}
-      />
-
-      {/* Settings Modal */}
-      <Settings
-        isOpen={showSettings}
-        onClose={() => setShowSettings(false)}
+        onOpenProfile={() => navigate('/profile')}
       />
 
       {/* Log Options Modal */}
       {uiState.showLogOptions && (
-        <div className="fixed inset-0 bg-bg-primary/90 z-50">
-          <LogOptions 
-            onClose={() => {
-              updateUiState('showLogOptions', false);
-              setLogOptionsWarmupMode(false);
-              setEditingExercise(null); // Clear editing state when closing
-            }}
-            onExerciseAdded={() => {
-              loadExercises(selectedDate);
-              setLogOptionsWarmupMode(false);
-              setEditingExercise(null); // Clear editing state after saving
-            }}
-            selectedDate={selectedDate}
-            editingExercise={editingExercise} // Pass editing exercise
-            initialWarmupMode={logOptionsWarmupMode}
-          />
-        </div>
+        <LogOptions 
+          onClose={() => {
+            updateUiState('showLogOptions', false);
+            setLogOptionsWarmupMode(false);
+            setEditingExercise(null); // Clear editing state when closing
+          }}
+          onExerciseAdded={() => {
+            loadExercises(selectedDate);
+            setLogOptionsWarmupMode(false);
+            setEditingExercise(null); // Clear editing state after saving
+          }}
+          selectedDate={selectedDate}
+          editingExercise={editingExercise} // Pass editing exercise
+          initialWarmupMode={logOptionsWarmupMode}
+        />
       )}
 
       {/* Set Logger Modal */}

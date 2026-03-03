@@ -16,9 +16,9 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
   className = '',
 }) => {
   const positionStyles = {
-    'bottom-right': 'bottom-20 right-6',
-    'bottom-center': 'bottom-20 left-1/2 -translate-x-1/2',
-    'bottom-left': 'bottom-20 left-6',
+    'bottom-right': 'bottom-app-floating right-6',
+    'bottom-center': 'bottom-app-floating left-1/2 -translate-x-1/2',
+    'bottom-left': 'bottom-app-floating left-6',
   };
 
   return (

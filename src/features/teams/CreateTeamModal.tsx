@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { XIcon, UsersIcon } from '@heroicons/react/outline';
 import { createTeam } from '@/services/teamService';
 import toast from 'react-hot-toast';
+import AppOverlay from '@/components/ui/AppOverlay';
 
 interface CreateTeamModalProps {
   isOpen: boolean;
@@ -42,17 +43,22 @@ const CreateTeamModal: React.FC<CreateTeamModalProps> = ({ isOpen, onClose, onSu
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 rounded-lg max-w-md w-full shadow-2xl border border-gray-800">
+    <AppOverlay
+      isOpen={isOpen}
+      onClose={onClose}
+      className="z-50 flex items-center justify-center p-4"
+      ariaLabel="Create team"
+    >
+      <div className="bg-bg-secondary rounded-lg max-w-md w-full shadow-2xl border border-border" onMouseDown={(event) => event.stopPropagation()}>
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-800">
+        <div className="flex items-center justify-between p-6 border-b border-border">
           <div className="flex items-center gap-3">
             <UsersIcon className="h-6 w-6 text-primary-500" />
-            <h2 className="text-xl font-bold text-white">Create Team</h2>
+            <h2 className="text-xl font-bold text-text-primary">Create Team</h2>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors"
+            className="text-text-tertiary hover:text-text-primary transition-colors"
             aria-label="Close"
           >
             <XIcon className="h-6 w-6" />
@@ -63,7 +69,7 @@ const CreateTeamModal: React.FC<CreateTeamModalProps> = ({ isOpen, onClose, onSu
         <form onSubmit={handleSubmit} className="p-6">
           <div className="space-y-4">
             <div>
-              <label htmlFor="teamName" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="teamName" className="block text-sm font-medium text-text-secondary mb-2">
                 Team Name *
               </label>
               <input
@@ -71,7 +77,7 @@ const CreateTeamModal: React.FC<CreateTeamModalProps> = ({ isOpen, onClose, onSu
                 id="teamName"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full bg-bg-tertiary border border-border rounded-lg px-4 py-3 text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-accent-primary focus:border-transparent"
                 placeholder="e.g., Elite Training Squad"
                 maxLength={50}
                 required
@@ -79,7 +85,7 @@ const CreateTeamModal: React.FC<CreateTeamModalProps> = ({ isOpen, onClose, onSu
             </div>
 
             <div>
-              <label htmlFor="teamDescription" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="teamDescription" className="block text-sm font-medium text-text-secondary mb-2">
                 Description
               </label>
               <textarea
@@ -87,11 +93,11 @@ const CreateTeamModal: React.FC<CreateTeamModalProps> = ({ isOpen, onClose, onSu
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full bg-bg-tertiary border border-border rounded-lg px-4 py-3 text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-accent-primary focus:border-transparent"
                 placeholder="Brief description of your team..."
                 maxLength={200}
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-text-tertiary mt-1">
                 {description.length}/200 characters
               </p>
             </div>
@@ -102,18 +108,18 @@ const CreateTeamModal: React.FC<CreateTeamModalProps> = ({ isOpen, onClose, onSu
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
+              className="flex-1 px-4 py-2 bg-bg-tertiary hover:bg-bg-quaternary text-text-primary rounded-lg font-medium transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isCreating || !name.trim()}
-              className="flex-1 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              className="flex-1 px-4 py-2 bg-accent-primary hover:bg-accent-hover text-text-inverse rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
               {isCreating ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                  <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-text-inverse mr-2"></div>
                   Creating...
                 </>
               ) : (
@@ -123,7 +129,7 @@ const CreateTeamModal: React.FC<CreateTeamModalProps> = ({ isOpen, onClose, onSu
           </div>
         </form>
       </div>
-    </div>
+    </AppOverlay>
   );
 };
 

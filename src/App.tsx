@@ -116,7 +116,9 @@ const App: React.FC = () => {
         display: 'flex', 
         justifyContent: 'center', 
         alignItems: 'center', 
-        height: '100vh',
+        minHeight: '100dvh',
+        backgroundColor: 'var(--color-bg-primary)',
+        color: 'var(--color-text-primary)',
         fontSize: '1.2em' 
       }}>
         Initializing...
@@ -126,7 +128,7 @@ const App: React.FC = () => {
 
   return (
     <ErrorBoundary fallback={
-      <div className="flex flex-col items-center justify-center min-h-screen bg-bg-primary text-text-primary p-4">
+      <div className="flex flex-col items-center justify-center min-h-[100dvh] bg-bg-primary text-text-primary p-4">
         <h1 className="text-2xl font-bold mb-4">Something went wrong</h1>
         <p className="text-text-tertiary mb-4">Please refresh the page or try again later.</p>
         <button 

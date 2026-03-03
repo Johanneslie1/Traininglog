@@ -16,7 +16,6 @@ import { ExerciseSet } from '@/types/sets';
 import { Prescription } from '@/types/program';
 import { ExercisePrescriptionAssistantData } from '@/types/exercise';
 import { ActivityType } from '@/types/activityTypes';
-import { findBestOneRepMaxSet, OneRepMaxPrediction } from '@/utils/oneRepMax';
 import { resolveActivityTypeFromExerciseLike } from '@/utils/activityTypeResolver';
 import { SupersetGroup } from '@/types/session';
 import { buildSupersetLabels } from '@/utils/supersetUtils';
@@ -530,49 +529,3 @@ export const backfillExerciseLogSupersetMetadata = async (
   return updatedCount;
 };
 
-type BestOneRepMaxParams = {
-  userId: string;
-  exerciseName: string;
-  sharedSessionExerciseId?: string;
-};
-
-export const getBestHistoricalOneRepMax = async ({
-  userId,
-  exerciseName,
-  sharedSessionExerciseId,
-}: BestOneRepMaxParams): Promise<OneRepMaxPrediction | null> => {
-  if (!userId || !exerciseName) {
-    return null;
-  }
-
-  const exercisesRef = collection(db, 'users', userId, 'exercises');
-  const logsByNameQuery = query(exercisesRef, where('exerciseName', '==', exerciseName));
-  const logsByNameSnapshot = await getDocs(logsByNameQuery);
-
-  const sets: ExerciseSet[] = [];
-
-  logsByNameSnapshot.docs.forEach((docSnapshot) => {
-    const data = docSnapshot.data();
-
-    if (data.isWarmup === true) {
-      return;
-    }
-
-    if (data.activityType && data.activityType !== ActivityType.RESISTANCE) {
-      return;
-    }
-
-    if (
-      sharedSessionExerciseId &&
-      data.sharedSessionExerciseId &&
-      data.sharedSessionExerciseId !== sharedSessionExerciseId
-    ) {
-      return;
-    }
-
-    const logSets = Array.isArray(data.sets) ? (data.sets as ExerciseSet[]) : [];
-    sets.push(...logSets);
-  });
-
-  return findBestOneRepMaxSet(sets);
-};

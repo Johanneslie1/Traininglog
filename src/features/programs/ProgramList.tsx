@@ -9,7 +9,6 @@ import { Program } from '@/types/program';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { TrashIcon, PlusIcon, DuplicateIcon } from '@heroicons/react/outline';
 import SideMenu from '@/components/SideMenu';
-import Settings from '@/components/Settings';
 
 const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onSelect }) => {
   const navigate = useNavigate();
@@ -20,7 +19,6 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
   const [deletingProgramId, setDeletingProgramId] = useState<string | null>(null);
   const [duplicatingProgramId, setDuplicatingProgramId] = useState<string | null>(null);
   const [showSideMenu, setShowSideMenu] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
   const auth = getAuth();
 
   // No need for useEffect to refresh - ProgramsContext handles this automatically
@@ -169,7 +167,7 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
           <div className="flex items-center gap-2">
             <button
               onClick={() => navigate('/shared-programs')}
-              className="px-4 py-2.5 bg-gradient-to-r from-green-600 to-green-700 text-text-primary rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 flex items-center gap-2 font-medium shadow-lg"
+              className="px-4 py-2.5 bg-bg-tertiary text-text-primary rounded-xl hover:bg-bg-quaternary transition-all duration-200 flex items-center gap-2 font-medium shadow-lg"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
@@ -178,7 +176,7 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
             </button>
             <button
               onClick={() => setShowCreateNew(true)}
-              className="px-4 py-2.5 bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-text-primary rounded-xl hover:from-[#7C3AED] hover:to-[#6D28D9] transition-all duration-200 flex items-center gap-2 font-medium shadow-lg"
+              className="px-4 py-2.5 bg-accent-primary text-text-inverse rounded-xl hover:bg-accent-hover transition-all duration-200 flex items-center gap-2 font-medium shadow-lg"
             >
               <PlusIcon className="w-4 h-4" />
               Create Program
@@ -212,7 +210,7 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
           <p className="text-text-tertiary text-sm mb-8">Create your first training program to get started</p>
           <button
             onClick={() => setShowCreateNew(true)}
-            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-text-primary rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 font-medium shadow-lg"
+            className="px-6 py-3 bg-accent-primary text-text-inverse rounded-xl hover:bg-accent-hover transition-all duration-200 font-medium shadow-lg"
           >
             Create Program
           </button>
@@ -222,7 +220,7 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
           {programs.map((program: Program) => (
             <div
               key={program.id}
-              className="relative bg-bg-secondary rounded-2xl p-5 flex flex-col justify-between min-h-[140px] cursor-pointer overflow-hidden group border border-gray-800 hover:border-gray-700 transition-all duration-200 hover:shadow-xl"
+              className="relative bg-bg-secondary rounded-2xl p-5 flex flex-col justify-between min-h-[140px] cursor-pointer overflow-hidden group border border-border hover:border-border-hover transition-all duration-200 hover:shadow-xl"
               onClick={() => (onSelect ? onSelect(program.id) : navigate(`/programs/${program.id}`))}
             >
               <div className="absolute right-4 top-4 opacity-10 text-4xl pointer-events-none select-none">
@@ -283,7 +281,7 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
         </div>
       )}
       <button
-        className="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-500 text-text-primary rounded-full w-14 h-14 flex items-center justify-center text-3xl shadow-lg z-50"
+        className="fixed bottom-app-floating right-6 bg-accent-primary hover:bg-accent-hover text-text-inverse rounded-full w-14 h-14 flex items-center justify-center text-3xl shadow-lg z-50"
         onClick={() => setShowModal(true)}
         aria-label="Add Program"
       >
@@ -313,16 +311,7 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
         isOpen={showSideMenu}
         onClose={() => setShowSideMenu(false)}
         onNavigateToday={() => navigate('/')}
-        onOpenSettings={() => {
-          setShowSideMenu(false);
-          setShowSettings(true);
-        }}
-      />
-
-      {/* Settings Modal */}
-      <Settings
-        isOpen={showSettings}
-        onClose={() => setShowSettings(false)}
+        onOpenProfile={() => navigate('/profile')}
       />
     </div>
   );

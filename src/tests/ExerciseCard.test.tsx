@@ -132,7 +132,7 @@ describe('ExerciseCard', () => {
     expect(screen.getByText(/30 sec/)).toBeTruthy(); // duration (shown as seconds for non-endurance)
   });
 
-  it('shows predicted 1RM and best set when provided for resistance exercise', () => {
+  it('does not show 1RM metrics in resistance exercise details', () => {
     const resistanceExercise: UnifiedExerciseData = {
       id: 'test-4',
       exerciseName: 'Front Squat',
@@ -150,25 +150,14 @@ describe('ExerciseCard', () => {
       <ExerciseCard
         exercise={resistanceExercise}
         showActions={false}
-        oneRepMaxPrediction={{
-          oneRepMax: 102,
-          bestSet: {
-            weight: 90,
-            reps: 4,
-            difficulty: DifficultyCategory.NORMAL,
-          }
-        }}
       />
     );
 
-    expect(screen.queryByText('Predicted 1RM')).toBeNull();
-
     fireEvent.click(screen.getByLabelText('Toggle set details'));
 
-    expect(screen.getByText('Predicted 1RM')).toBeTruthy();
-    expect(screen.getByText('102.0kg')).toBeTruthy();
-    expect(screen.getByText('Best Set')).toBeTruthy();
-    expect(screen.getByText('90kg × 4')).toBeTruthy();
+    expect(screen.queryByText('Predicted 1RM')).toBeNull();
+    expect(screen.queryByText('Best Set')).toBeNull();
+    expect(screen.queryByText('102.0kg')).toBeNull();
   });
 
   it('shows warm-up badge in compact mode', () => {

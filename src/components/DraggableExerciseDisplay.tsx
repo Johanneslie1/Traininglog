@@ -12,7 +12,6 @@ import {
 import ExerciseCard from './ExerciseCard';
 import SupersetActionsButton from './SupersetActionsButton';
 import toast from 'react-hot-toast';
-import { OneRepMaxPrediction } from '@/utils/oneRepMax';
 import { buildSupersetDisplayTitle, buildSupersetLabels } from '@/utils/supersetUtils';
 
 // Haptic feedback utility
@@ -28,8 +27,6 @@ interface DraggableExerciseDisplayProps {
   onEditExercise: (exercise: UnifiedExerciseData) => void;
   onDeleteExercise: (exercise: UnifiedExerciseData) => void;
   onReorderExercises: (exercises: UnifiedExerciseData[]) => void;
-  oneRepMaxByExerciseKey?: Record<string, OneRepMaxPrediction>;
-  getPerformanceKey: (exercise: UnifiedExerciseData) => string;
   listId?: string;
   compactMode?: boolean;
 }
@@ -39,8 +36,6 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
   onEditExercise,
   onDeleteExercise,
   onReorderExercises,
-  oneRepMaxByExerciseKey = {},
-  getPerformanceKey,
   listId = 'main',
   compactMode = false
 }) => {
@@ -265,7 +260,7 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
     <>
       {/* Undo button - shows after reorder */}
       {canUndo && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 animate-fade-in">
+        <div className="fixed bottom-app-floating left-1/2 -translate-x-1/2 z-50 animate-fade-in">
           <button
             onClick={handleUndo}
             className="flex items-center gap-2 px-4 py-2 bg-bg-secondary border border-border text-text-primary rounded-full shadow-lg hover:bg-bg-tertiary transition-all"
@@ -356,7 +351,6 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
                                   <div className="transition-all duration-200 hover:bg-black/20 rounded-lg">
                                     <ExerciseCard
                                       exercise={exercise}
-                                      oneRepMaxPrediction={oneRepMaxByExerciseKey[getPerformanceKey(exercise)]}
                                       supersetLabel={exercise.id ? labelsByExerciseId[exercise.id]?.label : undefined}
                                       forceCompact={compactMode}
                                       onEdit={() => onEditExercise(exercise)}
@@ -375,7 +369,6 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
                           <div className="border-l-4 border-border rounded-lg shadow-sm mb-4">
                             <ExerciseCard
                               exercise={group.exercises[0]}
-                              oneRepMaxPrediction={oneRepMaxByExerciseKey[getPerformanceKey(group.exercises[0])]}
                               exerciseNumber={groupIndex + 1}
                               forceCompact={compactMode}
                               onEdit={() => onEditExercise(group.exercises[0])}

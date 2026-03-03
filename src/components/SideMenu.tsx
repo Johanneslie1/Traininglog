@@ -1,55 +1,26 @@
-import React, { useMemo, useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import React from 'react';
+import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { logoutUser } from '@/services/firebase/auth';
-import { logout } from '@/features/auth/authSlice';
 import { RootState } from '@/store/store';
 import { useIsCoach, useIsAthlete } from '@/hooks/useUserRole';
-import { estimateOneRepMaxEpley } from '@/utils/oneRepMax';
 
 interface SideMenuProps {
   isOpen: boolean;
   onClose: () => void;
   onNavigateToday: () => void;
-  onOpenSettings: () => void;
+  onOpenProfile: () => void;
 }
 
 const SideMenu: React.FC<SideMenuProps> = ({
   isOpen,
   onClose,
   onNavigateToday,
-  onOpenSettings
+  onOpenProfile
 }) => {
-  const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
-  const dispatch = useDispatch();
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const navigate = useNavigate();
   const isCoach = useIsCoach();
   const isAthlete = useIsAthlete();
-  const [showOneRmCalculator, setShowOneRmCalculator] = useState(false);
-  const [calculatorWeight, setCalculatorWeight] = useState<string>('');
-  const [calculatorReps, setCalculatorReps] = useState<string>('');
-
-  const estimatedOneRepMax = useMemo(() => {
-    const weight = Number(calculatorWeight);
-    const reps = Number(calculatorReps);
-
-    if (!Number.isFinite(weight) || !Number.isFinite(reps)) {
-      return 0;
-    }
-
-    return estimateOneRepMaxEpley(weight, reps);
-  }, [calculatorWeight, calculatorReps]);
-
-  const handleLogout = async () => {
-    try {
-      await logoutUser();
-      dispatch(logout());
-      onClose(); // Close the menu after logout
-      navigate('/');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
 
   if (!isOpen) return null;
 
@@ -144,100 +115,34 @@ const SideMenu: React.FC<SideMenuProps> = ({
             </div>
           )}
 
-          {/* Settings Section */}
-          <div className="pt-4 border-t border-border space-y-3 px-4">
-            <button
-              onClick={() => setShowOneRmCalculator((current) => !current)}
-              className="w-full flex items-center justify-between rounded-lg px-3 py-2 text-text-primary hover:bg-bg-tertiary transition-colors"
-              aria-label="Toggle 1RM Calculator"
-            >
-              <span className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">
-                1RM Calculator
-              </span>
-              <svg className={`w-4 h-4 text-text-secondary transition-transform ${showOneRmCalculator ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-
-            {showOneRmCalculator && (
-              <>
-                <div className="grid grid-cols-2 gap-2">
-                  <label className="text-xs text-text-secondary flex flex-col gap-1">
-                    Weight (kg)
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.5"
-                      value={calculatorWeight}
-                      onChange={(event) => setCalculatorWeight(event.target.value)}
-                      className="w-full rounded-md bg-bg-tertiary border border-border px-2 py-1.5 text-text-primary"
-                    />
-                  </label>
-                  <label className="text-xs text-text-secondary flex flex-col gap-1">
-                    Reps
-                    <input
-                      type="number"
-                      min="1"
-                      step="1"
-                      value={calculatorReps}
-                      onChange={(event) => setCalculatorReps(event.target.value)}
-                      className="w-full rounded-md bg-bg-tertiary border border-border px-2 py-1.5 text-text-primary"
-                    />
-                  </label>
-                </div>
-
-                <div className="rounded-md border border-border bg-bg-tertiary px-3 py-2">
-                  <div className="text-xs text-text-tertiary">Estimated 1RM</div>
-                  <div className="text-sm font-semibold text-text-primary">
-                    {estimatedOneRepMax > 0 ? `${estimatedOneRepMax.toFixed(1)} kg` : 'Enter weight and reps'}
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-
           <div className="pt-4 border-t border-[#3E4652] space-y-1">
             <button
-              onClick={onOpenSettings}
+              onClick={() => {
+                onClose();
+                navigate('/settings');
+              }}
               className="w-full flex items-center gap-3 px-4 py-3 text-text-primary hover:bg-bg-secondary rounded-lg transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317a1.724 1.724 0 013.35 0l.182.642a1.724 1.724 0 002.573 1.066l.58-.331a1.724 1.724 0 012.286.633l.334.578a1.724 1.724 0 01-.633 2.286l-.58.331a1.724 1.724 0 000 2.986l.58.331a1.724 1.724 0 01.633 2.286l-.334.578a1.724 1.724 0 01-2.286.633l-.58-.331a1.724 1.724 0 00-2.573 1.066l-.182.642a1.724 1.724 0 01-3.35 0l-.182-.642a1.724 1.724 0 00-2.573-1.066l-.58.331a1.724 1.724 0 01-2.286-.633l-.334-.578a1.724 1.724 0 01.633-2.286l.58-.331a1.724 1.724 0 000-2.986l-.58-.331a1.724 1.724 0 01-.633-2.286l.334-.578a1.724 1.724 0 012.286-.633l.58.331a1.724 1.724 0 002.573-1.066l.182-.642z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
               Settings
             </button>
+            <button
+              onClick={() => {
+                onClose();
+                onOpenProfile();
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3 text-text-primary hover:bg-bg-secondary rounded-lg transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A11.958 11.958 0 0112 15.75c2.58 0 4.972.816 6.879 2.054M15 11.25a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Profile
+            </button>
           </div>
-
-          {/* Profile Section */}
-          {isAuthenticated && user && (
-            <div className="pt-4 border-t border-border space-y-3">
-              <div className="px-4 py-2">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 bg-bg-tertiary rounded-full flex items-center justify-center">
-                    <svg className="w-4 h-4 text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-text-primary text-sm font-medium">
-                      {user.firstName} {user.lastName}
-                    </p>
-                    <p className="text-text-secondary text-xs">{user.email}</p>
-                  </div>
-                </div>
-                <button
-                  onClick={handleLogout}
-                  className="w-full flex items-center gap-3 px-3 py-2 text-red-400 hover:bg-bg-tertiary rounded-lg transition-colors"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
-                  Logout
-                </button>
-              </div>
-            </div>
-          )}
 
           {/* Auth Section for non-authenticated users */}
           {!isAuthenticated && (
