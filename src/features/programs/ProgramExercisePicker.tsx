@@ -40,6 +40,7 @@ export interface ProgramExerciseSelection {
   exercise: Exercise;
   sets: ExerciseSet[];
   sourceSessionId?: string;
+  sourceIsWarmup?: boolean;
   sourceProgramSupersetId?: string;
   sourceProgramSupersetLabel?: string;
   sourceProgramSupersetName?: string;
@@ -137,7 +138,6 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
             trackTime: !isResistance,
           },
           activityType,
-          isWarmup: session?.isWarmupSession === true,
           // Include prescription data for logger components
           prescription: exercise.prescription,
           instructionMode: exercise.instructionMode,
@@ -147,6 +147,7 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
         },
         sets,
         sourceSessionId: session?.id,
+        sourceIsWarmup: session?.isWarmupSession === true,
         sourceProgramSupersetId: exercise.supersetId,
         sourceProgramSupersetLabel: exercise.supersetLabel,
         sourceProgramSupersetName: exercise.supersetName,
