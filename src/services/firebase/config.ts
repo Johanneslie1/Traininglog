@@ -9,7 +9,7 @@ if (import.meta.env.DEV) {
 }
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDgA76WHz1JzwEc1YeazhKTUxqxHzhcP2c",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: "session-logger-3619e.firebaseapp.com",
   projectId: "session-logger-3619e",
   storageBucket: "session-logger-3619e.firebasestorage.app",
