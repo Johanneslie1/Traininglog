@@ -220,6 +220,9 @@ async function runMigration() {
 
         if (canonicalIds.has(legacyDoc.id)) {
           counters.skippedExisting += 1;
+          if (options.deleteSource) {
+            await queueDelete(legacyDoc.ref);
+          }
           continue;
         }
 
@@ -264,6 +267,9 @@ async function runMigration() {
     const targetRef = userRef.collection('exercises').doc(legacyDoc.id);
     if (canonicalIds.has(legacyDoc.id)) {
       counters.skippedExisting += 1;
+      if (options.deleteSource) {
+        await queueDelete(legacyDoc.ref);
+      }
       continue;
     }
 

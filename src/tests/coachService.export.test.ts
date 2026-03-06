@@ -275,7 +275,9 @@ import { exportAthleteSessionsCsv, exportAllAthletesSessionsCsv, invalidateCoach
 
 const mockedExportService = jest.requireMock('@/services/exportService') as {
   downloadCSV: jest.Mock;
-  exportData: jest.Mock;
+  exportData: jest.MockedFunction<
+    (userId: string, options?: unknown) => Promise<{ sessions: any[]; exerciseLogs: any[]; sets: any[] }>
+  >;
 };
 const mockedFirestore = jest.requireMock('firebase/firestore') as {
   getDoc: jest.Mock;

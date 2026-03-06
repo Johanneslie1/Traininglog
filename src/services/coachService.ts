@@ -298,14 +298,6 @@ function getSafeAthleteName(member: Partial<TeamMember> | null, athleteId: strin
   return `Athlete ${athleteId.slice(0, 8)}`;
 }
 
-function sanitizeFileToken(value: string): string {
-  return value
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '') || 'athlete';
-}
-
 function formatExportDateStamp(date: Date = new Date()): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');

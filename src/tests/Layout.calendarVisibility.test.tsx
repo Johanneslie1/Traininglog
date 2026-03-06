@@ -59,24 +59,24 @@ const renderLayout = (path: string, isMainView: boolean) => {
 describe('Layout weekly calendar visibility', () => {
   it('shows weekly calendar controls on Exercise Log main route', () => {
     renderLayout('/', true);
-    expect(screen.getByLabelText('Open monthly calendar')).toBeInTheDocument();
+    expect(screen.getByLabelText('Open monthly calendar')).not.toBeNull();
   });
 
   it('hides weekly calendar controls on non-log routes', () => {
     renderLayout('/profile', true);
-    expect(screen.queryByLabelText('Open monthly calendar')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Open monthly calendar')).toBeNull();
   });
 
   it('hides weekly calendar controls on Exercise Log subviews', () => {
     renderLayout('/', false);
-    expect(screen.queryByLabelText('Open monthly calendar')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Open monthly calendar')).toBeNull();
   });
 
   it('auto-closes monthly calendar when leaving Exercise Log main view', () => {
     const rendered = renderLayout('/', true);
 
     fireEvent.click(screen.getByLabelText('Open monthly calendar'));
-    expect(screen.getByText('Monthly calendar content')).toBeInTheDocument();
+    expect(screen.getByText('Monthly calendar content')).not.toBeNull();
 
     rendered.rerender(
       <MemoryRouter initialEntries={['/']}>
@@ -91,6 +91,6 @@ describe('Layout weekly calendar visibility', () => {
       </MemoryRouter>
     );
 
-    expect(screen.queryByText('Monthly calendar content')).not.toBeInTheDocument();
+    expect(screen.queryByText('Monthly calendar content')).toBeNull();
   });
 });
