@@ -43,15 +43,18 @@ service cloud.firestore {
         
         // Allow create if authenticated and document belongs to user
         allow create: if isAuthenticated() && 
+          isOwner(userId) &&
           request.resource.data.userId == request.auth.uid;
         
         // Allow update if authenticated and user owns the document
         allow update: if isAuthenticated() && 
+          isOwner(userId) &&
           request.resource.data.userId == request.auth.uid &&
           (resource == null || resource.data.userId == request.auth.uid);
 
         // Allow delete if authenticated and user owns the document
         allow delete: if isAuthenticated() &&
+          isOwner(userId) &&
           (resource == null || resource.data.userId == request.auth.uid);
       }
 
@@ -131,10 +134,11 @@ service cloud.firestore {
 
     // Top-level exerciseLogs collection (if still in use)
     match /exerciseLogs/{logId} {
-      // Allow read if authenticated and owns the document
+      // Allow read for owner or authorized coach-athlete relationship
       allow read: if isAuthenticated() && (
-        resource == null || 
-        resource.data.userId == request.auth.uid
+        resource == null ||
+        resource.data.userId == request.auth.uid ||
+        hasCoachAthleteAccess(resource.data.userId)
       );
       
       // Allow create if authenticated and setting correct userId

@@ -8,7 +8,7 @@ jest.mock('@/services/logAggregationService', () => ({
   getAggregatedExportLogs: jest.fn(async () => []),
 }));
 
-import { exportData, getExportPreview, serializeSetForExport } from '@/services/exportService';
+import { exportData, getExportPreview, serializeSetForExport, downloadCSV } from '@/services/exportService';
 import { ActivityType } from '@/types/activityTypes';
 
 const mockedWorkouts = jest.requireMock('@/services/firebase/workouts') as {
@@ -147,6 +147,33 @@ describe('exportService serialization', () => {
       supersetLabel: '1a',
       supersetName: 'Press Pair',
     });
+  });
+
+  it('returns exercise logs for athlete export baseline', async () => {
+    mockedWorkouts.getUserWorkouts.mockResolvedValue([]);
+    mockedLogAggregationService.getAggregatedExportLogs.mockResolvedValue([
+      {
+        id: 'athlete-log-1',
+        exerciseName: 'Tempo Run',
+        sets: [{ reps: 1, weight: 0, duration: 1800, distance: 5000 }],
+        timestamp: new Date('2026-03-01T10:00:00.000Z'),
+        userId: 'athlete-1',
+        activityType: 'endurance',
+        collectionType: 'activity',
+      },
+    ]);
+
+    const result = await exportData('athlete-1', {
+      includeSessions: false,
+      includeExerciseLogs: true,
+      includeSets: true,
+      startDate: new Date('2026-03-01T00:00:00.000Z'),
+      endDate: new Date('2026-03-01T23:59:59.999Z'),
+    });
+
+    expect(result.exerciseLogs.length).toBe(1);
+    expect(result.exerciseLogs[0].exerciseName).toBe('Tempo Run');
+    expect(result.sets.length).toBe(1);
   });
 
   it('keeps export backward compatible when supersets are missing', async () => {
@@ -369,5 +396,82 @@ describe('exportService serialization', () => {
         includeSets: true,
       })
     ).rejects.toThrow('Failed to export data: Failed to load export sources: strength: permission-denied');
+  });
+
+  it('keeps zero values when generating CSV output', () => {
+    const originalDocument = (globalThis as { document?: unknown }).document;
+    const originalURL = globalThis.URL;
+
+    let csvPayload = '';
+    const originalBlob = globalThis.Blob;
+    const mockBlob = function(parts: BlobPart[]) {
+      csvPayload = String(parts[0] ?? '');
+      return { parts } as unknown as Blob;
+    } as unknown as typeof Blob;
+
+    Object.defineProperty(globalThis, 'Blob', {
+      value: mockBlob,
+      configurable: true,
+    });
+
+    const click = jest.fn();
+    const setAttribute = jest.fn();
+    const appendChild = jest.fn();
+    const removeChild = jest.fn();
+    const linkMock = {
+      setAttribute,
+      style: {},
+      click,
+    } as unknown as HTMLAnchorElement;
+
+    const documentMock = {
+      createElement: jest.fn(() => linkMock),
+      body: {
+        appendChild,
+        removeChild,
+      },
+    };
+
+    Object.defineProperty(globalThis, 'document', {
+      value: documentMock,
+      configurable: true,
+    });
+
+    Object.defineProperty(globalThis, 'URL', {
+      value: {
+        createObjectURL: jest.fn(() => 'blob:mock-url'),
+      },
+      configurable: true,
+    });
+
+    downloadCSV(
+      [{ exerciseName: 'Bodyweight Squat', weight: 0, reps: 10 }],
+      ['exerciseName', 'weight', 'reps'],
+      'exercise_sets.csv'
+    );
+
+    expect(csvPayload).toContain('exerciseName,weight,reps');
+    expect(csvPayload).toContain('Bodyweight Squat,0,10');
+    expect(appendChild).toHaveBeenCalled();
+    expect(removeChild).toHaveBeenCalled();
+
+    Object.defineProperty(globalThis, 'Blob', {
+      value: originalBlob,
+      configurable: true,
+    });
+
+    Object.defineProperty(globalThis, 'URL', {
+      value: originalURL,
+      configurable: true,
+    });
+
+    if (originalDocument === undefined) {
+      delete (globalThis as { document?: unknown }).document;
+    } else {
+      Object.defineProperty(globalThis, 'document', {
+        value: originalDocument,
+        configurable: true,
+      });
+    }
   });
 });

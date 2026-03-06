@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { useDate } from '@/context/DateContext';
+import { useExerciseLogCalendar } from '@/context/ExerciseLogCalendarContext';
 import SideMenu from '../SideMenu';
 import WeeklyCalendarHeader from '../WeeklyCalendarHeader';
 import Calendar from '../Calendar';
@@ -19,6 +20,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const { isExerciseLogMainView } = useExerciseLogCalendar();
   
   const isDarkBackground = ['/'].includes(location.pathname);
   
@@ -28,7 +30,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   // Only show calendar controls on Exercise Log route
   const showWeeklyCalendar = isAuthenticated && 
     !isProgramRoute && 
-    location.pathname === '/';
+    location.pathname === '/' &&
+    isExerciseLogMainView;
+
+  useEffect(() => {
+    if (!showWeeklyCalendar && showMonthlyCalendar) {
+      setShowMonthlyCalendar(false);
+    }
+  }, [showWeeklyCalendar, showMonthlyCalendar]);
 
   // Keep side menu accessible when weekly header is hidden
   const showFallbackMenuButton = isAuthenticated && !showWeeklyCalendar;

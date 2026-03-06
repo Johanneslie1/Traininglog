@@ -1,6 +1,8 @@
 import { ExerciseLog } from '@/types/exercise';
-import { getExerciseLogsByDate, saveExerciseLog } from '@/utils/localStorageUtils';
 import { getAllExercisesByDate } from '@/utils/unifiedExerciseUtils';
+import { addExerciseLog } from '@/services/firebase/exerciseLogs';
+import { addActivityLog } from '@/services/firebase/activityLogs';
+import { ActivityType } from '@/types/activityTypes';
 import { startOfWeek, endOfWeek } from 'date-fns';
 import { getAuth } from 'firebase/auth';
 
@@ -72,18 +74,57 @@ export const getWorkoutDays = async (month: Date): Promise<Date[]> => {
 
 export const copyWorkoutFromDate = async (sourceDate: Date, targetDate: Date): Promise<boolean> => {
   try {
-    const workouts = await getExerciseLogsByDate(sourceDate);
+    const userId = getCurrentUserId();
+    if (!userId) {
+      return false;
+    }
+
+    const workouts = await getAllExercisesByDate(sourceDate, userId);
     if (workouts.length === 0) return false;
 
-    const targetWorkouts = workouts.map(workout => ({
-      ...workout,
-      id: crypto.randomUUID(),
-      timestamp: targetDate
-    }));
+    // Save each workout to canonical Firestore path for its activity type
+    for (const workout of workouts) {
+      if (!workout.exerciseName) {
+        continue;
+      }
 
-    // Save each workout to the target date
-    for (const workout of targetWorkouts) {
-      await saveExerciseLog(workout);
+      if (workout.activityType && workout.activityType !== ActivityType.RESISTANCE) {
+        await addActivityLog(
+          {
+            activityName: workout.exerciseName,
+            userId,
+            sets: workout.sets || [],
+            activityType: workout.activityType,
+            supersetId: workout.supersetId,
+            supersetLabel: workout.supersetLabel,
+            supersetName: workout.supersetName,
+          },
+          targetDate
+        );
+      } else {
+        await addExerciseLog(
+          {
+            exerciseName: workout.exerciseName,
+            userId,
+            sets: workout.sets || [],
+            activityType: workout.activityType,
+            supersetId: workout.supersetId,
+            supersetLabel: workout.supersetLabel,
+            supersetName: workout.supersetName,
+            isWarmup: workout.isWarmup,
+            sharedSessionAssignmentId: workout.sharedSessionAssignmentId,
+            sharedSessionId: workout.sharedSessionId,
+            sharedSessionExerciseId: workout.sharedSessionExerciseId,
+            sharedSessionDateKey: workout.sharedSessionDateKey,
+            sharedSessionExerciseCompleted: workout.sharedSessionExerciseCompleted,
+            prescription: workout.prescription,
+            instructionMode: workout.instructionMode,
+            instructions: workout.instructions,
+            prescriptionAssistant: workout.prescriptionAssistant,
+          },
+          targetDate
+        );
+      }
     }
 
     return true;

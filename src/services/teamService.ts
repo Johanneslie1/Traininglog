@@ -34,6 +34,22 @@ export interface TeamMember {
   status: 'active' | 'inactive';
 }
 
+const resolveTeamMemberUserId = (
+  memberDocId: string,
+  memberData: Record<string, unknown>
+): string => {
+  const candidateFields = ['userId', 'uid', 'athleteId', 'id'];
+
+  for (const field of candidateFields) {
+    const value = memberData[field];
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return value.trim();
+    }
+  }
+
+  return memberDocId;
+};
+
 const buildCoachAthleteAccessId = (coachId: string, athleteId: string): string => `${coachId}_${athleteId}`;
 
 const getSharedTeamIdsForCoachAthlete = async (
@@ -55,6 +71,41 @@ const getSharedTeamIdsForCoachAthlete = async (
     const memberSnapshot = await getDoc(memberRef);
 
     if (!memberSnapshot.exists()) {
+      const membersSnapshot = await getDocs(collection(db, 'teams', teamDoc.id, 'members'));
+      const legacyMemberDoc = membersSnapshot.docs.find((snapshot) => {
+        const memberData = snapshot.data() as Record<string, unknown>;
+        const resolvedUserId = resolveTeamMemberUserId(snapshot.id, memberData);
+        return resolvedUserId === athleteId;
+      });
+
+      if (!legacyMemberDoc) {
+        continue;
+      }
+
+      const legacyData = legacyMemberDoc.data() as Record<string, unknown>;
+
+      try {
+        await setDoc(
+          doc(db, 'teams', teamDoc.id, 'members', athleteId),
+          removeUndefinedFields({
+            ...legacyData,
+            teamId: typeof legacyData.teamId === 'string' ? legacyData.teamId : teamDoc.id,
+            status: typeof legacyData.status === 'string' ? legacyData.status : 'active',
+            updatedAt: new Date().toISOString(),
+          }),
+          { merge: true }
+        );
+      } catch (error) {
+        console.warn('[teamService] Could not normalize legacy team member document ID for athlete access', {
+          teamId: teamDoc.id,
+          athleteId,
+          legacyMemberDocId: legacyMemberDoc.id,
+          error,
+        });
+        continue;
+      }
+
+      sharedTeamIds.push(teamDoc.id);
       continue;
     }
 
@@ -77,28 +128,42 @@ export const syncCoachAthleteAccess = async (
     return;
   }
 
-  const sharedTeamIds = await getSharedTeamIdsForCoachAthlete(coachId, athleteId);
-  const accessRef = doc(db, 'coachAthleteAccess', buildCoachAthleteAccessId(coachId, athleteId));
+  try {
+    const sharedTeamIds = await getSharedTeamIdsForCoachAthlete(coachId, athleteId);
+    const accessRef = doc(db, 'coachAthleteAccess', buildCoachAthleteAccessId(coachId, athleteId));
 
-  if (sharedTeamIds.length === 0) {
-    const existingAccess = await getDoc(accessRef);
-    if (existingAccess.exists()) {
-      await deleteDoc(accessRef);
+    if (sharedTeamIds.length === 0) {
+      const existingAccess = await getDoc(accessRef);
+      if (existingAccess.exists()) {
+        await deleteDoc(accessRef);
+      }
+
+      console.info('[teamService] syncCoachAthleteAccess: no active shared teams', {
+        coachId,
+        athleteId
+      });
+      return;
     }
-    return;
-  }
 
-  await setDoc(
-    accessRef,
-    removeUndefinedFields({
+    await setDoc(
+      accessRef,
+      removeUndefinedFields({
+        coachId,
+        athleteId,
+        teamId: sharedTeamIds[0],
+        sharedTeamIds,
+        updatedAt: new Date().toISOString()
+      }),
+      { merge: true }
+    );
+  } catch (error) {
+    console.error('[teamService] syncCoachAthleteAccess failed', {
       coachId,
       athleteId,
-      teamId: sharedTeamIds[0],
-      sharedTeamIds,
-      updatedAt: new Date().toISOString()
-    }),
-    { merge: true }
-  );
+      error
+    });
+    throw error;
+  }
 };
 
 export const getTeamMember = async (teamId: string, userId: string): Promise<TeamMember | null> => {
@@ -106,13 +171,31 @@ export const getTeamMember = async (teamId: string, userId: string): Promise<Tea
     const memberRef = doc(db, 'teams', teamId, 'members', userId);
     const memberSnap = await getDoc(memberRef);
 
-    if (!memberSnap.exists()) {
+    if (memberSnap.exists()) {
+      const memberData = memberSnap.data() as Record<string, unknown>;
+      const resolvedUserId = resolveTeamMemberUserId(memberSnap.id, memberData);
+
+      return {
+        ...(memberData as Omit<TeamMember, 'id'>),
+        id: resolvedUserId,
+      } as TeamMember;
+    }
+
+    const membersSnapshot = await getDocs(collection(db, 'teams', teamId, 'members'));
+    const legacyMember = membersSnapshot.docs.find((snapshot) => {
+      const data = snapshot.data() as Record<string, unknown>;
+      return resolveTeamMemberUserId(snapshot.id, data) === userId;
+    });
+
+    if (!legacyMember) {
       return null;
     }
 
+    const legacyData = legacyMember.data() as Record<string, unknown>;
+
     return {
-      id: memberSnap.id,
-      ...memberSnap.data()
+      ...(legacyData as Omit<TeamMember, 'id'>),
+      id: userId,
     } as TeamMember;
   } catch (error) {
     console.error('[teamService] Error fetching team member:', error);
@@ -393,10 +476,15 @@ export const getTeamMembers = async (teamId: string): Promise<TeamMember[]> => {
     const membersRef = collection(db, 'teams', teamId, 'members');
     const snapshot = await getDocs(membersRef);
     
-    return snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })) as TeamMember[];
+    return snapshot.docs.map(docSnapshot => {
+      const data = docSnapshot.data() as Record<string, unknown>;
+      const resolvedUserId = resolveTeamMemberUserId(docSnapshot.id, data);
+
+      return {
+        ...(data as Omit<TeamMember, 'id'>),
+        id: resolvedUserId,
+      } as TeamMember;
+    });
   } catch (error) {
     console.error('[teamService] Error fetching team members:', error);
     throw error;

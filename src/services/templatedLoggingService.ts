@@ -4,7 +4,7 @@ import { TemplateService } from './templateService';
 import { getCollectionTypeFromExerciseType, mapExerciseTypeToActivityType } from '@/types/activityLog';
 
 // Import existing services
-import { addExerciseLog as addStrengthExercise, getExerciseLogs as getStrengthExercises } from './firebase/strengthExerciseLogs';
+import { addExerciseLog as addStrengthExercise, getExerciseLogs as getStrengthExercises } from './firebase/exerciseLogs';
 import { addActivityLog, getActivityLogs } from './firebase/activityLogs';
 
 /**

@@ -84,29 +84,17 @@ export const addExerciseLog = async (
     let docRef;
     let docId;
 
-    // Use strengthExercises collection for strength and plyometric exercises
+    // Use canonical exercises collection for strength and plyometric exercises
     if (existingId) {
       // Update existing document
-      docRef = doc(db, 'users', logData.userId, 'strengthExercises', existingId);
+      docRef = doc(db, 'users', logData.userId, 'exercises', existingId);
       docId = existingId;
-      console.log('💪 Updating existing strength exercise:', docId);
-      
-      // Clean up any old location document if it exists
-      try {
-        const oldRef = doc(db, 'exerciseLogs', existingId);
-        const oldDoc = await getDoc(oldRef);
-        if (oldDoc.exists()) {
-          await deleteDoc(oldRef);
-          console.log('✅ Cleaned up old location document:', existingId);
-        }
-      } catch (error) {
-        console.warn('⚠️ Could not clean up old location:', error);
-      }
+      console.log('💪 Updating existing exercise:', docId);
     } else {
       // Create new document
-      docRef = doc(collection(db, 'users', logData.userId, 'strengthExercises'));
+      docRef = doc(collection(db, 'users', logData.userId, 'exercises'));
       docId = docRef.id;
-      console.log('💪 Creating new strength exercise with ID:', docId);
+      console.log('💪 Creating new exercise with ID:', docId);
     }
 
     // Save the document
@@ -142,70 +130,29 @@ export const deleteExerciseLog = async (logId: string, userId: string): Promise<
       throw new Error('logId is required to delete exercise log');
     }
 
-    // Try all locations - the new strengthExercises path, legacy exercises path, and old top-level path
-    const exerciseRef = doc(db, 'users', userId, 'strengthExercises', logId);
-    const legacyExerciseRef = doc(db, 'users', userId, 'exercises', logId);
-    const oldExerciseRef = doc(db, 'exerciseLogs', logId);
+    const exerciseRef = doc(db, 'users', userId, 'exercises', logId);
 
     let deleted = false;
     const errors = [];
 
-    // Try to delete from new strengthExercises location first
+    // Delete from canonical exercises location
     try {
       const exerciseDoc = await getDoc(exerciseRef);
       if (exerciseDoc.exists()) {
         const data = exerciseDoc.data();
         if (data?.userId === userId) {
           await deleteDoc(exerciseRef);
-          console.log('✅ Exercise deleted from strengthExercises location successfully');
+          console.log('✅ Exercise deleted from exercises location successfully');
           deleted = true;
         } else {
-          console.warn('⚠️ Exercise exists in strengthExercises but does not belong to user');
+          console.warn('⚠️ Exercise exists but does not belong to user');
           errors.push('Exercise does not belong to user');
         }
       }
     } catch (error) {
-      console.warn('⚠️ Could not delete from strengthExercises location:', error);
+      console.warn('⚠️ Could not delete from exercises location:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      errors.push(`StrengthExercises location error: ${errorMessage}`);
-    }
-
-    // Try to delete from legacy exercises location if not deleted
-    if (!deleted) {
-      try {
-        const legacyExerciseDoc = await getDoc(legacyExerciseRef);
-        if (legacyExerciseDoc.exists()) {
-          const data = legacyExerciseDoc.data();
-          if (data?.userId === userId) {
-            await deleteDoc(legacyExerciseRef);
-            console.log('✅ Exercise deleted from legacy exercises location successfully');
-            deleted = true;
-          }
-        }
-      } catch (error) {
-        console.warn('⚠️ Could not delete from legacy exercises location:', error);
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        errors.push(`Legacy exercises location error: ${errorMessage}`);
-      }
-    }
-
-    // Try to delete from old location if not deleted
-    if (!deleted) {
-      try {
-        const oldExerciseDoc = await getDoc(oldExerciseRef);
-        if (oldExerciseDoc.exists()) {
-          const data = oldExerciseDoc.data();
-          if (data?.userId === userId) {
-            await deleteDoc(oldExerciseRef);
-            console.log('✅ Exercise deleted from old location successfully');
-            deleted = true;
-          }
-        }
-      } catch (error) {
-        console.warn('⚠️ Could not delete from old location:', error);
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        errors.push(`Old location error: ${errorMessage}`);
-      }
+      errors.push(`Exercises location error: ${errorMessage}`);
     }
 
     if (!deleted) {
@@ -227,8 +174,8 @@ export const getExerciseLogs = async (userId: string, startDate: Date, endDate: 
       throw new Error('userId is required to fetch exercise logs');
     }
 
-    // Query from the user's strengthExercises subcollection
-    const exercisesRef = collection(db, 'users', userId, 'strengthExercises');
+    // Query from the canonical exercises subcollection
+    const exercisesRef = collection(db, 'users', userId, 'exercises');
     const q = query(
       exercisesRef,
       where('timestamp', '>=', Timestamp.fromDate(startDate)),
@@ -259,7 +206,7 @@ export const getExerciseLogs = async (userId: string, startDate: Date, endDate: 
   } catch (error) {
     const firebaseError = error as { code?: string; message?: string };
     if (firebaseError.code === 'permission-denied' || firebaseError.message?.includes('Missing or insufficient permissions')) {
-      console.warn('⚠️ Permission denied for strengthExercises collection. Returning empty strength list.');
+      console.warn('⚠️ Permission denied for exercises collection. Returning empty strength list.');
       return [];
     }
 

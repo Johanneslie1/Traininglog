@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { SupersetProvider, useSupersets } from '../../context/SupersetContext';
 import { useDate } from '../../context/DateContext';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ExerciseLog as ExerciseLogType, ExercisePrescriptionAssistantData } from '../../types/exercise';
+import { ExercisePrescriptionAssistantData } from '../../types/exercise';
 import { ExerciseSet } from '../../types/sets';
 import { ExerciseData } from '../../services/exerciseDataService';
 import { useSelector } from 'react-redux';
@@ -15,7 +15,6 @@ import { ExerciseSetLogger } from './ExerciseSetLogger';
 import WorkoutSummary from './WorkoutSummary';
 import { db } from '../../services/firebase/config';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { getExerciseLogsByDate, saveExerciseLog } from '../../utils/localStorageUtils';
 import {
   addExerciseLog,
   backfillExerciseLogSupersetMetadata,
@@ -27,13 +26,14 @@ import FloatingSupersetControls from '../../components/FloatingSupersetControls'
 import { getAllExercisesByDate, UnifiedExerciseData, deleteExercise } from '../../utils/unifiedExerciseUtils';
 import { FloatingActionButton, EmptyState, ExerciseListSkeleton } from '../../components/ui';
 import { getSharedSessionAssignment, updateSharedSessionStatus } from '@/services/sessionService';
-import { ActivityType } from '@/types/activityTypes';
 import { normalizeActivityType } from '@/types/activityLog';
 import { SharedSessionAssignment } from '@/types/program';
 import { generateExercisePrescriptionAssistant } from '@/services/exercisePrescriptionAssistantService';
 import toast from 'react-hot-toast';
 import { buildSupersetLabels } from '@/utils/supersetUtils';
 import { SupersetGroup } from '@/types/session';
+import { useExerciseLogCalendar } from '@/context/ExerciseLogCalendarContext';
+import { isExerciseLogMainView } from '@/features/exercises/exerciseLogViewState';
 
 interface ExerciseLogProps {}
 
@@ -58,6 +58,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const { state, removeExerciseFromSuperset, loadSupersetsForDate, saveSupersetsForDate, updateExerciseOrder } = useSupersets();
   const { selectedDate, setSelectedDate, normalizeDate } = useDate();
+  const { setIsExerciseLogMainView } = useExerciseLogCalendar();
   
   // Date utility functions
   const areDatesEqual = useCallback((date1: Date, date2: Date): boolean => {
@@ -66,14 +67,6 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     return normalized1.getTime() === normalized2.getTime();
   }, [normalizeDate]);
 
-
-  const getDateRange = useCallback((date: Date): { startOfDay: Date; endOfDay: Date } => {
-    const startOfDay = normalizeDate(date);
-    const endOfDay = new Date(startOfDay);
-    endOfDay.setHours(23, 59, 59, 999);
-    return { startOfDay, endOfDay };
-  }, [normalizeDate]);
-  
   type UIState = {
     showLogOptions: boolean;
     showSetLogger: boolean;
@@ -94,6 +87,20 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   const updateUiState = useCallback((key: keyof UIState, value: boolean) => {
     setUiState((prev: UIState) => ({ ...prev, [key]: value }));
   }, []);
+
+  const isMainExerciseLogView = isExerciseLogMainView({
+    showLogOptions: uiState.showLogOptions,
+    showSetLogger: uiState.showSetLogger,
+    showWorkoutSummary: uiState.showWorkoutSummary,
+  });
+
+  useEffect(() => {
+    setIsExerciseLogMainView(isMainExerciseLogView);
+
+    return () => {
+      setIsExerciseLogMainView(true);
+    };
+  }, [isMainExerciseLogView, setIsExerciseLogMainView]);
 
   // Exercise data loading
   const [exercises, setExercises] = useState<UnifiedExerciseData[]>([]);
@@ -124,20 +131,6 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
       console.warn('⚠️ Could not parse persisted superset state for date:', dateKey, error);
       return { supersets: [], exerciseOrder: [] };
     }
-  }, []);
-
-  const toSafeDate = useCallback((value: unknown): Date => {
-    if (
-      value &&
-      typeof value === 'object' &&
-      'toDate' in (value as Record<string, unknown>) &&
-      typeof (value as { toDate?: unknown }).toDate === 'function'
-    ) {
-      return (value as { toDate: () => Date }).toDate();
-    }
-
-    const parsed = value ? new Date(value as string | number | Date) : new Date();
-    return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
   }, []);
 
   const hasMeaningfulSetData = useCallback((set: ExerciseSet): boolean => {
@@ -205,30 +198,6 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     }
   }, [getImportedSharedSessionExerciseDocs, hasMeaningfulSetData]);
 
-  // Convert local storage exercise to ExerciseData format
-  const convertToExerciseData = useCallback((exercise: Omit<ExerciseLogType, 'id'> & { id?: string }, userId: string): ExerciseData => ({
-    id: exercise.id ?? uuidv4(),
-    exerciseName: exercise.exerciseName,
-    sets: exercise.sets,
-    timestamp: new Date(exercise.timestamp),
-    userId: userId,
-    deviceId: exercise.deviceId || localStorage.getItem('device_id') || '',
-    supersetId: exercise.supersetId,
-    supersetLabel: exercise.supersetLabel,
-    supersetName: exercise.supersetName,
-    activityType: exercise.activityType as ActivityType | undefined,
-    isWarmup: exercise.isWarmup,
-    sharedSessionAssignmentId: exercise.sharedSessionAssignmentId,
-    sharedSessionId: exercise.sharedSessionId,
-    sharedSessionExerciseId: exercise.sharedSessionExerciseId,
-    sharedSessionDateKey: exercise.sharedSessionDateKey,
-    sharedSessionExerciseCompleted: exercise.sharedSessionExerciseCompleted,
-    prescription: exercise.prescription,
-    instructionMode: exercise.instructionMode,
-    instructions: exercise.instructions,
-    prescriptionAssistant: exercise.prescriptionAssistant
-  }), []);
-
   // Handle exercise data loading
   const loadExercises = useCallback(async (date: Date) => {
     // Guard against null user
@@ -250,60 +219,8 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     loadSupersetsForDate(dateString);
 
     try {
-      // Use the unified function to get all exercise types
-      const allExercises = await getAllExercisesByDate(loadedDate, userId);
+      const combinedExercises = await getAllExercisesByDate(loadedDate, userId);
 
-      // Also try to get any Firebase resistance exercises to merge
-      const { startOfDay, endOfDay } = getDateRange(loadedDate);
-      const q = query(
-        collection(db, 'users', userId, 'exercises'),
-        where('timestamp', '>=', startOfDay),
-        where('timestamp', '<=', endOfDay)
-      );
-
-      const snapshot = await getDocs(q);
-      const firebaseExercises = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return convertToExerciseData({
-          id: doc.id,
-          exerciseName: data.exerciseName,
-          sets: data.sets,
-          timestamp: toSafeDate(data.timestamp),
-          deviceId: data.deviceId,
-          supersetId: data.supersetId,
-          supersetLabel: data.supersetLabel,
-          supersetName: data.supersetName,
-          activityType: data.activityType,
-          isWarmup: data.isWarmup,
-          sharedSessionAssignmentId: data.sharedSessionAssignmentId,
-          sharedSessionId: data.sharedSessionId,
-          sharedSessionExerciseId: data.sharedSessionExerciseId,
-          sharedSessionDateKey: data.sharedSessionDateKey,
-          sharedSessionExerciseCompleted: data.sharedSessionExerciseCompleted,
-          prescription: data.prescription,
-          instructionMode: data.instructionMode,
-          instructions: data.instructions,
-          prescriptionAssistant: data.prescriptionAssistant
-        }, userId);
-      });
-
-      const localExercises = getExerciseLogsByDate(loadedDate)
-        .map(exercise => convertToExerciseData(exercise, userId));
-
-      // Filter out any duplicates from the unified list
-      const uniqueFirebaseExercises = firebaseExercises.filter(fEx => 
-        !allExercises.some(ex => ex.id === fEx.id)
-      );
-
-      const uniqueLocalExercises = localExercises.filter(localEx =>
-        !allExercises.some(ex => ex.id === localEx.id) &&
-        !firebaseExercises.some(ex => ex.id === localEx.id)
-      );
-
-      // Combine all exercises
-      const combinedExercises = [...allExercises, ...uniqueFirebaseExercises, ...uniqueLocalExercises];
-
-      // Sort by timestamp to maintain consistent order
       combinedExercises.sort((a, b) => {
         if (a.timestamp instanceof Date && b.timestamp instanceof Date) {
           return a.timestamp.getTime() - b.timestamp.getTime();
@@ -359,17 +276,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
       setExercises(combinedExercises);
     } catch (error) {
       console.error('Error fetching exercises:', error);
-      // On error, try to get unified data anyway
-      try {
-        const allExercises = await getAllExercisesByDate(loadedDate, userId);
-        setExercises(allExercises);
-      } catch (fallbackError) {
-        console.error('Error in fallback:', fallbackError);
-        // Final fallback to just local resistance exercises
-        const localExercises = getExerciseLogsByDate(loadedDate)
-          .map(exercise => convertToExerciseData(exercise, userId));
-        setExercises(localExercises);
-      }
+      setExercises([]);
     } finally {
       setLoading(false);
     }
@@ -377,10 +284,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     user?.id,
     areDatesEqual,
     normalizeDate,
-    getDateRange,
-    convertToExerciseData,
     loadSupersetsForDate,
-    toSafeDate,
     getPersistedSupersetStateForDate,
   ]);
   
@@ -422,7 +326,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
 
       // Save to Firestore
       const selectedExerciseWithMeta = selectedExercise as ExerciseData & SharedSessionExerciseMeta;
-      const firestoreId = await addExerciseLog(
+      await addExerciseLog(
         {
           exerciseName: updatedExercise.exerciseName,
           userId: user.id,
@@ -457,19 +361,6 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
       );
 
       console.log('✅ Exercise saved to Firestore successfully');
-
-      // Save to local storage with the correct ID from Firestore
-      await saveExerciseLog({
-        ...updatedExercise,
-        supersetId: supersetMetadata?.supersetId || selectedExerciseWithMeta.supersetId,
-        supersetLabel: supersetMetadata?.label || selectedExerciseWithMeta.supersetLabel,
-        supersetName: supersetMetadata?.supersetName || selectedExerciseWithMeta.supersetName,
-        prescriptionAssistant: metadata?.prescriptionAssistant || selectedExerciseWithMeta.prescriptionAssistant,
-        id: firestoreId,
-        userId: user.id
-      });
-
-      console.log('✅ Exercise saved to local storage');
 
       if (selectedExerciseWithMeta.sharedSessionAssignmentId) {
         const latestAssignment = await getSharedSessionAssignment(selectedExerciseWithMeta.sharedSessionAssignmentId);
@@ -559,7 +450,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   }, [updateUiState]);
 
   // Handle exercise reordering with persistence
-  const handleReorderExercises = useCallback((reorderedExercises: ExerciseData[]) => {
+  const handleReorderExercises = useCallback(async (reorderedExercises: ExerciseData[]) => {
     // Update the UI immediately
     setExercises(reorderedExercises);
     
@@ -571,27 +462,41 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     const baseTime = new Date(selectedDate);
     baseTime.setHours(12, 0, 0, 0); // Noon on the selected date
     
-    // Save each exercise with an incremented timestamp to preserve order
-    reorderedExercises.forEach((exercise, index) => {
-      if (!exercise.id || !user?.id) return;
-      
-      // Create a new timestamp with a small increment to maintain order
-      const newTimestamp = new Date(baseTime);
-      newTimestamp.setMilliseconds(index * 100); // 100ms increments
-      
-      const updatedExercise = {
-        ...exercise,
-        timestamp: newTimestamp,
-        userId: user.id,
-        id: exercise.id // Ensure ID is present and not undefined
-      };
-      
-      // Update in local storage
-      saveExerciseLog(updatedExercise as any); // Use type assertion to fix build issue
-      
-      // Update in Firestore if needed (can be done in a batch later)
-      // For now, we're using local storage as the primary persistence mechanism for ordering
-    });
+    // Save each exercise with an incremented timestamp to preserve order in Firestore
+    if (user?.id) {
+      await Promise.all(
+        reorderedExercises
+          .filter((exercise) => Boolean(exercise.id))
+          .map(async (exercise, index) => {
+            const newTimestamp = new Date(baseTime);
+            newTimestamp.setMilliseconds(index * 100);
+
+            await addExerciseLog(
+              {
+                exerciseName: exercise.exerciseName,
+                userId: user.id,
+                sets: exercise.sets || [],
+                activityType: exercise.activityType,
+                supersetId: exercise.supersetId,
+                supersetLabel: exercise.supersetLabel,
+                supersetName: exercise.supersetName,
+                isWarmup: exercise.isWarmup,
+                sharedSessionAssignmentId: exercise.sharedSessionAssignmentId,
+                sharedSessionId: exercise.sharedSessionId,
+                sharedSessionExerciseId: exercise.sharedSessionExerciseId,
+                sharedSessionDateKey: exercise.sharedSessionDateKey,
+                sharedSessionExerciseCompleted: exercise.sharedSessionExerciseCompleted,
+                prescription: exercise.prescription,
+                instructionMode: exercise.instructionMode,
+                instructions: exercise.instructions,
+                prescriptionAssistant: exercise.prescriptionAssistant,
+              },
+              newTimestamp,
+              exercise.id
+            );
+          })
+      );
+    }
     
     // Save superset order if any exercises are in supersets
     saveSupersetsForDate(dateString);

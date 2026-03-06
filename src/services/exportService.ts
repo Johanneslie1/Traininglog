@@ -16,6 +16,58 @@ export interface ExportOptions {
   separateByActivityType?: boolean;
 }
 
+export const SET_EXPORT_HEADERS = [
+  'userId',
+  'sessionId',
+  'exerciseLogId',
+  'exerciseName',
+  'exerciseType',
+  'activityType',
+  'supersetId',
+  'supersetLabel',
+  'supersetName',
+  'loggedDate',
+  'loggedTimestamp',
+  'setNumber',
+  'reps',
+  'weight',
+  'duration',
+  'distance',
+  'durationSec',
+  'distanceMeters',
+  'rpe',
+  'rir',
+  'restTime',
+  'restTimeSec',
+  'isWarmup',
+  'setVolume',
+  'comment',
+  'notes',
+  'hrZone1',
+  'hrZone2',
+  'hrZone3',
+  'hrZone4',
+  'hrZone5',
+  'averageHeartRate',
+  'maxHeartRate',
+  'averageHR',
+  'maxHR',
+  'heartRate',
+  'calories',
+  'height',
+  'drillMetric',
+  'score',
+  'opponent',
+  'performance',
+  'stretchType',
+  'intensity',
+  'bodyPart',
+  'holdTime',
+  'flexibility',
+  'pace',
+  'elevation'
+] as const;
+
 // Helper function to safely convert date to ISO string
 const safeDateToISOString = (date: Date | any): string => {
   if (!date) return '';
@@ -510,7 +562,7 @@ const arrayToCSV = (data: any[], headers: string[]): string => {
   const csvRows = [headers.join(',')];
   data.forEach(row => {
     const values = headers.map(header => {
-      const value = row[header] || '';
+      const value = row[header] ?? '';
       // Escape quotes and wrap in quotes if contains comma, quote, or newline
       if (typeof value === 'string' && (value.includes(',') || value.includes('"') || value.includes('\n'))) {
         return `"${value.replace(/"/g, '""')}"`;

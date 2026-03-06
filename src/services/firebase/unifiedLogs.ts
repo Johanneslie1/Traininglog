@@ -5,7 +5,7 @@ import { TemplatedLogData, UniversalExerciseSet } from '@/types/trainingTemplate
 import { TemplatedLoggingService } from '../templatedLoggingService';
 
 // Import services
-import { addExerciseLog as addStrengthExercise, getExerciseLogs as getStrengthExercises, deleteExerciseLog as deleteStrengthExercise } from './strengthExerciseLogs';
+import { addExerciseLog as addStrengthExercise, getExerciseLogs as getStrengthExercises, deleteExerciseLog as deleteStrengthExercise } from './exerciseLogs';
 import { addActivityLog, getActivityLogs, deleteActivityLog } from './activityLogs';
 
 // Unified input type (legacy)

@@ -15,6 +15,7 @@ jest.mock('@/services/exportService', () => ({
   exportData: jest.fn(),
   downloadCSV: jest.fn(),
   downloadActivityCSVs: jest.fn(),
+  SET_EXPORT_HEADERS: ['userId', 'exerciseLogId', 'exerciseName'],
   getExportPreview: (userId: string, startDate?: Date, endDate?: Date) =>
     mockGetExportPreview(userId, startDate, endDate),
 }));

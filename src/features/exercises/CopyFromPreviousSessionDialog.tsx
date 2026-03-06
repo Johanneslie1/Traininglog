@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ExerciseData } from '@/services/exerciseDataService';
-import { getExerciseLogsByDate } from '@/utils/localStorageUtils';
-import { getExercisesByDateRange } from '@/services/firebase/queries';
+import { getAllExercisesByDate } from '@/utils/unifiedExerciseUtils';
 import { SearchIcon, XIcon, CheckIcon } from '@heroicons/react/solid';
 import { ActivityType } from '@/types/activityTypes';
 import { resolveActivityTypeFromExerciseLike } from '@/utils/activityTypeResolver';
@@ -44,32 +43,19 @@ const CopyFromPreviousSessionDialog: React.FC<Props> = ({
       try {
         // Convert string date to Date object
         const dateObj = new Date(selectedDate);
-        const start = new Date(dateObj);
-        start.setHours(0, 0, 0, 0);
-        const end = new Date(dateObj);
-        end.setHours(23, 59, 59, 999);
-
         console.log('📅 CopyFromPreviousSessionDialog: Fetching exercises for:', {
           date: selectedDate,
-          start: start.toISOString(),
-          end: end.toISOString(),
           userId
         });
 
-        // Get exercises from both sources
-        const [firebaseExercises, localExercises] = await Promise.all([
-          getExercisesByDateRange(userId, start, end),
-          getExerciseLogsByDate(dateObj)
-        ]);
+        const allExercises = await getAllExercisesByDate(dateObj, userId);
 
-        console.log('📦 Found exercises from both sources:', {
-          firebase: firebaseExercises.length,
-          local: localExercises.length,
+        console.log('📦 Found exercises from unified source:', {
+          total: allExercises.length,
           date: dateObj.toLocaleDateString()
         });
 
-        // Convert Firebase exercises to ExerciseData
-        const firebaseData = firebaseExercises.map(exercise => ({
+        const mappedExercises = allExercises.map(exercise => ({
           id: exercise.id,
           exerciseName: exercise.exerciseName,
           sets: exercise.sets,
@@ -88,67 +74,18 @@ const CopyFromPreviousSessionDialog: React.FC<Props> = ({
           )
         }));
 
-        // Convert local exercises to ExerciseData, excluding those already in Firebase
-        const localData = localExercises
-          .filter(local => !firebaseData.some(fb => fb.id === local.id))
-          .map(exercise => ({
-          id: exercise.id,
-          exerciseName: exercise.exerciseName,
-          sets: exercise.sets,
-          timestamp: new Date(exercise.timestamp),
-          userId: userId,
-          deviceId: exercise.deviceId || '',
-          activityType: resolveActivityTypeFromExerciseLike(
-            {
-              ...exercise,
-              sets: exercise.sets as unknown as Array<Record<string, unknown>>,
-            },
-            {
-              fallback: ActivityType.RESISTANCE,
-              preferHintOverExplicit: true,
-            }
-          )
-          }));
-
-        // Combine and sort by timestamp
-        const allExercises = [...firebaseData, ...localData].sort((a, b) => 
+        const sortedExercises = mappedExercises.sort((a, b) =>
           new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
         );
 
-        setPreviousExercises(allExercises);
+        setPreviousExercises(sortedExercises);
         setSelectedExercises(new Set());
 
-        console.log('✅ Total exercises available:', allExercises.length);
+        console.log('✅ Total exercises available:', sortedExercises.length);
       } catch (error) {
         console.error('❌ Error fetching exercises:', error);
-        // Fallback to local storage on error
-        try {
-          const localExercises = getExerciseLogsByDate(new Date(selectedDate));
-          setPreviousExercises(localExercises.map(ex => ({
-            id: ex.id,
-            exerciseName: ex.exerciseName,
-            sets: ex.sets,
-            timestamp: new Date(ex.timestamp),
-            userId: userId,
-            deviceId: ex.deviceId || '',
-            activityType: resolveActivityTypeFromExerciseLike(
-              {
-                ...ex,
-                sets: ex.sets as unknown as Array<Record<string, unknown>>,
-              },
-              {
-                fallback: ActivityType.RESISTANCE,
-                preferHintOverExplicit: true,
-              }
-            )
-          })));
-          setSelectedExercises(new Set());
-          console.log('⚠️ Fallback to local storage successful');
-        } catch (fallbackError) {
-          console.error('❌ Fallback to local storage failed:', fallbackError);
-          setPreviousExercises([]);
-          setSelectedExercises(new Set());
-        }
+        setPreviousExercises([]);
+        setSelectedExercises(new Set());
       } finally {
         setLoading(false);
       }

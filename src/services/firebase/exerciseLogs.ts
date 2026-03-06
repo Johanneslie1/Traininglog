@@ -394,8 +394,130 @@ export const getExerciseLogs = async (userId: string, startDate: Date, endDate: 
 
     return exercises;
   } catch (error) {
+    const firebaseError = error as { code?: string; message?: string };
+    if (firebaseError.code === 'permission-denied' || firebaseError.message?.includes('Missing or insufficient permissions')) {
+      console.warn('⚠️ Permission denied for exercises collection. Returning empty exercise list.');
+      return [];
+    }
+
     console.error('❌ Error fetching exercise logs:', error);
     throw new Error('Failed to fetch exercises');
+  }
+};
+
+export const getLegacyExerciseLogs = async (userId: string, startDate: Date, endDate: Date): Promise<ExerciseLog[]> => {
+  try {
+    if (!userId) {
+      throw new Error('userId is required to fetch legacy exercise logs');
+    }
+
+    const logsRef = collection(db, 'users', userId, 'exerciseLogs');
+    const logsQuery = query(
+      logsRef,
+      where('timestamp', '>=', Timestamp.fromDate(startDate)),
+      where('timestamp', '<=', Timestamp.fromDate(endDate)),
+      orderBy('timestamp', 'desc')
+    );
+
+    const snapshot = await getDocs(logsQuery);
+    return snapshot.docs.map((docSnapshot) => {
+      const data = docSnapshot.data();
+      return {
+        id: docSnapshot.id,
+        exerciseName: data.exerciseName,
+        sets: data.sets,
+        timestamp: parseTimestamp(data.timestamp),
+        deviceId: data.deviceId || 'legacy',
+        userId: data.userId,
+        activityType: data.activityType,
+        exerciseType: data.exerciseType,
+        supersetId: data.supersetId,
+        supersetLabel: data.supersetLabel,
+        supersetName: data.supersetName,
+      } as ExerciseLog;
+    });
+  } catch (error) {
+    const firebaseError = error as { code?: string; message?: string };
+    if (firebaseError.code === 'permission-denied' || firebaseError.message?.includes('Missing or insufficient permissions')) {
+      console.warn('⚠️ Permission denied for legacy exerciseLogs collection. Returning empty list.');
+      return [];
+    }
+
+    console.error('❌ Error fetching legacy exercise logs:', error);
+    throw new Error('Failed to fetch legacy exercise logs');
+  }
+};
+
+export const getTopLevelLegacyExerciseLogs = async (userId: string, startDate: Date, endDate: Date): Promise<ExerciseLog[]> => {
+  try {
+    if (!userId) {
+      throw new Error('userId is required to fetch top-level legacy exercise logs');
+    }
+
+    const logsRef = collection(db, 'exerciseLogs');
+
+    const mapSnapshotDoc = (docSnapshot: any): ExerciseLog => {
+      const data = docSnapshot.data();
+      return {
+        id: docSnapshot.id,
+        exerciseName: data.exerciseName,
+        sets: data.sets,
+        timestamp: parseTimestamp(data.timestamp),
+        deviceId: data.deviceId || 'legacy',
+        userId: data.userId,
+        activityType: data.activityType,
+        exerciseType: data.exerciseType,
+        supersetId: data.supersetId,
+        supersetLabel: data.supersetLabel,
+        supersetName: data.supersetName,
+      } as ExerciseLog;
+    };
+
+    try {
+      const logsQuery = query(
+        logsRef,
+        where('userId', '==', userId),
+        where('timestamp', '>=', Timestamp.fromDate(startDate)),
+        where('timestamp', '<=', Timestamp.fromDate(endDate)),
+        orderBy('timestamp', 'desc')
+      );
+
+      const snapshot = await getDocs(logsQuery);
+      return snapshot.docs.map(mapSnapshotDoc);
+    } catch (queryError) {
+      const firebaseQueryError = queryError as { code?: string; message?: string };
+      const missingIndex =
+        firebaseQueryError.code === 'failed-precondition' ||
+        firebaseQueryError.message?.toLowerCase().includes('requires an index');
+
+      if (!missingIndex) {
+        throw queryError;
+      }
+
+      console.warn('⚠️ Missing index for top-level legacy exerciseLogs ranged query. Falling back to userId-only query.');
+
+      const fallbackQuery = query(logsRef, where('userId', '==', userId));
+      const fallbackSnapshot = await getDocs(fallbackQuery);
+
+      return fallbackSnapshot.docs
+        .map(mapSnapshotDoc)
+        .filter((log) => log.timestamp >= startDate && log.timestamp <= endDate)
+        .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    }
+  } catch (error) {
+    const firebaseError = error as { code?: string; message?: string };
+    if (firebaseError.code === 'permission-denied' || firebaseError.message?.includes('Missing or insufficient permissions')) {
+      console.warn('⚠️ Permission denied for top-level legacy exerciseLogs collection. Returning empty list.');
+      return [];
+    }
+
+    if (firebaseError.code === 'failed-precondition' || firebaseError.message?.toLowerCase().includes('requires an index')) {
+      console.warn('⚠️ Missing index for top-level legacy exerciseLogs collection. Returning empty list.');
+      return [];
+    }
+
+    console.error('❌ Error fetching top-level legacy exercise logs:', error);
+    throw new Error('Failed to fetch top-level legacy exercise logs');
   }
 };
 

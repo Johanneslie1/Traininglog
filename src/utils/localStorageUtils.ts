@@ -103,7 +103,7 @@ export const deleteExerciseLog = async (log: ExerciseLog): Promise<boolean> => {
   try {
     // First try to delete from Firestore if we have an ID
     if (log.id && auth.currentUser) {
-      const docRef = doc(db, 'exerciseLogs', log.id);
+      const docRef = doc(db, 'users', auth.currentUser.uid, 'exercises', log.id);
       const docSnap = await getDoc(docRef);
       
       if (docSnap.exists()) {

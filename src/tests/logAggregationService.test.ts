@@ -2,6 +2,8 @@ import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 
 jest.mock('@/services/firebase/exerciseLogs', () => ({
   getExerciseLogs: jest.fn(async () => []),
+  getLegacyExerciseLogs: jest.fn(async () => []),
+  getTopLevelLegacyExerciseLogs: jest.fn(async () => []),
 }));
 
 jest.mock('@/services/firebase/activityLogs', () => ({
@@ -16,6 +18,8 @@ import { getAggregatedExportLogs } from '@/services/logAggregationService';
 
 const mockedExerciseLogs = jest.requireMock('@/services/firebase/exerciseLogs') as {
   getExerciseLogs: any;
+  getLegacyExerciseLogs: any;
+  getTopLevelLegacyExerciseLogs: any;
 };
 const mockedActivityLogs = jest.requireMock('@/services/firebase/activityLogs') as {
   getActivityLogs: any;
@@ -88,6 +92,27 @@ describe('logAggregationService', () => {
       },
     ]);
 
+    mockedExerciseLogs.getLegacyExerciseLogs.mockResolvedValue([
+      {
+        id: 'legacy-1',
+        exerciseName: 'Deadlift',
+        sets: [{ reps: 5, weight: 120 }],
+        timestamp: new Date('2026-03-01T09:00:00.000Z'),
+        userId: 'user-1',
+        activityType: 'resistance',
+      },
+    ]);
+    mockedExerciseLogs.getTopLevelLegacyExerciseLogs.mockResolvedValue([
+      {
+        id: 'top-legacy-1',
+        exerciseName: 'Incline Bench Press',
+        sets: [{ reps: 6, weight: 90 }],
+        timestamp: new Date('2026-03-01T08:30:00.000Z'),
+        userId: 'user-1',
+        activityType: 'resistance',
+      },
+    ]);
+
     localStorage.setItem(
       'exercise_logs',
       JSON.stringify([
@@ -112,14 +137,16 @@ describe('logAggregationService', () => {
 
     const result = await getAggregatedExportLogs('user-1', startDate, endDate);
 
-    expect(result).toHaveLength(4);
+    expect(result).toHaveLength(6);
     expect(result.find((log) => log.id === 'shared-1')?.collectionType).toBe('exercise');
-    expect(result.map((log) => log.collectionType)).toEqual(expect.arrayContaining(['exercise', 'activity', 'strength', 'local']));
+    expect(result.map((log) => log.collectionType)).toEqual(expect.arrayContaining(['exercise', 'activity', 'strength', 'legacyExerciseLog', 'topLevelExerciseLog', 'local']));
     expect(result[0].timestamp.getTime()).toBeGreaterThanOrEqual(result[1].timestamp.getTime());
   });
 
   it('fails with source details when any configured source fails', async () => {
     mockedExerciseLogs.getExerciseLogs.mockResolvedValue([]);
+    mockedExerciseLogs.getLegacyExerciseLogs.mockResolvedValue([]);
+    mockedExerciseLogs.getTopLevelLegacyExerciseLogs.mockResolvedValue([]);
     mockedActivityLogs.getActivityLogs.mockResolvedValue([]);
     mockedStrengthLogs.getExerciseLogs.mockRejectedValue(new Error('network unavailable'));
 
@@ -139,6 +166,8 @@ describe('logAggregationService', () => {
         activityType: 'resistance',
       },
     ]);
+    mockedExerciseLogs.getLegacyExerciseLogs.mockResolvedValue([]);
+    mockedExerciseLogs.getTopLevelLegacyExerciseLogs.mockResolvedValue([]);
     mockedActivityLogs.getActivityLogs.mockResolvedValue([]);
     mockedStrengthLogs.getExerciseLogs.mockResolvedValue([]);
 
@@ -156,6 +185,8 @@ describe('logAggregationService', () => {
 
   it('reads local entries with loggedAt timestamp fallback', async () => {
     mockedExerciseLogs.getExerciseLogs.mockResolvedValue([]);
+    mockedExerciseLogs.getLegacyExerciseLogs.mockResolvedValue([]);
+    mockedExerciseLogs.getTopLevelLegacyExerciseLogs.mockResolvedValue([]);
     mockedActivityLogs.getActivityLogs.mockResolvedValue([]);
     mockedStrengthLogs.getExerciseLogs.mockResolvedValue([]);
 
@@ -186,6 +217,8 @@ describe('logAggregationService', () => {
 
   it('reclassifies local OTHER logs to RESISTANCE when set shape indicates resistance', async () => {
     mockedExerciseLogs.getExerciseLogs.mockResolvedValue([]);
+    mockedExerciseLogs.getLegacyExerciseLogs.mockResolvedValue([]);
+    mockedExerciseLogs.getTopLevelLegacyExerciseLogs.mockResolvedValue([]);
     mockedActivityLogs.getActivityLogs.mockResolvedValue([]);
     mockedStrengthLogs.getExerciseLogs.mockResolvedValue([]);
 
@@ -211,5 +244,35 @@ describe('logAggregationService', () => {
 
     expect(result).toHaveLength(1);
     expect(result[0].activityType).toBe('resistance');
+  });
+
+  it('preserves legacy root-level set metrics including weight=0', async () => {
+    mockedExerciseLogs.getExerciseLogs.mockResolvedValue([
+      {
+        id: 'legacy-flat-1',
+        exerciseName: 'Pull-Up',
+        sets: [],
+        reps: 8,
+        weight: 0,
+        timestamp: new Date('2026-03-01T10:00:00.000Z'),
+        userId: 'user-1',
+        activityType: 'resistance',
+      },
+    ]);
+    mockedExerciseLogs.getLegacyExerciseLogs.mockResolvedValue([]);
+    mockedExerciseLogs.getTopLevelLegacyExerciseLogs.mockResolvedValue([]);
+    mockedActivityLogs.getActivityLogs.mockResolvedValue([]);
+    mockedStrengthLogs.getExerciseLogs.mockResolvedValue([]);
+
+    const result = await getAggregatedExportLogs(
+      'user-1',
+      new Date('2026-03-01T00:00:00.000Z'),
+      new Date('2026-03-02T00:00:00.000Z')
+    );
+
+    expect(result).toHaveLength(1);
+    expect(result[0].sets).toHaveLength(1);
+    expect(result[0].sets[0].weight).toBe(0);
+    expect(result[0].sets[0].reps).toBe(8);
   });
 });

@@ -1,11 +1,21 @@
-import { getExerciseLogs as getFirebaseExerciseLogs } from '@/services/firebase/exerciseLogs';
+import {
+  getExerciseLogs as getFirebaseExerciseLogs,
+  getLegacyExerciseLogs,
+  getTopLevelLegacyExerciseLogs,
+} from '@/services/firebase/exerciseLogs';
 import { getActivityLogs as getFirebaseActivityLogs } from '@/services/firebase/activityLogs';
 import { getExerciseLogs as getStrengthExerciseLogs } from '@/services/firebase/strengthExerciseLogs';
 import { ActivityType } from '@/types/activityTypes';
 import { normalizeActivityType } from '@/types/activityLog';
 import { resolveActivityTypeFromExerciseLike } from '@/utils/activityTypeResolver';
 
-type ExportSource = 'exercise' | 'activity' | 'strength' | 'local';
+type ExportSource =
+  | 'exercise'
+  | 'activity'
+  | 'strength'
+  | 'legacyExerciseLog'
+  | 'topLevelExerciseLog'
+  | 'local';
 
 type AnySet = Record<string, unknown>;
 
@@ -29,6 +39,64 @@ const isObjectRecord = (value: unknown): value is Record<string, unknown> =>
 const toAnySets = (value: unknown): AnySet[] => {
   if (!Array.isArray(value)) return [];
   return value.filter(isObjectRecord);
+};
+
+const LEGACY_SET_KEYS = [
+  'reps',
+  'weight',
+  'duration',
+  'distance',
+  'durationSec',
+  'distanceMeters',
+  'rpe',
+  'rir',
+  'restTime',
+  'restTimeSec',
+  'comment',
+  'notes',
+  'hrZone1',
+  'hrZone2',
+  'hrZone3',
+  'hrZone4',
+  'hrZone5',
+  'averageHeartRate',
+  'maxHeartRate',
+  'heartRate',
+  'averageHR',
+  'maxHR',
+  'calories',
+  'height',
+  'drillMetric',
+  'score',
+  'opponent',
+  'performance',
+  'stretchType',
+  'intensity',
+  'bodyPart',
+  'holdTime',
+  'flexibility',
+  'pace',
+  'elevation',
+] as const;
+
+const normalizeSetsForExport = (entry: Record<string, unknown>): AnySet[] => {
+  const explicitSets = toAnySets(entry.sets);
+  if (explicitSets.length > 0) {
+    return explicitSets;
+  }
+
+  const fallbackSet: AnySet = {};
+
+  LEGACY_SET_KEYS.forEach((key) => {
+    if (Object.prototype.hasOwnProperty.call(entry, key)) {
+      const value = entry[key];
+      if (value !== undefined && value !== null) {
+        fallbackSet[key] = value;
+      }
+    }
+  });
+
+  return Object.keys(fallbackSet).length > 0 ? [fallbackSet] : [];
 };
 
 const LOCAL_EXERCISE_LOGS_KEY = 'exercise_logs';
@@ -142,10 +210,14 @@ const sourcePriority = (source: ExportSource): number => {
       return 0;
     case 'activity':
       return 1;
-    case 'exercise':
+    case 'legacyExerciseLog':
       return 2;
-    case 'strength':
+    case 'topLevelExerciseLog':
+      return 2;
+    case 'exercise':
       return 3;
+    case 'strength':
+      return 4;
     default:
       return 0;
   }
@@ -209,10 +281,12 @@ export const getAggregatedExportLogs = async (
     getFirebaseExerciseLogs(userId, startDate, endDate),
     getFirebaseActivityLogs(userId, startDate, endDate),
     getStrengthExerciseLogs(userId, startDate, endDate),
+    getLegacyExerciseLogs(userId, startDate, endDate),
+    getTopLevelLegacyExerciseLogs(userId, startDate, endDate),
     Promise.resolve(readLocalExerciseLogs(userId, startDate, endDate)),
   ]);
 
-  const sourceNames: ExportSource[] = ['exercise', 'activity', 'strength', 'local'];
+  const sourceNames: ExportSource[] = ['exercise', 'activity', 'strength', 'legacyExerciseLog', 'topLevelExerciseLog', 'local'];
   const failedSources = sourceReads
     .map((result, index) => ({ result, source: sourceNames[index] }))
     .filter(({ result }) => result.status === 'rejected');
@@ -228,13 +302,15 @@ export const getAggregatedExportLogs = async (
   const exerciseLogs = sourceReads[0].status === 'fulfilled' ? sourceReads[0].value : [];
   const activityLogs = sourceReads[1].status === 'fulfilled' ? sourceReads[1].value : [];
   const strengthLogs = sourceReads[2].status === 'fulfilled' ? sourceReads[2].value : [];
-  const localLogs = sourceReads[3].status === 'fulfilled' ? sourceReads[3].value : [];
+  const legacyExerciseLogs = sourceReads[3].status === 'fulfilled' ? sourceReads[3].value : [];
+  const topLevelLegacyExerciseLogs = sourceReads[4].status === 'fulfilled' ? sourceReads[4].value : [];
+  const localLogs = sourceReads[5].status === 'fulfilled' ? sourceReads[5].value : [];
 
   const normalizedSources: SourceLog[] = [
     ...exerciseLogs.map((log) => ({
       id: log.id,
       exerciseName: log.exerciseName || '',
-      sets: toAnySets(log.sets),
+      sets: normalizeSetsForExport(log as unknown as Record<string, unknown>),
       timestamp: parseTimestamp(log.timestamp),
       userId: String(log.userId || userId),
       activityType: log.activityType,
@@ -247,7 +323,7 @@ export const getAggregatedExportLogs = async (
     ...activityLogs.map((log) => ({
       id: log.id,
       exerciseName: log.activityName || '',
-      sets: toAnySets(log.sets),
+      sets: normalizeSetsForExport(log as unknown as Record<string, unknown>),
       timestamp: parseTimestamp(log.timestamp),
       userId: String(log.userId || userId),
       activityType: log.activityType,
@@ -259,7 +335,7 @@ export const getAggregatedExportLogs = async (
     ...strengthLogs.map((log) => ({
       id: log.id,
       exerciseName: log.exerciseName || '',
-      sets: toAnySets(log.sets),
+      sets: normalizeSetsForExport(log as unknown as Record<string, unknown>),
       timestamp: parseTimestamp(log.timestamp),
       userId: String(log.userId || userId),
       activityType: log.activityType || ActivityType.RESISTANCE,
@@ -268,6 +344,32 @@ export const getAggregatedExportLogs = async (
       supersetLabel: log.supersetLabel,
       supersetName: log.supersetName,
       collectionType: 'strength' as const,
+    })),
+    ...legacyExerciseLogs.map((log) => ({
+      id: log.id,
+      exerciseName: log.exerciseName || '',
+      sets: normalizeSetsForExport(log as unknown as Record<string, unknown>),
+      timestamp: parseTimestamp(log.timestamp),
+      userId: String(log.userId || userId),
+      activityType: log.activityType,
+      exerciseType: log.exerciseType,
+      supersetId: log.supersetId,
+      supersetLabel: log.supersetLabel,
+      supersetName: log.supersetName,
+      collectionType: 'legacyExerciseLog' as const,
+    })),
+    ...topLevelLegacyExerciseLogs.map((log) => ({
+      id: log.id,
+      exerciseName: log.exerciseName || '',
+      sets: normalizeSetsForExport(log as unknown as Record<string, unknown>),
+      timestamp: parseTimestamp(log.timestamp),
+      userId: String(log.userId || userId),
+      activityType: log.activityType,
+      exerciseType: log.exerciseType,
+      supersetId: log.supersetId,
+      supersetLabel: log.supersetLabel,
+      supersetName: log.supersetName,
+      collectionType: 'topLevelExerciseLog' as const,
     })),
     ...localLogs,
   ];

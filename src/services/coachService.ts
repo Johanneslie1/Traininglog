@@ -14,7 +14,9 @@ import { getAuth } from 'firebase/auth';
 import { getCoachTeams, getTeamMembers, TeamMember, syncCoachAthleteAccess } from './teamService';
 import { startOfDay, endOfDay } from '@/utils/dateUtils';
 import { getUserWorkouts } from './firebase/workouts';
-import { downloadCSV } from './exportService';
+import { downloadCSV, exportData, serializeSetForExport, SET_EXPORT_HEADERS } from './exportService';
+import { ActivityType } from '@/types/activityTypes';
+import { normalizeActivityType } from '@/types/activityLog';
 
 export interface AthleteData extends TeamMember {
   lastActive?: string;
@@ -34,13 +36,16 @@ export interface AthleteExerciseLog {
   id: string;
   name: string;
   activityType?: string;
-  sourceCollection: 'exercises' | 'activities' | 'strengthExercises';
+  sourceCollection: 'exercises' | 'activities' | 'strengthExercises' | 'exerciseLogs';
   date: string;
   timestamp: Date;
   sets: any[];
   totalSets: number;
   totalVolume?: number;
   notes?: string;
+  supersetId?: string;
+  supersetLabel?: string;
+  supersetName?: string;
 }
 
 export interface AthleteSessionHistoryItem {
@@ -65,27 +70,13 @@ export interface AthleteSummaryStats {
   lastActive?: string;
 }
 
-type CoachExportRowType = 'exercise' | 'session';
+type CoachExportRowType = 'session' | 'exercise_log' | 'exercise_set';
 
-interface CoachExportRow {
+interface CoachExportRow extends Record<string, string | number | boolean> {
   rowType: CoachExportRowType;
   coachId: string;
   athleteId: string;
   athleteName: string;
-  sessionDate: string;
-  sessionId: string;
-  sessionStatus: string;
-  sessionNotes: string;
-  sessionExerciseCount: number;
-  sessionTotalVolume: number;
-  exerciseLogId: string;
-  exerciseName: string;
-  activityType: string;
-  sourceCollection: string;
-  totalSets: number;
-  exerciseVolume: number;
-  exerciseNotes: string;
-  loggedTimestamp: string;
 }
 
 interface CoachAccessSnapshot {
@@ -118,30 +109,8 @@ const EMPTY_STATS: AthleteSummaryStats = {
 };
 
 const ACCESS_CACHE_TTL_MS = 30 * 1000;
-const EXPORT_LOG_MAX_RESULTS = 10000;
 const coachAccessCache = new Map<string, CoachAccessSnapshot>();
 const coachAccessInFlight = new Map<string, Promise<CoachAccessSnapshot>>();
-
-const COACH_EXPORT_HEADERS: Array<keyof CoachExportRow> = [
-  'rowType',
-  'coachId',
-  'athleteId',
-  'athleteName',
-  'sessionDate',
-  'sessionId',
-  'sessionStatus',
-  'sessionNotes',
-  'sessionExerciseCount',
-  'sessionTotalVolume',
-  'exerciseLogId',
-  'exerciseName',
-  'activityType',
-  'sourceCollection',
-  'totalSets',
-  'exerciseVolume',
-  'exerciseNotes',
-  'loggedTimestamp'
-];
 
 export function invalidateCoachAccessCache(coachId?: string): void {
   if (coachId) {
@@ -185,6 +154,42 @@ function isPermissionDenied(error: unknown): boolean {
 
 function isValidDate(date: Date): boolean {
   return !Number.isNaN(date.getTime());
+}
+
+function toIsoOrEmpty(date?: Date): string {
+  if (!date || !isValidDate(date)) {
+    return '';
+  }
+
+  return date.toISOString();
+}
+
+function logCoachExportDebug(message: string, payload?: Record<string, unknown>): void {
+  const envDebugEnabled =
+    (globalThis as { process?: { env?: Record<string, string | undefined> } })
+      .process?.env?.VITE_COACH_EXPORT_DEBUG === 'true';
+
+  let localStorageDebugEnabled = false;
+  try {
+    localStorageDebugEnabled = globalThis.localStorage?.getItem('coach_export_debug') === 'true';
+  } catch {
+    localStorageDebugEnabled = false;
+  }
+
+  if (!envDebugEnabled && !localStorageDebugEnabled) {
+    return;
+  }
+
+  if (payload) {
+    console.info('[coachExport][debug]', message, payload);
+    return;
+  }
+
+  console.info('[coachExport][debug]', message);
+}
+
+function buildCoachAthleteAccessId(coachId: string, athleteId: string): string {
+  return `${coachId}_${athleteId}`;
 }
 
 function parseExerciseDate(data: any): Date | undefined {
@@ -328,8 +333,28 @@ function normalizeSets(value: unknown): any[] {
   return Array.isArray(value) ? value : [];
 }
 
+function readNumericSetValue(set: Record<string, unknown>, key: string): number {
+  const value = set[key];
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+}
+
+function mapSourceCollectionToExportCategory(sourceCollection: AthleteExerciseLog['sourceCollection']): string {
+  switch (sourceCollection) {
+    case 'exercises':
+      return 'exercise';
+    case 'exerciseLogs':
+      return 'exercise';
+    case 'activities':
+      return 'activity';
+    case 'strengthExercises':
+      return 'strength';
+    default:
+      return 'exercise';
+  }
+}
+
 function toAthleteLog(
-  sourceCollection: 'exercises' | 'activities' | 'strengthExercises',
+  sourceCollection: 'exercises' | 'activities' | 'strengthExercises' | 'exerciseLogs',
   id: string,
   data: any
 ): AthleteExerciseLog | null {
@@ -350,7 +375,122 @@ function toAthleteLog(
     sets,
     totalSets: sets.length,
     totalVolume: calculateExerciseVolume(data),
-    notes: typeof data?.notes === 'string' ? data.notes : undefined
+    notes: typeof data?.notes === 'string' ? data.notes : undefined,
+    supersetId: typeof data?.supersetId === 'string' ? data.supersetId : undefined,
+    supersetLabel: typeof data?.supersetLabel === 'string' ? data.supersetLabel : undefined,
+    supersetName: typeof data?.supersetName === 'string' ? data.supersetName : undefined
+  };
+}
+
+function buildFallbackSettingsParityExportData(
+  athleteId: string,
+  exerciseLogs: AthleteExerciseLog[],
+  sessions: ExportSessionSnapshot[]
+): {
+  sessions: Record<string, any>[];
+  exerciseLogs: Record<string, any>[];
+  sets: Record<string, any>[];
+} {
+  const logsByDate = new Map<string, AthleteExerciseLog[]>();
+  exerciseLogs.forEach((log) => {
+    const dateKey = getLocalDateKey(log.timestamp);
+    const existing = logsByDate.get(dateKey) || [];
+    existing.push(log);
+    logsByDate.set(dateKey, existing);
+  });
+
+  const sessionRows = sessions.map((session) => {
+    const logsForDate = logsByDate.get(session.dateKey) || [];
+    const setCount = logsForDate.reduce((sum, log) => sum + log.sets.length, 0);
+
+    return {
+      userId: athleteId,
+      sessionId: session.id,
+      sessionDate: session.date.toISOString(),
+      startTime: '',
+      endTime: '',
+      notes: session.notes || '',
+      totalVolume: session.totalVolume || 0,
+      sessionRPE: 0,
+      exerciseCount: session.exerciseCount || logsForDate.length,
+      setCount,
+      durationMinutes: 0,
+      createdAt: '',
+      updatedAt: ''
+    };
+  });
+
+  const exerciseLogRows = exerciseLogs.map((log) => {
+    const normalizedType = normalizeActivityType(log.activityType || ActivityType.OTHER);
+    const totalReps = log.sets.reduce((sum, set) => sum + readNumericSetValue(set as Record<string, unknown>, 'reps'), 0);
+    const maxWeight = log.sets.length > 0
+      ? Math.max(...log.sets.map((set) => readNumericSetValue(set as Record<string, unknown>, 'weight')))
+      : 0;
+    const totalVolume = log.sets.reduce(
+      (sum, set) => sum + (readNumericSetValue(set as Record<string, unknown>, 'reps') * readNumericSetValue(set as Record<string, unknown>, 'weight')),
+      0
+    );
+    const averageRPE = log.sets.length > 0
+      ? log.sets.reduce((sum, set) => sum + readNumericSetValue(set as Record<string, unknown>, 'rpe'), 0) / log.sets.length
+      : 0;
+
+    const setNotes = log.sets
+      .map((set) => {
+        const typedSet = set as Record<string, unknown>;
+        const comment = typeof typedSet.comment === 'string' ? typedSet.comment : '';
+        const notes = typeof typedSet.notes === 'string' ? typedSet.notes : '';
+        return comment || notes;
+      })
+      .filter((value) => value);
+
+    const combinedNotes = [log.notes || '', ...setNotes].filter((value) => value).join('; ');
+
+    return {
+      userId: athleteId,
+      sessionId: '',
+      exerciseLogId: log.id,
+      exerciseId: '',
+      exerciseName: log.name,
+      supersetId: log.supersetId || '',
+      supersetLabel: log.supersetLabel || '',
+      supersetName: log.supersetName || '',
+      category: mapSourceCollectionToExportCategory(log.sourceCollection),
+      type: normalizedType,
+      setCount: log.sets.length,
+      totalReps,
+      maxWeight,
+      totalVolume,
+      averageRPE,
+      notes: combinedNotes,
+      createdAt: log.timestamp.toISOString()
+    };
+  });
+
+  const setRows = exerciseLogs.flatMap((log) => {
+    const normalizedType = normalizeActivityType(log.activityType || ActivityType.OTHER);
+    const collectionType = mapSourceCollectionToExportCategory(log.sourceCollection);
+
+    return log.sets.map((set, index) => serializeSetForExport(
+      athleteId,
+      {
+        id: log.id,
+        exerciseName: log.name,
+        collectionType,
+        activityType: normalizedType,
+        timestamp: log.timestamp,
+        supersetId: log.supersetId,
+        supersetLabel: log.supersetLabel,
+        supersetName: log.supersetName
+      },
+      set,
+      index
+    ));
+  });
+
+  return {
+    sessions: sessionRows,
+    exerciseLogs: exerciseLogRows,
+    sets: setRows
   };
 }
 
@@ -368,11 +508,20 @@ async function getAthleteUnifiedLogs(
     throw new Error('You do not have permission to view this athlete\'s data');
   }
 
-  const sourceCollections: Array<'exercises' | 'activities' | 'strengthExercises'> = [
+  const sourceCollections: Array<'exercises' | 'activities' | 'strengthExercises' | 'exerciseLogs'> = [
     'exercises',
     'activities',
-    'strengthExercises'
+    'strengthExercises',
+    'exerciseLogs'
   ];
+
+  logCoachExportDebug('Fetching unified athlete logs', {
+    athleteId,
+    startDate: toIsoOrEmpty(startDate),
+    endDate: toIsoOrEmpty(endDate),
+    maxResults: options.maxResults ?? null,
+    skipRelationshipCheck: options.skipRelationshipCheck === true
+  });
 
   const sourceSnapshots = await Promise.all(
     sourceCollections.map(async (sourceCollection) => {
@@ -391,6 +540,10 @@ async function getAthleteUnifiedLogs(
               limit(maxResults)
             );
             snapshot = await getDocs(rangedQuery);
+
+            if (snapshot.empty) {
+              snapshot = await getDocs(sourceRef);
+            }
           } catch {
             snapshot = await getDocs(sourceRef);
           }
@@ -398,21 +551,42 @@ async function getAthleteUnifiedLogs(
           snapshot = await getDocs(sourceRef);
         }
 
-        return snapshot.docs
+        const logs = snapshot.docs
           .map((doc) => toAthleteLog(sourceCollection, doc.id, doc.data()))
           .filter((log): log is AthleteExerciseLog => !!log);
+
+        return {
+          sourceCollection,
+          logs,
+          permissionDenied: false
+        };
       } catch (error) {
         if (!isPermissionDenied(error)) {
           throw error;
         }
 
-        return [];
+        return {
+          sourceCollection,
+          logs: [] as AthleteExerciseLog[],
+          permissionDenied: true
+        };
       }
     })
   );
 
+  sourceSnapshots.forEach((sourceSnapshot) => {
+    logCoachExportDebug('Unified source query result', {
+      athleteId,
+      sourceCollection: sourceSnapshot.sourceCollection,
+      logCount: sourceSnapshot.logs.length,
+      permissionDenied: sourceSnapshot.permissionDenied,
+      startDate: toIsoOrEmpty(startDate),
+      endDate: toIsoOrEmpty(endDate)
+    });
+  });
+
   const allLogs = sourceSnapshots
-    .flat()
+    .flatMap((snapshot) => snapshot.logs)
     .filter((log) => {
       if (startDate && log.timestamp < startDate) {
         return false;
@@ -799,11 +973,6 @@ interface ExportSessionSnapshot {
 }
 
 async function getCoachAthleteIdentity(athleteId: string): Promise<CoachAthleteIdentity> {
-  const hasAccess = await verifyCoachAthleteRelationship(athleteId);
-  if (!hasAccess) {
-    throw new Error('You do not have permission to export this athlete\'s data');
-  }
-
   const accessSnapshot = await getCoachAccessSnapshot();
   for (const members of accessSnapshot.membersByTeamId.values()) {
     const member = members.find((item) => item.id === athleteId);
@@ -908,83 +1077,170 @@ async function getAthleteTrainingSessions(
     .sort((a, b) => b.date.getTime() - a.date.getTime());
 }
 
+async function buildCoachExportDataForAthlete(
+  athlete: CoachAthleteIdentity,
+  startDate?: Date,
+  endDate?: Date
+): Promise<{
+  sessions: Record<string, any>[];
+  exerciseLogs: Record<string, any>[];
+  sets: Record<string, any>[];
+}> {
+  await ensureCoachAthleteExportAccess(athlete.athleteId);
+
+  const effectiveStartDate = startDate ? startOfDay(startDate) : undefined;
+  const effectiveEndDate = endDate ? endOfDay(endDate) : undefined;
+  logCoachExportDebug('Building coach export data from exportData', {
+    athleteId: athlete.athleteId,
+    athleteName: athlete.athleteName,
+    inputStartDate: toIsoOrEmpty(startDate),
+    inputEndDate: toIsoOrEmpty(endDate),
+    effectiveStartDate: toIsoOrEmpty(effectiveStartDate),
+    effectiveEndDate: toIsoOrEmpty(effectiveEndDate)
+  });
+
+  const exportResult = await exportData(athlete.athleteId, {
+    includeSessions: true,
+    includeExerciseLogs: true,
+    includeSets: true,
+    startDate,
+    endDate
+  });
+
+  logCoachExportDebug('Coach exportData result counts', {
+    athleteId: athlete.athleteId,
+    sessionsCount: exportResult.sessions.length,
+    exerciseLogsCount: exportResult.exerciseLogs.length,
+    setsCount: exportResult.sets.length
+  });
+
+  if (exportResult.sets.length === 0) {
+    logCoachExportDebug('Primary exportData returned zero sets, falling back to direct coach source aggregation', {
+      athleteId: athlete.athleteId,
+      startDate: toIsoOrEmpty(startDate),
+      endDate: toIsoOrEmpty(endDate)
+    });
+
+    const [exerciseLogs, sessions] = await Promise.all([
+      getAthleteUnifiedLogs(athlete.athleteId, startDate, endDate, {
+        skipRelationshipCheck: true,
+        maxResults: 5000
+      }),
+      getAthleteTrainingSessions(athlete.athleteId, startDate, endDate)
+    ]);
+
+    const fallbackResult = buildFallbackSettingsParityExportData(
+      athlete.athleteId,
+      exerciseLogs,
+      sessions
+    );
+
+    logCoachExportDebug('Fallback export result counts', {
+      athleteId: athlete.athleteId,
+      sessionsCount: fallbackResult.sessions.length,
+      exerciseLogsCount: fallbackResult.exerciseLogs.length,
+      setsCount: fallbackResult.sets.length
+    });
+
+    return fallbackResult;
+  }
+
+  return exportResult;
+}
+
+async function ensureCoachAthleteExportAccess(athleteId: string): Promise<{ coachId: string }> {
+  const { uid: coachId } = await ensureAuth();
+  const hasRelationship = await verifyCoachAthleteRelationship(athleteId);
+  if (!hasRelationship) {
+    throw new Error('You do not have permission to export this athlete\'s data');
+  }
+
+  try {
+    await syncCoachAthleteAccess(coachId, athleteId);
+  } catch (error) {
+    console.error('[coachService] Failed to sync coach-athlete export access:', error);
+    throw new Error('Could not verify coach-athlete access for export. Please try again.');
+  }
+
+  const accessDocRef = doc(db, 'coachAthleteAccess', buildCoachAthleteAccessId(coachId, athleteId));
+  const accessDoc = await getDoc(accessDocRef);
+
+  if (!accessDoc.exists()) {
+    throw new Error('Coach-athlete access is not configured for export. Ask the athlete to rejoin the team or refresh team access.');
+  }
+
+  logCoachExportDebug('Coach-athlete export access verified', {
+    coachId,
+    athleteId,
+    accessDocumentId: buildCoachAthleteAccessId(coachId, athleteId)
+  });
+
+  return { coachId };
+}
+
 async function buildCoachExportRowsForAthlete(
   coachId: string,
   athlete: CoachAthleteIdentity,
   startDate?: Date,
   endDate?: Date
 ): Promise<CoachExportRow[]> {
-  const [exerciseLogs, sessions] = await Promise.all([
-    getAthleteUnifiedLogs(athlete.athleteId, startDate, endDate, {
-      skipRelationshipCheck: true,
-      maxResults: EXPORT_LOG_MAX_RESULTS
-    }),
-    getAthleteTrainingSessions(athlete.athleteId, startDate, endDate)
-  ]);
+  const exportResult = await buildCoachExportDataForAthlete(athlete, startDate, endDate);
 
-  const sessionsByDate = new Map<string, ExportSessionSnapshot[]>();
-  sessions.forEach((session) => {
-    const existing = sessionsByDate.get(session.dateKey) || [];
-    existing.push(session);
-    sessionsByDate.set(session.dateKey, existing);
+  const buildBaseRow = (rowType: CoachExportRowType): CoachExportRow => ({
+    rowType,
+    coachId,
+    athleteId: athlete.athleteId,
+    athleteName: athlete.athleteName
   });
 
-  const exerciseRows: CoachExportRow[] = exerciseLogs.map((log) => {
-    const dateKey = getLocalDateKey(log.timestamp);
-    const matchingSession = (sessionsByDate.get(dateKey) || [])[0];
+  const sessionRows: CoachExportRow[] = exportResult.sessions.map((session) => ({
+    ...buildBaseRow('session'),
+    ...session
+  }));
 
-    return {
-      rowType: 'exercise',
-      coachId,
-      athleteId: athlete.athleteId,
-      athleteName: athlete.athleteName,
-      sessionDate: dateKey,
-      sessionId: matchingSession?.id || '',
-      sessionStatus: matchingSession?.status || '',
-      sessionNotes: matchingSession?.notes || '',
-      sessionExerciseCount: matchingSession?.exerciseCount || 0,
-      sessionTotalVolume: Math.round(matchingSession?.totalVolume || 0),
-      exerciseLogId: log.id,
-      exerciseName: log.name,
-      activityType: log.activityType || '',
-      sourceCollection: log.sourceCollection,
-      totalSets: log.totalSets,
-      exerciseVolume: Math.round(log.totalVolume || 0),
-      exerciseNotes: log.notes || '',
-      loggedTimestamp: log.timestamp.toISOString()
-    };
-  });
+  const exerciseLogRows: CoachExportRow[] = exportResult.exerciseLogs.map((exerciseLog) => ({
+    ...buildBaseRow('exercise_log'),
+    ...exerciseLog
+  }));
 
-  const emptySessionRows: CoachExportRow[] = sessions
-    .filter((session) => session.exerciseCount === 0)
-    .map((session) => ({
-      rowType: 'session',
-      coachId,
-      athleteId: athlete.athleteId,
-      athleteName: athlete.athleteName,
-      sessionDate: session.dateKey,
-      sessionId: session.id,
-      sessionStatus: session.status,
-      sessionNotes: session.notes,
-      sessionExerciseCount: session.exerciseCount,
-      sessionTotalVolume: Math.round(session.totalVolume || 0),
-      exerciseLogId: '',
-      exerciseName: '',
-      activityType: '',
-      sourceCollection: '',
-      totalSets: 0,
-      exerciseVolume: 0,
-      exerciseNotes: '',
-      loggedTimestamp: session.date.toISOString()
-    }));
+  const setRows: CoachExportRow[] = exportResult.sets.map((set) => ({
+    ...buildBaseRow('exercise_set'),
+    ...set
+  }));
 
-  return [...exerciseRows, ...emptySessionRows];
+  return [...sessionRows, ...exerciseLogRows, ...setRows];
 }
 
 function sortCoachExportRows(rows: CoachExportRow[]): CoachExportRow[] {
+  const rowTypeOrder: Record<CoachExportRowType, number> = {
+    session: 0,
+    exercise_log: 1,
+    exercise_set: 2
+  };
+
+  const getPrimaryTimestamp = (row: CoachExportRow): number => {
+    const candidates = [
+      row.loggedTimestamp,
+      row.createdAt,
+      row.sessionDate,
+      row.updatedAt
+    ];
+
+    for (const candidate of candidates) {
+      if (typeof candidate === 'string' && candidate.trim()) {
+        const parsed = new Date(candidate).getTime();
+        if (!Number.isNaN(parsed)) {
+          return parsed;
+        }
+      }
+    }
+
+    return 0;
+  };
+
   return rows.sort((a, b) => {
-    const timeA = a.loggedTimestamp ? new Date(a.loggedTimestamp).getTime() : 0;
-    const timeB = b.loggedTimestamp ? new Date(b.loggedTimestamp).getTime() : 0;
+    const timeA = getPrimaryTimestamp(a);
+    const timeB = getPrimaryTimestamp(b);
     if (timeA !== timeB) {
       return timeB - timeA;
     }
@@ -994,10 +1250,12 @@ function sortCoachExportRows(rows: CoachExportRow[]): CoachExportRow[] {
     }
 
     if (a.rowType !== b.rowType) {
-      return a.rowType === 'exercise' ? -1 : 1;
+      return rowTypeOrder[a.rowType] - rowTypeOrder[b.rowType];
     }
 
-    return a.exerciseName.localeCompare(b.exerciseName);
+    const exerciseNameA = typeof a.exerciseName === 'string' ? a.exerciseName : '';
+    const exerciseNameB = typeof b.exerciseName === 'string' ? b.exerciseName : '';
+    return exerciseNameA.localeCompare(exerciseNameB);
   });
 }
 
@@ -1007,20 +1265,32 @@ export const exportAthleteSessionsCsv = async (
   endDate?: Date
 ): Promise<{ rowCount: number; athleteName: string }> => {
   try {
-    const { uid: coachId } = await ensureAuth();
-    const athlete = await getCoachAthleteIdentity(athleteId);
-    const rows = sortCoachExportRows(
-      await buildCoachExportRowsForAthlete(coachId, athlete, startDate, endDate)
-    );
+    await ensureAuth();
+    logCoachExportDebug('Starting single-athlete coach export', {
+      athleteId,
+      startDate: toIsoOrEmpty(startDate),
+      endDate: toIsoOrEmpty(endDate)
+    });
 
-    if (rows.length === 0) {
-      throw new Error('No session data found for this athlete in the selected range');
+    await ensureCoachAthleteExportAccess(athleteId);
+    const athlete = await getCoachAthleteIdentity(athleteId);
+    const exportResult = await buildCoachExportDataForAthlete(athlete, startDate, endDate);
+
+    const totalRows = exportResult.sets.length;
+
+    logCoachExportDebug('Single-athlete coach export row count', {
+      athleteId,
+      athleteName: athlete.athleteName,
+      totalRows
+    });
+
+    if (totalRows === 0) {
+      throw new Error('No export data found for this athlete in the selected range');
     }
 
-    const filename = `coach_export_${sanitizeFileToken(athlete.athleteName)}_${formatExportDateStamp()}.csv`;
-    downloadCSV(rows, COACH_EXPORT_HEADERS as string[], filename);
+    downloadCSV(exportResult.sets, [...SET_EXPORT_HEADERS], 'exercise_sets.csv');
 
-    return { rowCount: rows.length, athleteName: athlete.athleteName };
+    return { rowCount: totalRows, athleteName: athlete.athleteName };
   } catch (error) {
     console.error('[coachService] Error exporting athlete sessions CSV:', error);
     throw error;
@@ -1045,7 +1315,9 @@ export const exportAllAthletesSessionsCsv = async (
     for (const athlete of athletes) {
       try {
         const rows = await buildCoachExportRowsForAthlete(coachId, athlete, startDate, endDate);
-        if (rows.length > 0) {
+        const hasExerciseSetRows = rows.some((row) => row.rowType === 'exercise_set');
+
+        if (hasExerciseSetRows) {
           rows.forEach((row) => allRows.push(row));
           includedAthleteIds.add(athlete.athleteId);
         }
@@ -1058,16 +1330,26 @@ export const exportAllAthletesSessionsCsv = async (
     }
 
     const sortedRows = sortCoachExportRows(allRows);
+    const setRows = sortedRows
+      .filter((row) => row.rowType === 'exercise_set')
+      .map((row) => {
+        const setRow = { ...row } as Record<string, any>;
+        delete setRow.rowType;
+        delete setRow.coachId;
+        delete setRow.athleteId;
+        delete setRow.athleteName;
+        return setRow;
+      });
 
-    if (sortedRows.length === 0) {
-      throw new Error('No athlete session data found in the selected range');
+    if (setRows.length === 0) {
+      throw new Error('No athlete export data found in the selected range');
     }
 
-    const filename = `coach_export_all_athletes_${formatExportDateStamp()}.csv`;
-    downloadCSV(sortedRows, COACH_EXPORT_HEADERS as string[], filename);
+    const filename = `coach_exercise_sets_all_athletes_${formatExportDateStamp()}.csv`;
+    downloadCSV(setRows, [...SET_EXPORT_HEADERS], filename);
 
     return {
-      rowCount: sortedRows.length,
+      rowCount: setRows.length,
       athleteCount: includedAthleteIds.size
     };
   } catch (error) {

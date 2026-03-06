@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { db } from '@/services/firebase/config';
-import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs } from 'firebase/firestore';
 import { RootState } from '@/store/store';
 
 interface ExerciseLog {
@@ -25,10 +25,9 @@ export const ExerciseHistory: React.FC = () => {
       if (!user) return;
 
       try {
-        const logsRef = collection(db, 'exerciseLogs');
+        const logsRef = collection(db, 'users', user.id, 'exercises');
         const q = query(
           logsRef,
-          where('userId', '==', user.id),
           orderBy('timestamp', 'desc')
         );
 
