@@ -9,7 +9,7 @@ import {
 
 // Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyBEjqMhwLTq1dN2IfzrpEt9Ev4o3kRp9Bs",
+  apiKey: process.env.FIREBASE_API_KEY || '',
   authDomain: "traininglog-df506.firebaseapp.com",
   projectId: "traininglog-df506",
   storageBucket: "traininglog-df506.firebasestorage.app",
@@ -19,6 +19,10 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
+if (!firebaseConfig.apiKey) {
+  throw new Error('Missing FIREBASE_API_KEY. Set it in the environment before running this script.');
+}
+
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 

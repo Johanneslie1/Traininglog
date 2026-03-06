@@ -5,7 +5,7 @@ const { getFirestore, collection, addDoc, doc, setDoc, query, where, getDocs } =
 
 // Your Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyDgA76WHz1JzwEc1YeazhKTUxqxHzhcP2c",
+  apiKey: process.env.FIREBASE_API_KEY || "",
   authDomain: "session-logger-3619e.firebaseapp.com",
   projectId: "session-logger-3619e",
   storageBucket: "session-logger-3619e.firebasestorage.app",
@@ -62,6 +62,10 @@ async function exerciseExists(db, name) {
 }
 
 async function importExercises() {
+  if (!firebaseConfig.apiKey) {
+    throw new Error('Missing FIREBASE_API_KEY. Set it before running this script.');
+  }
+
   try {
     // Read the generated exercises JSON file
     const exercisesPath = path.join(__dirname, '../src/data/generatedExercises.json');

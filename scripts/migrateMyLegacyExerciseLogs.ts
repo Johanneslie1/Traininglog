@@ -31,7 +31,7 @@ type Counters = {
 };
 
 const firebaseConfig = {
-  apiKey: 'AIzaSyDgA76WHz1JzwEc1YeazhKTUxqxHzhcP2c',
+  apiKey: process.env.FIREBASE_API_KEY || '',
   authDomain: 'session-logger-3619e.firebaseapp.com',
   projectId: 'session-logger-3619e',
   storageBucket: 'session-logger-3619e.firebasestorage.app',
@@ -84,6 +84,10 @@ function normalizeDoc(userId: string, source: LegacySource, sourcePath: string, 
 }
 
 async function run() {
+  if (!firebaseConfig.apiKey) {
+    throw new Error('Missing FIREBASE_API_KEY. Set it in the environment before running this script.');
+  }
+
   const options = getOptions();
   const app = initializeApp(firebaseConfig, `legacy-migration-${Date.now()}`);
   const auth = getAuth(app);
