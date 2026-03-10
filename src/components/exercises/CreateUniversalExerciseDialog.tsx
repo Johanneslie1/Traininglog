@@ -32,6 +32,7 @@ export const generalTargetAreas = [
   'Core',
   'Legs',
   'Quadriceps',
+  'Hip Flexors',
   'Hamstrings',
   'Calves',
   'Glutes',

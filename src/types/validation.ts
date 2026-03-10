@@ -23,7 +23,7 @@ const exerciseCategoryEnum = z.enum(['compound', 'isolation', 'olympic', 'cardio
 const unitTypeEnum = z.enum(['kg', 'lbs', 'time', 'distance', 'reps'] as const);
 const muscleGroupEnum = z.enum([
   'chest', 'back', 'shoulders', 'biceps', 'triceps', 'forearms',
-  'quadriceps', 'hamstrings', 'calves', 'glutes', 'core',
+  'quadriceps', 'hip_flexors', 'hamstrings', 'calves', 'glutes', 'core',
   'traps', 'lats', 'lower_back', 'full_body'
 ] as const);
 

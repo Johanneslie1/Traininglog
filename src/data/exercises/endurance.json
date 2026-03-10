@@ -1715,5 +1715,24 @@
     "metrics": { "trackTime": true, "trackRPE": true },
     "intensityLevels": ["low", "moderate", "high"],
     "isDefault": true
+  },
+  {
+    "id": "endurance-new-06",
+    "name": "Stair Climber",
+    "description": "Cardio machine session on a rotating staircase.",
+    "type": "endurance",
+    "activityType": "ENDURANCE",
+    "category": "other",
+    "difficulty": "beginner",
+    "primaryMuscles": ["quadriceps", "glutes", "calves"],
+    "secondaryMuscles": ["hamstrings", "core"],
+    "equipment": ["stair_climber"],
+    "environment": "indoor",
+    "instructions": ["Step with full foot contact", "Maintain upright posture", "Use rails only lightly for balance"],
+    "tips": ["Keep steady cadence", "Increase level gradually"],
+    "defaultUnit": "time",
+    "metrics": { "trackTime": true, "trackRPE": true, "trackFloors": true },
+    "intensityLevels": ["easy", "moderate", "hard"],
+    "isDefault": true
   }
 ]

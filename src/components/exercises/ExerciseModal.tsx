@@ -156,7 +156,7 @@ const ExerciseModal: React.FC<ExerciseModalProps> = ({ onSelect, onClose }) => {
               <div className="space-y-1 max-h-32 overflow-y-auto">
                 {([
                   'chest', 'back', 'shoulders', 'biceps', 'triceps', 'forearms',
-                  'quadriceps', 'hamstrings', 'calves', 'glutes', 'core', 'traps',
+                  'quadriceps', 'hip_flexors', 'hamstrings', 'calves', 'glutes', 'core', 'traps',
                   'lats', 'lower_back', 'full_body'
                 ] as MuscleGroup[]).map(muscle => (
                   <label key={muscle} className="flex items-center space-x-2">

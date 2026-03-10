@@ -30,6 +30,8 @@ const normalizeMuscle = (muscle: string): MuscleGroup => {
     'forearms': 'forearms',
     'legs': 'quadriceps',
     'quadriceps': 'quadriceps',
+    'hip flexors': 'hip_flexors',
+    'hip_flexors': 'hip_flexors',
     'hamstrings': 'hamstrings',
     'calves': 'calves',
     'glutes': 'glutes',
@@ -155,7 +157,7 @@ const ExerciseDatabasePicker: React.FC<ExerciseDatabasePickerProps> = ({
       case 'back':
         return matchesSearch && primaryMuscles.some(m => ['back', 'lats', 'traps'].includes(m));
       case 'legs':
-        return matchesSearch && primaryMuscles.some(m => ['quadriceps', 'hamstrings', 'calves', 'glutes'].includes(m));
+        return matchesSearch && primaryMuscles.some(m => ['quadriceps', 'hip_flexors', 'hamstrings', 'calves', 'glutes'].includes(m));
       case 'shoulders':
         return matchesSearch && primaryMuscles.includes('shoulders');
       case 'arms':

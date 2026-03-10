@@ -21,6 +21,7 @@ const getMuscleGroupColor = (muscle: string): string => {
     'triceps': '#06b6d4',
     'legs': '#10b981',
     'quadriceps': '#10b981',
+    'hip_flexors': '#10b981',
     'hamstrings': '#10b981',
     'glutes': '#10b981',
     'calves': '#10b981',

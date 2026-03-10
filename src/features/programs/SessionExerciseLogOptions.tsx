@@ -32,6 +32,8 @@ const normalizeMuscle = (muscle: string): MuscleGroup => {
     'forearms': 'forearms',
     'legs': 'quadriceps',
     'quadriceps': 'quadriceps',
+    'hip flexors': 'hip_flexors',
+    'hip_flexors': 'hip_flexors',
     'hamstrings': 'hamstrings',
     'calves': 'calves',
     'glutes': 'glutes',

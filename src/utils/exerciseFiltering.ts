@@ -150,7 +150,7 @@ export function filterExercisesByMuscleGroup(exercises: Exercise[], muscleGroup:
       case 'back':
         return primaryMuscles.some(m => ['back', 'lats', 'traps'].includes(m));
       case 'legs':
-        return primaryMuscles.some(m => ['quadriceps', 'hamstrings', 'calves', 'glutes'].includes(m));
+        return primaryMuscles.some(m => ['quadriceps', 'hip_flexors', 'hamstrings', 'calves', 'glutes'].includes(m));
       case 'shoulders':
         return primaryMuscles.includes('shoulders');
       case 'arms':
@@ -199,7 +199,7 @@ export function validateExerciseCategorization(exercise: Exercise): string[] {
   // Validate muscle groups
   const validMuscles = [
     'chest', 'back', 'shoulders', 'biceps', 'triceps', 'forearms',
-    'quadriceps', 'hamstrings', 'calves', 'glutes', 'core',
+    'quadriceps', 'hip_flexors', 'hamstrings', 'calves', 'glutes', 'core',
     'traps', 'lats', 'lower_back', 'full_body'
   ];
 

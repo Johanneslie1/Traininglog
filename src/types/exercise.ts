@@ -120,6 +120,7 @@ export type MuscleGroup =
   | 'triceps'
   | 'forearms'
   | 'quadriceps'
+  | 'hip_flexors'
   | 'hamstrings'
   | 'calves'
   | 'glutes'

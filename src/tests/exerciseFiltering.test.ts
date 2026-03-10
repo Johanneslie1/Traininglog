@@ -512,7 +512,7 @@ describe('Exercise Type and Category Validation', () => {
       // Check that muscle groups are valid
       const validMuscles = [
         'chest', 'back', 'shoulders', 'biceps', 'triceps', 'forearms',
-        'quadriceps', 'hamstrings', 'calves', 'glutes', 'core',
+        'quadriceps', 'hip_flexors', 'hamstrings', 'calves', 'glutes', 'core',
         'traps', 'lats', 'lower_back', 'full_body'
       ];
       

@@ -52,6 +52,7 @@ const mapTargetAreasToMuscleGroups = (areas: string[]): MuscleGroup[] => {
     Core: 'core',
     Legs: 'quadriceps',
     Quadriceps: 'quadriceps',
+    'Hip Flexors': 'hip_flexors',
     Hamstrings: 'hamstrings',
     Calves: 'calves',
     Glutes: 'glutes',

@@ -8,6 +8,16 @@ const defaultMetrics = {
   trackRPE: true,
 };
 
+const bodyweightRepMetrics = {
+  trackReps: true,
+  trackRPE: true,
+};
+
+const bodyweightTimeMetrics = {
+  trackTime: true,
+  trackRPE: true,
+};
+
 // Chest Exercises
 export const chestExercises: ExerciseTemplate[] = [
   {
@@ -80,6 +90,78 @@ export const chestExercises: ExerciseTemplate[] = [
     instructions: ['Lie on bench with dumbbells in hand', 'Extend arms above chest with a slight bend in elbows', 'Lower arms out to the sides', 'Bring arms back together above chest'],
     metrics: defaultMetrics,
     defaultUnit: 'kg'
+  },
+  {
+    name: 'TRX Chest Press',
+    description: 'A suspended pressing exercise that builds chest, shoulder, and tricep strength.',
+    type: 'bodyweight',
+    category: 'compound',
+    primaryMuscles: ['chest'],
+    secondaryMuscles: ['shoulders', 'triceps', 'core'],
+    equipment: ['trx'],
+    instructions: ['Face away from anchor point and hold handles', 'Lean forward with body in a straight line', 'Lower chest between hands with elbows at roughly 45 degrees', 'Press back to start while bracing your core'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'TRX Chest Fly',
+    description: 'A suspended fly variation emphasizing chest control and shoulder stability.',
+    type: 'bodyweight',
+    category: 'isolation',
+    primaryMuscles: ['chest'],
+    secondaryMuscles: ['shoulders', 'core'],
+    equipment: ['trx'],
+    instructions: ['Face away from anchor point and lean forward with arms out', 'Keep a slight bend in elbows', 'Bring handles together in front of chest', 'Return slowly to the stretched position'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'Incline Dumbbell Press',
+    description: 'An incline pressing movement that emphasizes upper chest and shoulders.',
+    type: 'strength',
+    category: 'compound',
+    primaryMuscles: ['chest'],
+    secondaryMuscles: ['shoulders', 'triceps'],
+    equipment: ['dumbbells', 'bench'],
+    instructions: ['Set bench to 30-45 degree incline', 'Press dumbbells above upper chest', 'Lower under control to shoulder level', 'Drive dumbbells back up'],
+    metrics: defaultMetrics,
+    defaultUnit: 'kg'
+  },
+  {
+    name: 'Decline Bench Press',
+    description: 'A decline barbell press that emphasizes lower chest pressing strength.',
+    type: 'strength',
+    category: 'compound',
+    primaryMuscles: ['chest'],
+    secondaryMuscles: ['triceps', 'shoulders'],
+    equipment: ['barbell', 'bench'],
+    instructions: ['Secure feet on decline bench', 'Unrack bar with stable shoulder position', 'Lower bar to lower chest', 'Press up in a controlled path'],
+    metrics: defaultMetrics,
+    defaultUnit: 'kg'
+  },
+  {
+    name: 'Close-Grip Bench Press',
+    description: 'A bench press variation with narrow grip to target triceps and chest.',
+    type: 'strength',
+    category: 'compound',
+    primaryMuscles: ['triceps'],
+    secondaryMuscles: ['chest', 'shoulders'],
+    equipment: ['barbell', 'bench'],
+    instructions: ['Lie on bench with hands just inside shoulder width', 'Lower bar with elbows tucked', 'Touch lower chest lightly', 'Press to full lockout'],
+    metrics: defaultMetrics,
+    defaultUnit: 'kg'
+  },
+  {
+    name: 'TRX Archer Push-Up',
+    description: 'A unilateral TRX push-up variation that increases chest and triceps demand per side.',
+    type: 'bodyweight',
+    category: 'compound',
+    primaryMuscles: ['chest'],
+    secondaryMuscles: ['triceps', 'shoulders', 'core'],
+    equipment: ['trx'],
+    instructions: ['Face away from anchor point with one arm doing most of the press', 'Keep opposite arm extended for assistance', 'Lower in control while bracing core', 'Press back up and alternate sides'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
   }
 ];
 
@@ -149,6 +231,102 @@ export const backExercises: ExerciseTemplate[] = [
     equipment: ['bar'],
     instructions: ['Lie under a bar and grip it with an overhand grip', 'Hang with arms fully extended', 'Pull your chest towards the bar', 'Lower your body back to the starting position'],
     metrics: { trackReps: true, trackRPE: true },
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'TRX Low Row',
+    description: 'A foundational suspended row for upper-back and lat strength.',
+    type: 'bodyweight',
+    category: 'compound',
+    primaryMuscles: ['back', 'lats'],
+    secondaryMuscles: ['biceps', 'core'],
+    equipment: ['trx'],
+    instructions: ['Face the anchor point and hold straps with straight arms', 'Lean back while maintaining a rigid plank', 'Pull chest toward handles by driving elbows back', 'Lower under control to full arm extension'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'TRX High Row',
+    description: 'A higher-elbow row pattern that targets upper back and rear shoulders.',
+    type: 'bodyweight',
+    category: 'compound',
+    primaryMuscles: ['back', 'traps'],
+    secondaryMuscles: ['shoulders', 'biceps', 'core'],
+    equipment: ['trx'],
+    instructions: ['Face anchor point and lean back with arms extended', 'Pull elbows high and wide as hands travel toward face', 'Squeeze shoulder blades together at top', 'Return with control'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'TRX Reverse Fly',
+    description: 'A suspended rear-delt and upper-back exercise for posture and shoulder health.',
+    type: 'bodyweight',
+    category: 'isolation',
+    primaryMuscles: ['shoulders', 'back'],
+    secondaryMuscles: ['traps', 'core'],
+    equipment: ['trx'],
+    instructions: ['Face anchor point and lean back with arms straight', 'Open arms out to the sides while pulling body upright', 'Pause with shoulder blades squeezed', 'Lower slowly to start'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'TRX Power Pull',
+    description: 'A unilateral pulling exercise combining rowing strength and rotational core control.',
+    type: 'bodyweight',
+    category: 'compound',
+    primaryMuscles: ['back', 'lats'],
+    secondaryMuscles: ['biceps', 'core', 'shoulders'],
+    equipment: ['trx'],
+    instructions: ['Hold one handle and lean back with feet planted', 'Pull body up while rotating torso toward anchor point', 'Extend free arm out for balance', 'Control rotation and lower back down'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'Pendlay Row',
+    description: 'A strict barbell row from the floor each rep for explosive upper-back strength.',
+    type: 'strength',
+    category: 'compound',
+    primaryMuscles: ['back', 'lats'],
+    secondaryMuscles: ['biceps', 'traps', 'core'],
+    equipment: ['barbell'],
+    instructions: ['Set bar on floor and hinge with flat back', 'Pull explosively to lower chest', 'Return bar fully to floor each rep', 'Reset posture before next rep'],
+    metrics: defaultMetrics,
+    defaultUnit: 'kg'
+  },
+  {
+    name: 'Chest-Supported Row',
+    description: 'A supported row variation that isolates upper back while reducing lower-back strain.',
+    type: 'strength',
+    category: 'compound',
+    primaryMuscles: ['back', 'lats'],
+    secondaryMuscles: ['biceps', 'traps'],
+    equipment: ['dumbbells', 'bench'],
+    instructions: ['Set bench to incline and lie chest-down', 'Row dumbbells toward lower ribs', 'Pause and squeeze shoulder blades', 'Lower slowly to full extension'],
+    metrics: defaultMetrics,
+    defaultUnit: 'kg'
+  },
+  {
+    name: 'T-Bar Row',
+    description: 'A heavy horizontal pull that targets mid-back thickness and lat strength.',
+    type: 'strength',
+    category: 'compound',
+    primaryMuscles: ['back', 'lats'],
+    secondaryMuscles: ['biceps', 'traps', 'forearms'],
+    equipment: ['barbell'],
+    instructions: ['Set up straddling the bar with neutral spine', 'Pull handle or bar end toward torso', 'Squeeze upper back at top', 'Lower with control'],
+    metrics: defaultMetrics,
+    defaultUnit: 'kg'
+  },
+  {
+    name: 'TRX Archer Row',
+    description: 'A unilateral TRX row variation emphasizing one-arm pulling strength and anti-rotation control.',
+    type: 'bodyweight',
+    category: 'compound',
+    primaryMuscles: ['back', 'lats'],
+    secondaryMuscles: ['biceps', 'core', 'shoulders'],
+    equipment: ['trx'],
+    instructions: ['Lean back holding both handles', 'Pull with one arm while the other stays extended', 'Keep torso square to anchor', 'Return slowly and switch sides'],
+    metrics: bodyweightRepMetrics,
     defaultUnit: 'reps'
   }
 ];
@@ -231,6 +409,186 @@ export const legExercises: ExerciseTemplate[] = [
     instructions: ['Stand with feet hip-width apart', 'Raise your heels off the ground', 'Lower your heels back to the ground'],
     metrics: defaultMetrics,
     defaultUnit: 'kg'
+  },
+  {
+    name: 'TRX Assisted Squat',
+    description: 'A supported squat pattern using TRX to improve depth and control.',
+    type: 'bodyweight',
+    category: 'compound',
+    primaryMuscles: ['quadriceps', 'glutes'],
+    secondaryMuscles: ['hamstrings', 'core'],
+    equipment: ['trx'],
+    instructions: ['Face anchor point and hold handles at chest height', 'Sit hips down and back into a squat', 'Use straps only as needed for assistance', 'Drive through feet to stand tall'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'TRX Single-Leg Squat',
+    description: 'A unilateral squat variation for leg strength, balance, and control.',
+    type: 'bodyweight',
+    category: 'compound',
+    primaryMuscles: ['quadriceps', 'glutes'],
+    secondaryMuscles: ['hamstrings', 'core', 'calves'],
+    equipment: ['trx'],
+    instructions: ['Hold TRX handles and stand on one leg', 'Lower into a single-leg squat with chest up', 'Keep knee tracking over toes', 'Press through working leg to return to standing'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'TRX Assisted Reverse Lunge',
+    description: 'A controlled lunge pattern with suspension support for leg strength.',
+    type: 'bodyweight',
+    category: 'compound',
+    primaryMuscles: ['quadriceps', 'glutes'],
+    secondaryMuscles: ['hamstrings', 'core'],
+    equipment: ['trx'],
+    instructions: ['Hold handles and step one leg back', 'Lower into lunge with front heel grounded', 'Keep torso upright and hips square', 'Drive through front foot to return'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'TRX Hamstring Curl',
+    description: 'A posterior-chain exercise targeting hamstrings and glutes with suspended heels.',
+    type: 'bodyweight',
+    category: 'isolation',
+    primaryMuscles: ['hamstrings'],
+    secondaryMuscles: ['glutes', 'core'],
+    equipment: ['trx'],
+    instructions: ['Lie on back and place heels in TRX foot cradles', 'Lift hips into bridge position', 'Curl heels toward glutes', 'Extend legs slowly while keeping hips elevated'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'TRX Glute Bridge Curl',
+    description: 'A bridge-to-curl movement for glutes, hamstrings, and trunk stability.',
+    type: 'bodyweight',
+    category: 'compound',
+    primaryMuscles: ['glutes', 'hamstrings'],
+    secondaryMuscles: ['core', 'lower_back'],
+    equipment: ['trx'],
+    instructions: ['Place heels in straps and lie on back', 'Lift hips and squeeze glutes', 'Pull heels in while maintaining bridge', 'Extend legs out with control'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'Hip Thrust',
+    description: 'A glute-dominant strength movement for hip extension power.',
+    type: 'strength',
+    category: 'compound',
+    primaryMuscles: ['glutes'],
+    secondaryMuscles: ['hamstrings', 'core'],
+    equipment: ['barbell', 'bench'],
+    instructions: ['Rest upper back on bench and bar across hips', 'Drive hips upward through heels', 'Squeeze glutes at top', 'Lower hips under control'],
+    metrics: defaultMetrics,
+    defaultUnit: 'kg'
+  },
+  {
+    name: 'Goblet Squat',
+    description: 'A front-loaded squat variation using a single dumbbell or kettlebell.',
+    type: 'strength',
+    category: 'compound',
+    primaryMuscles: ['quadriceps', 'glutes'],
+    secondaryMuscles: ['hamstrings', 'core'],
+    equipment: ['dumbbells'],
+    instructions: ['Hold weight at chest height with elbows down', 'Squat to comfortable depth', 'Keep torso upright', 'Stand by driving through midfoot'],
+    metrics: defaultMetrics,
+    defaultUnit: 'kg'
+  },
+  {
+    name: 'Leg Extension',
+    description: 'A machine-based isolation movement targeting the quadriceps.',
+    type: 'strength',
+    category: 'isolation',
+    primaryMuscles: ['quadriceps'],
+    secondaryMuscles: [],
+    equipment: ['machine'],
+    instructions: ['Sit on leg extension machine with knees aligned to pivot', 'Extend knees to straighten legs', 'Pause briefly at top', 'Lower weight with control'],
+    metrics: defaultMetrics,
+    defaultUnit: 'kg'
+  },
+  {
+    name: 'Leg Curl',
+    description: 'A machine-based hamstring isolation exercise for knee flexion strength.',
+    type: 'strength',
+    category: 'isolation',
+    primaryMuscles: ['hamstrings'],
+    secondaryMuscles: ['calves'],
+    equipment: ['machine'],
+    instructions: ['Adjust machine pad to just above heels', 'Curl heels toward glutes', 'Squeeze hamstrings at peak', 'Lower slowly to start'],
+    metrics: defaultMetrics,
+    defaultUnit: 'kg'
+  },
+  {
+    name: 'Sled Pull',
+    description: 'A loaded conditioning and strength movement dragging a weighted sled.',
+    type: 'strength',
+    category: 'compound',
+    primaryMuscles: ['quadriceps', 'glutes'],
+    secondaryMuscles: ['hamstrings', 'core', 'calves'],
+    equipment: ['sled'],
+    instructions: ['Attach strap or handles to sled', 'Lean slightly and brace core', 'Pull sled over a fixed distance', 'Maintain short controlled steps'],
+    metrics: { trackWeight: true, trackDistance: true, trackRPE: true },
+    defaultUnit: 'distance'
+  },
+  {
+    name: 'Farmer Carry',
+    description: 'A loaded carry that builds grip, trunk stability, and full-body work capacity.',
+    type: 'strength',
+    category: 'compound',
+    primaryMuscles: ['full_body'],
+    secondaryMuscles: ['forearms', 'core', 'traps'],
+    equipment: ['dumbbells'],
+    instructions: ['Pick up heavy weights at your sides', 'Stand tall with shoulders down and back', 'Walk controlled steps for distance', 'Set weights down safely at finish'],
+    metrics: { trackWeight: true, trackDistance: true, trackRPE: true },
+    defaultUnit: 'distance'
+  },
+  {
+    name: 'TRX Hamstring Runner',
+    description: 'A dynamic single-leg alternating TRX hamstring curl pattern.',
+    type: 'bodyweight',
+    category: 'compound',
+    primaryMuscles: ['hamstrings'],
+    secondaryMuscles: ['glutes', 'core', 'calves'],
+    equipment: ['trx'],
+    instructions: ['Lie on back with heels in straps and hips lifted', 'Alternate one-leg curl while other leg stays extended', 'Switch legs in a running rhythm', 'Keep hips elevated throughout'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'TRX Hip Press',
+    description: 'A suspended posterior-chain exercise pressing hips upward from heel support.',
+    type: 'bodyweight',
+    category: 'compound',
+    primaryMuscles: ['glutes', 'hamstrings'],
+    secondaryMuscles: ['core', 'lower_back'],
+    equipment: ['trx'],
+    instructions: ['Place heels in TRX straps while lying supine', 'Drive hips upward into bridge position', 'Hold and squeeze glutes briefly', 'Lower hips with control'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'TRX Sprinter Start',
+    description: 'A suspended acceleration drill developing single-leg drive and hip power.',
+    type: 'bodyweight',
+    category: 'compound',
+    primaryMuscles: ['quadriceps', 'glutes'],
+    secondaryMuscles: ['hamstrings', 'calves', 'core', 'hip_flexors'],
+    equipment: ['trx'],
+    instructions: ['Face away from anchor with straps under arms', 'Lean forward into sprint start position', 'Drive one knee up explosively', 'Alternate legs with controlled rhythm'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'TRX Single-Leg Hip Hinge',
+    description: 'A balance-focused hip hinge variation using TRX support.',
+    type: 'bodyweight',
+    category: 'compound',
+    primaryMuscles: ['hamstrings', 'glutes'],
+    secondaryMuscles: ['core', 'calves'],
+    equipment: ['trx'],
+    instructions: ['Hold TRX handles and stand on one leg', 'Hinge hips back while extending free leg behind', 'Keep spine neutral and hips square', 'Drive hips forward to stand'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
   }
 ];
 
@@ -288,6 +646,42 @@ export const shoulderExercises: ExerciseTemplate[] = [
     secondaryMuscles: [],
     equipment: ['plate', 'dumbbells'],
     instructions: ['Stand with feet hip-width apart, dumbbells at your sides', 'Raise the dumbbells in front of you to shoulder height', 'Lower the dumbbells back to the starting position'],
+    metrics: defaultMetrics,
+    defaultUnit: 'kg'
+  },
+  {
+    name: 'TRX Y Fly',
+    description: 'A shoulder stability movement targeting rear and upper deltoids.',
+    type: 'bodyweight',
+    category: 'isolation',
+    primaryMuscles: ['shoulders'],
+    secondaryMuscles: ['traps', 'back', 'core'],
+    equipment: ['trx'],
+    instructions: ['Face anchor and lean back with arms extended', 'Raise arms overhead in a Y pattern', 'Keep shoulders down and neck relaxed', 'Return under control'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'TRX T Raise',
+    description: 'A suspended raise that builds rear shoulder and scapular control.',
+    type: 'bodyweight',
+    category: 'isolation',
+    primaryMuscles: ['shoulders'],
+    secondaryMuscles: ['back', 'traps', 'core'],
+    equipment: ['trx'],
+    instructions: ['Lean back facing anchor with arms in front', 'Open arms wide into a T position', 'Squeeze shoulder blades at top', 'Return to start with control'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'Cable Lateral Raise',
+    description: 'A cable-based lateral raise for consistent deltoid tension through range of motion.',
+    type: 'strength',
+    category: 'isolation',
+    primaryMuscles: ['shoulders'],
+    secondaryMuscles: [],
+    equipment: ['cable'],
+    instructions: ['Stand side-on to low cable pulley', 'Raise handle out to shoulder height', 'Pause briefly at top', 'Lower under control'],
     metrics: defaultMetrics,
     defaultUnit: 'kg'
   }
@@ -349,6 +743,54 @@ export const armExercises: ExerciseTemplate[] = [
     instructions: ['Grab the pull-up bar with an underhand grip', 'Hang with arms fully extended', 'Pull your chin above the bar', 'Lower your body back to the starting position'],
     metrics: { trackReps: true, trackRPE: true },
     defaultUnit: 'reps'
+  },
+  {
+    name: 'TRX Bicep Curl',
+    description: 'A suspended curl variation that challenges biceps and shoulder stability.',
+    type: 'bodyweight',
+    category: 'isolation',
+    primaryMuscles: ['biceps'],
+    secondaryMuscles: ['forearms', 'core'],
+    equipment: ['trx'],
+    instructions: ['Face anchor and lean back with arms extended', 'Keep elbows high and fixed', 'Curl handles toward temples', 'Extend elbows slowly back to start'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'TRX Tricep Press',
+    description: 'A suspended pressing movement focused on triceps and anti-extension control.',
+    type: 'bodyweight',
+    category: 'isolation',
+    primaryMuscles: ['triceps'],
+    secondaryMuscles: ['shoulders', 'core'],
+    equipment: ['trx'],
+    instructions: ['Face away from anchor and hold handles overhead', 'Lean forward with elbows bent', 'Extend elbows to press body away from straps', 'Return to start with control'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'Skull Crushers',
+    description: 'A lying triceps extension exercise targeting elbow extension strength.',
+    type: 'strength',
+    category: 'isolation',
+    primaryMuscles: ['triceps'],
+    secondaryMuscles: [],
+    equipment: ['barbell', 'bench'],
+    instructions: ['Lie on bench with bar over chest', 'Lower bar toward forehead by bending elbows', 'Keep upper arms mostly fixed', 'Extend elbows to return'],
+    metrics: defaultMetrics,
+    defaultUnit: 'kg'
+  },
+  {
+    name: 'Preacher Curl',
+    description: 'A strict biceps isolation curl performed with upper arm support.',
+    type: 'strength',
+    category: 'isolation',
+    primaryMuscles: ['biceps'],
+    secondaryMuscles: ['forearms'],
+    equipment: ['barbell', 'bench'],
+    instructions: ['Set upper arms on preacher pad', 'Curl weight up without shoulder sway', 'Pause at peak contraction', 'Lower slowly to full extension'],
+    metrics: defaultMetrics,
+    defaultUnit: 'kg'
   }
 ];
 
@@ -419,6 +861,378 @@ export const coreExercises: ExerciseTemplate[] = [
     instructions: ['Stand sideways to a cable machine, feet shoulder-width apart', 'Grab the handle with both hands, arms extended', 'Press the handle straight out in front of you', 'Return to the starting position'],
     metrics: defaultMetrics,
     defaultUnit: 'kg'
+  },
+  {
+    name: 'TRX Body Saw',
+    description: 'An anti-extension core drill performed in suspended forearm plank.',
+    type: 'bodyweight',
+    category: 'isolation',
+    primaryMuscles: ['core'],
+    secondaryMuscles: ['shoulders'],
+    equipment: ['trx'],
+    instructions: ['Place forearms in straps and assume plank', 'Shift body backward and forward by moving shoulders', 'Keep ribs down and glutes tight', 'Maintain neutral spine throughout'],
+    metrics: bodyweightTimeMetrics,
+    defaultUnit: 'time'
+  },
+  {
+    name: 'TRX Plank Pike',
+    description: 'A suspended pike emphasizing anterior core strength and shoulder control.',
+    type: 'bodyweight',
+    category: 'compound',
+    primaryMuscles: ['core'],
+    secondaryMuscles: ['shoulders', 'hip_flexors'],
+    equipment: ['trx'],
+    instructions: ['Place feet in straps and start in high plank', 'Lift hips toward ceiling into pike', 'Pause briefly at top', 'Lower with control to plank'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'TRX Knee Tuck',
+    description: 'A suspended tuck movement that develops lower-abdominal control.',
+    type: 'bodyweight',
+    category: 'compound',
+    primaryMuscles: ['core'],
+    secondaryMuscles: ['hip_flexors', 'shoulders'],
+    equipment: ['trx'],
+    instructions: ['Start in high plank with feet in straps', 'Draw knees toward chest without rounding shoulders', 'Pause briefly in tuck', 'Extend legs back to plank'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'TRX Atomic Push-Up',
+    description: 'A combined push-up and knee tuck that trains chest and core strength.',
+    type: 'bodyweight',
+    category: 'compound',
+    primaryMuscles: ['core'],
+    secondaryMuscles: ['chest', 'triceps', 'shoulders', 'hip_flexors'],
+    equipment: ['trx'],
+    instructions: ['Place feet in straps and set up in push-up position', 'Perform one controlled push-up', 'Then draw knees to chest in a tuck', 'Extend back to plank and repeat'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'TRX Side Plank',
+    description: 'A lateral core stability exercise using suspended feet support.',
+    type: 'bodyweight',
+    category: 'isolation',
+    primaryMuscles: ['core'],
+    secondaryMuscles: ['glutes', 'shoulders', 'hip_flexors'],
+    equipment: ['trx'],
+    instructions: ['Place top foot in strap and stack feet', 'Support body on lower forearm', 'Lift hips to align head, hips, and heels', 'Hold steady without rotating'],
+    metrics: bodyweightTimeMetrics,
+    defaultUnit: 'time'
+  },
+  {
+    name: 'TRX Side Plank Hip Dip',
+    description: 'An oblique-focused side plank variation with controlled hip movement.',
+    type: 'bodyweight',
+    category: 'isolation',
+    primaryMuscles: ['core'],
+    secondaryMuscles: ['glutes', 'shoulders', 'hip_flexors'],
+    equipment: ['trx'],
+    instructions: ['Set up in side plank with foot in strap', 'Lower hips slightly toward floor', 'Drive hips back up to straight line', 'Repeat while keeping torso stacked'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'TRX Side Plank Leg Abduction',
+    description: 'A side plank variation where the free leg lifts away from the midline for extra lateral core and hip stability demand.',
+    type: 'bodyweight',
+    category: 'isolation',
+    primaryMuscles: ['core'],
+    secondaryMuscles: ['glutes', 'shoulders', 'hip_flexors'],
+    equipment: ['trx'],
+    instructions: ['Set up in side plank with top foot in TRX strap', 'Stack shoulders and hips with strong forearm support', 'Lift free leg upward in a controlled abduction', 'Lower leg slowly without losing plank alignment'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'TRX Side Plank Leg Adduction',
+    description: 'A side plank variation where the suspended leg moves toward the midline to challenge frontal-plane trunk and hip control.',
+    type: 'bodyweight',
+    category: 'isolation',
+    primaryMuscles: ['core'],
+    secondaryMuscles: ['glutes', 'shoulders', 'hip_flexors'],
+    equipment: ['trx'],
+    instructions: ['Set up in side plank with top foot in TRX strap', 'Keep torso tall and hips stacked', 'Draw the suspended leg slightly downward toward the midline with control', 'Return to start while maintaining a rigid side plank'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'TRX Rollout',
+    description: 'A high-tension anti-extension exercise similar to an ab wheel rollout.',
+    type: 'bodyweight',
+    category: 'compound',
+    primaryMuscles: ['core'],
+    secondaryMuscles: ['shoulders', 'lats'],
+    equipment: ['trx'],
+    instructions: ['Face away from anchor and hold handles with straight arms', 'Lean forward and extend arms overhead', 'Keep body rigid and avoid lumbar arching', 'Pull back to start using core tension'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'TRX Fallout',
+    description: 'A standing anti-extension movement emphasizing deep core control.',
+    type: 'bodyweight',
+    category: 'compound',
+    primaryMuscles: ['core'],
+    secondaryMuscles: ['shoulders', 'lats'],
+    equipment: ['trx'],
+    instructions: ['Stand facing away from anchor and hold straps overhead', 'Lean body forward while arms travel overhead', 'Brace core and keep hips extended', 'Return to upright position with control'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'TRX Standing Fallout',
+    description: 'A progression of the fallout for advanced anti-extension strength.',
+    type: 'bodyweight',
+    category: 'compound',
+    primaryMuscles: ['core'],
+    secondaryMuscles: ['shoulders', 'lats'],
+    equipment: ['trx'],
+    instructions: ['Face away from anchor with handles at shoulder height', 'Step back and lean into long-body position', 'Reach arms overhead while resisting back extension', 'Pull straps down to return'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'TRX Reverse Crunch',
+    description: 'A suspended reverse crunch pattern for lower-core activation.',
+    type: 'bodyweight',
+    category: 'isolation',
+    primaryMuscles: ['core'],
+    secondaryMuscles: ['hip_flexors'],
+    equipment: ['trx'],
+    instructions: ['Lie on back and place feet in straps', 'Lift hips and draw knees toward chest', 'Slowly lower hips and extend legs', 'Keep movement controlled and smooth'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'TRX Oblique Crunch',
+    description: 'A rotational tuck variation to target obliques and trunk control.',
+    type: 'bodyweight',
+    category: 'compound',
+    primaryMuscles: ['core'],
+    secondaryMuscles: ['hip_flexors', 'shoulders'],
+    equipment: ['trx'],
+    instructions: ['Start in suspended plank with feet in straps', 'Drive knees toward one elbow', 'Return to plank and repeat to other side', 'Keep shoulders stable throughout'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'TRX Mountain Climber',
+    description: 'A dynamic suspended climber for core endurance and trunk stiffness.',
+    type: 'bodyweight',
+    category: 'compound',
+    primaryMuscles: ['core'],
+    secondaryMuscles: ['hip_flexors', 'shoulders'],
+    equipment: ['trx'],
+    instructions: ['Set up in plank with feet suspended', 'Drive one knee toward chest', 'Switch legs in a smooth alternating rhythm', 'Keep hips level and core braced'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'TRX Pendulum Swing',
+    description: 'A suspended lower-body swing challenging anti-rotation core stability.',
+    type: 'bodyweight',
+    category: 'compound',
+    primaryMuscles: ['core'],
+    secondaryMuscles: ['shoulders', 'hip_flexors'],
+    equipment: ['trx'],
+    instructions: ['Start in suspended plank with feet in straps', 'Swing both legs side to side as one unit', 'Keep shoulders stacked over hands', 'Control movement with obliques'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'TRX Rotational Plank',
+    description: 'A plank rotation drill for anti-rotation and oblique strength.',
+    type: 'bodyweight',
+    category: 'compound',
+    primaryMuscles: ['core'],
+    secondaryMuscles: ['shoulders'],
+    equipment: ['trx'],
+    instructions: ['Begin in suspended plank position', 'Rotate hips and torso slightly to one side', 'Return to center and rotate to other side', 'Move slowly while maintaining tension'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'TRX Scorpion Plank',
+    description: 'A diagonal-leg suspended plank variation emphasizing rotational core control.',
+    type: 'bodyweight',
+    category: 'compound',
+    primaryMuscles: ['core'],
+    secondaryMuscles: ['glutes', 'shoulders'],
+    equipment: ['trx'],
+    instructions: ['Start in suspended plank with feet in straps', 'Rotate hips and sweep one leg across body', 'Return to neutral plank', 'Alternate sides with control'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'TRX Suspended Dead Bug',
+    description: 'A dead bug progression using suspension straps for increased core demand.',
+    type: 'bodyweight',
+    category: 'isolation',
+    primaryMuscles: ['core'],
+    secondaryMuscles: ['hip_flexors'],
+    equipment: ['trx'],
+    instructions: ['Lie on back and place hands or feet in straps based on setup', 'Brace core and press lower back toward floor', 'Alternate extending opposite arm and leg', 'Return to center and switch sides'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'TRX Single-Leg Plank',
+    description: 'A unilateral plank progression for anti-rotation core stability.',
+    type: 'bodyweight',
+    category: 'isolation',
+    primaryMuscles: ['core'],
+    secondaryMuscles: ['glutes', 'shoulders'],
+    equipment: ['trx'],
+    instructions: ['Place one foot in strap and set plank position', 'Lift free foot slightly off floor', 'Hold square hips and steady shoulders', 'Maintain controlled breathing'],
+    metrics: bodyweightTimeMetrics,
+    defaultUnit: 'time'
+  },
+  {
+    name: 'TRX Bear Plank Hold',
+    description: 'A short-lever suspended hold emphasizing deep abdominal bracing.',
+    type: 'bodyweight',
+    category: 'isolation',
+    primaryMuscles: ['core'],
+    secondaryMuscles: ['shoulders', 'hip_flexors'],
+    equipment: ['trx'],
+    instructions: ['Start with knees bent under hips and feet in straps', 'Hover knees just off floor', 'Keep spine neutral and ribs down', 'Hold position without shifting'],
+    metrics: bodyweightTimeMetrics,
+    defaultUnit: 'time'
+  },
+  {
+    name: 'TRX Stir the Pot',
+    description: 'A circular plank pattern that heavily challenges anti-rotation endurance.',
+    type: 'bodyweight',
+    category: 'compound',
+    primaryMuscles: ['core'],
+    secondaryMuscles: ['shoulders', 'lats'],
+    equipment: ['trx'],
+    instructions: ['Place forearms in straps in plank position', 'Draw small circles with your forearms', 'Keep hips level and glutes active', 'Switch circle direction each set'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'TRX Long Lever Plank',
+    description: 'An extended-lever plank variation that increases abdominal loading.',
+    type: 'bodyweight',
+    category: 'isolation',
+    primaryMuscles: ['core'],
+    secondaryMuscles: ['shoulders'],
+    equipment: ['trx'],
+    instructions: ['Set up forearm plank with straps slightly in front of shoulders', 'Walk body backward to increase lever length', 'Hold a rigid body line', 'Breathe while maintaining tension'],
+    metrics: bodyweightTimeMetrics,
+    defaultUnit: 'time'
+  },
+  {
+    name: 'TRX Pike to Push-Up',
+    description: 'A hybrid core and pressing movement pairing pike and push-up reps.',
+    type: 'bodyweight',
+    category: 'compound',
+    primaryMuscles: ['core'],
+    secondaryMuscles: ['chest', 'triceps', 'shoulders', 'hip_flexors'],
+    equipment: ['trx'],
+    instructions: ['Begin in suspended plank with feet in straps', 'Perform one pike by lifting hips', 'Return to plank and complete one push-up', 'Repeat sequence under control'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'TRX Body Saw to Pike',
+    description: 'A combo progression linking anti-extension body saw with concentric pike.',
+    type: 'bodyweight',
+    category: 'compound',
+    primaryMuscles: ['core'],
+    secondaryMuscles: ['shoulders', 'hip_flexors'],
+    equipment: ['trx'],
+    instructions: ['Set forearm plank with feet suspended', 'Perform a short body saw motion', 'Then raise hips into pike', 'Return to plank and repeat'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'TRX Anti-Rotation Press',
+    description: 'A unilateral pressing hold/press pattern for rotational core strength.',
+    type: 'bodyweight',
+    category: 'isolation',
+    primaryMuscles: ['core'],
+    secondaryMuscles: ['shoulders', 'chest'],
+    equipment: ['trx'],
+    instructions: ['Stand sideways to anchor while holding one strap', 'Step away to create tension', 'Press arm forward while resisting torso rotation', 'Return slowly and repeat'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'Hanging Leg Raise',
+    description: 'A hanging core exercise emphasizing lower abdominal and hip-flexor strength.',
+    type: 'bodyweight',
+    category: 'compound',
+    primaryMuscles: ['core'],
+    secondaryMuscles: ['hip_flexors', 'forearms'],
+    equipment: ['pull-up-bar'],
+    instructions: ['Hang from pull-up bar with active shoulders', 'Raise legs with control to hip height or above', 'Avoid swinging through momentum', 'Lower legs slowly to start'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'Cable Woodchop',
+    description: 'A rotational core exercise training diagonal trunk power and control.',
+    type: 'strength',
+    category: 'compound',
+    primaryMuscles: ['core'],
+    secondaryMuscles: ['shoulders', 'glutes'],
+    equipment: ['cable'],
+    instructions: ['Set cable high or low depending on variation', 'Rotate torso across body while hips stay controlled', 'Finish with arms extended', 'Return slowly resisting rotation'],
+    metrics: defaultMetrics,
+    defaultUnit: 'kg'
+  },
+  {
+    name: 'RKC Plank',
+    description: 'A high-tension plank variation emphasizing maximal core bracing.',
+    type: 'bodyweight',
+    category: 'isolation',
+    primaryMuscles: ['core'],
+    secondaryMuscles: ['glutes', 'shoulders'],
+    equipment: ['bodyweight'],
+    instructions: ['Assume forearm plank with feet close together', 'Create full-body tension by pulling elbows toward toes', 'Squeeze glutes and quads hard', 'Hold short high-quality sets'],
+    metrics: bodyweightTimeMetrics,
+    defaultUnit: 'time'
+  },
+  {
+    name: 'Hollow Body Hold',
+    description: 'A gymnastics-inspired anti-extension core hold.',
+    type: 'bodyweight',
+    category: 'isolation',
+    primaryMuscles: ['core'],
+    secondaryMuscles: ['hip_flexors'],
+    equipment: ['bodyweight'],
+    instructions: ['Lie supine with lower back pressed into floor', 'Lift shoulders and legs off ground', 'Keep arms overhead or by sides', 'Hold shape while breathing steadily'],
+    metrics: bodyweightTimeMetrics,
+    defaultUnit: 'time'
+  },
+  {
+    name: 'TRX Side Plank Reach Through',
+    description: 'A rotational side plank drill reaching under the torso and opening back up.',
+    type: 'bodyweight',
+    category: 'compound',
+    primaryMuscles: ['core'],
+    secondaryMuscles: ['shoulders', 'glutes', 'hip_flexors'],
+    equipment: ['trx'],
+    instructions: ['Set side plank with top foot in TRX strap', 'Reach free arm under torso while rotating slightly', 'Open chest back up to start position', 'Repeat with controlled tempo'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'TRX Pike with Knee Tuck',
+    description: 'A combined suspended pike and tuck pattern for advanced anterior core work.',
+    type: 'bodyweight',
+    category: 'compound',
+    primaryMuscles: ['core'],
+    secondaryMuscles: ['hip_flexors', 'shoulders'],
+    equipment: ['trx'],
+    instructions: ['Start in suspended plank with feet in straps', 'Perform one pike by lifting hips high', 'Return to plank and immediately perform one knee tuck', 'Extend back to plank and repeat'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
   }
 ];
 
