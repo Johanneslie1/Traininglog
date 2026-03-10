@@ -14,6 +14,7 @@ import LogOptions from './LogOptions';
 import { ExerciseSetLogger } from './ExerciseSetLogger';
 import WorkoutSummary from './WorkoutSummary';
 import { db } from '../../services/firebase/config';
+import { auth } from '../../services/firebase/config';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import {
   addExerciseLog,
@@ -201,7 +202,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   // Handle exercise data loading
   const loadExercises = useCallback(async (date: Date) => {
     // Guard against null user
-    const userId = user?.id;
+    const userId = auth.currentUser?.uid || user?.id;
     if (!userId) {
       setLoading(false);
       setExercises([]);

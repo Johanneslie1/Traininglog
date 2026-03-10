@@ -10,6 +10,7 @@ import {
   getDoc,
   setDoc
 } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 import { db } from './config';
 import { ExerciseLog } from '@/types/exercise';
 import { ExerciseSet } from '@/types/sets';
@@ -19,6 +20,7 @@ import { ActivityType } from '@/types/activityTypes';
 import { resolveActivityTypeFromExerciseLike } from '@/utils/activityTypeResolver';
 import { SupersetGroup } from '@/types/session';
 import { buildSupersetLabels } from '@/utils/supersetUtils';
+import { addActivityLog } from './activityLogs';
 
 const LOCAL_EXERCISE_LOGS_KEY = 'exercise_logs';
 
@@ -53,6 +55,23 @@ const parseTimestamp = (value: unknown): Date => {
 };
 
 const removeUndefinedFields = <T>(obj: T): T => {
+  if (obj instanceof Date) {
+    return obj;
+  }
+
+  if (
+    obj &&
+    typeof obj === 'object' &&
+    (
+      ('toDate' in (obj as Record<string, unknown>) &&
+        typeof (obj as { toDate?: unknown }).toDate === 'function') ||
+      ('seconds' in (obj as Record<string, unknown>) &&
+        'nanoseconds' in (obj as Record<string, unknown>))
+    )
+  ) {
+    return obj;
+  }
+
   if (Array.isArray(obj)) {
     return obj.map(removeUndefinedFields) as unknown as T;
   }
@@ -102,6 +121,20 @@ export const addExerciseLog = async (
       throw new Error('userId is required to save exercise log');
     }
 
+    const auth = getAuth();
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error('User not authenticated');
+    }
+
+    const effectiveUserId = currentUser.uid;
+    if (logData.userId && logData.userId !== effectiveUserId) {
+      console.warn('⚠️ addExerciseLog userId mismatch, using auth uid instead:', {
+        providedUserId: logData.userId,
+        authUid: effectiveUserId,
+      });
+    }
+
     const resolvedActivityType = resolveActivityTypeFromExerciseLike(
       {
         activityType: logData.activityType,
@@ -113,11 +146,27 @@ export const addExerciseLog = async (
       }
     );
 
+    if (resolvedActivityType !== ActivityType.RESISTANCE) {
+      return await addActivityLog(
+        {
+          activityName: logData.exerciseName,
+          userId: effectiveUserId,
+          sets: Array.isArray(logData.sets) ? logData.sets : [],
+          activityType: resolvedActivityType,
+          supersetId: logData.supersetId,
+          supersetLabel: logData.supersetLabel,
+          supersetName: logData.supersetName,
+        },
+        selectedDate,
+        existingId
+      );
+    }
+
     const exerciseData = removeUndefinedFields({
       ...logData,
       timestamp: Timestamp.fromDate(selectedDate || new Date()),
       deviceId: window.navigator.userAgent,
-      userId: logData.userId,
+      userId: effectiveUserId,
       sets: Array.isArray(logData.sets) ? logData.sets : [], // Ensure sets is always an array
       activityType: resolvedActivityType,
       ...(logData.supersetId && { supersetId: logData.supersetId }),
@@ -145,7 +194,7 @@ export const addExerciseLog = async (
     // Simplified ID management - always use the new subcollection structure
     if (existingId) {
       // Update existing document
-      docRef = doc(db, 'users', logData.userId, 'exercises', existingId);
+      docRef = doc(db, 'users', effectiveUserId, 'exercises', existingId);
       docId = existingId;
       console.log('📝 Updating existing document:', docId);
       
@@ -162,7 +211,7 @@ export const addExerciseLog = async (
       }
     } else {
       // Create new document
-      docRef = doc(collection(db, 'users', logData.userId, 'exercises'));
+      docRef = doc(collection(db, 'users', effectiveUserId, 'exercises'));
       docId = docRef.id;
       console.log('📝 Creating new document with ID:', docId);
     }
@@ -176,7 +225,7 @@ export const addExerciseLog = async (
       sets: logData.sets,
       timestamp: selectedDate || new Date(),
       deviceId: window.navigator.userAgent,
-      userId: logData.userId,
+      userId: effectiveUserId,
       activityType: resolvedActivityType,
       supersetId: logData.supersetId,
       supersetLabel: logData.supersetLabel,
@@ -215,7 +264,7 @@ export const addExerciseLog = async (
       sets: Array.isArray(logData.sets) ? logData.sets : [],
       timestamp: selectedDate || new Date(),
       deviceId: window.navigator.userAgent,
-      userId: logData.userId,
+      userId: getAuth().currentUser?.uid || logData.userId,
       activityType: resolveActivityTypeFromExerciseLike(
         {
           activityType: logData.activityType,

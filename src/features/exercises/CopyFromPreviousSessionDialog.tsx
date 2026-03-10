@@ -5,12 +5,13 @@ import { SearchIcon, XIcon, CheckIcon } from '@heroicons/react/solid';
 import { ActivityType } from '@/types/activityTypes';
 import { resolveActivityTypeFromExerciseLike } from '@/utils/activityTypeResolver';
 import AppOverlay from '@/components/ui/AppOverlay';
+import { logger } from '@/utils/logger';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   currentDate: Date;
-  onExercisesSelected: (exercises: ExerciseData[]) => void;
+  onExercisesSelected: (exercises: ExerciseData[]) => void | Promise<void>;
   userId: string;
 }
 
@@ -27,6 +28,8 @@ const CopyFromPreviousSessionDialog: React.FC<Props> = ({
   const [selectedExercises, setSelectedExercises] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [copySuccess, setCopySuccess] = useState(false);
+  const [copyError, setCopyError] = useState<string | null>(null);
+  const [copying, setCopying] = useState(false);
 
   useEffect(() => {
     const fetchExercises = async () => {
@@ -39,18 +42,19 @@ const CopyFromPreviousSessionDialog: React.FC<Props> = ({
 
       setLoading(true);
       setCopySuccess(false);
+      setCopyError(null);
       
       try {
         // Convert string date to Date object
         const dateObj = new Date(selectedDate);
-        console.log('📅 CopyFromPreviousSessionDialog: Fetching exercises for:', {
+        logger.debug('CopyFromPreviousSessionDialog: Fetching exercises for', {
           date: selectedDate,
           userId
         });
 
         const allExercises = await getAllExercisesByDate(dateObj, userId);
 
-        console.log('📦 Found exercises from unified source:', {
+        logger.debug('CopyFromPreviousSessionDialog: Found exercises from unified source', {
           total: allExercises.length,
           date: dateObj.toLocaleDateString()
         });
@@ -81,9 +85,9 @@ const CopyFromPreviousSessionDialog: React.FC<Props> = ({
         setPreviousExercises(sortedExercises);
         setSelectedExercises(new Set());
 
-        console.log('✅ Total exercises available:', sortedExercises.length);
+        logger.debug('CopyFromPreviousSessionDialog: Total exercises available', sortedExercises.length);
       } catch (error) {
-        console.error('❌ Error fetching exercises:', error);
+        logger.error('CopyFromPreviousSessionDialog: Error fetching exercises', error);
         setPreviousExercises([]);
         setSelectedExercises(new Set());
       } finally {
@@ -122,7 +126,7 @@ const CopyFromPreviousSessionDialog: React.FC<Props> = ({
     setSelectedExercises(new Set());
   };
 
-  const handleCopy = () => {
+  const handleCopy = async () => {
     const selectedExercisesList = previousExercises
       .filter(ex => typeof ex.id === 'string' && ex.id.length > 0 && selectedExercises.has(ex.id))
       .map(({ id, ...exRest }) => ({
@@ -132,21 +136,32 @@ const CopyFromPreviousSessionDialog: React.FC<Props> = ({
         deviceId: window.navigator.userAgent // Set current device ID
       }));
     
-    console.log('🔄 CopyFromPreviousSessionDialog: Copying exercises:', {
+    logger.debug('CopyFromPreviousSessionDialog: Copying exercises', {
       selectedCount: selectedExercises.size,
       exercisesToCopy: selectedExercisesList.length,
       exercises: selectedExercisesList
     });
     
-    if (selectedExercisesList.length > 0) {
-      onExercisesSelected(selectedExercisesList);
+    if (selectedExercisesList.length === 0) {
+      logger.warn('CopyFromPreviousSessionDialog: No exercises selected for copying');
+      onClose();
+      return;
+    }
+
+    try {
+      setCopying(true);
+      setCopyError(null);
+      await Promise.resolve(onExercisesSelected(selectedExercisesList));
       setCopySuccess(true);
       setTimeout(() => {
         onClose();
       }, 1500);
-    } else {
-      console.warn('⚠️ No exercises selected for copying');
-      onClose();
+    } catch (error) {
+      setCopySuccess(false);
+      setCopyError(error instanceof Error ? error.message : 'Failed to copy selected exercises');
+      logger.error('CopyFromPreviousSessionDialog: Copy failed', error);
+    } finally {
+      setCopying(false);
     }
   };
 
@@ -274,6 +289,12 @@ const CopyFromPreviousSessionDialog: React.FC<Props> = ({
               )}
             </>
           )}
+
+          {copyError && (
+            <div className="mb-4 rounded-md border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+              {copyError}
+            </div>
+          )}
         </div>
 
         {/* Sticky Footer */}
@@ -295,9 +316,9 @@ const CopyFromPreviousSessionDialog: React.FC<Props> = ({
               <button
                 className="px-6 py-2 bg-accent-primary text-text-primary rounded-lg hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 onClick={handleCopy}
-                disabled={selectedExercises.size === 0}
+                disabled={selectedExercises.size === 0 || copying}
               >
-                Copy Selected
+                {copying ? 'Copying...' : 'Copy Selected'}
                 {selectedExercises.size > 0 && (
                   <span className="bg-purple-700 px-2 py-0.5 rounded-full text-sm">
                     {selectedExercises.size}

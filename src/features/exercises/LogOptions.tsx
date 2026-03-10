@@ -31,6 +31,7 @@ import { resolveActivityTypeFromExerciseLike } from '@/utils/activityTypeResolve
 import { useSupersets } from '@/context/SupersetContext';
 import { SupersetGroup } from '@/types/session';
 import AppOverlay from '@/components/ui/AppOverlay';
+import { logger } from '@/utils/logger';
 
 interface LogOptionsProps {
   onClose: () => void;
@@ -313,20 +314,22 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
         toast.success(`Added ${savedCount} exercise${savedCount !== 1 ? 's' : ''} from program`);
       }
     } catch (error) {
-      console.error('Error saving program exercises:', error);
+      logger.error('LogOptions: Error saving program exercises', error);
       toast.error('Failed to add exercises. Please try again.');
     }
   };
 
   const handleCopiedExercises = async (exercises: ExerciseData[]) => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      throw new Error('User not authenticated');
+    }
 
     try {
-      console.log('🔄 Processing copied exercises:', exercises.length, exercises);
+      logger.debug('LogOptions: Processing copied exercises', { count: exercises.length });
       
       for (const exercise of exercises) {
         if (!exercise.exerciseName) {
-          console.warn('⚠️ Skipping exercise without name:', exercise);
+          logger.warn('LogOptions: Skipping exercise without name', exercise);
           continue;
         }
 
@@ -343,7 +346,7 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
           isWarmup: isWarmupMode || Boolean((exercise as any).isWarmup)
         };
 
-        console.log('💾 Saving copied exercise:', exerciseLogData);
+        logger.debug('LogOptions: Saving copied exercise', exerciseLogData);
         await addExerciseLog(
           exerciseLogData,
           selectedDate || new Date()
@@ -352,10 +355,13 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
 
       setView('main');
       onExerciseAdded?.();
-      console.log('✅ Successfully saved all copied exercises');
+      toast.success(`Copied ${exercises.length} exercise${exercises.length !== 1 ? 's' : ''}`);
+      logger.debug('LogOptions: Successfully saved all copied exercises');
     } catch (error) {
-      console.error('❌ Error saving copied exercises:', error);
-      // Here you might want to show an error notification to the user
+      logger.error('LogOptions: Error saving copied exercises', error);
+      const message = error instanceof Error ? error.message : 'Failed to save copied exercises';
+      toast.error(message);
+      throw error instanceof Error ? error : new Error(message);
     }
   };
 
@@ -503,7 +509,7 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
         }}
         onSave={async (sets: ExerciseSet[], metadata?: { prescriptionAssistant?: ExercisePrescriptionAssistantData }) => {
           try {
-            console.log('💾 LogOptions: Starting to save exercise sets:', {
+            logger.debug('LogOptions: Starting to save exercise sets', {
               exercise: selectedExercise,
               sets,
               user: user?.id,
@@ -528,21 +534,21 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
               prescriptionAssistant: metadata?.prescriptionAssistant || selectedExercise.prescriptionAssistant,
             };
 
-            console.log('💾 LogOptions: Calling addExerciseLog with:', exerciseLogData);
+            logger.debug('LogOptions: Calling addExerciseLog', exerciseLogData);
 
             const docId = await addExerciseLog(
               exerciseLogData,
               selectedDate || new Date()
             );
 
-            console.log('✅ LogOptions: Exercise saved successfully with ID:', docId);
+            logger.debug('LogOptions: Exercise saved successfully', { docId });
 
             onExerciseAdded?.();
             setSelectedExercise(null);
             setView('main');
           } catch (error) {
-            console.error('❌ LogOptions: Error saving exercise:', error);
-            // Here you might want to show an error notification to the user
+            logger.error('LogOptions: Error saving exercise', error);
+            toast.error(error instanceof Error ? error.message : 'Failed to save exercise');
           }
         }}
         initialSets={editingExercise?.sets}
@@ -605,7 +611,7 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
         }}
         onSave={async (sets: ExerciseSet[], metadata?: { prescriptionAssistant?: ExercisePrescriptionAssistantData }) => {
           try {
-            console.log('💾 LogOptions: Updating exercise:', {
+            logger.debug('LogOptions: Updating exercise', {
               exercise: editingExercise,
               sets,
               user: user?.id,
@@ -630,7 +636,7 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
               prescriptionAssistant: metadata?.prescriptionAssistant || editingExercise.prescriptionAssistant
             };
 
-            console.log('💾 LogOptions: Calling addExerciseLog with existing ID:', editingExercise.id);
+            logger.debug('LogOptions: Calling addExerciseLog with existing ID', editingExercise.id);
 
             const docId = await addExerciseLog(
               exerciseLogData,
@@ -638,13 +644,13 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
               editingExercise.id // Pass existing ID to update
             );
 
-            console.log('✅ LogOptions: Exercise updated successfully with ID:', docId);
+            logger.debug('LogOptions: Exercise updated successfully', { docId });
 
             onExerciseAdded?.();
             setView('main');
           } catch (error) {
-            console.error('❌ LogOptions: Error updating exercise:', error);
-            // Here you might want to show an error notification to the user
+            logger.error('LogOptions: Error updating exercise', error);
+            toast.error(error instanceof Error ? error.message : 'Failed to update exercise');
           }
         }}
         initialSets={editingExercise.sets}

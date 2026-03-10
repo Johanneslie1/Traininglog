@@ -10,6 +10,8 @@ import { addExerciseLog } from '@/services/firebase/exerciseLogs';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { ExerciseSet } from '@/types/sets';
+import toast from 'react-hot-toast';
+import { logger } from '@/utils/logger';
 
 interface ResistanceTrainingPickerProps {
   onClose: () => void;
@@ -79,7 +81,10 @@ const ResistanceTrainingPicker: React.FC<ResistanceTrainingPickerProps> = ({
   }, [editingExercise]);
 
   const handleProgramSelected = async (exercises: { exercise: Exercise; sets: ExerciseSet[] }[]) => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      toast.error('User not authenticated');
+      return;
+    }
 
     try {
       for (const { exercise, sets } of exercises) {
@@ -96,8 +101,10 @@ const ResistanceTrainingPicker: React.FC<ResistanceTrainingPickerProps> = ({
       }
 
       onActivityLogged();
+      toast.success(`Added ${exercises.length} exercise${exercises.length !== 1 ? 's' : ''}`);
     } catch (error) {
-      console.error('Error saving program exercises:', error);
+      logger.error('ResistanceTrainingPicker: Error saving program exercises', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to save selected exercises');
     }
   };
 
@@ -143,7 +150,7 @@ const ResistanceTrainingPicker: React.FC<ResistanceTrainingPickerProps> = ({
         onCancel={() => setView('main')}
         onSave={async (sets: ExerciseSet[]) => {
           try {
-            console.log('💾 ResistanceTrainingPicker: Starting to save exercise sets:', {
+            logger.debug('ResistanceTrainingPicker: Starting to save exercise sets', {
               exercise: selectedExercise,
               sets,
               user: user?.id,
@@ -165,7 +172,7 @@ const ResistanceTrainingPicker: React.FC<ResistanceTrainingPickerProps> = ({
                 : undefined
             };
 
-            console.log('💾 ResistanceTrainingPicker: Calling addExerciseLog with:', exerciseLogData);
+            logger.debug('ResistanceTrainingPicker: Calling addExerciseLog', exerciseLogData);
 
             const docId = await addExerciseLog(
               exerciseLogData,
@@ -173,12 +180,16 @@ const ResistanceTrainingPicker: React.FC<ResistanceTrainingPickerProps> = ({
               editingExercise?.id // Pass existing ID for updates
             );
 
-            console.log('✅ ResistanceTrainingPicker: Exercise saved successfully with ID:', docId);
+            logger.debug('ResistanceTrainingPicker: Exercise saved successfully', { docId });
 
             onActivityLogged();
             setView('main');
+            toast.success(editingExercise ? 'Exercise updated' : 'Exercise saved');
           } catch (error) {
-            console.error('❌ ResistanceTrainingPicker: Error saving exercise:', error);
+            logger.error('ResistanceTrainingPicker: Error saving exercise', error);
+            const message = error instanceof Error ? error.message : 'Failed to save exercise';
+            toast.error(message);
+            throw error instanceof Error ? error : new Error(message);
           }
         }}
         initialSets={editingExercise?.sets || []}

@@ -9,6 +9,7 @@ import {
 } from '@/services/firebase/activityLogs';
 import { getExerciseLogs as getLocalExerciseLogs } from '@/utils/localStorageUtils';
 import { deleteLocalExerciseLog } from '@/utils/localStorageUtils';
+import { auth } from '@/services/firebase/config';
 
 // Extended ExerciseData to support activity types
 export interface UnifiedExerciseData extends ExerciseData {
@@ -24,6 +25,8 @@ export async function getAllExercisesByDate(
   userId: string
 ): Promise<UnifiedExerciseData[]> {
   try {
+    const effectiveUserId = auth.currentUser?.uid || userId;
+
     // Get resistance training exercises (existing) - convert to proper format
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
@@ -32,8 +35,8 @@ export async function getAllExercisesByDate(
     endOfDay.setHours(23, 59, 59, 999);
 
     const [resistanceResult, activityResult] = await Promise.allSettled([
-      getExerciseLogs(userId, startOfDay, endOfDay),
-      getFirebaseActivityLogs(userId, startOfDay, endOfDay),
+      getExerciseLogs(effectiveUserId, startOfDay, endOfDay),
+      getFirebaseActivityLogs(effectiveUserId, startOfDay, endOfDay),
     ]);
 
     const resistanceExerciseLogs = resistanceResult.status === 'fulfilled' ? resistanceResult.value : [];
@@ -51,7 +54,7 @@ export async function getAllExercisesByDate(
       id: log.id,
       exerciseName: log.exerciseName,
       timestamp: log.timestamp || date,
-      userId: log.userId || userId,
+      userId: log.userId || effectiveUserId,
       sets: log.sets || [],
       deviceId: log.deviceId,
       activityType: log.activityType ? normalizeActivityType(log.activityType) : ActivityType.RESISTANCE,
@@ -74,7 +77,7 @@ export async function getAllExercisesByDate(
       id: log.id,
       exerciseName: log.activityName,
       timestamp: log.timestamp || date,
-      userId: log.userId || userId,
+      userId: log.userId || effectiveUserId,
       sets: log.sets || [],
       deviceId: log.deviceId,
       activityType: normalizeActivityType(log.activityType),
@@ -100,12 +103,13 @@ export async function getAllExercisesByDate(
       const endOfDay = new Date(date);
       endOfDay.setHours(23, 59, 59, 999);
 
-      const resistanceExerciseLogs = await getExerciseLogs(userId, startOfDay, endOfDay);
+      const effectiveUserId = auth.currentUser?.uid || userId;
+      const resistanceExerciseLogs = await getExerciseLogs(effectiveUserId, startOfDay, endOfDay);
       return resistanceExerciseLogs.map(log => ({
         id: log.id,
         exerciseName: log.exerciseName,
         timestamp: log.timestamp || date,
-        userId: log.userId || userId,
+        userId: log.userId || effectiveUserId,
         sets: log.sets || [],
         deviceId: log.deviceId,
         activityType: log.activityType ? normalizeActivityType(log.activityType) : ActivityType.RESISTANCE,

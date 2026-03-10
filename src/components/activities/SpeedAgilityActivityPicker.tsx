@@ -10,6 +10,7 @@ import { Exercise } from '@/types/exercise';
 import { useAuth } from '@/hooks/useAuth';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/services/firebase/config';
+import toast from 'react-hot-toast';
 
 interface SpeedAgilityActivityPickerProps {
   onClose: () => void;
@@ -212,8 +213,12 @@ const SpeedAgilityActivityPicker: React.FC<SpeedAgilityActivityPickerProps> = ({
 
             onActivityLogged();
             setView('list');
+            toast.success(editingExercise ? 'Activity updated' : 'Activity saved');
           } catch (error) {
             console.error('❌ SpeedAgilityActivityPicker: Error saving exercise:', error);
+            const message = error instanceof Error ? error.message : 'Failed to save activity';
+            toast.error(message);
+            throw error instanceof Error ? error : new Error(message);
           }
         }}
         initialSets={editingExercise?.sets || []}

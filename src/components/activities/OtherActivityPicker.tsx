@@ -9,6 +9,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { ExerciseSet } from '@/types/sets';
 import { Exercise } from '@/types/exercise';
+import toast from 'react-hot-toast';
 
 interface OtherActivityPickerProps {
   onClose: () => void;
@@ -104,8 +105,12 @@ const OtherActivityPicker: React.FC<OtherActivityPickerProps> = ({
 
             onActivityLogged();
             setView('list');
+            toast.success('Activity saved');
           } catch (error) {
             console.error('❌ OtherActivityPicker: Error saving exercise:', error);
+            const message = error instanceof Error ? error.message : 'Failed to save activity';
+            toast.error(message);
+            throw error instanceof Error ? error : new Error(message);
           }
         }}
       />

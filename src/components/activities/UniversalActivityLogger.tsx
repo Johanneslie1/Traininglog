@@ -5,6 +5,7 @@ import { TrainingTemplate, TemplateField, UniversalExerciseSet } from '@/types/t
 import { addExerciseLog } from '@/services/firebase/exerciseLogs';
 import { UnifiedExerciseData } from '@/utils/unifiedExerciseUtils';
 import { ExerciseSet } from '@/types/sets';
+import toast from 'react-hot-toast';
 
 interface UniversalActivityLoggerProps {
   template: TrainingTemplate;
@@ -119,7 +120,15 @@ const UniversalActivityLogger: React.FC<UniversalActivityLoggerProps> = ({
   };
 
   const handleSaveActivity = async () => {
-    if (!user?.id || sessions.length === 0) return;
+    if (!user?.id) {
+      toast.error('User not authenticated');
+      return;
+    }
+
+    if (sessions.length === 0) {
+      toast.error('Add at least one set before saving');
+      return;
+    }
 
     setLoading(true);
     try {      
@@ -197,8 +206,10 @@ const UniversalActivityLogger: React.FC<UniversalActivityLoggerProps> = ({
       console.log('✅ UniversalActivityLogger: Activity saved successfully with ID:', docId);
 
       onActivityLogged();
+      toast.success(editingExercise ? 'Activity updated' : 'Activity saved');
     } catch (error) {
       console.error('❌ UniversalActivityLogger: Error saving activity:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to save activity');
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { collection, query, getDocs, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/services/firebase/config';
+import { auth } from '@/services/firebase/config';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { ExerciseSet } from '@/types/sets';
@@ -228,7 +229,8 @@ export const useExerciseHistory = (exerciseName: string): ExerciseHistoryData =>
   const { user } = useSelector((state: RootState) => state.auth);
 
   const fetchHistory = useCallback(async () => {
-    if (!user?.id || !exerciseName) {
+    const effectiveUserId = auth.currentUser?.uid || user?.id;
+    if (!effectiveUserId || !exerciseName) {
       setHistory([]);
       setIsLoading(false);
       return;
@@ -240,8 +242,8 @@ export const useExerciseHistory = (exerciseName: string): ExerciseHistoryData =>
       setIsLoading(true);
       setError(null);
 
-      const exercisesRef = collection(db, 'users', user.id, 'exercises');
-      const activitiesRef = collection(db, 'users', user.id, 'activities');
+      const exercisesRef = collection(db, 'users', effectiveUserId, 'exercises');
+      const activitiesRef = collection(db, 'users', effectiveUserId, 'activities');
 
       const [exerciseSnapshot, activitySnapshot] = await Promise.all([
         getDocs(query(exercisesRef, orderBy('timestamp', 'desc'), limit(100))),

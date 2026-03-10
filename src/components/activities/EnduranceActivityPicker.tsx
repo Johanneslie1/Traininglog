@@ -10,6 +10,7 @@ import { RootState } from '@/store/store';
 import { ExerciseSet } from '@/types/sets';
 import { Exercise } from '@/types/exercise';
 import { ActivityType } from '@/types/activityTypes';
+import toast from 'react-hot-toast';
 
 interface EnduranceActivityPickerProps {
   onClose: () => void;
@@ -94,8 +95,12 @@ const EnduranceActivityPicker: React.FC<EnduranceActivityPickerProps> = ({ onClo
 
             onActivityLogged();
             setView('list');
+            toast.success(editingExercise ? 'Activity updated' : 'Activity saved');
           } catch (error) {
             console.error('❌ EnduranceActivityPicker: Error saving exercise:', error);
+            const message = error instanceof Error ? error.message : 'Failed to save activity';
+            toast.error(message);
+            throw error instanceof Error ? error : new Error(message);
           }
         }}
         initialSets={editingExercise?.sets || []}

@@ -18,6 +18,15 @@ import { ActivityLog, ActivityLogInput, normalizeActivityType, mapExerciseTypeTo
 // Helper function to clean undefined values from objects
 const cleanObject = (obj: any): any => {
   if (obj === null || obj === undefined) return obj;
+  if (obj instanceof Date) return obj;
+  if (
+    obj &&
+    typeof obj === 'object' &&
+    (
+      typeof obj.toDate === 'function' ||
+      ('seconds' in obj && 'nanoseconds' in obj)
+    )
+  ) return obj;
   if (typeof obj !== 'object') return obj;
   if (Array.isArray(obj)) {
     return obj.map(item => cleanObject(item)).filter(item => item !== undefined && item !== null);
@@ -68,9 +77,13 @@ export const addActivityLog = async (
     if (!currentUser) {
       throw new Error('User not authenticated');
     }
-    
-    if (currentUser.uid !== logData.userId) {
-      throw new Error(`User ID mismatch: auth.uid=${currentUser.uid}, provided=${logData.userId}`);
+
+    const effectiveUserId = currentUser.uid;
+    if (logData.userId && logData.userId !== effectiveUserId) {
+      console.warn('⚠️ addActivityLog userId mismatch, using auth uid instead:', {
+        providedUserId: logData.userId,
+        authUid: effectiveUserId,
+      });
     }
 
     const normalizedActivityType = normalizeActivityType(logData.activityType);
@@ -79,7 +92,7 @@ export const addActivityLog = async (
       ...logData,
       timestamp: Timestamp.fromDate(selectedDate || new Date()),
       deviceId: window.navigator.userAgent,
-      userId: logData.userId,
+      userId: effectiveUserId,
       sets: Array.isArray(logData.sets) ? logData.sets.map(set => cleanObject(set)).filter(set => set && Object.keys(set).length > 0) : [],
       activityType: normalizedActivityType,
       supersetId: logData.supersetId,
@@ -95,12 +108,12 @@ export const addActivityLog = async (
 
     if (existingId) {
       // Update existing document
-      docRef = doc(db, 'users', logData.userId, 'activities', existingId);
+      docRef = doc(db, 'users', effectiveUserId, 'activities', existingId);
       docId = existingId;
       console.log('🏃 Updating existing activity:', docId);
     } else {
       // Create new document
-      docRef = doc(collection(db, 'users', logData.userId, 'activities'));
+      docRef = doc(collection(db, 'users', effectiveUserId, 'activities'));
       docId = docRef.id;
       console.log('🏃 Creating new activity with ID:', docId);
     }
