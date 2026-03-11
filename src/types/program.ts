@@ -1,5 +1,6 @@
 import { ActivityType } from './activityTypes';
 import { SupersetGroup } from './session';
+import { Exercise } from './exercise';
 
 // Prescription types for structured programming
 export type NumberOrRange = number | { min: number; max: number };
@@ -68,6 +69,7 @@ export interface ProgramExercise {
   supersetLabel?: string;
   supersetName?: string;
   activityType?: ActivityType; // Cached activity type (synced from exercise database)
+  exerciseSnapshot?: Pick<Exercise, 'id' | 'name' | 'activityType' | 'category' | 'type' | 'defaultUnit' | 'metrics' | 'primaryMuscles' | 'secondaryMuscles' | 'equipment'>;
   
   // Prescription system - what the coach prescribes (not actual logged data)
   instructionMode?: 'structured' | 'freeform';

@@ -71,6 +71,7 @@ export const CreateExerciseDialog: React.FC<CreateExerciseDialogProps> = ({
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
+  const globalExerciseOwnerUid = (import.meta.env.VITE_GLOBAL_EXERCISE_OWNER_UID || '').trim();
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -110,8 +111,14 @@ export const CreateExerciseDialog: React.FC<CreateExerciseDialogProps> = ({
 
     setIsSubmitting(true);
     try {
+      const targetCollection =
+        globalExerciseOwnerUid && user.id === globalExerciseOwnerUid
+          ? 'globalExercises'
+          : 'exercises';
+
       const exerciseData: Omit<Exercise, 'id'> = {
         name: exercise.name.trim(),
+        nameLower: exercise.name.trim().replace(/\s+/g, ' ').toLowerCase(),
         description: exercise.description.trim(),
         type: exercise.type === 'Cardio' ? 'cardio' : 
               exercise.type === 'Flexibility' ? 'flexibility' : 'strength',
@@ -133,7 +140,7 @@ export const CreateExerciseDialog: React.FC<CreateExerciseDialogProps> = ({
         userId: user.id
       };
 
-      const docRef = await addDoc(collection(db, 'exercises'), exerciseData);
+      const docRef = await addDoc(collection(db, targetCollection), exerciseData);
       toast.success('Exercise created successfully!');
       onSuccess?.(docRef.id);
       onClose();

@@ -1,5 +1,7 @@
 import { Exercise } from '../types/exercise';
 import { ActivityType } from '../types/activityTypes';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from '@/services/firebase/config';
 
 // Import JSON exercise databases for new activity types
 import enduranceExercises from '../data/exercises/endurance.json';
@@ -90,6 +92,72 @@ function convertToExercise(jsonExercise: any, fallbackActivityType?: ActivityTyp
 // Load and convert all exercise databases
 let cachedExercises: Record<ActivityType, Exercise[]> | null = null;
 
+const normalizeExerciseName = (value: string): string =>
+  value.trim().replace(/\s+/g, ' ').toLowerCase();
+
+const withNormalizedName = (exercise: Exercise): Exercise => ({
+  ...exercise,
+  nameLower: exercise.nameLower || normalizeExerciseName(exercise.name)
+});
+
+const dedupeExercises = (exercises: Exercise[]): Exercise[] => {
+  const deduped: Exercise[] = [];
+  const byId = new Set<string>();
+  const byNameAndType = new Set<string>();
+
+  exercises.forEach((exercise) => {
+    if (!exercise?.name) {
+      return;
+    }
+
+    const normalizedExercise = withNormalizedName(exercise);
+    const nameKey = `${normalizedExercise.activityType}::${normalizedExercise.nameLower}`;
+
+    if (normalizedExercise.id && byId.has(normalizedExercise.id)) {
+      return;
+    }
+
+    if (byNameAndType.has(nameKey)) {
+      return;
+    }
+
+    if (normalizedExercise.id) {
+      byId.add(normalizedExercise.id);
+    }
+    byNameAndType.add(nameKey);
+    deduped.push(normalizedExercise);
+  });
+
+  return deduped;
+};
+
+const mapFirestoreExercise = (exerciseId: string, data: any): Exercise => {
+  const activityType = normalizeActivityTypeFromValue(String(data.activityType || '')) || ActivityType.OTHER;
+
+  return {
+    ...data,
+    id: exerciseId,
+    activityType,
+    nameLower: data.nameLower || normalizeExerciseName(String(data.name || '')),
+  } as Exercise;
+};
+
+const loadFirestoreExercises = async (
+  collectionName: 'globalExercises' | 'exercises',
+  activityType: ActivityType,
+  userId?: string
+): Promise<Exercise[]> => {
+  const base = collection(db, collectionName);
+  const constraints = [where('activityType', '==', activityType)];
+
+  if (collectionName === 'exercises' && userId) {
+    constraints.push(where('userId', '==', userId));
+  }
+
+  const snapshot = await getDocs(query(base, ...constraints));
+  return snapshot.docs.map((exerciseDoc) => mapFirestoreExercise(exerciseDoc.id, exerciseDoc.data()));
+};
+
 export function loadExerciseDatabases(): Record<ActivityType, Exercise[]> {
   if (cachedExercises) return cachedExercises;
 
@@ -138,6 +206,29 @@ export function loadExerciseDatabases(): Record<ActivityType, Exercise[]> {
 export function getExercisesByActivityType(activityType: ActivityType): Exercise[] {
   const allExercises = loadExerciseDatabases();
   return allExercises[activityType] || [];
+}
+
+export async function getMergedExercisesByActivityType(
+  activityType: ActivityType,
+  userId?: string
+): Promise<Exercise[]> {
+  const builtInExercises = getExercisesByActivityType(activityType);
+
+  try {
+    const [globalExercises, userExercises] = await Promise.all([
+      loadFirestoreExercises('globalExercises', activityType),
+      userId ? loadFirestoreExercises('exercises', activityType, userId) : Promise.resolve([])
+    ]);
+
+    return dedupeExercises([
+      ...builtInExercises,
+      ...globalExercises,
+      ...userExercises
+    ]);
+  } catch (error) {
+    console.error('Failed to load merged exercises, falling back to built-ins only:', error);
+    return dedupeExercises(builtInExercises);
+  }
 }
 
 // Get exercises by category within an activity type

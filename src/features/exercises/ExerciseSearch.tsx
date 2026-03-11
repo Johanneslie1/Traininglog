@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { allExercises } from '@/data/exercises';
-import { importedExercises } from '@/data/importedExercises';
 import { Category } from './CategoryButton';
 import { CreateUniversalExerciseDialog } from '@/components/exercises/CreateUniversalExerciseDialog';
 import { Exercise, MuscleGroup } from '@/types/exercise';
 import { ActivityType } from '@/types/activityTypes';
 import { toast } from 'react-hot-toast';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/services/firebase/config';
 import { useAuth } from '@/hooks/useAuth';
+import { getMergedExercisesByActivityType } from '@/services/exerciseDatabaseService';
 
 interface ExerciseSearchProps {
   onClose: () => void;
@@ -55,77 +54,31 @@ export const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [customExercises, setCustomExercises] = useState<Exercise[]>([]);
   const [combinedExercises, setCombinedExercises] = useState<Exercise[]>([]);
 
-  // Load custom exercises from Firebase
+  // Load merged resistance exercises (built-in + global + user custom)
   useEffect(() => {
-    const loadCustomExercises = async () => {
-      if (!user) return;
-      
+    const loadExercises = async () => {
       try {
         setIsLoading(true);
-        const exercisesRef = collection(db, 'exercises');
-        const q = query(exercisesRef, where('userId', '==', user.id));
-        const querySnapshot = await getDocs(q);
-        
-        const exercises: Exercise[] = [];
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
-          exercises.push({
-            ...data,
-            id: doc.id,
-            primaryMuscles: data.primaryMuscles.map(normalizeMuscle),
-            type: data.type as Exercise['type'],
-            category: data.category as Exercise['category'],
-            defaultUnit: data.defaultUnit as Exercise['defaultUnit']
-          } as Exercise);
-        });
-        
-        setCustomExercises(exercises);
+        const exercises = await getMergedExercisesByActivityType(ActivityType.RESISTANCE, user?.id);
+        setCombinedExercises(
+          exercises.map((exercise) => ({
+            ...exercise,
+            primaryMuscles: (exercise.primaryMuscles || []).map(normalizeMuscle),
+            secondaryMuscles: exercise.secondaryMuscles || []
+          }))
+        );
       } catch (error) {
-        console.error('Error loading custom exercises:', error);
-        toast.error('Failed to load custom exercises');
+        console.error('Error loading exercises:', error);
+        toast.error('Failed to load exercises');
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadCustomExercises();
-  }, [user]);
-
-  // Combine exercises whenever custom exercises change
-  useEffect(() => {
-    const normalizedExercises: Exercise[] = [
-      ...allExercises.map(ex => ({
-        ...ex,
-        id: `default-${ex.name.replace(/\s+/g, '-').toLowerCase()}`,
-        primaryMuscles: (ex.primaryMuscles || []).map(normalizeMuscle),
-        secondaryMuscles: [],
-        customExercise: false
-      })),
-      ...importedExercises.map(ex => ({
-        ...ex,
-        id: ex.id || `imported-${ex.name.replace(/\s+/g, '-').toLowerCase()}`,
-        primaryMuscles: Array.isArray(ex.primaryMuscles) 
-          ? ex.primaryMuscles.map(normalizeMuscle)
-          : [normalizeMuscle(String(ex.primaryMuscles))],
-        secondaryMuscles: [],
-        instructions: [ex.description || ''],
-        defaultUnit: (ex.type === 'cardio' ? 'time' : 'kg') as Exercise['defaultUnit'],
-        metrics: {
-          trackWeight: ex.type !== 'cardio',
-          trackReps: ex.type !== 'cardio',
-          trackTime: ex.type === 'cardio',
-          trackDistance: false,
-          trackRPE: true,
-        },
-        customExercise: false
-      }))
-    ];
-
-    setCombinedExercises([...normalizedExercises, ...customExercises]);
-  }, [customExercises]);
+    loadExercises();
+  }, [user?.id]);
 
   // Filter exercises based on search term and category
   const filteredExercises = combinedExercises.filter(exercise => {
@@ -169,7 +122,11 @@ export const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
   const handleExerciseCreated = async (exerciseId: string) => {
     setIsLoading(true);
     try {
-      const exerciseDoc = await getDoc(doc(db, 'exercises', exerciseId));
+      let exerciseDoc = await getDoc(doc(db, 'exercises', exerciseId));
+      if (!exerciseDoc.exists()) {
+        exerciseDoc = await getDoc(doc(db, 'globalExercises', exerciseId));
+      }
+
       if (exerciseDoc.exists()) {
         const data = exerciseDoc.data();
         const newExercise: Exercise = {
@@ -181,7 +138,7 @@ export const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
           defaultUnit: data.defaultUnit as Exercise['defaultUnit']
         } as Exercise;
         
-        setCustomExercises(prev => [...prev, newExercise]);
+        setCombinedExercises(prev => [...prev, newExercise]);
         onSelectExercise(newExercise);
         onClose();
       } else {

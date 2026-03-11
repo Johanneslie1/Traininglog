@@ -507,6 +507,18 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
         id: exerciseId,
         name: item.name,
         exerciseRef,
+        exerciseSnapshot: {
+          id: exerciseId,
+          name: item.name,
+          activityType: resolveActivityTypeFromExerciseLike(item, { fallback: ActivityType.RESISTANCE }),
+          category: item.category,
+          type: item.type,
+          defaultUnit: item.defaultUnit,
+          metrics: item.metrics,
+          primaryMuscles: item.primaryMuscles || [],
+          secondaryMuscles: item.secondaryMuscles || [],
+          equipment: item.equipment || []
+        },
         order: index,
         notes: item.description || '',
         supersetId: supersetMetadata?.supersetId,

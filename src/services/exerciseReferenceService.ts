@@ -66,9 +66,24 @@ export const resolveExerciseReference = async (programExercise: ProgramExercise)
             ...exerciseDoc.data()
           } as Exercise;
         }
+
+        const globalExerciseDoc = await getDoc(doc(db, 'globalExercises', exerciseId));
+        if (globalExerciseDoc.exists()) {
+          return {
+            id: globalExerciseDoc.id,
+            ...globalExerciseDoc.data()
+          } as Exercise;
+        }
       } catch (error) {
         console.warn(`[exerciseReferenceService] Could not fetch exercise from Firestore: ${exerciseId}`, error);
       }
+    }
+
+    if (programExercise.exerciseSnapshot?.name) {
+      return {
+        ...programExercise.exerciseSnapshot,
+        id: programExercise.exerciseSnapshot.id || exerciseId,
+      } as Exercise;
     }
 
     // If we can't find the exercise, return a minimal representation
@@ -111,7 +126,12 @@ export const validateExerciseExists = async (exerciseId: string): Promise<boolea
     if (!exerciseId.startsWith('temp-')) {
       try {
         const exerciseDoc = await getDoc(doc(db, 'exercises', exerciseId));
-        return exerciseDoc.exists();
+        if (exerciseDoc.exists()) {
+          return true;
+        }
+
+        const globalExerciseDoc = await getDoc(doc(db, 'globalExercises', exerciseId));
+        return globalExerciseDoc.exists();
       } catch (error) {
         return false;
       }
@@ -155,6 +175,11 @@ export const getExerciseName = async (exerciseId: string, cachedName?: string): 
       const exerciseDoc = await getDoc(doc(db, 'exercises', exerciseId));
       if (exerciseDoc.exists()) {
         return exerciseDoc.data().name || 'Unknown Exercise';
+      }
+
+      const globalExerciseDoc = await getDoc(doc(db, 'globalExercises', exerciseId));
+      if (globalExerciseDoc.exists()) {
+        return globalExerciseDoc.data().name || 'Unknown Exercise';
       }
     }
 

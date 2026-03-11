@@ -11,6 +11,7 @@ import {
   where
 } from 'firebase/firestore';
 import { db } from '@/services/firebase/config';
+import { getExercisesByActivityType } from '@/services/exerciseDatabaseService';
 import { ActivityType } from '@/types/activityTypes';
 import { Exercise, MuscleGroup } from '@/types/exercise';
 
@@ -40,6 +41,14 @@ export class DuplicateExerciseNameError extends Error {
 
 const normalizeExerciseName = (value: string): string =>
   value.trim().replace(/\s+/g, ' ').toLowerCase();
+
+const GLOBAL_EXERCISE_OWNER_UID = (import.meta.env.VITE_GLOBAL_EXERCISE_OWNER_UID || '').trim();
+
+const isGlobalExerciseOwnerUser = (userId: string): boolean =>
+  Boolean(GLOBAL_EXERCISE_OWNER_UID) && userId === GLOBAL_EXERCISE_OWNER_UID;
+
+const getExerciseCollectionName = (userId: string): 'exercises' | 'globalExercises' =>
+  isGlobalExerciseOwnerUser(userId) ? 'globalExercises' : 'exercises';
 
 const mapTargetAreasToMuscleGroups = (areas: string[]): MuscleGroup[] => {
   const mapping: Record<string, MuscleGroup> = {
@@ -88,8 +97,33 @@ const getSanitizedBase = (
 });
 
 const persistExercise = async (exercise: Omit<Exercise, 'id'>): Promise<string> => {
-  const docRef = await addDoc(collection(db, 'exercises'), exercise);
+  const collectionName = getExerciseCollectionName(exercise.userId || '');
+  const docRef = await addDoc(collection(db, collectionName), exercise);
   return docRef.id;
+};
+
+const resolveExerciseDocRef = async (
+  exerciseId: string,
+  userId: string
+): Promise<{ collectionName: 'exercises' | 'globalExercises'; ref: ReturnType<typeof doc> }> => {
+  const preferredCollection = getExerciseCollectionName(userId);
+  const preferredRef = doc(db, preferredCollection, exerciseId);
+  const preferredSnapshot = await getDoc(preferredRef);
+
+  if (preferredSnapshot.exists()) {
+    return { collectionName: preferredCollection, ref: preferredRef };
+  }
+
+  const fallbackCollection: 'exercises' | 'globalExercises' =
+    preferredCollection === 'exercises' ? 'globalExercises' : 'exercises';
+  const fallbackRef = doc(db, fallbackCollection, exerciseId);
+  const fallbackSnapshot = await getDoc(fallbackRef);
+
+  if (fallbackSnapshot.exists()) {
+    return { collectionName: fallbackCollection, ref: fallbackRef };
+  }
+
+  return { collectionName: preferredCollection, ref: preferredRef };
 };
 
 export const findDuplicateExerciseByName = async (
@@ -99,9 +133,20 @@ export const findDuplicateExerciseByName = async (
   excludeExerciseId?: string
 ): Promise<Exercise | null> => {
   const normalizedName = normalizeExerciseName(name);
+  const builtInDuplicate = getExercisesByActivityType(activityType).find((exercise) => {
+    if (excludeExerciseId && exercise.id === excludeExerciseId) {
+      return false;
+    }
+    return normalizeExerciseName(exercise.name) === normalizedName;
+  });
+
+  if (builtInDuplicate) {
+    return builtInDuplicate;
+  }
+
+  const collectionName = getExerciseCollectionName(userId);
   const duplicateQuery = query(
-    collection(db, 'exercises'),
-    where('userId', '==', userId),
+    collection(db, collectionName),
     where('activityType', '==', activityType),
     limit(50)
   );
@@ -117,7 +162,28 @@ export const findDuplicateExerciseByName = async (
       return normalizeExerciseName(exercise.name) === normalizedName;
     });
 
-  return duplicate ?? null;
+  if (duplicate) {
+    return duplicate;
+  }
+
+  if (collectionName !== 'globalExercises') {
+    const globalDuplicateQuery = query(
+      collection(db, 'globalExercises'),
+      where('activityType', '==', activityType),
+      limit(50)
+    );
+
+    const globalDuplicateSnapshot = await getDocs(globalDuplicateQuery);
+    const globalDuplicate = globalDuplicateSnapshot.docs
+      .map((exerciseDoc) => ({ id: exerciseDoc.id, ...exerciseDoc.data() } as Exercise))
+      .find((exercise) => normalizeExerciseName(exercise.name) === normalizedName);
+
+    if (globalDuplicate) {
+      return globalDuplicate;
+    }
+  }
+
+  return null;
 };
 
 const ensureNoDuplicateExerciseName = async (
@@ -313,7 +379,8 @@ export const updateExerciseByActivityType = async (
   await ensureNoDuplicateExerciseName(activityType, input, userId, exerciseId);
 
   const base = getSanitizedBase(input, activityType, userId);
-  await updateDoc(doc(db, 'exercises', exerciseId), {
+  const { ref } = await resolveExerciseDocRef(exerciseId, userId);
+  await updateDoc(ref, {
     ...base,
     updatedAt: new Date(),
     userId
@@ -324,7 +391,7 @@ export const deleteCustomExerciseById = async (
   exerciseId: string,
   userId: string
 ): Promise<void> => {
-  const exerciseRef = doc(db, 'exercises', exerciseId);
+  const { ref: exerciseRef } = await resolveExerciseDocRef(exerciseId, userId);
   const exerciseSnapshot = await getDoc(exerciseRef);
 
   if (!exerciseSnapshot.exists()) {

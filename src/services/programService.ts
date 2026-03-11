@@ -3,6 +3,7 @@ import { ActivityType } from '@/types/activityTypes';
 import { normalizeActivityType } from '@/types/activityLog';
 import { normalizeEnduranceDurationMinutes } from '@/utils/prescriptionUtils';
 import { resolveActivityTypeFromExerciseLike } from '@/utils/activityTypeResolver';
+import { withExerciseSnapshots } from '@/services/exerciseSnapshotService';
 import speedAgilityExercises from '@/data/exercises/speedAgility.json';
 import { db } from './firebase/firebase';
 import {
@@ -67,6 +68,7 @@ function buildProgramExercisePayload(
     instructionMode?: 'structured' | 'freeform';
     prescription?: any;
     instructions?: string;
+    exerciseSnapshot?: any;
   },
   fallbackOrder: number,
   options?: { generateIdIfMissing?: boolean }
@@ -88,6 +90,7 @@ function buildProgramExercisePayload(
   if (exercise.instructionMode) payload.instructionMode = exercise.instructionMode;
   if (exercise.prescription) payload.prescription = exercise.prescription;
   if (exercise.instructions) payload.instructions = exercise.instructions;
+  if (exercise.exerciseSnapshot) payload.exerciseSnapshot = exercise.exerciseSnapshot;
 
   return removeUndefinedFields(payload);
 }
@@ -1226,10 +1229,18 @@ export const shareProgram = async (
     // Get full program with sessions
     const sessionsRef = collection(db, `${PROGRAMS_COLLECTION}/${programId}/sessions`);
     const sessionsSnapshot = await getDocs(sessionsRef);
-    const sessions = sessionsSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+    const sessions = await Promise.all(
+      sessionsSnapshot.docs.map(async (sessionDoc) => {
+        const sessionData = sessionDoc.data() as ProgramSession;
+        const exercisesWithSnapshots = await withExerciseSnapshots(sessionData.exercises || []);
+
+        return {
+          ...sessionData,
+          id: sessionDoc.id,
+          exercises: exercisesWithSnapshots,
+        };
+      })
+    );
     
     const fullProgram: any = {
       id: programId,

@@ -1,10 +1,8 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { CreateUniversalExerciseDialog } from '@/components/exercises/CreateUniversalExerciseDialog';
 import { ActivityType } from '@/types/activityTypes';
-import { normalizeActivityType } from '@/types/activityLog';
 import { useAuth } from '@/hooks/useAuth';
-import { collection, getDocs, query, where } from 'firebase/firestore';
-import { db } from '@/services/firebase/config';
+import { getMergedExercisesByActivityType } from '@/services/exerciseDatabaseService';
 
 // Move FilterBlock definition up so it's declared before use
 interface FilterBlockProps { title: string; values: string[]; selected: Set<string>; onToggle: (value: string) => void; }
@@ -74,6 +72,8 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
   const [customExercises, setCustomExercises] = useState<any[]>([]);
   const { user } = useAuth();
 
+  const normalizeExerciseName = useCallback((value: string) => value.trim().replace(/\s+/g, ' ').toLowerCase(), []);
+
   function toggle(setter: React.Dispatch<React.SetStateAction<Set<string>>>, value: string) {
     setter(prev => {
       const next = new Set(prev);
@@ -96,21 +96,9 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
   };
 
   const loadCustomExercises = useCallback(async () => {
-    if (!user?.id) {
-      setCustomExercises([]);
-      return;
-    }
-
     try {
-      const exercisesRef = collection(db, 'exercises');
-      const customQuery = query(exercisesRef, where('userId', '==', user.id));
-      const querySnapshot = await getDocs(customQuery);
-
-      const typeFilteredExercises = querySnapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
-        .filter((exercise: any) => normalizeActivityType(exercise.activityType) === activityType);
-
-      setCustomExercises(typeFilteredExercises);
+      const mergedExercises = await getMergedExercisesByActivityType(activityType, user?.id);
+      setCustomExercises(mergedExercises);
     } catch (error) {
       console.error('UniversalExercisePicker: failed loading custom exercises', error);
       setCustomExercises([]);
@@ -129,18 +117,26 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
   const mergedData = useMemo(() => {
     const baseData = Array.isArray(data) ? data : [];
     const byId = new Map<string, any>();
+    const byNameAndType = new Set<string>();
 
     [...baseData, ...customExercises].forEach(exercise => {
       if (!exercise) return;
       const fallbackId = `${exercise.name || 'exercise'}-${exercise.activityType || activityType}`;
       const id = String(exercise.id || fallbackId);
-      if (!byId.has(id)) {
-        byId.set(id, { ...exercise, id });
+      const normalizedName = normalizeExerciseName(String(exercise.name || ''));
+      const typeValue = String(exercise.activityType || activityType);
+      const nameTypeKey = `${typeValue}::${normalizedName}`;
+
+      if (byId.has(id) || byNameAndType.has(nameTypeKey)) {
+        return;
       }
+
+      byId.set(id, { ...exercise, id, nameLower: exercise.nameLower || normalizedName });
+      byNameAndType.add(nameTypeKey);
     });
 
     return Array.from(byId.values());
-  }, [data, customExercises, activityType]);
+  }, [data, customExercises, activityType, normalizeExerciseName]);
 
   const enriched = useMemo(() => {
     try {

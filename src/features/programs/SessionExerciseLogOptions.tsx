@@ -1,15 +1,14 @@
 import React, { useCallback, useState, useEffect } from 'react';
 import { Exercise, MuscleGroup } from '@/types/exercise';
 import { ExerciseSet } from '@/types/sets';
-import { allExercises } from '@/data/exercises';
-import { importedExercises } from '@/data/importedExercises';
 import { StrengthExercisePicker } from '@/components/StrengthExercisePicker';
 import { CreateUniversalExerciseDialog } from '@/components/exercises/CreateUniversalExerciseDialog';
 import { ActivityType } from '@/types/activityTypes';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/services/firebase/config';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'react-hot-toast';
+import { getMergedExercisesByActivityType } from '@/services/exerciseDatabaseService';
 
 export type ExerciseWithSets = Exercise & { sets: ExerciseSet[] };
 
@@ -49,54 +48,19 @@ const SessionExerciseLogOptions: React.FC<SessionExerciseLogOptionsProps> = ({ o
   const [isLoading, setIsLoading] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
-  // Load custom and default exercises
+  // Load merged exercises (built-in + global + user custom)
   useEffect(() => {
     const loadExercises = async () => {
       try {
         setIsLoading(true);
-
-        // Load custom exercises from Firebase
-        let userCustomExercises: Exercise[] = [];
-        if (user) {
-          const exercisesRef = collection(db, 'exercises');
-          const q = query(exercisesRef, where('userId', '==', user.id));
-          const querySnapshot = await getDocs(q);
-
-          querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            userCustomExercises.push({
-              ...data,
-              id: doc.id,
-              primaryMuscles: data.primaryMuscles.map(normalizeMuscle),
-              type: data.type,
-              category: data.category,
-              defaultUnit: data.defaultUnit,
-            } as Exercise);
-          });
-        }
-
-        // Combine default + imported + custom exercises
-        const normalizedExercises: Exercise[] = [
-          ...allExercises.map(ex => ({
-            ...ex,
-            id: `default-${ex.name.replace(/\s+/g, '-').toLowerCase()}`,
-            primaryMuscles: (ex.primaryMuscles || []).map(normalizeMuscle),
-            secondaryMuscles: [],
-            customExercise: false
-          })),
-          ...importedExercises.map(ex => ({
-            ...ex,
-            id: ex.id || `imported-${ex.name.replace(/\s+/g, '-').toLowerCase()}`,
-            primaryMuscles: Array.isArray(ex.primaryMuscles)
-              ? ex.primaryMuscles.map(normalizeMuscle)
-              : [normalizeMuscle(String(ex.primaryMuscles))],
-            secondaryMuscles: [],
-            defaultUnit: (ex.type === 'cardio' ? 'time' : 'kg') as Exercise['defaultUnit'],
-            customExercise: false
+        const mergedExercises = await getMergedExercisesByActivityType(ActivityType.RESISTANCE, user?.id);
+        setExercises(
+          mergedExercises.map((exercise) => ({
+            ...exercise,
+            primaryMuscles: (exercise.primaryMuscles || []).map(normalizeMuscle),
+            secondaryMuscles: exercise.secondaryMuscles || []
           }))
-        ];
-
-        setExercises([...normalizedExercises, ...userCustomExercises]);
+        );
       } catch (error) {
         console.error('Error loading exercises:', error);
         toast.error('Failed to load exercises');
@@ -106,7 +70,7 @@ const SessionExerciseLogOptions: React.FC<SessionExerciseLogOptionsProps> = ({ o
     };
 
     loadExercises();
-  }, [user]);
+  }, [user?.id]);
 
   const handleSelectExercise = useCallback((exercise: Exercise) => {
     try {
@@ -125,7 +89,11 @@ const SessionExerciseLogOptions: React.FC<SessionExerciseLogOptionsProps> = ({ o
   const handleExerciseCreated = async (exerciseId: string) => {
     setIsLoading(true);
     try {
-      const exerciseDoc = await getDoc(doc(db, 'exercises', exerciseId));
+      let exerciseDoc = await getDoc(doc(db, 'exercises', exerciseId));
+      if (!exerciseDoc.exists()) {
+        exerciseDoc = await getDoc(doc(db, 'globalExercises', exerciseId));
+      }
+
       if (exerciseDoc.exists()) {
         const data = exerciseDoc.data();
         const newExercise: Exercise = {

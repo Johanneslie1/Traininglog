@@ -12,6 +12,7 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
+import { withExerciseSnapshots } from '@/services/exerciseSnapshotService';
 
 const resolveCurrentUserDisplayName = async (uid: string): Promise<string> => {
   const auth = getAuth();
@@ -110,12 +111,17 @@ export const shareSession = async (
     if (!sessionData.exercises || sessionData.exercises.length === 0) {
       throw new Error('Session must have at least one exercise');
     }
+
+    const sessionDataWithSnapshots: ProgramSession = {
+      ...sessionData,
+      exercises: await withExerciseSnapshots(sessionData.exercises)
+    };
     
     // Create shared session document
     const sharedSessionRef = doc(collection(db, 'sharedSessions'));
     const sharedSessionData = removeUndefinedFields({
       sessionId: sessionData.id,
-      sessionData: sessionData,
+      sessionData: sessionDataWithSnapshots,
       sharedBy: user.uid,
       sharedByName,
       sharedWith: shareWithUserIds,
@@ -138,7 +144,7 @@ export const shareSession = async (
       const assignmentRef = doc(collection(db, 'sharedSessionAssignments'));
       const assignmentData = removeUndefinedFields({
         sharedSessionId: sharedSessionRef.id,
-        sessionData: sessionData,
+        sessionData: sessionDataWithSnapshots,
         userId,
         sharedBy: user.uid,
         sharedByName,
