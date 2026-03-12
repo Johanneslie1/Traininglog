@@ -162,6 +162,66 @@ export const chestExercises: ExerciseTemplate[] = [
     instructions: ['Face away from anchor point with one arm doing most of the press', 'Keep opposite arm extended for assistance', 'Lower in control while bracing core', 'Press back up and alternate sides'],
     metrics: bodyweightRepMetrics,
     defaultUnit: 'reps'
+  },
+  {
+    name: 'Parallel Bar Dips',
+    description: 'A bodyweight compound press emphasizing lower chest, triceps, and shoulder stability.',
+    type: 'bodyweight',
+    category: 'compound',
+    primaryMuscles: ['chest', 'triceps'],
+    secondaryMuscles: ['shoulders', 'core'],
+    equipment: ['bar'],
+    instructions: ['Support body on parallel bars with locked elbows', 'Lean slightly forward to bias chest', 'Lower until upper arms are near parallel to floor', 'Press back to full lockout with control'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'Weighted Dips',
+    description: 'A loaded dip variation for progressive chest and triceps strength.',
+    type: 'strength',
+    category: 'compound',
+    primaryMuscles: ['chest', 'triceps'],
+    secondaryMuscles: ['shoulders', 'core'],
+    equipment: ['bar', 'plate'],
+    instructions: ['Attach weight securely using belt or dumbbell between feet', 'Set stable support position on bars', 'Lower under control with slight torso lean', 'Drive back to lockout without swinging'],
+    metrics: defaultMetrics,
+    defaultUnit: 'kg'
+  },
+  {
+    name: 'Assisted Dips (Machine)',
+    description: 'A machine-assisted dip that allows controlled progression toward full bodyweight dips.',
+    type: 'strength',
+    category: 'compound',
+    primaryMuscles: ['chest', 'triceps'],
+    secondaryMuscles: ['shoulders'],
+    equipment: ['machine'],
+    instructions: ['Set assistance level on machine', 'Grip handles and brace torso', 'Lower smoothly until comfortable depth', 'Press up while maintaining shoulder control'],
+    metrics: defaultMetrics,
+    defaultUnit: 'kg'
+  },
+  {
+    name: 'Ring Dips',
+    description: 'An unstable dip variation that increases shoulder stabilization and triceps demand.',
+    type: 'bodyweight',
+    category: 'compound',
+    primaryMuscles: ['chest', 'triceps'],
+    secondaryMuscles: ['shoulders', 'core'],
+    equipment: ['bodyweight'],
+    instructions: ['Support body on rings with elbows locked and rings close', 'Lower slowly while keeping rings near torso', 'Pause briefly at controlled depth', 'Press up and stabilize at top without flaring'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
+  },
+  {
+    name: 'Bench Dips',
+    description: 'A beginner-friendly dip pattern focusing on triceps with chest and shoulder contribution.',
+    type: 'bodyweight',
+    category: 'compound',
+    primaryMuscles: ['triceps'],
+    secondaryMuscles: ['chest', 'shoulders'],
+    equipment: ['bench'],
+    instructions: ['Place hands on bench edge with fingers forward', 'Extend legs and keep hips close to bench', 'Lower by bending elbows to a comfortable depth', 'Press through palms to return to start'],
+    metrics: bodyweightRepMetrics,
+    defaultUnit: 'reps'
   }
 ];
 
@@ -197,6 +257,90 @@ export const backExercises: ExerciseTemplate[] = [
     secondaryMuscles: ['biceps'],
     equipment: ['cable'],
     instructions: ['Sit at the lat pulldown machine and adjust the knee pad', 'Grab the bar with a wide grip', 'Pull the bar down to your chest', 'Slowly return the bar to the starting position'],
+    metrics: defaultMetrics,
+    defaultUnit: 'kg'
+  },
+  {
+    name: 'Wide-Grip Lat Pulldown',
+    description: 'A wide-grip pulldown variation emphasizing upper-lat and teres major recruitment.',
+    type: 'strength',
+    category: 'compound',
+    primaryMuscles: ['back', 'lats'],
+    secondaryMuscles: ['biceps', 'forearms'],
+    equipment: ['cable'],
+    instructions: ['Use a wide pronated grip on pulldown bar', 'Set torso upright with slight lean back', 'Drive elbows down toward sides', 'Control the eccentric to full stretch'],
+    metrics: defaultMetrics,
+    defaultUnit: 'kg'
+  },
+  {
+    name: 'Close-Grip Lat Pulldown',
+    description: 'A close-grip pulldown variation that increases lower-lat and biceps contribution.',
+    type: 'strength',
+    category: 'compound',
+    primaryMuscles: ['back', 'lats'],
+    secondaryMuscles: ['biceps', 'forearms'],
+    equipment: ['cable'],
+    instructions: ['Use close neutral or supinated handle attachment', 'Keep chest lifted and core braced', 'Pull handle toward upper chest', 'Return slowly to full elbow extension'],
+    metrics: defaultMetrics,
+    defaultUnit: 'kg'
+  },
+  {
+    name: 'Single-Arm Cable Lat Pulldown',
+    description: 'A unilateral cable pulldown that improves side-to-side lat balance and control.',
+    type: 'strength',
+    category: 'compound',
+    primaryMuscles: ['lats', 'back'],
+    secondaryMuscles: ['biceps', 'core'],
+    equipment: ['cable'],
+    instructions: ['Use single handle on high pulley', 'Set torso stable with slight lean', 'Pull elbow down toward hip on working side', 'Return with control and repeat on opposite arm'],
+    metrics: defaultMetrics,
+    defaultUnit: 'kg'
+  },
+  {
+    name: 'Kneeling Single-Arm Lat Pulldown',
+    description: 'A kneeling unilateral pulldown that reinforces lat-driven shoulder extension mechanics.',
+    type: 'strength',
+    category: 'compound',
+    primaryMuscles: ['lats', 'back'],
+    secondaryMuscles: ['biceps', 'core'],
+    equipment: ['cable'],
+    instructions: ['Kneel facing cable stack with one handle overhead', 'Brace trunk and keep ribcage down', 'Drive elbow down and slightly back', 'Control return to overhead stretch'],
+    metrics: defaultMetrics,
+    defaultUnit: 'kg'
+  },
+  {
+    name: 'Reverse-Grip Lat Pulldown',
+    description: 'A supinated pulldown variation that increases elbow flexor contribution while targeting lats.',
+    type: 'strength',
+    category: 'compound',
+    primaryMuscles: ['back', 'lats'],
+    secondaryMuscles: ['biceps', 'forearms'],
+    equipment: ['cable'],
+    instructions: ['Take shoulder-width underhand grip on bar', 'Keep chest up and shoulders depressed', 'Pull bar to upper chest while driving elbows down', 'Lower in control to full stretch'],
+    metrics: defaultMetrics,
+    defaultUnit: 'kg'
+  },
+  {
+    name: 'Straight-Arm Cable Pulldown',
+    description: 'An isolation pulldown emphasizing shoulder extension and lat engagement with minimal elbow flexion.',
+    type: 'strength',
+    category: 'isolation',
+    primaryMuscles: ['lats', 'back'],
+    secondaryMuscles: ['core', 'triceps'],
+    equipment: ['cable'],
+    instructions: ['Stand facing high cable with straight bar or rope', 'Hinge slightly and keep elbows softly bent', 'Pull handle down toward thighs in an arc', 'Return slowly while keeping tension on lats'],
+    metrics: defaultMetrics,
+    defaultUnit: 'kg'
+  },
+  {
+    name: 'Half-Kneeling Single-Arm Cable Pulldown',
+    description: 'A half-kneeling unilateral pulldown adding anti-rotation core demand.',
+    type: 'strength',
+    category: 'compound',
+    primaryMuscles: ['lats', 'back'],
+    secondaryMuscles: ['core', 'biceps'],
+    equipment: ['cable'],
+    instructions: ['Set up in half-kneeling stance facing cable stack', 'Reach overhead for single handle', 'Pull elbow down toward back pocket while resisting trunk rotation', 'Return slowly and repeat all reps before switching sides'],
     metrics: defaultMetrics,
     defaultUnit: 'kg'
   },

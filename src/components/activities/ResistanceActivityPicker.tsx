@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ResistanceExercise } from '@/types/activityTypes';
 import { ActivityType } from '@/types/activityTypes';
-import resistanceData from '@/data/exercises/resistance.json';
 import { enrich, applyFilters, collectFacets } from '@/utils/resistanceFilters';
 import UniversalExercisePicker from './UniversalExercisePicker';
 import UniversalActivityLogger from './UniversalActivityLogger';
 import { strengthTemplate } from '@/config/defaultTemplates';
+import { getMergedExercisesByActivityType } from '@/services/exerciseDatabaseService';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ResistanceActivityPickerProps {
   onClose: () => void;
@@ -20,8 +21,24 @@ const ResistanceActivityPicker: React.FC<ResistanceActivityPickerProps> = ({
   onActivityLogged,
   selectedDate = new Date()
 }) => {
+  const { user } = useAuth();
   const [selectedExercise, setSelectedExercise] = useState<ResistanceExercise | null>(null);
+  const [resistanceExercises, setResistanceExercises] = useState<ResistanceExercise[]>([]);
   const [view, setView] = useState<'list' | 'logging'>('list');
+
+  useEffect(() => {
+    const loadResistanceExercises = async () => {
+      try {
+        const mergedExercises = await getMergedExercisesByActivityType(ActivityType.RESISTANCE, user?.id);
+        setResistanceExercises(mergedExercises as ResistanceExercise[]);
+      } catch (error) {
+        console.error('ResistanceActivityPicker: failed loading exercises', error);
+        setResistanceExercises([]);
+      }
+    };
+
+    loadResistanceExercises();
+  }, [user?.id]);
 
   function handleSelect(ex: ResistanceExercise) {
     setSelectedExercise(ex);
@@ -50,7 +67,7 @@ const ResistanceActivityPicker: React.FC<ResistanceActivityPickerProps> = ({
         </div>
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white">✕</button>
         <UniversalExercisePicker
-          data={resistanceData as ResistanceExercise[]}
+          data={resistanceExercises}
           enrich={enrich as any}
           collectFacets={collectFacets as any}
           applyFilters={applyFilters as any}

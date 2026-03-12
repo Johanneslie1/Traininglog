@@ -9,9 +9,9 @@ import { resolveActivityTypeFromExerciseLike } from '@/utils/activityTypeResolve
 import ProgramCard from './ProgramCard';
 import { usePrograms } from '@/context/ProgramsContext';
 import UniversalExercisePicker from '@/components/activities/UniversalExercisePicker';
-import { getAllExercisesLocal } from '@/utils/allExercises';
-import { enrichAll, collectAllFacets, applyAllFilters } from '@/utils/allExercisesFilters';
+import { getMergedExercisesByAllActivityTypes } from '@/services/exerciseDatabaseService';
 import AppOverlay from '@/components/ui/AppOverlay';
+import { useAuth } from '@/hooks/useAuth';
 
 const mapActivityTypeToExerciseType = (activityType: ActivityType): Exercise['type'] => {
   switch (activityType) {
@@ -51,10 +51,66 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
   onSelectExercises
 }) => {
   const { programs, isLoading, error, refresh } = usePrograms();
+  const { user } = useAuth();
   const [step, setStep] = React.useState<'programs' | 'sessions' | 'exercises' | 'library'>('programs');
   const [selectedProgram, setSelectedProgram] = React.useState<Program | null>(null);
   const [expandedSessions, setExpandedSessions] = React.useState<string[]>([]);
   const [selectedExercises, setSelectedExercises] = React.useState<{ sessionId: string; exerciseId: string }[]>([]);
+  const [libraryExercises, setLibraryExercises] = React.useState<Exercise[]>([]);
+  const [librarySelectedMap, setLibrarySelectedMap] = React.useState<Record<string, boolean>>({});
+  const [isLibraryLoading, setIsLibraryLoading] = React.useState(false);
+
+  const libraryEnriched = React.useMemo(
+    () => libraryExercises.map((exercise) => ({ ...exercise, tags: Array.isArray(exercise.tags) ? exercise.tags : [] })),
+    [libraryExercises]
+  );
+
+  const collectLibraryFacets = React.useCallback((list: typeof libraryEnriched) => {
+    const facets = { type: new Set<string>(), equipment: new Set<string>(), tags: new Set<string>() };
+    list.forEach((exercise) => {
+      facets.type.add(String(exercise.activityType || ActivityType.OTHER));
+      (exercise.equipment || []).forEach((equipment) => facets.equipment.add(equipment));
+      (exercise.tags || []).forEach((tag) => facets.tags.add(tag));
+    });
+    return facets;
+  }, []);
+
+  const applyLibraryFilters = React.useCallback((list: typeof libraryEnriched, f: any) => {
+    return list.filter((exercise) => {
+      if (f.search) {
+        const q = String(f.search).toLowerCase();
+        const hay = [exercise.name, exercise.description].filter(Boolean).join(' ').toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      if (f.type && f.type.size && !f.type.has(String(exercise.activityType || ActivityType.OTHER))) return false;
+      if (f.equipment && f.equipment.size) {
+        const eq = exercise.equipment || [];
+        const required = Array.from(f.equipment) as string[];
+        if (!required.every(v => eq.includes(v))) return false;
+      }
+      if (f.includeTags && f.includeTags.size && !(exercise.tags || []).some(tag => f.includeTags.has(tag))) return false;
+      return true;
+    });
+  }, []);
+
+  React.useEffect(() => {
+    if (step !== 'library') return;
+
+    const loadLibraryExercises = async () => {
+      try {
+        setIsLibraryLoading(true);
+        const merged = await getMergedExercisesByAllActivityTypes(user?.id);
+        setLibraryExercises(merged);
+      } catch (error) {
+        console.error('ProgramExercisePicker: failed loading unified library exercises', error);
+        setLibraryExercises([]);
+      } finally {
+        setIsLibraryLoading(false);
+      }
+    };
+
+    loadLibraryExercises();
+  }, [step, user?.id]);
 
   const handleProgramSelect = (program: Program) => {
     setSelectedProgram(program);
@@ -236,13 +292,12 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
   }
 
   if (step === 'library') {
-    const unified = React.useMemo(() => getAllExercisesLocal(), []);
-    const enriched = React.useMemo(() => enrichAll(unified), [unified]);
-    const [selectedMap, setSelectedMap] = React.useState<Record<string, boolean>>({});
-    const selectedCount = Object.values(selectedMap).filter(Boolean).length;
-    function toggleSelect(ex: any) { setSelectedMap(prev => ({ ...prev, [ex.id]: !prev[ex.id] })); }
+    const selectedCount = Object.values(librarySelectedMap).filter(Boolean).length;
+    function toggleSelect(ex: any) {
+      setLibrarySelectedMap(prev => ({ ...prev, [ex.id]: !prev[ex.id] }));
+    }
     function handleAddFromLibrary() { 
-      const chosen = enriched.filter(e => selectedMap[e.id]); 
+      const chosen = libraryEnriched.filter(e => librarySelectedMap[e.id]); 
       const mapped = chosen.map(e => ({ 
         exercise: {
           ...(e as any),
@@ -280,15 +335,15 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
           </div>
           <button onClick={onClose} className="absolute top-4 right-4 text-text-tertiary hover:text-text-primary">✕</button>
           <UniversalExercisePicker
-            data={enriched as any[]}
+            data={libraryEnriched as any[]}
             enrich={(l: any[]) => l}
-            collectFacets={(l: any[]) => collectAllFacets(l)}
-            applyFilters={(l: any[], f: any) => applyAllFilters(l, f)}
+            collectFacets={(l: any[]) => collectLibraryFacets(l)}
+            applyFilters={(l: any[], f: any) => applyLibraryFilters(l, f)}
             onSelect={toggleSelect}
             title="All Exercises Library"
-            subtitle="Select one or many exercises from any category"
+            subtitle={isLibraryLoading ? 'Loading unified exercise library…' : 'Select one or many exercises from any category'}
             renderCard={(ex: any) => {
-              const active = !!selectedMap[ex.id];
+              const active = !!librarySelectedMap[ex.id];
               return (
                 <div className={`relative ${active ? 'ring-2 ring-yellow-400' : ''}`}>
                   <h3 className="text-lg font-semibold text-text-primary mb-1">{ex.name}</h3>
@@ -313,7 +368,7 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
               Selected: <span className="text-yellow-400 font-semibold">{selectedCount}</span>
             </p>
             <div className="flex gap-2">
-              <button onClick={() => setSelectedMap({})} className="px-3 py-2 text-xs font-medium bg-bg-tertiary border border-border rounded-md text-text-secondary hover:text-text-primary">
+              <button onClick={() => setLibrarySelectedMap({})} className="px-3 py-2 text-xs font-medium bg-bg-tertiary border border-border rounded-md text-text-secondary hover:text-text-primary">
                 Clear
               </button>
               <button
