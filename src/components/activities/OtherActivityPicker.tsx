@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { ActivityType, OtherActivity } from '@/types/activityTypes';
-import { getExercisesByActivityType } from '@/services/exerciseDatabaseService';
 import { UniversalSetLogger } from '@/components/UniversalSetLogger';
 import UniversalExercisePicker from './UniversalExercisePicker';
 import { enrich, collectFacets, applyFilters } from '@/utils/otherFilters';
@@ -32,18 +31,23 @@ const OtherActivityPicker: React.FC<OtherActivityPickerProps> = ({
   const user = useSelector((state: RootState) => state.auth.user);
 
   useEffect(() => {
-    const exercises = getExercisesByActivityType(ActivityType.OTHER) as any[];
-    setData(exercises.map((ex, index) => ({
-      id: ex.id || `other-${index}`,
-      name: ex.name,
-      description: ex.description,
-      activityType: ActivityType.OTHER,
-      category: ex.category || 'general',
-      isDefault: ex.isDefault ?? true,
-      customCategory: ex.category || 'general',
-      customFields: [],
-      metrics: Object.keys(ex.metrics || {}).reduce((acc: any, k) => { acc[k] = true; return acc; }, {})
-    })) as OtherActivity[]);
+    const loadOtherExercises = async () => {
+      const { getExercisesByActivityTypeAsync } = await import('@/services/exerciseDatabaseService');
+      const exercises = await getExercisesByActivityTypeAsync(ActivityType.OTHER) as any[];
+      setData(exercises.map((ex, index) => ({
+        id: ex.id || `other-${index}`,
+        name: ex.name,
+        description: ex.description,
+        activityType: ActivityType.OTHER,
+        category: ex.category || 'general',
+        isDefault: ex.isDefault ?? true,
+        customCategory: ex.category || 'general',
+        customFields: [],
+        metrics: Object.keys(ex.metrics || {}).reduce((acc: any, k) => { acc[k] = true; return acc; }, {})
+      })) as OtherActivity[]);
+    };
+
+    void loadOtherExercises();
   }, []);
 
   function handleSelect(ex: OtherActivity) {

@@ -147,9 +147,56 @@ export default defineConfig(({ mode }) => {
       sourcemap: true,
       rollupOptions: {
         output: {
-          manualChunks: {
-            'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-            'firebase-vendor': ['firebase/app', 'firebase/auth', 'firebase/firestore']
+          manualChunks(id) {
+            const normalizedId = id.replace(/\\/g, '/');
+
+            if (
+              normalizedId.includes('/node_modules/react/') ||
+              normalizedId.includes('/node_modules/react-dom/') ||
+              normalizedId.includes('/node_modules/react-router-dom/')
+            ) {
+              return 'react-vendor';
+            }
+
+            if (
+              normalizedId.includes('/node_modules/firebase/firestore/')
+            ) {
+              return 'firebase-firestore-vendor';
+            }
+
+            if (
+              normalizedId.includes('/node_modules/firebase/app/') ||
+              normalizedId.includes('/node_modules/firebase/auth/')
+            ) {
+              return 'firebase-core-vendor';
+            }
+
+            if (normalizedId.includes('/src/services/exerciseDatabaseService.ts')) {
+              return 'exercise-db-core';
+            }
+
+            if (normalizedId.includes('/src/data/exercises/resistance.json')) {
+              return 'exercise-data-resistance';
+            }
+
+            if (
+              normalizedId.includes('/src/data/exercises/endurance.json') ||
+              normalizedId.includes('/src/data/exercises/sports.json') ||
+              normalizedId.includes('/src/data/exercises/flexibility.json') ||
+              normalizedId.includes('/src/data/exercises/speedAgility.json') ||
+              normalizedId.includes('/src/data/exercises/other.json')
+            ) {
+              return 'exercise-data-activities';
+            }
+
+            if (
+              normalizedId.includes('/src/data/exercises.ts') ||
+              normalizedId.includes('/src/data/importedExercises.ts')
+            ) {
+              return 'exercise-data-legacy';
+            }
+
+            return undefined;
           }
         }
       }

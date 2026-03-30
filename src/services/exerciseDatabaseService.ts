@@ -3,19 +3,12 @@ import { ActivityType } from '../types/activityTypes';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/services/firebase/config';
 
-// Import JSON exercise databases for new activity types
-import enduranceExercises from '../data/exercises/endurance.json';
-import sportsExercises from '../data/exercises/sports.json';
-import flexibilityExercises from '../data/exercises/flexibility.json';
-import speedAgilityExercises from '../data/exercises/speedAgility.json';
-import otherActivitiesExercises from '../data/exercises/other.json';
-import resistanceExercisesJson from '../data/exercises/resistance.json';
-
-// Import your existing resistance training system
-import { allExercises } from '../data/exercises';
-import { importedExercises } from '../data/importedExercises';
-
 type ExerciseType = Exercise['type'];
+
+type ActivityDatasetMeta = {
+  categories?: Record<string, { name: string; description: string; icon: string }>;
+  metadata?: unknown;
+};
 
 const DEFAULT_UNITS: Record<ActivityType, Exercise['defaultUnit']> = {
   [ActivityType.RESISTANCE]: 'kg',
@@ -58,6 +51,27 @@ const MUSCLE_ALIASES: Record<string, string> = {
   hip_flexors: 'hip_flexors',
   fullbody: 'full_body',
   'full body': 'full_body'
+};
+
+const emptyExerciseMap = (): Record<ActivityType, Exercise[]> => ({
+  [ActivityType.RESISTANCE]: [],
+  [ActivityType.ENDURANCE]: [],
+  [ActivityType.SPORT]: [],
+  [ActivityType.STRETCHING]: [],
+  [ActivityType.SPEED_AGILITY]: [],
+  [ActivityType.OTHER]: []
+});
+
+const cachedExercisesByType: Partial<Record<ActivityType, Exercise[]>> = {};
+const loadingExercisesByType: Partial<Record<ActivityType, Promise<Exercise[]>>> = {};
+const cachedDatasetMetaByType: Partial<Record<ActivityType, ActivityDatasetMeta>> = {};
+
+const readDatasetMeta = (datasetModule: unknown): ActivityDatasetMeta => {
+  const moduleRecord = datasetModule as { categories?: ActivityDatasetMeta['categories']; metadata?: unknown };
+  return {
+    categories: moduleRecord.categories,
+    metadata: moduleRecord.metadata,
+  };
 };
 
 function normalizeActivityTypeFromValue(value: string): ActivityType | undefined {
@@ -305,7 +319,6 @@ const normalizeExerciseRecord = (
   };
 };
 
-// Convert JSON exercise to internal Exercise type
 function convertToExercise(jsonExercise: any, fallbackActivityType?: ActivityType): Exercise {
   return normalizeExerciseRecord(
     jsonExercise,
@@ -314,9 +327,6 @@ function convertToExercise(jsonExercise: any, fallbackActivityType?: ActivityTyp
     true
   );
 }
-
-// Load and convert all exercise databases
-let cachedExercises: Record<ActivityType, Exercise[]> | null = null;
 
 const withNormalizedName = (exercise: Exercise): Exercise => ({
   ...exercise,
@@ -384,81 +394,134 @@ const loadFirestoreExercises = async (
   return snapshot.docs.map((exerciseDoc) => mapFirestoreExercise(exerciseDoc.id, exerciseDoc.data()));
 };
 
-export function loadExerciseDatabases(): Record<ActivityType, Exercise[]> {
-  if (cachedExercises) return cachedExercises;
+const loadExerciseDatasetForActivityType = async (activityType: ActivityType): Promise<Exercise[]> => {
+  if (activityType === ActivityType.RESISTANCE) {
+    const [curatedModule, legacyModule, resistanceJsonModule] = await Promise.all([
+      import('../data/exercises'),
+      import('../data/importedExercises'),
+      import('../data/exercises/resistance.json'),
+    ]);
 
-  const loaded: Record<ActivityType, Exercise[]> = {
-    [ActivityType.RESISTANCE]: [],
-    [ActivityType.ENDURANCE]: [],
-    [ActivityType.SPORT]: [],
-    [ActivityType.STRETCHING]: [],
-    [ActivityType.SPEED_AGILITY]: [],
-    [ActivityType.OTHER]: []
-  };
+    const curatedExercises = Array.isArray(curatedModule.allExercises)
+      ? curatedModule.allExercises.map((exercise) =>
+          normalizeExerciseRecord(exercise, ActivityType.RESISTANCE, 'resistance-curated')
+        )
+      : [];
 
-  try {
-    if (Array.isArray(allExercises)) {
-      loaded[ActivityType.RESISTANCE] = allExercises.map((exercise) =>
-        normalizeExerciseRecord(exercise, ActivityType.RESISTANCE, 'resistance-curated')
-      );
-    }
-
-    if (Array.isArray(resistanceExercisesJson)) {
-      loaded[ActivityType.RESISTANCE] = [
-        ...loaded[ActivityType.RESISTANCE],
-        ...resistanceExercisesJson.map((exercise) =>
+    const resistanceJson = Array.isArray(resistanceJsonModule.default)
+      ? resistanceJsonModule.default.map((exercise) =>
           normalizeExerciseRecord(exercise, ActivityType.RESISTANCE, 'resistance-json', true)
         )
-      ];
-    }
+      : [];
 
-    if (Array.isArray(importedExercises)) {
-      loaded[ActivityType.RESISTANCE] = [
-        ...loaded[ActivityType.RESISTANCE],
-        ...importedExercises.map((exercise) =>
+    const legacyExercises = Array.isArray(legacyModule.importedExercises)
+      ? legacyModule.importedExercises.map((exercise) =>
           normalizeExerciseRecord(exercise, ActivityType.RESISTANCE, 'resistance-legacy')
         )
-      ];
-    }
+      : [];
 
-    if (Array.isArray(enduranceExercises)) {
-      loaded[ActivityType.ENDURANCE] = enduranceExercises.map(ex => convertToExercise(ex, ActivityType.ENDURANCE));
-    }
-    if (Array.isArray(sportsExercises)) {
-      loaded[ActivityType.SPORT] = sportsExercises.map(ex => convertToExercise(ex, ActivityType.SPORT));
-    }
-    if (Array.isArray(flexibilityExercises)) {
-      loaded[ActivityType.STRETCHING] = flexibilityExercises.map(ex => convertToExercise(ex, ActivityType.STRETCHING));
-    }
-    if (Array.isArray(speedAgilityExercises)) {
-      loaded[ActivityType.SPEED_AGILITY] = speedAgilityExercises.map(ex => convertToExercise(ex, ActivityType.SPEED_AGILITY));
-    }
-    if (Array.isArray(otherActivitiesExercises)) {
-      loaded[ActivityType.OTHER] = otherActivitiesExercises.map(ex => convertToExercise(ex, ActivityType.OTHER));
-    }
-
-    ACTIVITY_TYPE_ORDER.forEach((type) => {
-      loaded[type] = dedupeExercises(loaded[type]);
-    });
-  } catch (err) {
-    console.error('Error loading exercise databases:', err);
+    return dedupeExercises([...curatedExercises, ...resistanceJson, ...legacyExercises]);
   }
 
-  cachedExercises = loaded;
-  return loaded;
+  if (activityType === ActivityType.ENDURANCE) {
+    const datasetModule = await import('../data/exercises/endurance.json');
+    const dataset = Array.isArray(datasetModule.default) ? datasetModule.default : [];
+    cachedDatasetMetaByType[ActivityType.ENDURANCE] = readDatasetMeta(datasetModule);
+    return dedupeExercises(dataset.map((exercise) => convertToExercise(exercise, ActivityType.ENDURANCE)));
+  }
+
+  if (activityType === ActivityType.SPORT) {
+    const datasetModule = await import('../data/exercises/sports.json');
+    const dataset = Array.isArray(datasetModule.default) ? datasetModule.default : [];
+    cachedDatasetMetaByType[ActivityType.SPORT] = readDatasetMeta(datasetModule);
+    return dedupeExercises(dataset.map((exercise) => convertToExercise(exercise, ActivityType.SPORT)));
+  }
+
+  if (activityType === ActivityType.STRETCHING) {
+    const datasetModule = await import('../data/exercises/flexibility.json');
+    const dataset = Array.isArray(datasetModule.default) ? datasetModule.default : [];
+    cachedDatasetMetaByType[ActivityType.STRETCHING] = readDatasetMeta(datasetModule);
+    return dedupeExercises(dataset.map((exercise) => convertToExercise(exercise, ActivityType.STRETCHING)));
+  }
+
+  if (activityType === ActivityType.SPEED_AGILITY) {
+    const datasetModule = await import('../data/exercises/speedAgility.json');
+    const dataset = Array.isArray(datasetModule.default) ? datasetModule.default : [];
+    cachedDatasetMetaByType[ActivityType.SPEED_AGILITY] = readDatasetMeta(datasetModule);
+    return dedupeExercises(dataset.map((exercise) => convertToExercise(exercise, ActivityType.SPEED_AGILITY)));
+  }
+
+  const datasetModule = await import('../data/exercises/other.json');
+  const dataset = Array.isArray(datasetModule.default) ? datasetModule.default : [];
+  cachedDatasetMetaByType[ActivityType.OTHER] = readDatasetMeta(datasetModule);
+  return dedupeExercises(dataset.map((exercise) => convertToExercise(exercise, ActivityType.OTHER)));
+};
+
+const getCachedExerciseMap = (): Record<ActivityType, Exercise[]> => {
+  const result = emptyExerciseMap();
+  ACTIVITY_TYPE_ORDER.forEach((type) => {
+    result[type] = cachedExercisesByType[type] || [];
+  });
+  return result;
+};
+
+const ensureActivityTypeLoaded = async (activityType: ActivityType): Promise<Exercise[]> => {
+  if (cachedExercisesByType[activityType]) {
+    return cachedExercisesByType[activityType] || [];
+  }
+
+  if (loadingExercisesByType[activityType]) {
+    return loadingExercisesByType[activityType] as Promise<Exercise[]>;
+  }
+
+  loadingExercisesByType[activityType] = loadExerciseDatasetForActivityType(activityType)
+    .then((loaded) => {
+      cachedExercisesByType[activityType] = loaded;
+      return loaded;
+    })
+    .catch((error) => {
+      console.error(`Error loading exercise database for ${activityType}:`, error);
+      return [];
+    })
+    .finally(() => {
+      delete loadingExercisesByType[activityType];
+    });
+
+  return loadingExercisesByType[activityType] as Promise<Exercise[]>;
+};
+
+export function loadExerciseDatabases(): Record<ActivityType, Exercise[]> {
+  ACTIVITY_TYPE_ORDER.forEach((type) => {
+    if (!cachedExercisesByType[type] && !loadingExercisesByType[type]) {
+      void ensureActivityTypeLoaded(type);
+    }
+  });
+
+  return getCachedExerciseMap();
 }
 
-// Get exercises by activity type
+export async function loadExerciseDatabasesAsync(): Promise<Record<ActivityType, Exercise[]>> {
+  await Promise.all(ACTIVITY_TYPE_ORDER.map((type) => ensureActivityTypeLoaded(type)));
+  return getCachedExerciseMap();
+}
+
 export function getExercisesByActivityType(activityType: ActivityType): Exercise[] {
-  const allExercises = loadExerciseDatabases();
-  return allExercises[activityType] || [];
+  if (!cachedExercisesByType[activityType] && !loadingExercisesByType[activityType]) {
+    void ensureActivityTypeLoaded(activityType);
+  }
+
+  return cachedExercisesByType[activityType] || [];
+}
+
+export async function getExercisesByActivityTypeAsync(activityType: ActivityType): Promise<Exercise[]> {
+  return ensureActivityTypeLoaded(activityType);
 }
 
 export async function getMergedExercisesByActivityType(
   activityType: ActivityType,
   userId?: string
 ): Promise<Exercise[]> {
-  const builtInExercises = getExercisesByActivityType(activityType);
+  const builtInExercises = await getExercisesByActivityTypeAsync(activityType);
 
   try {
     const [globalExercises, userExercises] = await Promise.all([
@@ -492,115 +555,111 @@ export async function getMergedExercisesByAllActivityTypes(userId?: string): Pro
   return getMergedExercisesByActivityTypes(ACTIVITY_TYPE_ORDER, userId);
 }
 
-// Get exercises by category within an activity type
 export function getExercisesByCategory(activityType: ActivityType, category: string): Exercise[] {
   const exercises = getExercisesByActivityType(activityType);
-  return exercises.filter(exercise => exercise.category === category);
+  return exercises.filter((exercise) => exercise.category === category);
 }
 
-// Search exercises across all types
-export function searchExercises(query: string, activityTypes?: ActivityType[]): Exercise[] {
-  const allExercises = loadExerciseDatabases();
-  const searchTerms = query.toLowerCase().split(' ');
-  
+export async function getExercisesByCategoryAsync(activityType: ActivityType, category: string): Promise<Exercise[]> {
+  const exercises = await getExercisesByActivityTypeAsync(activityType);
+  return exercises.filter((exercise) => exercise.category === category);
+}
+
+export function searchExercises(queryText: string, activityTypes?: ActivityType[]): Exercise[] {
+  const allExercises = getCachedExerciseMap();
+  const searchTerms = queryText.toLowerCase().split(' ');
+
   const typesToSearch = activityTypes || Object.values(ActivityType);
   let results: Exercise[] = [];
-  
-  typesToSearch.forEach(type => {
+
+  typesToSearch.forEach((type) => {
     const exercises = allExercises[type] || [];
-    const matchingExercises = exercises.filter(exercise => {
-      // Only search in exercise name
+    const matchingExercises = exercises.filter((exercise) => {
       const exerciseName = exercise.name.toLowerCase();
-      
-      // Check if all search terms are found in the exercise name
-      return searchTerms.every(term => exerciseName.includes(term));
+      return searchTerms.every((term) => exerciseName.includes(term));
     });
-    
+
     results = [...results, ...matchingExercises];
   });
-  
-  // Sort results by relevance
-  const query_lower = query.toLowerCase();
+
+  const queryLower = queryText.toLowerCase();
   results.sort((a, b) => {
     const aName = a.name.toLowerCase();
     const bName = b.name.toLowerCase();
-    
-    // Exact match comes first
-    if (aName === query_lower && bName !== query_lower) return -1;
-    if (bName === query_lower && aName !== query_lower) return 1;
-    
-    // Starts with query comes second
-    if (aName.startsWith(query_lower) && !bName.startsWith(query_lower)) return -1;
-    if (bName.startsWith(query_lower) && !aName.startsWith(query_lower)) return 1;
-    
-    // Alphabetical order for the rest
+
+    if (aName === queryLower && bName !== queryLower) return -1;
+    if (bName === queryLower && aName !== queryLower) return 1;
+
+    if (aName.startsWith(queryLower) && !bName.startsWith(queryLower)) return -1;
+    if (bName.startsWith(queryLower) && !aName.startsWith(queryLower)) return 1;
+
     return aName.localeCompare(bName);
   });
-  
-  // Limit results to prevent too many matches
+
   return results.slice(0, 30);
 }
 
-// Get exercise categories for an activity type
+export async function searchExercisesAsync(queryText: string, activityTypes?: ActivityType[]): Promise<Exercise[]> {
+  const typesToSearch = activityTypes || Object.values(ActivityType);
+  await Promise.all(typesToSearch.map((type) => ensureActivityTypeLoaded(type)));
+  return searchExercises(queryText, activityTypes);
+}
+
 export function getExerciseCategories(activityType: ActivityType): Record<string, { name: string; description: string; icon: string }> {
-  const databases: Record<string, any> = {
-    [ActivityType.ENDURANCE]: enduranceExercises,
-    [ActivityType.SPORT]: sportsExercises,
-    [ActivityType.STRETCHING]: flexibilityExercises,
-    [ActivityType.SPEED_AGILITY]: speedAgilityExercises,
-    [ActivityType.OTHER]: otherActivitiesExercises
-  };
-  
-  const database = databases[activityType];
-  return database?.categories || {};
+  return cachedDatasetMetaByType[activityType]?.categories || {};
 }
 
-// Get database metadata
-export function getDatabaseMetadata(activityType: ActivityType) {
-  const databases: Record<string, any> = {
-    [ActivityType.ENDURANCE]: enduranceExercises,
-    [ActivityType.SPORT]: sportsExercises,
-    [ActivityType.STRETCHING]: flexibilityExercises,
-    [ActivityType.SPEED_AGILITY]: speedAgilityExercises,
-    [ActivityType.OTHER]: otherActivitiesExercises
-  };
-  
-  return databases[activityType]?.metadata;
+export async function getExerciseCategoriesAsync(activityType: ActivityType): Promise<Record<string, { name: string; description: string; icon: string }>> {
+  await ensureActivityTypeLoaded(activityType);
+  return cachedDatasetMetaByType[activityType]?.categories || {};
 }
 
-// Initialize exercise databases (call this at app startup)
+export function getDatabaseMetadata(activityType: ActivityType): unknown {
+  return cachedDatasetMetaByType[activityType]?.metadata;
+}
+
+export async function getDatabaseMetadataAsync(activityType: ActivityType): Promise<unknown> {
+  await ensureActivityTypeLoaded(activityType);
+  return cachedDatasetMetaByType[activityType]?.metadata;
+}
+
 export function initializeExerciseDatabases(): void {
-  try {
-    const loadedExercises = loadExerciseDatabases();
-    const totalExercises = Object.values(loadedExercises).reduce(
-      (total, exercises) => total + exercises.length, 
-      0
-    );
-    
-    console.log(`Exercise databases initialized successfully`);
-    console.log(`Total exercises loaded: ${totalExercises}`);
-    
-    // Log summary by type
-    Object.entries(loadedExercises).forEach(([type, exercises]) => {
-      if (exercises.length > 0) {
-        console.log(`- ${type}: ${exercises.length} exercises`);
-      }
+  void loadExerciseDatabasesAsync()
+    .then((loadedExercises) => {
+      const totalExercises = Object.values(loadedExercises).reduce(
+        (total, exercises) => total + exercises.length,
+        0
+      );
+
+      console.log('Exercise databases initialized successfully');
+      console.log(`Total exercises loaded: ${totalExercises}`);
+
+      Object.entries(loadedExercises).forEach(([type, exercises]) => {
+        if (exercises.length > 0) {
+          console.log(`- ${type}: ${exercises.length} exercises`);
+        }
+      });
+    })
+    .catch((error) => {
+      console.error('Failed to initialize exercise databases:', error);
     });
-    
-  } catch (error) {
-    console.error('Failed to initialize exercise databases:', error);
-  }
 }
 
 export default {
   loadExerciseDatabases,
+  loadExerciseDatabasesAsync,
   getExercisesByActivityType,
+  getExercisesByActivityTypeAsync,
   getMergedExercisesByActivityType,
   getMergedExercisesByActivityTypes,
   getMergedExercisesByAllActivityTypes,
   getExercisesByCategory,
+  getExercisesByCategoryAsync,
   searchExercises,
+  searchExercisesAsync,
   getExerciseCategories,
+  getExerciseCategoriesAsync,
   getDatabaseMetadata,
+  getDatabaseMetadataAsync,
   initializeExerciseDatabases
 };

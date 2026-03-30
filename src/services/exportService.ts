@@ -589,19 +589,44 @@ export const getExportPreview = async (userId: string, startDate?: Date, endDate
 };
 
 const arrayToCSV = (data: any[], headers: string[]): string => {
-  const csvRows = [headers.join(',')];
+  const delimiter = ';';
+
+  const formatNumberForCsv = (value: number): string => {
+    // Keep integers as-is and convert decimal separator for locale-aware imports.
+    if (!Number.isFinite(value)) return '';
+    const raw = Number.isInteger(value) ? value.toString() : value.toString();
+    return raw.replace('.', ',');
+  };
+
+  const formatCellForCsv = (value: unknown): string => {
+    if (typeof value === 'number') {
+      return formatNumberForCsv(value);
+    }
+
+    if (typeof value === 'string') {
+      return value.replace(/(\d+)\.(\d+)/g, '$1,$2');
+    }
+
+    if (value === null || value === undefined) {
+      return '';
+    }
+
+    return String(value);
+  };
+
+  const csvRows = [headers.join(delimiter)];
   data.forEach(row => {
     const values = headers.map(header => {
-      const value = row[header] ?? '';
-      // Escape quotes and wrap in quotes if contains comma, quote, or newline
-      if (typeof value === 'string' && (value.includes(',') || value.includes('"') || value.includes('\n'))) {
+      const value = formatCellForCsv(row[header]);
+      // Escape quotes and wrap in quotes if contains delimiter, quote, or newline
+      if (typeof value === 'string' && (value.includes(delimiter) || value.includes('"') || value.includes('\n'))) {
         return `"${value.replace(/"/g, '""')}"`;
       }
       return value;
     });
-    csvRows.push(values.join(','));
+    csvRows.push(values.join(delimiter));
   });
-  return csvRows.join('\n');
+  return `\uFEFF${csvRows.join('\n')}`;
 };
 
 export const downloadCSV = (data: any[], headers: string[], filename: string) => {

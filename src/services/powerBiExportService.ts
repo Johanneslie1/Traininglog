@@ -31,6 +31,7 @@ import type {
   PowerBiExportOptions,
 } from '@/types/powerBiExport';
 import { toLocalDateString, toLocalTimestamp } from '@/utils/dateUtils';
+import { rowsToCSVForPowerBi } from '@/utils/powerBiCsv';
 
 // ---------------------------------------------------------------------------
 // Public interface
@@ -184,22 +185,6 @@ const buildDimExercise = (allRawSets: Record<string, unknown>[]): DimExerciseRow
 // ---------------------------------------------------------------------------
 // CSV serialiser
 // ---------------------------------------------------------------------------
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const rowsToCSV = (rows: Record<string, any>[], headers: string[]): string => {
-  const escape = (val: unknown): string => {
-    const str = val === null || val === undefined ? '' : String(val);
-    if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-      return `"${str.replace(/"/g, '""')}"`;
-    }
-    return str;
-  };
-  const lines = [
-    headers.join(','),
-    ...rows.map((row) => headers.map((h) => escape(row[h])).join(',')),
-  ];
-  return lines.join('\n');
-};
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -477,10 +462,10 @@ export const downloadPowerBiZip = async (
   const zip = new JSZip();
   const folder = zip.folder(`training_export_${dateStamp}`)!;
 
-  folder.file('fact_gym_sets.csv', rowsToCSV(gymSets, gymSetHeaders));
-  folder.file('fact_activity.csv', rowsToCSV(activityRows, activityHeaders));
-  folder.file('dim_exercise.csv', rowsToCSV(dimExercise, dimExerciseHeaders));
-  folder.file('dim_athlete.csv', rowsToCSV(dimAthletes, dimAthleteHeaders));
+  folder.file('fact_gym_sets.csv', rowsToCSVForPowerBi(gymSets, gymSetHeaders));
+  folder.file('fact_activity.csv', rowsToCSVForPowerBi(activityRows, activityHeaders));
+  folder.file('dim_exercise.csv', rowsToCSVForPowerBi(dimExercise, dimExerciseHeaders));
+  folder.file('dim_athlete.csv', rowsToCSVForPowerBi(dimAthletes, dimAthleteHeaders));
   folder.file('export_meta.json', JSON.stringify(meta, null, 2));
 
   const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });

@@ -2,12 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { useCollection } from '@/hooks/useCollection';
 import { db } from '@/services/firebase/config';
-import { collection, query, where, orderBy, QueryConstraint } from 'firebase/firestore';
+import { collection, query, where, orderBy, QueryConstraint, limit } from 'firebase/firestore';
 import type { Exercise } from '@/types/exercise';
+import type { ExerciseLog } from '@/types/exercise';
 import { CreateUniversalExerciseDialog } from '@/components/exercises/CreateUniversalExerciseDialog';
 import { useAuth } from '@/hooks/useAuth';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { deleteCustomExerciseById } from '@/services/customExerciseCreationService';
+import { format } from 'date-fns';
+import { EmptyState } from '@/components/ui';
 interface FilterState {
   search: string;
   category: string[];
@@ -16,6 +19,7 @@ interface FilterState {
 
 const ExerciseOverview: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [filters, setFilters] = useState<FilterState>({
     search: '',
     category: [],
@@ -23,6 +27,7 @@ const ExerciseOverview: React.FC = () => {
   });
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingExercise, setEditingExercise] = useState<Exercise | undefined>(undefined);
+  const [showHistory, setShowHistory] = useState(true);
 
   // Get URL search params to check if we should show create dialog
   const location = useLocation();
@@ -50,6 +55,14 @@ const ExerciseOverview: React.FC = () => {
   );
 
   const { documents: exercises, loading, error } = useCollection<Exercise>(exercisesQuery);
+
+  // Fetch recent exercise history for quick-add panel
+  const recentLogsQuery = query(
+    collection(db, 'users', user?.id ?? '__none__', 'exercises'),
+    orderBy('timestamp', 'desc'),
+    limit(8)
+  );
+  const { documents: recentLogs } = useCollection<ExerciseLog>(recentLogsQuery);
 
   // Filter exercises based on search and category
   // Filter exercises based on search and category
@@ -99,16 +112,70 @@ const ExerciseOverview: React.FC = () => {
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-text-primary">Exercise Library</h1>
-        <button
-          onClick={() => {
-            setEditingExercise(undefined);
-            setShowCreateDialog(true);
-          }}
-          className="bg-accent-primary text-white px-4 py-2 rounded-lg hover:bg-accent-primary/90"
-        >
-          Create Exercise
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate('/')}
+            className="bg-bg-secondary text-text-secondary px-3 py-2 rounded-lg hover:bg-bg-tertiary border border-border text-sm"
+          >
+            Today's Log
+          </button>
+          <button
+            onClick={() => {
+              setEditingExercise(undefined);
+              setShowCreateDialog(true);
+            }}
+            className="bg-accent-primary text-white px-4 py-2 rounded-lg hover:bg-accent-primary/90"
+          >
+            Create Exercise
+          </button>
+        </div>
       </div>
+
+      {/* Recent Activity */}
+      {recentLogs && recentLogs.length > 0 && (
+        <div className="mb-6 rounded-xl border border-border bg-bg-secondary">
+          <button
+            type="button"
+            onClick={() => setShowHistory((prev) => !prev)}
+            className="flex w-full items-center justify-between px-4 py-3 text-left"
+          >
+            <span className="text-sm font-semibold text-text-primary uppercase tracking-wide">Recent Activity</span>
+            <span className="text-text-secondary text-xs">{showHistory ? '▲ hide' : '▼ show'}</span>
+          </button>
+          {showHistory && (
+            <div className="px-4 pb-4 space-y-2">
+              {recentLogs.map((log) => {
+                const setCount = Array.isArray(log.sets) ? log.sets.length : 0;
+                const firstSet = log.sets?.[0];
+                const summary = setCount > 0
+                  ? (firstSet?.weight ? `${setCount} × ${String(firstSet.reps ?? '')} @ ${String(firstSet.weight)}kg` : `${setCount} set${setCount !== 1 ? 's' : ''}`)
+                  : 'No sets logged';
+                const dateStr = log.timestamp
+                  ? format(new Date(log.timestamp), 'MMM d')
+                  : '';
+                return (
+                  <div
+                    key={log.id}
+                    className="flex items-center justify-between rounded-lg bg-bg-tertiary px-3 py-2"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-text-primary truncate">{log.exerciseName}</p>
+                      <p className="text-xs text-text-secondary">{summary}{dateStr ? ` · ${dateStr}` : ''}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => navigate('/')}
+                      className="ml-3 shrink-0 text-xs font-medium text-accent-primary hover:underline"
+                    >
+                      Log today
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Filters */}
       <div className="space-y-4 mb-6">
@@ -166,7 +233,24 @@ const ExerciseOverview: React.FC = () => {
         </div>
       )}
 
-      {!loading && !error && (
+      {!loading && !error && filteredExercises?.length === 0 && (
+        <EmptyState
+          illustration={filters.search || filters.category.length > 0 ? 'search' : 'workout'}
+          title={filters.search || filters.category.length > 0 ? 'No exercises match your filters' : 'No exercises yet'}
+          description={
+            filters.search || filters.category.length > 0
+              ? 'Try a different search term or clear the active filters.'
+              : 'Create your first custom exercise to get started.'
+          }
+          primaryAction={
+            filters.search || filters.category.length > 0
+              ? { label: 'Clear Filters', onClick: () => setFilters({ search: '', category: [], type: 'all' }) }
+              : { label: 'Create Exercise', onClick: () => { setEditingExercise(undefined); setShowCreateDialog(true); } }
+          }
+        />
+      )}
+
+      {!loading && !error && (filteredExercises?.length ?? 0) > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredExercises?.map((exercise: Exercise) => (
             <div

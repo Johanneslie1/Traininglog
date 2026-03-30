@@ -10,7 +10,12 @@ import {
   OtherLog
 } from '@/types/activityTypes';
 import { activityDatabases, getActivitiesByType } from '@/data/activityDatabase';
-import { loadExerciseDatabases, getExercisesByActivityType } from './exerciseDatabaseService';
+import {
+  loadExerciseDatabases,
+  loadExerciseDatabasesAsync,
+  getExercisesByActivityType,
+  getExercisesByActivityTypeAsync
+} from './exerciseDatabaseService';
 import {
   addActivityLog as addFirebaseActivityLog,
   getActivityLogs as getFirebaseActivityLogs,
@@ -40,6 +45,114 @@ const removeUndefinedFields = <T>(obj: T): T => {
  * Service for managing different types of activity exercises
  */
 class ActivityService {
+  private mapExercisesToActivities(
+    exercises: ReturnType<typeof getExercisesByActivityType>,
+    activityType: ActivityType
+  ): Omit<ActivityExercise, 'id'>[] {
+    return exercises.map(ex => {
+      const m: any = ex.metrics || {};
+      const base = {
+        name: ex.name,
+        description: ex.description || '',
+        activityType: (ex.activityType || activityType) as ActivityType,
+        category: ex.category || 'general',
+        createdBy: ex.createdBy || 'system',
+        isDefault: ex.isDefault !== undefined ? ex.isDefault : true,
+        userId: undefined as string | undefined
+      };
+
+      switch (base.activityType) {
+        case ActivityType.ENDURANCE:
+          return {
+            ...base,
+            enduranceType: 'other',
+            environment: (ex as any).environment || 'both',
+            intensity: 'moderate',
+            equipment: ex.equipment || [],
+            metrics: {
+              trackDistance: !!m.trackDistance,
+              trackDuration: !!m.trackTime || !!m.trackDuration,
+              trackPace: !!m.trackPace,
+              trackHeartRate: !!m.trackHeartRate,
+              trackCalories: !!m.trackCalories,
+              trackElevation: !!m.trackElevation
+            }
+          } as any;
+        case ActivityType.SPORT:
+          return {
+            ...base,
+            sportType: (ex as any).sportType || 'general',
+            position: undefined,
+            skillLevel: 'intermediate',
+            teamBased: (ex as any).teamBased || false,
+            equipment: ex.equipment || [],
+            primarySkills: (ex as any).skills || [],
+            metrics: {
+              trackDuration: !!m.trackDuration || !!m.trackTime,
+              trackScore: !!m.trackScore,
+              trackIntensity: !!m.trackIntensity || !!m.trackRPE,
+              trackOpponent: !!m.trackOpponent,
+              trackPerformance: !!m.trackPerformance
+            }
+          } as any;
+        case ActivityType.STRETCHING:
+          return {
+            ...base,
+            stretchType: 'static',
+            targetMuscles: ex.primaryMuscles || [],
+            bodyRegion: ['full_body'],
+            difficulty: (ex as any).difficulty || 'beginner',
+            instructions: ex.instructions || [],
+            metrics: {
+              trackDuration: true,
+              trackHoldTime: true,
+              trackIntensity: !!ex.metrics?.trackRPE,
+              trackFlexibility: true
+            }
+          } as any;
+        case ActivityType.OTHER:
+          return {
+            ...base,
+            customCategory: base.category,
+            customFields: [],
+            instructions: ex.instructions || [],
+            metrics: Object.keys(ex.metrics || {}).reduce((acc: any, k) => { acc[k] = true; return acc; }, {})
+          } as any;
+        case ActivityType.SPEED_AGILITY:
+          return {
+            ...base,
+            drillType: (ex as any).drillType || 'agility',
+            equipment: ex.equipment || [],
+            difficulty: (ex as any).difficulty || 'beginner',
+            setup: (ex as any).setup || [],
+            instructions: ex.instructions || [],
+            metrics: {
+              trackTime: !!m.trackTime,
+              trackDistance: !!m.trackDistance,
+              trackReps: !!m.trackReps,
+              trackHeight: !!m.trackHeight,
+              trackRPE: !!m.trackRPE
+            }
+          } as any;
+        case ActivityType.RESISTANCE:
+        default:
+          return {
+            ...base,
+            primaryMuscles: ex.primaryMuscles || [],
+            secondaryMuscles: ex.secondaryMuscles || [],
+            equipment: ex.equipment || [],
+            instructions: ex.instructions || [],
+            tips: ex.tips || [],
+            defaultUnit: (ex as any).defaultUnit || 'kg',
+            metrics: {
+              trackWeight: !!m.trackWeight,
+              trackReps: !!m.trackReps,
+              trackRPE: !!m.trackRPE
+            }
+          } as any;
+      }
+    });
+  }
   
   /**
    * Get all activities of a specific type
@@ -48,112 +161,19 @@ class ActivityService {
     // Pull from new JSON exercise databases first
     const newExercises = getExercisesByActivityType(activityType);
     if (newExercises.length > 0) {
-      return newExercises.map(ex => {
-        const m: any = ex.metrics || {};
-        const base = {
-          name: ex.name,
-          description: ex.description || '',
-          activityType: (ex.activityType || activityType) as ActivityType,
-          category: ex.category || 'general',
-          createdBy: ex.createdBy || 'system',
-          isDefault: ex.isDefault !== undefined ? ex.isDefault : true,
-          userId: undefined as string | undefined
-        };
-
-        switch (base.activityType) {
-          case ActivityType.ENDURANCE:
-            return {
-              ...base,
-              enduranceType: 'other',
-              environment: (ex as any).environment || 'both',
-              intensity: 'moderate',
-              equipment: ex.equipment || [],
-              metrics: {
-                trackDistance: !!m.trackDistance,
-                trackDuration: !!m.trackTime || !!m.trackDuration,
-                trackPace: !!m.trackPace,
-                trackHeartRate: !!m.trackHeartRate,
-                trackCalories: !!m.trackCalories,
-                trackElevation: !!m.trackElevation
-              }
-            } as any;
-          case ActivityType.SPORT:
-            return {
-              ...base,
-              sportType: (ex as any).sportType || 'general',
-              position: undefined,
-              skillLevel: 'intermediate',
-              teamBased: (ex as any).teamBased || false,
-              equipment: ex.equipment || [],
-              primarySkills: (ex as any).skills || [],
-              metrics: {
-                trackDuration: !!m.trackDuration || !!m.trackTime,
-                trackScore: !!m.trackScore,
-                trackIntensity: !!m.trackIntensity || !!m.trackRPE,
-                trackOpponent: !!m.trackOpponent,
-                trackPerformance: !!m.trackPerformance
-              }
-            } as any;
-          case ActivityType.STRETCHING:
-            return {
-              ...base,
-              stretchType: 'static',
-              targetMuscles: ex.primaryMuscles || [],
-              bodyRegion: ['full_body'],
-              difficulty: (ex as any).difficulty || 'beginner',
-              instructions: ex.instructions || [],
-              metrics: {
-                trackDuration: true,
-                trackHoldTime: true,
-                trackIntensity: !!ex.metrics?.trackRPE,
-                trackFlexibility: true
-              }
-            } as any;
-          case ActivityType.OTHER:
-            return {
-              ...base,
-              customCategory: base.category,
-              customFields: [],
-              instructions: ex.instructions || [],
-              metrics: Object.keys(ex.metrics || {}).reduce((acc: any, k) => { acc[k] = true; return acc; }, {})
-            } as any;
-          case ActivityType.SPEED_AGILITY:
-            return {
-              ...base,
-              drillType: (ex as any).drillType || 'agility',
-              equipment: ex.equipment || [],
-              difficulty: (ex as any).difficulty || 'beginner',
-              setup: (ex as any).setup || [],
-              instructions: ex.instructions || [],
-              metrics: {
-                trackTime: !!m.trackTime,
-                trackDistance: !!m.trackDistance,
-                trackReps: !!m.trackReps,
-                trackHeight: !!m.trackHeight,
-                trackRPE: !!m.trackRPE
-              }
-            } as any;
-          case ActivityType.RESISTANCE:
-          default:
-            return {
-              ...base,
-              primaryMuscles: ex.primaryMuscles || [],
-              secondaryMuscles: ex.secondaryMuscles || [],
-              equipment: ex.equipment || [],
-              instructions: ex.instructions || [],
-              tips: ex.tips || [],
-              defaultUnit: (ex as any).defaultUnit || 'kg',
-              metrics: {
-                trackWeight: !!m.trackWeight,
-                trackReps: !!m.trackReps,
-                trackRPE: !!m.trackRPE
-              }
-            } as any;
-        }
-      });
+      return this.mapExercisesToActivities(newExercises, activityType);
     }
 
     // Fallback to legacy hardcoded database
+    return getActivitiesByType(activityType);
+  }
+
+  async getActivitiesByTypeAsync(activityType: ActivityType): Promise<Omit<ActivityExercise, 'id'>[]> {
+    const newExercises = await getExercisesByActivityTypeAsync(activityType);
+    if (newExercises.length > 0) {
+      return this.mapExercisesToActivities(newExercises, activityType);
+    }
+
     return getActivitiesByType(activityType);
   }
 
@@ -213,11 +233,62 @@ class ActivityService {
     return activities;
   }
 
+  async searchActivitiesAsync(filters: ActivityFilter): Promise<Omit<ActivityExercise, 'id'>[]> {
+    const allNewExercises = await loadExerciseDatabasesAsync();
+    let activities: any[] = [];
+
+    Object.values(allNewExercises).forEach(exerciseArray => {
+      activities = activities.concat(exerciseArray);
+    });
+
+    const oldActivities = Object.values(activityDatabases).flat();
+    activities = activities.concat(oldActivities);
+
+    if (filters.activityType && filters.activityType.length > 0) {
+      activities = activities.filter(activity =>
+        filters.activityType!.includes(activity.activityType)
+      );
+    }
+
+    if (filters.category && filters.category.length > 0) {
+      activities = activities.filter(activity =>
+        filters.category!.includes(activity.category)
+      );
+    }
+
+    if (filters.searchText) {
+      const searchTerm = filters.searchText.toLowerCase();
+      activities = activities.filter(activity =>
+        activity.name.toLowerCase().includes(searchTerm) ||
+        activity.description?.toLowerCase().includes(searchTerm) ||
+        activity.category.toLowerCase().includes(searchTerm)
+      );
+    }
+
+    if (filters.equipment && filters.equipment.length > 0) {
+      activities = activities.filter(activity => {
+        if ('equipment' in activity) {
+          return filters.equipment!.some(eq =>
+            activity.equipment.includes(eq)
+          );
+        }
+        return false;
+      });
+    }
+
+    return activities;
+  }
+
   /**
    * Get categories for a specific activity type
    */
   getCategoriesByType(activityType: ActivityType): string[] {
     const activities = this.getActivitiesByType(activityType);
+    return [...new Set(activities.map(activity => activity.category))];
+  }
+
+  async getCategoriesByTypeAsync(activityType: ActivityType): Promise<string[]> {
+    const activities = await this.getActivitiesByTypeAsync(activityType);
     return [...new Set(activities.map(activity => activity.category))];
   }
 

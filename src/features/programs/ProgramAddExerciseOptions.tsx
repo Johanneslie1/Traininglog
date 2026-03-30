@@ -4,7 +4,6 @@ import { ExerciseSet } from '@/types/sets';
 import CategoryButton, { Category } from '@/features/exercises/CategoryButton';
 import ExerciseSearch from '@/features/exercises/ExerciseSearch';
 import { ActivityType } from '@/types/activityTypes';
-import { getExercisesByActivityType } from '@/services/exerciseDatabaseService';
 import UniversalExercisePicker from '@/components/activities/UniversalExercisePicker';
 import { enrich as sportEnrich, collectFacets as sportCollectFacets, applyFilters as sportApplyFilters } from '@/utils/sportFilters';
 import { CreateUniversalExerciseDialog } from '@/components/exercises/CreateUniversalExerciseDialog';
@@ -64,6 +63,38 @@ export const ProgramAddExerciseOptions: React.FC<ProgramAddExerciseOptionsProps>
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [createDialogActivityType, setCreateDialogActivityType] = useState<ActivityType | undefined>(undefined);
+  const [activityPickerData, setActivityPickerData] = useState<any[]>([]);
+
+  React.useEffect(() => {
+    const viewsToActivityMap: Partial<Record<ViewState, ActivityType>> = {
+      sport: ActivityType.SPORT,
+      stretching: ActivityType.STRETCHING,
+      endurance: ActivityType.ENDURANCE,
+      speedAgility: ActivityType.SPEED_AGILITY,
+      other: ActivityType.OTHER,
+    };
+
+    const activity = viewsToActivityMap[view];
+    if (!activity) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    const loadData = async () => {
+      const { getExercisesByActivityTypeAsync } = await import('@/services/exerciseDatabaseService');
+      const loaded = await getExercisesByActivityTypeAsync(activity) as any[];
+      if (!isCancelled) {
+        setActivityPickerData(loaded);
+      }
+    };
+
+    void loadData();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [view]);
 
   if (false) { // Removed universal search functionality
     const universalSearchQuery = '';
@@ -201,7 +232,6 @@ export const ProgramAddExerciseOptions: React.FC<ProgramAddExerciseOptionsProps>
   }
 
   const renderActivityPicker = (activity: ActivityType, title: string, subtitle: string) => {
-    const data = getExercisesByActivityType(activity) as any[];
     return (
       <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-[110]">
         <div className="bg-bg-secondary rounded-xl w-full max-w-5xl max-h-[90vh] flex flex-col">
@@ -214,7 +244,7 @@ export const ProgramAddExerciseOptions: React.FC<ProgramAddExerciseOptionsProps>
             className="absolute top-4 right-4 text-text-tertiary hover:text-text-primary"
           >✕</button>
           <UniversalExercisePicker
-            data={data}
+            data={activityPickerData}
             enrich={sportEnrich as any}
             collectFacets={sportCollectFacets as any}
             applyFilters={sportApplyFilters as any}

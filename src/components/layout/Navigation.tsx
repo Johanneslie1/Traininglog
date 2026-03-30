@@ -37,11 +37,12 @@ const menuItems: MenuItem[] = [
     )
   },
   {
-    name: 'History',
-    path: '/history',
+    name: 'Analytics',
+    path: '/analytics',
     icon: (
       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-5" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 19h14" />
       </svg>
     )
   },
@@ -124,6 +125,17 @@ const Navigation: React.FC = () => {
                 <path fillRule="evenodd" d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 102 0v-5h5a1 1 0 100-2h-5V4a1 1 0 00-1-1z" clipRule="evenodd" />
               </svg>
               Create Exercise
+            </button>
+
+            <button
+              onClick={() => handleNavigate('/analytics')}
+              className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-bg-tertiary text-text-primary"
+            >
+              <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-5" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 19h14" />
+              </svg>
+              Analytics
             </button>
 
             <button

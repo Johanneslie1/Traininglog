@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { ActivityType, SportActivity } from '@/types/activityTypes';
-import { getExercisesByActivityType } from '@/services/exerciseDatabaseService';
 import { UniversalSetLogger } from '@/components/UniversalSetLogger';
 import UniversalExercisePicker from './UniversalExercisePicker';
 import { enrich, collectFacets, applyFilters } from '@/utils/sportFilters';
@@ -35,29 +34,34 @@ const SportActivityPicker: React.FC<SportActivityPickerProps> = ({
   const user = useSelector((state: RootState) => state.auth.user);
 
   useEffect(() => {
-    const exercises = getExercisesByActivityType(ActivityType.SPORT) as any[];
-    setData(exercises.map((ex, index) => {
-      const m = ex.metrics || {};
-      return {
-        id: ex.id || `sport-${index}`,
-        name: ex.name,
-        description: ex.description,
-        activityType: ActivityType.SPORT,
-        category: ex.category || 'general',
-        isDefault: ex.isDefault ?? true,
-        sportType: ex.sportType || 'general',
-        skillLevel: 'intermediate',
-        teamBased: !!ex.teamBased,
-        equipment: ex.equipment || [],
-        primarySkills: ex.skills || [],
-        metrics: {
-          trackDuration: !!m.trackDuration || !!m.trackTime,
-          trackScore: !!m.trackScore,
+    const loadSportExercises = async () => {
+      const { getExercisesByActivityTypeAsync } = await import('@/services/exerciseDatabaseService');
+      const exercises = await getExercisesByActivityTypeAsync(ActivityType.SPORT) as any[];
+      setData(exercises.map((ex, index) => {
+        const m = ex.metrics || {};
+        return {
+          id: ex.id || `sport-${index}`,
+          name: ex.name,
+          description: ex.description,
+          activityType: ActivityType.SPORT,
+          category: ex.category || 'general',
+          isDefault: ex.isDefault ?? true,
+          sportType: ex.sportType || 'general',
+          skillLevel: 'intermediate',
+          teamBased: !!ex.teamBased,
+          equipment: ex.equipment || [],
+          primarySkills: ex.skills || [],
+          metrics: {
+            trackDuration: !!m.trackDuration || !!m.trackTime,
+            trackScore: !!m.trackScore,
             trackIntensity: !!m.trackIntensity || !!m.trackRPE,
             trackPerformance: !!m.trackPerformance
-        }
-      } as SportActivity;
-    }));
+          }
+        } as SportActivity;
+      }));
+    };
+
+    void loadSportExercises();
 
     if (editingExercise) {
       const mockSport: SportActivity = {

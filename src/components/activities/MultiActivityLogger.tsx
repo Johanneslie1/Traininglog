@@ -6,7 +6,6 @@ import StretchingActivityPicker from './StretchingActivityPicker';
 import EnduranceActivityPicker from './EnduranceActivityPicker';
 import OtherActivityPicker from './OtherActivityPicker';
 import SpeedAgilityActivityPicker from './SpeedAgilityActivityPicker';
-import { getExercisesByActivityType } from '@/services/exerciseDatabaseService';
 
 interface MultiActivityLoggerProps {
   onClose: () => void;
@@ -79,21 +78,22 @@ const MultiActivityLogger: React.FC<MultiActivityLoggerProps> = ({
   useEffect(() => {
     // Load previews once on mount
     let isCancelled = false;
-    const loadAll = () => {
+    const loadAll = async () => {
+      const { getExercisesByActivityTypeAsync } = await import('@/services/exerciseDatabaseService');
       const next: PreviewMap = {};
-      activityTypes.forEach(cfg => {
+      for (const cfg of activityTypes) {
         try {
-          const exs = getExercisesByActivityType(cfg.type) || [];
+          const exs = await getExercisesByActivityTypeAsync(cfg.type);
           if (exs.length === 0) {
             next[cfg.type] = { status: 'empty', names: [] };
           } else {
             const names = exs.slice(0, 3).map(e => e.name).filter(Boolean);
             next[cfg.type] = { status: 'ready', names };
           }
-        } catch (e) {
+        } catch {
           next[cfg.type] = { status: 'error', names: [] };
         }
-      });
+      }
       if (!isCancelled) setPreviews(next);
     };
     // Initialize as loading
@@ -101,7 +101,9 @@ const MultiActivityLogger: React.FC<MultiActivityLoggerProps> = ({
     activityTypes.forEach(cfg => { initial[cfg.type] = { status: 'loading', names: [] }; });
     setPreviews(initial);
     // Slight timeout to allow UI paint (optional)
-    setTimeout(loadAll, 0);
+    setTimeout(() => {
+      void loadAll();
+    }, 0);
     return () => { isCancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

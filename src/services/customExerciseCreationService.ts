@@ -11,7 +11,6 @@ import {
   where
 } from 'firebase/firestore';
 import { db } from '@/services/firebase/config';
-import { getExercisesByActivityType } from '@/services/exerciseDatabaseService';
 import { ActivityType } from '@/types/activityTypes';
 import { Exercise, MuscleGroup } from '@/types/exercise';
 
@@ -133,7 +132,10 @@ export const findDuplicateExerciseByName = async (
   excludeExerciseId?: string
 ): Promise<Exercise | null> => {
   const normalizedName = normalizeExerciseName(name);
-  const builtInDuplicate = getExercisesByActivityType(activityType).find((exercise) => {
+  // Load heavy built-in exercise databases only when we actually perform duplicate checks.
+  const { getExercisesByActivityTypeAsync } = await import('@/services/exerciseDatabaseService');
+  const builtInExercises = await getExercisesByActivityTypeAsync(activityType);
+  const builtInDuplicate = builtInExercises.find((exercise) => {
     if (excludeExerciseId && exercise.id === excludeExerciseId) {
       return false;
     }

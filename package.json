@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "check:bundle-budget": "node scripts/checkBundleBudget.cjs",
     "check:resistance-parity": "node scripts/checkResistanceParity.cjs",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
