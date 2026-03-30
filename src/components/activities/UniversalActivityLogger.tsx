@@ -30,6 +30,28 @@ const UniversalActivityLogger: React.FC<UniversalActivityLoggerProps> = ({
   const [sessions, setSessions] = useState<UniversalExerciseSet[]>([]);
   const [currentSession, setCurrentSession] = useState<UniversalExerciseSet>({});
   const [loading, setLoading] = useState(false);
+  const [showAdvancedFields, setShowAdvancedFields] = useState(false);
+  const isNonResistanceTemplate = template.type !== 'strength';
+
+  const primaryFieldIds = React.useMemo(() => {
+    switch (template.type) {
+      case 'endurance':
+        return ['duration', 'distance', 'rpe'];
+      case 'teamSports':
+        return ['duration', 'distance', 'intensity'];
+      case 'flexibility':
+        return ['reps', 'holdTime', 'intensity', 'stretchType'];
+      case 'speedAgility':
+        return ['reps', 'distance', 'restTime', 'rpe'];
+      case 'other':
+        return ['duration', 'intensity'];
+      default:
+        return template.fields.map((field) => field.fieldId);
+    }
+  }, [template.type, template.fields]);
+
+  const isFullWidthField = (field: TemplateField) =>
+    field.type === 'string' || field.type === 'boolean' || field.type === 'intensity' || field.fieldId === 'notes';
 
   // Initialize current session with default values and editing data
   React.useEffect(() => {
@@ -81,6 +103,7 @@ const UniversalActivityLogger: React.FC<UniversalActivityLoggerProps> = ({
       }
     });
     setCurrentSession(initialSession);
+    setShowAdvancedFields(false);
   }, [template, editingExercise]);
 
   const handleAddSession = () => {
@@ -450,13 +473,50 @@ const UniversalActivityLogger: React.FC<UniversalActivityLoggerProps> = ({
         <div className="flex-1 overflow-y-auto p-6">
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-text-primary mb-4">Log Session #{sessions.length + 1}</h3>
-            
-            <div className="space-y-4">
-              {template.fields.map(field => (
-                <div key={field.fieldId}>
-                  {renderField(field)}
+
+            <div className="space-y-3">
+              <div className={isNonResistanceTemplate ? 'grid grid-cols-2 gap-2 sm:gap-3' : 'space-y-4'}>
+                {template.fields
+                  .filter((field) => primaryFieldIds.includes(field.fieldId))
+                  .map((field) => (
+                    <div key={field.fieldId} className={isNonResistanceTemplate && isFullWidthField(field) ? 'col-span-2' : ''}>
+                      {renderField(field)}
+                    </div>
+                  ))}
+              </div>
+
+              {isNonResistanceTemplate && template.fields.some((field) => !primaryFieldIds.includes(field.fieldId)) && (
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setShowAdvancedFields((current) => !current)}
+                    className="w-full text-left px-3 py-2 rounded-lg border border-border bg-bg-tertiary/60 text-sm text-text-secondary hover:text-text-primary transition-colors"
+                  >
+                    {showAdvancedFields ? 'Hide extra metrics' : 'Show extra metrics'}
+                  </button>
+
+                  {showAdvancedFields && (
+                    <div className="mt-3 grid grid-cols-2 gap-2 sm:gap-3">
+                      {template.fields
+                        .filter((field) => !primaryFieldIds.includes(field.fieldId))
+                        .map((field) => (
+                          <div key={field.fieldId} className={isFullWidthField(field) ? 'col-span-2' : ''}>
+                            {renderField(field)}
+                          </div>
+                        ))}
+                    </div>
+                  )}
                 </div>
-              ))}
+              )}
+
+              {!isNonResistanceTemplate &&
+                template.fields
+                  .filter((field) => !primaryFieldIds.includes(field.fieldId))
+                  .map((field) => (
+                    <div key={field.fieldId}>
+                      {renderField(field)}
+                    </div>
+                  ))}
             </div>
 
             <button

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import SegmentedPicker from './SegmentedPicker';
+import { RPESlider } from './RPESlider';
 import type { Exercise } from '@/types/exercise';
 import type { ExerciseSet } from '@/types/sets';
 import { ActivityType } from '@/types/activityTypes';
@@ -8,6 +9,7 @@ import { DifficultyCategory } from '@/types/difficulty';
 import { toast } from 'react-hot-toast';
 import { SwipeableSetRow } from './SwipeableSetRow';
 import { useExerciseHistory } from '@/hooks/useExerciseHistory';
+import { useSettings } from '@/context/SettingsContext';
 import { ExerciseHistorySummary } from './ExerciseHistorySummary';
 import { Prescription } from '@/types/program';
 import { prescriptionToSets } from '@/utils/prescriptionUtils';
@@ -176,6 +178,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
   instructionMode,
   prescriptionAssistant,
 }) => {
+  const { settings } = useSettings();
   const exerciseType = getExerciseType(exercise);
   const exerciseActivityType = resolveActivityTypeFromExerciseLike(exercise, { fallback: ActivityType.RESISTANCE });
   const [sets, setSets] = useState<ExerciseSet[]>([]);
@@ -190,6 +193,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
   // Fetch exercise history for progressive overload context
   const exerciseHistory = useExerciseHistory(exercise.name);
   const [showRPEHelper, setShowRPEHelper] = useState(false);
+  const [showAdvancedMetricsBySetId, setShowAdvancedMetricsBySetId] = useState<Record<string, boolean>>({});
   const [expandedSetIndex, setExpandedSetIndex] = useState<number | null>(null);
   const [lastAddedIndex, setLastAddedIndex] = useState<number | null>(null);
   const [assistantSuggestion, setAssistantSuggestion] = useState<ExercisePrescriptionAssistantData | undefined>(prescriptionAssistant || exercise.prescriptionAssistant);
@@ -465,6 +469,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
     if (!set) return null;
 
     const fields: React.ReactNode[] = [];
+    const setId = setIds[setIndex] || `set-${setIndex}`;
 
     // Common function to render input field
     const renderField = (
@@ -595,6 +600,48 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
       );
     };
 
+    const renderPair = (key: string, left: React.ReactNode, right: React.ReactNode) => (
+      <div key={key} className="grid grid-cols-2 gap-2 sm:gap-3">
+        {left}
+        {right}
+      </div>
+    );
+
+    const renderCompactNonResistanceLayout = (
+      primaryFields: React.ReactNode[],
+      secondaryFields: React.ReactNode[]
+    ) => {
+      const showAdvancedMetrics = Boolean(showAdvancedMetricsBySetId[setId]);
+
+      return (
+        <div className="space-y-3">
+          {primaryFields}
+          {secondaryFields.length > 0 && (
+            <div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAdvancedMetricsBySetId((current) => ({
+                    ...current,
+                    [setId]: !showAdvancedMetrics,
+                  }));
+                }}
+                className="w-full text-left px-3 py-2 rounded-lg border border-border bg-bg-tertiary/60 text-sm text-text-secondary hover:text-text-primary transition-colors"
+              >
+                {showAdvancedMetrics ? 'Hide extra metrics' : 'Show extra metrics'}
+              </button>
+
+              {showAdvancedMetrics && (
+                <div className="mt-3 space-y-3">
+                  {secondaryFields}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    };
+
     // Render fields based on exercise type
     switch (exerciseType) {
       case 'strength':
@@ -602,7 +649,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
         fields.push(
           <div key="sets-reps" className="space-y-4 sm:grid sm:grid-cols-2 sm:gap-4 sm:space-y-0">
             {renderField('reps', 'Reps *', 'number', 1, 1, '1-999', true)}
-            {renderField('weight', 'Weight (kg)', 'number', 0, 0.5, '0-999.9', true)}
+            {renderField('weight', 'Weight (kg)', 'number', 0, settings.defaultWeightIncrements, '0-999.9', true)}
           </div>
         );
         fields.push(
@@ -627,67 +674,129 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
         break;
 
       case 'endurance':
-        fields.push(renderDurationField());
-        fields.push(renderField('distance', 'Distance (m)', 'number', 0, 1, '0-100000'));
-        fields.push(renderField('rpe', 'RPE', 'number', 1, 1, '1-10'));
-        fields.push(renderField('calories', 'Calories', 'number', 0, 1, '0-9999'));
-        fields.push(renderField('averageHeartRate', 'Average HR (bpm)', 'number', 40, 1, '40-250'));
+        fields.push(
+          renderCompactNonResistanceLayout(
+            [
+              renderDurationField(),
+              renderField('distance', 'Distance (m)', 'number', 0, 1, '0-100000'),
+              <RPESlider
+                key="rpe"
+                value={sets[setIndex]?.rpe}
+                onChange={(v) => updateSet(setIndex, 'rpe', v)}
+              />,
+            ],
+            [
+              renderPair(
+                'endurance-extra',
+                renderField('calories', 'Calories', 'number', 0, 1, '0-9999'),
+                renderField('averageHeartRate', 'Average HR (bpm)', 'number', 40, 1, '40-250')
+              ),
+            ]
+          )
+        );
         break;
 
       case 'flexibility':
-        fields.push(renderField('holdTime', 'Hold Time (seconds) *', 'number', 1, 1, '1-600'));
         fields.push(
-          <div key="intensity" className="space-y-1">
-            <label className="block text-sm font-medium text-gray-300">Intensity</label>
-            <select
-              value={sets[setIndex]?.intensity !== undefined ? sets[setIndex].intensity : ''}
-              onChange={(e) => {
-                const value = e.target.value;
-                if (value === '') {
-                  updateSet(setIndex, 'intensity', undefined);
-                } else {
-                  updateSet(setIndex, 'intensity', parseInt(value));
-                }
-              }}
-              className="w-full px-3 py-2 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:outline-none focus:border-accent-primary"
-            >
-              <option value="">Select Intensity</option>
-              <option value="1">1 - Very Light</option>
-              <option value="2">2 - Light</option>
-              <option value="3">3 - Moderate-Light</option>
-              <option value="4">4 - Moderate</option>
-              <option value="5">5 - Moderate-Hard</option>
-              <option value="6">6 - Hard</option>
-              <option value="7">7 - Very Hard</option>
-              <option value="8">8 - Extremely Hard</option>
-              <option value="9">9 - Near Maximum</option>
-              <option value="10">10 - Maximum</option>
-            </select>
-          </div>
+          renderCompactNonResistanceLayout(
+            [
+              renderPair(
+                'flexibility-primary',
+                renderField('holdTime', 'Hold Time (seconds) *', 'number', 1, 1, '1-600'),
+                <div key="intensity" className="space-y-1">
+                  <label className="block text-sm font-medium text-gray-300">Intensity</label>
+                  <select
+                    value={sets[setIndex]?.intensity !== undefined ? sets[setIndex].intensity : ''}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === '') {
+                        updateSet(setIndex, 'intensity', undefined);
+                      } else {
+                        updateSet(setIndex, 'intensity', parseInt(value));
+                      }
+                    }}
+                    className="w-full px-3 py-2 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:outline-none focus:border-accent-primary"
+                  >
+                    <option value="">Select Intensity</option>
+                    <option value="1">1 - Very Light</option>
+                    <option value="2">2 - Light</option>
+                    <option value="3">3 - Moderate-Light</option>
+                    <option value="4">4 - Moderate</option>
+                    <option value="5">5 - Moderate-Hard</option>
+                    <option value="6">6 - Hard</option>
+                    <option value="7">7 - Very Hard</option>
+                    <option value="8">8 - Extremely Hard</option>
+                    <option value="9">9 - Near Maximum</option>
+                    <option value="10">10 - Maximum</option>
+                  </select>
+                </div>
+              )
+            ],
+            []
+          )
         );
         break;
 
       case 'sport':
-        fields.push(renderDurationField());
-        fields.push(renderField('distance', 'Distance (m)', 'number', 0, 1, '0-100000'));
-        fields.push(renderField('rpe', 'RPE', 'number', 1, 1, '1-10'));
-        fields.push(renderField('calories', 'Calories', 'number', 0, 1, '0-9999'));
-        fields.push(renderField('performance', 'Performance Rating (1-10)', 'number', 1, 1, '1-10'));
+        fields.push(
+          renderCompactNonResistanceLayout(
+            [
+              renderDurationField(),
+              renderField('distance', 'Distance (m)', 'number', 0, 1, '0-100000'),
+              <RPESlider
+                key="rpe"
+                value={sets[setIndex]?.rpe}
+                onChange={(v) => updateSet(setIndex, 'rpe', v)}
+              />,
+            ],
+            [
+              renderPair(
+                'sport-extra',
+                renderField('calories', 'Calories', 'number', 0, 1, '0-9999'),
+                renderField('performance', 'Performance Rating (1-10)', 'number', 1, 1, '1-10')
+              ),
+            ]
+          )
+        );
         break;
 
       case 'speed_agility':
-        fields.push(renderField('reps', 'Reps per Set', 'number', 1, 1, '1-999'));
-        fields.push(renderField('distance', 'Distance (m)', 'number', 0, 1, '0-1000'));
-        fields.push(renderField('restTime', 'Rest Between Sets (seconds)', 'number', 0, 1, '0-600'));
-        fields.push(renderField('rpe', 'RPE', 'number', 1, 1, '1-10'));
+        fields.push(
+          renderCompactNonResistanceLayout(
+            [
+              renderPair(
+                'speed-agility-primary',
+                renderField('reps', 'Reps per Set', 'number', 1, 1, '1-999'),
+                renderField('distance', 'Distance (m)', 'number', 0, 1, '0-1000')
+              ),
+              renderField('restTime', 'Rest Between Sets (seconds)', 'number', 0, 1, '0-600'),
+              <RPESlider
+                key="rpe"
+                value={sets[setIndex]?.rpe}
+                onChange={(v) => updateSet(setIndex, 'rpe', v)}
+              />,
+            ],
+            []
+          )
+        );
         break;
 
       case 'other':
       default:
-        fields.push(renderDurationField());
-        fields.push(renderField('distance', 'Distance (m)', 'number', 0, 1, '0-100000'));
-        fields.push(renderField('rpe', 'RPE', 'number', 1, 1, '1-10'));
-        fields.push(renderField('calories', 'Calories', 'number', 0, 1, '0-9999'));
+        fields.push(
+          renderCompactNonResistanceLayout(
+            [
+              renderDurationField(),
+              renderField('distance', 'Distance (m)', 'number', 0, 1, '0-100000'),
+              <RPESlider
+                key="rpe"
+                value={sets[setIndex]?.rpe}
+                onChange={(v) => updateSet(setIndex, 'rpe', v)}
+              />,
+            ],
+            [renderField('calories', 'Calories', 'number', 0, 1, '0-9999')]
+          )
+        );
         break;
     }
 
@@ -724,7 +833,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
     );
 
     return fields;
-  }, [sets, updateSet]);
+  }, [sets, updateSet, setIds, showAdvancedMetricsBySetId]);
 
   const getSetLabel = () => {
     switch (exerciseType) {
@@ -892,7 +1001,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
       </div>
 
       {/* Sets List */}
-      <div ref={setListRef} className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4">
+      <div ref={setListRef} className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2.5 sm:space-y-3">
         {sets.map((set, index) => {
           const isExpanded = expandedSetIndex === index;
           const isNewlyAdded = lastAddedIndex === index;
@@ -971,7 +1080,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
                 
                 {/* Expanded Form View */}
                 {isExpanded && (
-                  <div className="p-3 sm:p-4 space-y-4">
+                  <div className="p-3 sm:p-4 space-y-3">
                     <div className="flex items-center justify-end gap-2 mb-2">
                       {index > 0 && (
                         <button
@@ -996,7 +1105,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
                         </button>
                       )}
                     </div>
-                    <div className="space-y-4">
+                    <div>
                       {renderFieldsForSet(index)}
                     </div>
                   </div>
