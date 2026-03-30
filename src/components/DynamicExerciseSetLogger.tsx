@@ -3,6 +3,7 @@ import { ExerciseSet } from '../types/sets';
 import { Exercise } from '../types/exercise';
 import { ExerciseType, getExerciseTypeConfig, STRETCH_TYPES, RPE_SCALE, RIR_SCALE, HR_ZONES } from '../config/exerciseTypes';
 import { validateExerciseSet, getDefaultSetForType, formatValidationErrors } from '../utils/exerciseValidation';
+import { useSettings } from '@/context/SettingsContext';
 
 interface DynamicExerciseSetLoggerProps {
   exercise: Exercise;
@@ -21,6 +22,7 @@ const DynamicExerciseSetLogger: React.FC<DynamicExerciseSetLoggerProps> = ({
   initialSets = [],
   isEditing = false
 }) => {
+  const { settings } = useSettings();
   const config = getExerciseTypeConfig(exerciseType);
   const [sets, setSets] = useState<ExerciseSet[]>([]);
   const [validationErrors, setValidationErrors] = useState<Record<number, string>>({});
@@ -137,7 +139,7 @@ const DynamicExerciseSetLogger: React.FC<DynamicExerciseSetLoggerProps> = ({
           className="w-full px-3 py-2 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:outline-none focus:border-accent-primary"
           placeholder={type === 'number' ? '0' : `Enter ${label.toLowerCase()}`}
           min={type === 'number' ? 0 : undefined}
-          step={field === 'weight' ? 0.5 : field === 'distance' ? 0.1 : 1}
+          step={field === 'weight' ? settings.defaultWeightIncrements : field === 'distance' ? 0.1 : 1}
         />
       </div>
     );

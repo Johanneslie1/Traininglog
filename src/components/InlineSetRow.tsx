@@ -2,6 +2,7 @@ import React, { useMemo, useCallback } from 'react';
 import { ExerciseSet } from '@/types/sets';
 import { InlineEditableValue } from './InlineEditableValue';
 import { SwipeableSetRow } from './SwipeableSetRow';
+import { useSettings } from '@/context/SettingsContext';
 
 interface InlineSetRowProps {
   set: ExerciseSet;
@@ -26,6 +27,7 @@ export const InlineSetRow: React.FC<InlineSetRowProps> = ({
   onEdit,
   showDeleteButton = true,
 }) => {
+  const { settings } = useSettings();
   const handleUpdate = useCallback((field: keyof ExerciseSet, value: number | string) => {
     onUpdate(setIndex, field, value);
   }, [setIndex, onUpdate]);
@@ -55,7 +57,7 @@ export const InlineSetRow: React.FC<InlineSetRowProps> = ({
               onSave={(val) => handleUpdate('weight', val)}
               type="number"
               min={0}
-              step={0.5}
+              step={settings.defaultWeightIncrements}
               unit="kg"
               displayClassName="text-text-primary font-medium"
               formatDisplay={(v) => `${v ?? 0}kg`}
