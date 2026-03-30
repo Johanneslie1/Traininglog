@@ -3,6 +3,7 @@ import { Prescription } from '@/types/program';
 import { ActivityType } from '@/types/activityTypes';
 import { formatPrescription, normalizeEnduranceDurationMinutes, validatePrescription } from '@/utils/prescriptionUtils';
 import { toast } from 'react-hot-toast';
+import SegmentedPicker from '@/components/SegmentedPicker';
 
 interface PrescriptionEditorProps {
   activityType: ActivityType;
@@ -88,6 +89,7 @@ const PrescriptionEditor: React.FC<PrescriptionEditorProps> = ({
   const [intensity, setIntensity] = useState<number>(initialPrescription?.intensity || 7);
   const [rest, setRest] = useState<number>(initialPrescription?.rest || 90);
   const [tempo, setTempo] = useState<string>(initialPrescription?.tempo || '');
+  const [rir, setRir] = useState<number | undefined>(initialPrescription?.rir);
 
   // Initialize ranges if initial prescription has range values
   useEffect(() => {
@@ -125,6 +127,9 @@ const PrescriptionEditor: React.FC<PrescriptionEditorProps> = ({
         setDistanceRange(true);
         setDistanceMin(initialPrescription.distance.min);
         setDistanceMax(initialPrescription.distance.max);
+      }
+      if (initialPrescription.rir !== undefined) {
+        setRir(initialPrescription.rir);
       }
     }
   }, [initialPrescription, activityType]);
@@ -169,6 +174,9 @@ const PrescriptionEditor: React.FC<PrescriptionEditorProps> = ({
       }
       if (tempo) {
         prescription.tempo = tempo;
+      }
+      if (rir !== undefined) {
+        prescription.rir = rir;
       }
     } else if (activityType === ActivityType.ENDURANCE || activityType === ActivityType.SPORT) {
       if (duration > 0) {
@@ -482,6 +490,20 @@ const PrescriptionEditor: React.FC<PrescriptionEditorProps> = ({
                   onChange={(e) => setTempo(e.target.value)}
                   placeholder="3-0-1-0"
                   className="w-40 p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                />
+              </div>
+
+              {/* Target RIR */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Target RIR — Reps in Reserve (optional)
+                </label>
+                <SegmentedPicker
+                  label="RIR"
+                  value={rir}
+                  options={[0, 1, 2, 3, 4, 5]}
+                  onChange={setRir}
+                  tooltips={{ 0: 'No reps left', 1: '1 rep left', 2: '2 reps left', 3: '3 reps left', 4: '4 reps left', 5: '5+ reps left' }}
                 />
               </div>
             </>

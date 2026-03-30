@@ -18,6 +18,7 @@ export interface Prescription {
   // Weight/intensity options
   weight?: WeightPrescription;
   rpe?: number; // Target RPE (1-10)
+  rir?: number; // Target RIR (0-5, resistance only)
   intensity?: number; // Target intensity (1-10) for non-resistance
   
   // Endurance fields

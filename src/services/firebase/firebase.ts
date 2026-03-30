@@ -12,6 +12,9 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
+// TODO: REMOVE after debugging auth/configuration-not-found
+console.log('[Firebase Debug] API key prefix:', firebaseConfig.apiKey?.substring(0, 10), '| authDomain:', firebaseConfig.authDomain);
+
 // Ensure Firebase is only initialized once (singleton pattern)
 export const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 export const db = getFirestore(app);

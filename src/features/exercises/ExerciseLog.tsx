@@ -13,6 +13,7 @@ import { v4 as uuidv4 } from 'uuid';
 import LogOptions from './LogOptions';
 import { ExerciseSetLogger } from './ExerciseSetLogger';
 import WorkoutSummary from './WorkoutSummary';
+import { toLocalDateString } from '@/utils/dateUtils';
 import { db } from '../../services/firebase/config';
 import { auth } from '../../services/firebase/config';
 import { collection, query, where, getDocs } from 'firebase/firestore';
@@ -113,7 +114,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   const processedSharedImportRequestsRef = useRef<Set<string>>(new Set());
 
   const getDateKey = useCallback((date: Date): string => {
-    return normalizeDate(date).toISOString().split('T')[0];
+    return toLocalDateString(normalizeDate(date));
   }, [normalizeDate]);
 
   const getPersistedSupersetStateForDate = useCallback((dateKey: string): { supersets: SupersetGroup[]; exerciseOrder: string[] } => {
@@ -216,7 +217,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     setLoading(true);
 
     // Load supersets for this date
-    const dateString = loadedDate.toISOString().split('T')[0];
+    const dateString = toLocalDateString(loadedDate);
     loadSupersetsForDate(dateString);
 
     try {
@@ -457,7 +458,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     
     // Save the new order to localStorage by updating timestamps
     // This creates a subtle time difference between exercises to maintain order
-    const dateString = selectedDate.toISOString().split('T')[0];
+    const dateString = toLocalDateString(selectedDate);
     
     // Create a base timestamp for the selected date
     const baseTime = new Date(selectedDate);

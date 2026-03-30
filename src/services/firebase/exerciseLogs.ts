@@ -165,6 +165,7 @@ export const addExerciseLog = async (
     const exerciseData = removeUndefinedFields({
       ...logData,
       timestamp: Timestamp.fromDate(selectedDate || new Date()),
+      createdAt: existingId ? undefined : Timestamp.now(),
       deviceId: window.navigator.userAgent,
       userId: effectiveUserId,
       sets: Array.isArray(logData.sets) ? logData.sets : [], // Ensure sets is always an array

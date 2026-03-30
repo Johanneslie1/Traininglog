@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import SegmentedPicker from './SegmentedPicker';
 import type { Exercise } from '@/types/exercise';
 import type { ExerciseSet } from '@/types/sets';
 import { ActivityType } from '@/types/activityTypes';
@@ -57,6 +58,13 @@ const RIR_SCALE = {
   4: '4 reps left',
   5: '5+ reps left'
 } as const;
+
+const RPE_TOOLTIPS: Record<number, string> = {
+  1: 'Very Easy', 2: 'Easy', 3: 'Light', 4: 'Moderate-', 5: 'Moderate',
+  6: 'Moderate+', 7: 'Hard', 8: 'Very Hard', 9: 'Extremely Hard', 10: 'Maximum',
+};
+
+const RIR_TOOLTIPS: Record<number, string> = { ...RIR_SCALE };
 
 // Determine exercise type from exercise data
 const getExerciseType = (exercise: Exercise): string => {
@@ -598,29 +606,22 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
           </div>
         );
         fields.push(
-          <div key="rir" className="space-y-1">
-            <label className="block text-sm font-medium text-gray-300">RIR (Reps in Reserve)</label>
-            <select
-              value={sets[setIndex]?.rir !== undefined ? sets[setIndex].rir : ''}
-              onChange={(e) => {
-                e.stopPropagation();
-                const value = e.target.value;
-                if (value === '') {
-                  updateSet(setIndex, 'rir', undefined);
-                } else {
-                  updateSet(setIndex, 'rir', parseInt(value));
-                }
-              }}
-              onFocus={(e) => e.stopPropagation()}
-              className="w-full px-3 py-2 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:outline-none focus:border-accent-primary focus:ring-1 focus:ring-accent-primary"
-            >
-              <option value="">Select RIR</option>
-              {Object.entries(RIR_SCALE).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
+          <div key="rpe-rir" className="grid grid-cols-2 gap-3">
+            <SegmentedPicker
+              label="RPE"
+              value={sets[setIndex]?.rpe}
+              options={[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
+              onChange={(v) => updateSet(setIndex, 'rpe', v)}
+              tooltips={RPE_TOOLTIPS}
+              colorScheme="orange"
+            />
+            <SegmentedPicker
+              label="RIR"
+              value={sets[setIndex]?.rir}
+              options={[0, 1, 2, 3, 4, 5]}
+              onChange={(v) => updateSet(setIndex, 'rir', v)}
+              tooltips={RIR_TOOLTIPS}
+            />
           </div>
         );
         break;

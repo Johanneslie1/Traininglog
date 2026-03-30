@@ -91,6 +91,7 @@ export const addActivityLog = async (
     const activityData = cleanObject({
       ...logData,
       timestamp: Timestamp.fromDate(selectedDate || new Date()),
+      createdAt: existingId ? undefined : Timestamp.now(),
       deviceId: window.navigator.userAgent,
       userId: effectiveUserId,
       sets: Array.isArray(logData.sets) ? logData.sets.map(set => cleanObject(set)).filter(set => set && Object.keys(set).length > 0) : [],

@@ -6,6 +6,7 @@ import { getAggregatedExportLogs } from '@/services/logAggregationService';
 import { SupersetGroup } from '@/types/session';
 import { buildSupersetLabels, SupersetLabelMetadata } from '@/utils/supersetUtils';
 import { normalizeDistanceMeters, normalizeDurationSeconds } from '@/utils/activityFieldContract';
+import { toLocalDateString, toLocalTimestamp } from '@/utils/dateUtils';
 
 export interface ExportOptions {
   includeSessions?: boolean;
@@ -26,8 +27,10 @@ export const SET_EXPORT_HEADERS = [
   'supersetId',
   'supersetLabel',
   'supersetName',
+  'exerciseDate',
   'loggedDate',
   'loggedTimestamp',
+  'exerciseNumber',
   'setNumber',
   'reps',
   'weight',
@@ -68,21 +71,21 @@ export const SET_EXPORT_HEADERS = [
   'elevation'
 ] as const;
 
-// Helper function to safely convert date to ISO string
-const safeDateToISOString = (date: Date | any): string => {
+// Helper function to safely convert date to local timestamp string
+const safeDateToLocalTimestamp = (date: Date | any): string => {
   if (!date) return '';
   
   const d = new Date(date);
   if (isNaN(d.getTime())) return '';
   
-  return d.toISOString();
+  return toLocalTimestamp(d);
 };
 
 const DEFAULT_EXPORT_START_DATE = new Date('1970-01-01T00:00:00.000Z');
 
 const getDateKeyFromTimestamp = (timestamp: Date | undefined): string => {
   if (!timestamp) return '';
-  return timestamp.toISOString().split('T')[0];
+  return toLocalDateString(timestamp);
 };
 
 const toSafeKey = (value: string): string =>
@@ -204,6 +207,7 @@ export const serializeSetForExport = (
     supersetId?: string;
     supersetLabel?: string;
     supersetName?: string;
+    exerciseNumber?: number;
   },
   set: Record<string, any>,
   index: number
@@ -221,8 +225,10 @@ export const serializeSetForExport = (
     supersetId: log.supersetId || '',
     supersetLabel: log.supersetLabel || '',
     supersetName: log.supersetName || '',
-    loggedDate: log.timestamp ? log.timestamp.toISOString().split('T')[0] : '',
-    loggedTimestamp: safeDateToISOString(log.timestamp),
+    exerciseDate: log.timestamp ? toLocalDateString(log.timestamp) : '',
+    loggedDate: log.timestamp ? toLocalDateString(log.timestamp) : '',
+    loggedTimestamp: safeDateToLocalTimestamp(log.timestamp),
+    exerciseNumber: log.exerciseNumber ?? 0,
     setNumber: index + 1,
     reps: set.reps ?? 0,
     weight: set.weight ?? 0,
@@ -262,7 +268,7 @@ export const serializeSetForExport = (
     flexibility: set.flexibility ?? 0,
     pace: set.pace || '',
     elevation: set.elevation ?? 0,
-    timestamp: safeDateToISOString(set.timestamp)
+    timestamp: safeDateToLocalTimestamp(set.timestamp)
   });
 };
 
@@ -479,12 +485,35 @@ export const exportData = async (userId: string, options: ExportOptions = {}) =>
             totalVolume,
             averageRPE,
             notes: log.sets.map(set => set.comment || set.notes || '').filter(n => n).join('; '),
-            createdAt: safeDateToISOString(log.timestamp)
+            createdAt: safeDateToLocalTimestamp(log.timestamp)
           };
         });
       }
 
       if (includeSets) {
+        // Assign exerciseNumber per date group (1-based order within each day)
+        const exerciseNumberByLogId = new Map<string, number>();
+        const logsByDate = new Map<string, typeof unifiedLogs>();
+        unifiedLogs.forEach((log) => {
+          const dateKey = getDateKeyFromTimestamp(log.timestamp);
+          if (!logsByDate.has(dateKey)) logsByDate.set(dateKey, []);
+          logsByDate.get(dateKey)!.push(log);
+        });
+        logsByDate.forEach((logsForDate) => {
+          // Sort by createdAt if available, otherwise keep original order
+          const sorted = [...logsForDate].sort((a, b) => {
+            const aCreated = (a as any).createdAt as Date | undefined;
+            const bCreated = (b as any).createdAt as Date | undefined;
+            if (aCreated && bCreated) {
+              return aCreated.getTime() - bCreated.getTime();
+            }
+            return 0;
+          });
+          sorted.forEach((log, idx) => {
+            exerciseNumberByLogId.set(log.id, idx + 1);
+          });
+        });
+
         results.sets = unifiedLogs.flatMap(log =>
           log.sets.map((set, index) => {
             const supersetMeta = resolveSupersetMetadata(log);
@@ -495,6 +524,7 @@ export const exportData = async (userId: string, options: ExportOptions = {}) =>
                 supersetId: supersetMeta.supersetId,
                 supersetLabel: supersetMeta.supersetLabel,
                 supersetName: supersetMeta.supersetName,
+                exerciseNumber: exerciseNumberByLogId.get(log.id) ?? 0,
               },
               set,
               index

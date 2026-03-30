@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store/store';
-import { exportData, downloadCSV, getExportPreview, ExportPreview, ExportOptions, SET_EXPORT_HEADERS } from '@/services/exportService';
+import { getExportPreview, ExportPreview } from '@/services/exportService';
+import { downloadPowerBiZip } from '@/services/powerBiExportService';
+import { getAllAthletes } from '@/services/coachService';
+import { useIsCoach } from '@/hooks/useUserRole';
+import type { PowerBiExportScope } from '@/types/powerBiExport';
 import { exportFullBackup, downloadBackupJson } from '@/services/backupService';
 import { useTheme, Theme } from '@/context/ThemeContext';
 import { useSettings } from '@/context/SettingsContext';
@@ -78,7 +82,6 @@ interface Setting {
 const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
   const { user } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
-  const [isExporting, setIsExporting] = useState(false);
   const [isExportingJson, setIsExportingJson] = useState(false);
   const [isUpdatingRole, setIsUpdatingRole] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange>({
@@ -88,6 +91,12 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
   });
   const [exportPreview, setExportPreview] = useState<ExportPreview | null>(null);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const [exportScope, setExportScope] = useState<PowerBiExportScope>('self');
+  const [selectedAthleteId, setSelectedAthleteId] = useState('');
+  const [athletes, setAthletes] = useState<{ id: string; name: string }[]>([]);
+  const [isLoadingAthletes, setIsLoadingAthletes] = useState(false);
+  const [isPowerBiExporting, setIsPowerBiExporting] = useState(false);
+  const isCoach = useIsCoach();
 
   // Fetch export preview when date range changes
   const fetchPreview = useCallback(async () => {
@@ -139,38 +148,68 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
     return `${year}-${month}-${day}`;
   };
 
-  const handleExport = async () => {
+  // Load athletes for the athlete-scope dropdown (coaches only)
+  useEffect(() => {
+    if (!isCoach || exportScope !== 'athlete') return;
+    setIsLoadingAthletes(true);
+    getAllAthletes()
+      .then((data) => {
+        const mapped = data.map((a) => ({
+          id: a.id,
+          name:
+            [a.firstName, a.lastName].filter(Boolean).join(' ') || a.email || a.id,
+        }));
+        setAthletes(mapped);
+        if (mapped.length > 0 && !selectedAthleteId) {
+          setSelectedAthleteId(mapped[0].id);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load athletes:', err);
+        toast.error('Could not load athlete list');
+      })
+      .finally(() => setIsLoadingAthletes(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isCoach, exportScope]);
+
+  const handleExportPowerBi = async () => {
     if (!user?.id) {
-      alert('Please log in to export your data.');
+      toast.error('Please log in to export your data.');
       return;
     }
-    
-    setIsExporting(true);
+    if (exportScope === 'athlete' && !selectedAthleteId) {
+      toast.error('Please select an athlete to export.');
+      return;
+    }
+    setIsPowerBiExporting(true);
     try {
-      const exportOptions: ExportOptions = {
-        startDate: dateRange.startDate || undefined,
-        endDate: dateRange.endDate || undefined
-      };
+      const d = dateRange.startDate;
+      const fromDate = d
+        ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+        : undefined;
 
-      const data = await exportData(user.id, exportOptions);
-
-      if (data.sets.length > 0) {
-        downloadCSV(
-          data.sets,
-          [...SET_EXPORT_HEADERS],
-          'exercise_sets.csv'
-        );
-
-        alert('Export completed! Downloaded: exercise_sets.csv\nCheck your downloads folder.');
-      } else {
-        alert('No exercise sets found to export. Try logging some workouts first.');
-      }
+      const result = await downloadPowerBiZip(
+        {
+          scope: exportScope,
+          targetAthleteId: exportScope === 'athlete' ? selectedAthleteId : undefined,
+          fromDate,
+        },
+        {
+          id: user.id,
+          firstName: user.firstName || '',
+          lastName: user.lastName || '',
+          role: user.role,
+        }
+      );
+      toast.success(
+        `Export ready! ${result.gymSetCount} gym sets · ${result.activityCount} activity rows · ${result.athleteCount} athlete(s)`
+      );
     } catch (error) {
-      console.error('Export failed:', error);
+      console.error('Power BI export failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      alert(`Export failed: ${errorMessage}`);
+      toast.error(`Export failed: ${errorMessage}`);
     } finally {
-      setIsExporting(false);
+      setIsPowerBiExporting(false);
     }
   };
 
@@ -386,17 +425,67 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
               {/* Export Data Section */}
               <div className="pt-4 border-t border-border space-y-4">
                 <h3 className="text-lg font-medium text-text-primary">Export Data</h3>
-                
-                {/* Date Range Preset Buttons */}
+
+                {/* Export scope selector — visible to coaches only */}
+                {isCoach && (
+                  <div className="space-y-2">
+                    <label className="text-sm text-text-secondary">Export scope</label>
+                    <div className="flex flex-wrap gap-2">
+                      {([
+                        { key: 'self' as PowerBiExportScope, label: 'My data only' },
+                        { key: 'athlete' as PowerBiExportScope, label: 'Specific athlete' },
+                        { key: 'team' as PowerBiExportScope, label: 'Full team' },
+                      ] as const).map(({ key, label }) => (
+                        <button
+                          key={key}
+                          onClick={() => setExportScope(key)}
+                          className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                            exportScope === key
+                              ? 'bg-accent-primary text-white'
+                              : 'bg-bg-tertiary text-text-secondary hover:bg-bg-secondary'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Athlete selector — only when scope === 'athlete' */}
+                {isCoach && exportScope === 'athlete' && (
+                  <div>
+                    <label className="block text-sm text-text-secondary mb-1">Select athlete</label>
+                    {isLoadingAthletes ? (
+                      <p className="text-sm text-text-secondary">Loading athletes...</p>
+                    ) : athletes.length === 0 ? (
+                      <p className="text-sm text-text-secondary">No athletes found. Make sure athletes have joined your team.</p>
+                    ) : (
+                      <select
+                        value={selectedAthleteId}
+                        onChange={(e) => setSelectedAthleteId(e.target.value)}
+                        className="w-full bg-bg-tertiary text-text-primary px-3 py-2 rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-accent-primary"
+                      >
+                        {athletes.map((a) => (
+                          <option key={a.id} value={a.id}>
+                            {a.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                )}
+
+                {/* Date Range — "Export since" for incremental Power BI refreshes */}
                 <div className="space-y-2">
-                  <label className="text-sm text-text-secondary">Date Range</label>
+                  <label className="text-sm text-text-secondary">Date range (optional — leave blank for all data)</label>
                   <div className="flex flex-wrap gap-2">
                     {[
                       { key: 'last7days' as DateRangePreset, label: 'Last 7 days' },
                       { key: 'last30days' as DateRangePreset, label: 'Last 30 days' },
                       { key: 'thisMonth' as DateRangePreset, label: 'This month' },
                       { key: 'lastMonth' as DateRangePreset, label: 'Last month' },
-                      { key: 'allTime' as DateRangePreset, label: 'All time' }
+                      { key: 'allTime' as DateRangePreset, label: 'All time' },
                     ].map(({ key, label }) => (
                       <button
                         key={key}
@@ -411,31 +500,29 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                       </button>
                     ))}
                   </div>
-                </div>
-
-                {/* Custom Date Inputs */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm text-text-secondary mb-1">Start Date</label>
-                    <input
-                      type="date"
-                      value={formatDateForInput(dateRange.startDate)}
-                      onChange={(e) => handleCustomDateChange('startDate', e.target.value)}
-                      className="w-full bg-bg-tertiary text-text-primary px-3 py-2 rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-accent-primary"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-text-secondary mb-1">End Date</label>
-                    <input
-                      type="date"
-                      value={formatDateForInput(dateRange.endDate)}
-                      onChange={(e) => handleCustomDateChange('endDate', e.target.value)}
-                      className="w-full bg-bg-tertiary text-text-primary px-3 py-2 rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-accent-primary"
-                    />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm text-text-secondary mb-1">From date</label>
+                      <input
+                        type="date"
+                        value={formatDateForInput(dateRange.startDate)}
+                        onChange={(e) => handleCustomDateChange('startDate', e.target.value)}
+                        className="w-full bg-bg-tertiary text-text-primary px-3 py-2 rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-accent-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-text-secondary mb-1">To date</label>
+                      <input
+                        type="date"
+                        value={formatDateForInput(dateRange.endDate)}
+                        onChange={(e) => handleCustomDateChange('endDate', e.target.value)}
+                        className="w-full bg-bg-tertiary text-text-primary px-3 py-2 rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-accent-primary"
+                      />
+                    </div>
                   </div>
                 </div>
 
-                {/* Export Preview */}
+                {/* Data preview (own data only) */}
                 {user?.id && (
                   <div className="bg-bg-secondary rounded-md p-3">
                     {isLoadingPreview ? (
@@ -453,7 +540,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                         <span className="font-medium text-text-primary">
                           {exportPreview.setCount} sets
                         </span>
-                        {' in selected range'}
+                        {' in selected range (your data)'}
                       </div>
                     ) : (
                       <p className="text-sm text-text-secondary">No data in selected range</p>
@@ -461,19 +548,24 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                   </div>
                 )}
 
-                {/* Export Button */}
+                {/* Power BI Export Button */}
                 <button
-                  onClick={handleExport}
-                  disabled={isExporting || !user?.id || (exportPreview !== null && exportPreview.sessionCount === 0 && exportPreview.exerciseCount === 0)}
-                  className="w-full bg-accent-primary text-white py-3 px-4 rounded-md hover:bg-accent-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  onClick={handleExportPowerBi}
+                  disabled={
+                    isPowerBiExporting ||
+                    !user?.id ||
+                    (exportScope === 'athlete' && !selectedAthleteId)
+                  }
+                  className="w-full bg-accent-primary text-white py-3 px-4 rounded-md hover:bg-accent-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
                 >
-                  {isExporting ? 'Exporting...' : !user?.id ? 'Login Required' : 'Export as CSV'}
+                  {isPowerBiExporting
+                    ? 'Exporting…'
+                    : !user?.id
+                    ? 'Login Required'
+                    : 'Export for Power BI (ZIP)'}
                 </button>
                 <p className="text-sm text-text-secondary">
-                  {!user?.id 
-                    ? 'Please log in to export your training data.'
-                    : 'Download your exercise logs as CSV for analysis in Excel, Google Sheets, or other tools.'
-                  }
+                  Downloads a ZIP with fact_gym_sets.csv, fact_activity.csv, dim_exercise.csv, dim_athlete.csv and export_meta.json — ready to connect to Power BI.
                 </p>
 
                 {/* JSON Backup Export */}

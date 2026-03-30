@@ -4,6 +4,11 @@ import { VitePWA } from 'vite-plugin-pwa';
 import path from 'path';
 
 // https://vitejs.dev/config/
+// Prevent stale system/process env vars from overriding .env file values for Firebase config.
+// Remove this block once VS Code has been restarted after clearing the system env vars.
+const firebaseEnvKeys = ['VITE_FIREBASE_API_KEY', 'FIREBASE_API_KEY'];
+firebaseEnvKeys.forEach(key => { delete process.env[key]; });
+
 export default defineConfig(({ mode }) => {
   // Load env file based on `mode` in the current working directory.
   const env = loadEnv(mode, process.cwd(), '');

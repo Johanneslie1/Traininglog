@@ -25,7 +25,7 @@ export const TRAINING_TYPE_CONFIG: Record<TrainingType, TrainingTypeDefinition> 
       trackDuration: false,
       trackDistance: false
     },
-    setFields: ['weight', 'reps', 'rpe', 'difficulty', 'restTime', 'comment'],
+    setFields: ['weight', 'reps', 'rpe', 'rir', 'difficulty', 'restTime', 'comment'],
     summaryMetric: 'volume'
   },
 
@@ -72,11 +72,12 @@ export const TRAINING_TYPE_CONFIG: Record<TrainingType, TrainingTypeDefinition> 
     description: 'Stretching, yoga, mobility work',
     firestoreCollection: 'exercises',
     metricsConfig: {
+      trackReps: true,
       trackDuration: true,
       trackHoldTime: true,
       trackIntensity: true
     },
-    setFields: ['holdTime', 'intensity', 'notes'],
+    setFields: ['reps', 'holdTime', 'intensity', 'notes'],
     summaryMetric: 'duration'
   },
 

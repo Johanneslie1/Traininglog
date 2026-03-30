@@ -24,6 +24,7 @@ type SourceLog = {
   exerciseName: string;
   sets: AnySet[];
   timestamp: Date;
+  createdAt?: Date;
   userId: string;
   activityType?: string;
   exerciseType?: string;
@@ -31,6 +32,15 @@ type SourceLog = {
   supersetLabel?: string;
   supersetName?: string;
   collectionType: ExportSource;
+};
+
+const parseOptionalTimestamp = (value: unknown): Date | undefined => {
+  if (!value) return undefined;
+  if (typeof value === 'object' && value !== null && 'toDate' in value && typeof (value as { toDate?: unknown }).toDate === 'function') {
+    return (value as { toDate: () => Date }).toDate();
+  }
+  const parsed = new Date(value as string | number | Date);
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed;
 };
 
 const isObjectRecord = (value: unknown): value is Record<string, unknown> =>
@@ -312,6 +322,7 @@ export const getAggregatedExportLogs = async (
       exerciseName: log.exerciseName || '',
       sets: normalizeSetsForExport(log as unknown as Record<string, unknown>),
       timestamp: parseTimestamp(log.timestamp),
+      createdAt: parseOptionalTimestamp((log as unknown as Record<string, unknown>).createdAt),
       userId: String(log.userId || userId),
       activityType: log.activityType,
       exerciseType: log.exerciseType,
@@ -325,6 +336,7 @@ export const getAggregatedExportLogs = async (
       exerciseName: log.activityName || '',
       sets: normalizeSetsForExport(log as unknown as Record<string, unknown>),
       timestamp: parseTimestamp(log.timestamp),
+      createdAt: parseOptionalTimestamp((log as unknown as Record<string, unknown>).createdAt),
       userId: String(log.userId || userId),
       activityType: log.activityType,
       supersetId: log.supersetId,
@@ -337,6 +349,7 @@ export const getAggregatedExportLogs = async (
       exerciseName: log.exerciseName || '',
       sets: normalizeSetsForExport(log as unknown as Record<string, unknown>),
       timestamp: parseTimestamp(log.timestamp),
+      createdAt: parseOptionalTimestamp((log as unknown as Record<string, unknown>).createdAt),
       userId: String(log.userId || userId),
       activityType: log.activityType || ActivityType.RESISTANCE,
       exerciseType: log.exerciseType,

@@ -134,20 +134,16 @@ export const InlineSetRow: React.FC<InlineSetRowProps> = ({
               displayClassName="text-text-primary font-medium"
               formatDisplay={(v) => `${v ?? 0}s hold`}
             />
-            {set.reps && set.reps > 0 && (
-              <>
-                <span className="text-gray-500">×</span>
-                <InlineEditableValue
-                  value={set.reps}
-                  onSave={(val) => handleUpdate('reps', val)}
-                  type="number"
-                  min={0}
-                  step={1}
-                  displayClassName="text-text-primary font-medium"
-                  formatDisplay={(v) => `${v ?? 0} reps`}
-                />
-              </>
-            )}
+            <span className="text-gray-500">×</span>
+            <InlineEditableValue
+              value={set.reps}
+              onSave={(val) => handleUpdate('reps', val)}
+              type="number"
+              min={0}
+              step={1}
+              displayClassName="text-text-primary font-medium"
+              formatDisplay={(v) => `${v ?? 0} reps`}
+            />
           </div>
         );
         

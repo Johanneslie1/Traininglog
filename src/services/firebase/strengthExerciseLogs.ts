@@ -71,6 +71,7 @@ export const addExerciseLog = async (
     const exerciseData = cleanObject({
       ...logData,
       timestamp: Timestamp.fromDate(selectedDate || new Date()),
+      createdAt: existingId ? undefined : Timestamp.now(),
       deviceId: window.navigator.userAgent,
       userId: logData.userId,
       sets: Array.isArray(logData.sets) ? logData.sets.map(set => cleanObject(set)).filter(set => set && Object.keys(set).length > 0) : [],

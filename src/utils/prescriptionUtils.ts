@@ -102,6 +102,9 @@ export function prescriptionToSets(
         if (prescription.rpe) {
           set.rpe = prescription.rpe;
         }
+        if (prescription.rir !== undefined) {
+          set.rir = prescription.rir;
+        }
         break;
 
       case ActivityType.ENDURANCE:
@@ -199,6 +202,9 @@ export function formatPrescription(
         }
       } else if (prescription.rpe) {
         parts.push(`RPE ${prescription.rpe}`);
+      }
+      if (prescription.rir !== undefined) {
+        parts.push(`RIR ${prescription.rir}`);
       }
 
       // Rest
