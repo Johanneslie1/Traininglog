@@ -24,6 +24,8 @@ try {
   console.warn('[DND] mobile-drag-drop polyfill failed to initialize:', error);
 }
 
+const AUTH_INIT_TIMEOUT_MS = 12000;
+
 const App: React.FC = () => {
   const [isAuthInitialized, setIsAuthInitialized] = useState(false);
 
@@ -35,7 +37,18 @@ const App: React.FC = () => {
 
   // Initialize auth state
   useEffect(() => {
+    let isMounted = true;
+
     store.dispatch(setLoading(true));
+
+    const timeoutId = window.setTimeout(() => {
+      if (!isMounted) return;
+
+      console.warn('[Auth] Initialization timeout reached, continuing with guest state');
+      store.dispatch(setUser(null));
+      store.dispatch(setLoading(false));
+      setIsAuthInitialized(true);
+    }, AUTH_INIT_TIMEOUT_MS);
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       try {
@@ -61,12 +74,16 @@ const App: React.FC = () => {
         console.error('[Auth] Error handling auth state change:', error);
         store.dispatch(setUser(null));
       } finally {
+        if (!isMounted) return;
+        window.clearTimeout(timeoutId);
         store.dispatch(setLoading(false));
         setIsAuthInitialized(true);
       }
     });
 
     return () => {
+      isMounted = false;
+      window.clearTimeout(timeoutId);
       unsubscribe();
     };
   }, []);

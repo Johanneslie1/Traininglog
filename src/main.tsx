@@ -7,6 +7,22 @@ import './styles/theme.css'; // Import the new theme
 
 const CHUNK_RELOAD_GUARD_KEY = 'chunk-reload-attempted';
 
+const safeGetSessionFlag = (key: string): string | null => {
+  try {
+    return sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+};
+
+const safeSetSessionFlag = (key: string, value: string): void => {
+  try {
+    sessionStorage.setItem(key, value);
+  } catch {
+    // Ignore storage access errors in restricted/private browsing contexts.
+  }
+};
+
 const tryRecoverFromStaleChunk = (reason: unknown) => {
   const message = reason instanceof Error ? reason.message : String(reason ?? '');
   const isChunkError =
@@ -17,9 +33,21 @@ const tryRecoverFromStaleChunk = (reason: unknown) => {
   if (!isChunkError) return;
 
   // Avoid infinite reload loops if the problem is persistent.
-  if (sessionStorage.getItem(CHUNK_RELOAD_GUARD_KEY) === '1') return;
+  if (safeGetSessionFlag(CHUNK_RELOAD_GUARD_KEY) === '1') return;
 
-  sessionStorage.setItem(CHUNK_RELOAD_GUARD_KEY, '1');
+  safeSetSessionFlag(CHUNK_RELOAD_GUARD_KEY, '1');
+
+  // Best effort: remove stale service workers that may serve old chunks.
+  if ('serviceWorker' in navigator) {
+    void navigator.serviceWorker.getRegistrations().then((registrations) => {
+      registrations.forEach((registration) => {
+        void registration.unregister();
+      });
+    }).catch(() => {
+      // Ignore SW cleanup errors and still attempt reload.
+    });
+  }
+
   window.location.reload();
 };
 
