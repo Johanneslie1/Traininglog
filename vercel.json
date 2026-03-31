@@ -1,0 +1,6 @@
+{
+  "framework": null,
+  "installCommand": "echo 'No install step for prebuilt static output'",
+  "buildCommand": "echo 'No build step for prebuilt static output'",
+  "outputDirectory": "."
+}
