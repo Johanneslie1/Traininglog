@@ -28,10 +28,13 @@ import type {
   ExportMeta,
   FactActivityRow,
   FactGymSetRow,
+  FactWellnessRow,
   PowerBiExportOptions,
 } from '@/types/powerBiExport';
+import { getWellnessByDateRange } from '@/services/wellnessService';
 import { toLocalDateString, toLocalTimestamp } from '@/utils/dateUtils';
 import { rowsToCSVForPowerBi } from '@/utils/powerBiCsv';
+import { normalizeSessionType } from '@/types/sessionType';
 
 // ---------------------------------------------------------------------------
 // Public interface
@@ -108,6 +111,7 @@ const buildGymSetRow = (
     athlete_id: athleteId,
     athlete_name: athleteName,
     session_id: String(s.sessionId ?? ''),
+    session_type: normalizeSessionType(s.sessionType),
     exercise_log_id: String(s.exerciseLogId ?? ''),
     exercise_id: toSlug(String(s.exerciseName ?? '')),
     exercise_name: String(s.exerciseName ?? ''),
@@ -134,6 +138,7 @@ const buildActivityRow = (
   athlete_id: athleteId,
   athlete_name: athleteName,
   session_id: String(s.sessionId ?? ''),
+  session_type: normalizeSessionType(s.sessionType),
   exercise_log_id: String(s.exerciseLogId ?? ''),
   exercise_name: String(s.exerciseName ?? ''),
   activity_type: String(s.activityType ?? ''),
@@ -152,6 +157,7 @@ const buildActivityRow = (
   hr_zone5: toEmpty(s.hrZone5),
   calories: toEmpty(s.calories),
   rpe: toEmpty(s.rpe),
+  is_warmup: asBool(s.isWarmup),
   hold_time: toEmpty(s.holdTime),
   intensity: toEmpty(s.intensity),
   height: toEmpty(s.height),
@@ -243,6 +249,7 @@ export const downloadPowerBiZip = async (
 
   const gymSets: FactGymSetRow[] = [];
   const activityRows: FactActivityRow[] = [];
+  const wellnessRows: FactWellnessRow[] = [];
   const allRawSets: Record<string, unknown>[] = [];
   const dimAthletes: DimAthleteRow[] = [];
 
@@ -255,6 +262,24 @@ export const downloadPowerBiZip = async (
   if (scope === 'self') {
     const data = await exportData(currentUser.id, exportOptions);
     processRawSets(data.sets, currentUser.id, selfName, gymSets, activityRows, allRawSets);
+
+    // Wellness data for own account
+    const wellnessStart = fromDate ?? '1970-01-01';
+    const wellnessEnd = toIsoDate(new Date());
+    const selfWellness = await getWellnessByDateRange(currentUser.id, wellnessStart, wellnessEnd);
+    selfWellness.forEach((w) => {
+      wellnessRows.push({
+        user_id: currentUser.id,
+        date: w.date,
+        sleep_quality: w.sleepQuality ?? '',
+        fatigue: w.fatigue ?? '',
+        muscle_soreness: w.muscleSoreness ?? '',
+        stress: w.stress ?? '',
+        mood: w.mood ?? '',
+        notes: w.notes ?? '',
+      });
+    });
+
     dimAthletes.push({
       athlete_id: currentUser.id,
       athlete_name: selfName,
@@ -387,6 +412,7 @@ export const downloadPowerBiZip = async (
 
   // ---- Build dimension tables ----
   const dimExercise = buildDimExercise(allRawSets);
+  const wellnessRowCount = wellnessRows.length;
 
   const meta: ExportMeta = {
     exported_at: new Date().toISOString(),
@@ -394,7 +420,7 @@ export const downloadPowerBiZip = async (
     scope,
     from_date: fromDate ?? null,
     athlete_count: dimAthletes.length,
-    row_count: gymSets.length + activityRows.length,
+    row_count: gymSets.length + activityRows.length + wellnessRowCount,
   };
 
   // ---- Column headers (snake_case order for Power BI) ----
@@ -402,6 +428,7 @@ export const downloadPowerBiZip = async (
     'athlete_id',
     'athlete_name',
     'session_id',
+    'session_type',
     'exercise_log_id',
     'exercise_id',
     'exercise_name',
@@ -422,6 +449,7 @@ export const downloadPowerBiZip = async (
     'athlete_id',
     'athlete_name',
     'session_id',
+    'session_type',
     'exercise_log_id',
     'exercise_name',
     'activity_type',
@@ -437,6 +465,7 @@ export const downloadPowerBiZip = async (
     'hr_zone5',
     'calories',
     'rpe',
+    'is_warmup',
     'notes',
   ];
 
@@ -462,8 +491,20 @@ export const downloadPowerBiZip = async (
   const zip = new JSZip();
   const folder = zip.folder(`training_export_${dateStamp}`)!;
 
+  const wellnessHeaders: (keyof FactWellnessRow)[] = [
+    'user_id',
+    'date',
+    'sleep_quality',
+    'fatigue',
+    'muscle_soreness',
+    'stress',
+    'mood',
+    'notes',
+  ];
+
   folder.file('fact_gym_sets.csv', rowsToCSVForPowerBi(gymSets, gymSetHeaders));
   folder.file('fact_activity.csv', rowsToCSVForPowerBi(activityRows, activityHeaders));
+  folder.file('fact_wellness.csv', rowsToCSVForPowerBi(wellnessRows, wellnessHeaders));
   folder.file('dim_exercise.csv', rowsToCSVForPowerBi(dimExercise, dimExerciseHeaders));
   folder.file('dim_athlete.csv', rowsToCSVForPowerBi(dimAthletes, dimAthleteHeaders));
   folder.file('export_meta.json', JSON.stringify(meta, null, 2));

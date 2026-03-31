@@ -115,6 +115,37 @@ service cloud.firestore {
           isOwner(userId) &&
           resource.data.userId == request.auth.uid;
       }
+
+      // Nested sessions collection under users
+      // Stores normalized workout session grouping metadata for daily/weekly counters
+      match /sessions/{sessionId} {
+        allow read: if isAuthenticated() && (isOwner(userId) || hasCoachAthleteAccess(userId));
+        allow create: if isAuthenticated() &&
+          isOwner(userId) &&
+          request.resource.data.userId == request.auth.uid;
+        allow update: if isAuthenticated() &&
+          isOwner(userId) &&
+          resource.data.userId == request.auth.uid &&
+          request.resource.data.userId == request.auth.uid;
+        allow delete: if isAuthenticated() &&
+          isOwner(userId) &&
+          resource.data.userId == request.auth.uid;
+      }
+
+      // Daily wellness check-in logs (sleep quality, fatigue, soreness, stress, mood)
+      match /wellnessLogs/{logId} {
+        allow read: if isAuthenticated() && isOwner(userId);
+        allow create: if isAuthenticated() &&
+          isOwner(userId) &&
+          request.resource.data.userId == request.auth.uid;
+        allow update: if isAuthenticated() &&
+          isOwner(userId) &&
+          resource.data.userId == request.auth.uid &&
+          request.resource.data.userId == request.auth.uid;
+        allow delete: if isAuthenticated() &&
+          isOwner(userId) &&
+          resource.data.userId == request.auth.uid;
+      }
     }
 
     // Denormalized coach-athlete read access mapping

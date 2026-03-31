@@ -6,6 +6,8 @@ import { ExerciseSet } from '@/types/sets';
 import { Program } from '@/types/program';
 import { AppSettings } from '@/context/SettingsContext';
 import { getAggregatedExportLogs } from '@/services/logAggregationService';
+import { WellnessLog } from '@/types/wellness';
+import { getWellnessByDateRange } from '@/services/wellnessService';
 
 export interface BackupData {
   metadata: {
@@ -18,6 +20,7 @@ export interface BackupData {
   exercises: ExerciseLog[];
   programs: Program[];
   settings: AppSettings;
+  wellnessLogs: WellnessLog[];
 }
 
 // Current schema version for migration compatibility
@@ -129,6 +132,11 @@ export async function exportFullBackup(userId?: string): Promise<BackupData> {
       console.warn('Could not load settings from localStorage:', error);
     }
 
+    // Export wellness logs (all time)
+    const wellnessStart = '1970-01-01';
+    const wellnessEnd = now.toISOString().slice(0, 10);
+    const wellnessLogs = await getWellnessByDateRange(uid, wellnessStart, wellnessEnd);
+
     const backupData: BackupData = {
       metadata: {
         version: APP_VERSION,
@@ -139,7 +147,8 @@ export async function exportFullBackup(userId?: string): Promise<BackupData> {
       },
       exercises,
       programs,
-      settings
+      settings,
+      wellnessLogs,
     };
 
     return backupData;

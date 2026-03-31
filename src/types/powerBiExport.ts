@@ -40,6 +40,7 @@ export interface FactGymSetRow {
   athlete_id: string;
   athlete_name: string;
   session_id: string;
+  session_type: string;
   exercise_log_id: string;
   exercise_id: string;
   exercise_name: string;
@@ -65,6 +66,7 @@ export interface FactActivityRow {
   athlete_id: string;
   athlete_name: string;
   session_id: string;
+  session_type: string;
   exercise_log_id: string;
   exercise_name: string;
   activity_type: string;
@@ -83,6 +85,7 @@ export interface FactActivityRow {
   hr_zone5: number | '';
   calories: number | '';
   rpe: number | '';
+  is_warmup: boolean;
   hold_time: number | '';
   intensity: number | '';
   height: number | '';
@@ -98,6 +101,21 @@ export interface DimExerciseRow {
   exercise_name: string;
   exercise_type: string;  // collectionType / exerciseType
   activity_type: string;
+}
+
+// ---------------------------------------------------------------------------
+// fact_wellness.csv
+// ---------------------------------------------------------------------------
+
+export interface FactWellnessRow {
+  user_id: string;
+  date: string;             // YYYY-MM-DD
+  sleep_quality: number | '';
+  fatigue: number | '';
+  muscle_soreness: number | '';
+  stress: number | '';
+  mood: number | '';
+  notes: string;
 }
 
 // ---------------------------------------------------------------------------

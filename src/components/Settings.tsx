@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store/store';
-import { getExportPreview, ExportPreview } from '@/services/exportService';
+import { getExportPreview, ExportPreview, downloadWellnessCSV } from '@/services/exportService';
 import { downloadPowerBiZip } from '@/services/powerBiExportService';
 import { getAllAthletes } from '@/services/coachService';
 import { useIsCoach } from '@/hooks/useUserRole';
@@ -83,6 +83,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
   const { user } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
   const [isExportingJson, setIsExportingJson] = useState(false);
+  const [isExportingWellness, setIsExportingWellness] = useState(false);
   const [isUpdatingRole, setIsUpdatingRole] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange>({
     startDate: null,
@@ -210,6 +211,32 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
       toast.error(`Export failed: ${errorMessage}`);
     } finally {
       setIsPowerBiExporting(false);
+    }
+  };
+
+  const handleExportWellness = async () => {
+    if (!user?.id) {
+      toast.error('Please log in to export your data.');
+      return;
+    }
+    setIsExportingWellness(true);
+    try {
+      const count = await downloadWellnessCSV(
+        user.id,
+        dateRange.startDate ?? undefined,
+        dateRange.endDate ?? undefined
+      );
+      if (count === 0) {
+        toast('No wellness data found for the selected range.');
+      } else {
+        toast.success(`Exported ${count} wellness entr${count === 1 ? 'y' : 'ies'} to wellness_logs.csv`);
+      }
+    } catch (error) {
+      console.error('Wellness export failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast.error(`Wellness export failed: ${errorMessage}`);
+    } finally {
+      setIsExportingWellness(false);
     }
   };
 
@@ -567,6 +594,23 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                 <p className="text-sm text-text-secondary">
                   Downloads a ZIP with fact_gym_sets.csv, fact_activity.csv, dim_exercise.csv, dim_athlete.csv and export_meta.json — ready to connect to Power BI.
                 </p>
+
+                {/* JSON Backup Export */}
+                <div className="pt-4 border-t border-border space-y-3">
+                  <div>
+                    <h4 className="text-sm font-medium text-text-primary mb-1">Wellness Log (CSV)</h4>
+                    <p className="text-xs text-text-secondary">
+                      Export your daily wellness check-ins (sleep quality, fatigue, muscle soreness, stress, mood) as a CSV for the selected date range.
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleExportWellness}
+                    disabled={isExportingWellness || !user?.id}
+                    className="w-full bg-emerald-600 text-white py-3 px-4 rounded-md hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {isExportingWellness ? 'Exporting…' : !user?.id ? 'Login Required' : 'Export Wellness (CSV)'}
+                  </button>
+                </div>
 
                 {/* JSON Backup Export */}
                 <div className="pt-4 border-t border-border space-y-3">

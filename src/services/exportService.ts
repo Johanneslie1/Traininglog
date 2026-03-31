@@ -7,6 +7,7 @@ import { SupersetGroup } from '@/types/session';
 import { buildSupersetLabels, SupersetLabelMetadata } from '@/utils/supersetUtils';
 import { normalizeDistanceMeters, normalizeDurationSeconds } from '@/utils/activityFieldContract';
 import { toLocalDateString, toLocalTimestamp } from '@/utils/dateUtils';
+import { normalizeSessionType } from '@/types/sessionType';
 
 export interface ExportOptions {
   includeSessions?: boolean;
@@ -20,6 +21,11 @@ export interface ExportOptions {
 export const SET_EXPORT_HEADERS = [
   'userId',
   'sessionId',
+  'sessionType',
+  'sessionDateKey',
+  'sessionWeekKey',
+  'sessionNumberInDay',
+  'sessionNumberInWeek',
   'exerciseLogId',
   'exerciseName',
   'exerciseType',
@@ -214,10 +220,16 @@ export const serializeSetForExport = (
 ) => {
   const normalizedDurationSec = normalizeDurationSeconds(set.duration, log.activityType);
   const normalizedDistanceMeters = normalizeDistanceMeters(set.distance, log.activityType);
+  const sessionType = normalizeSessionType((log as any).sessionType);
 
   return removeUndefinedFields({
     userId,
-    sessionId: '',
+    sessionId: (log as any).sessionId || '',
+    sessionType,
+    sessionDateKey: (log as any).sessionDateKey || '',
+    sessionWeekKey: (log as any).sessionWeekKey || '',
+    sessionNumberInDay: (log as any).sessionNumberInDay || 0,
+    sessionNumberInWeek: (log as any).sessionNumberInWeek || 0,
     exerciseLogId: log.id,
     exerciseName: log.exerciseName,
     exerciseType: log.collectionType,
@@ -240,7 +252,10 @@ export const serializeSetForExport = (
     rir: set.rir ?? 0,
     restTime: set.restTime ?? 0,
     restTimeSec: set.restTime ?? 0,
-    isWarmup: set.difficulty === DifficultyCategory.WARMUP,
+    isWarmup:
+      set.difficulty === DifficultyCategory.WARMUP ||
+      sessionType === 'warmup' ||
+      (log as any).isWarmup === true,
     difficulty: set.difficulty || '',
     setVolume: (set.reps || 0) * (set.weight || 0),
     comment: set.comment || '',
@@ -470,7 +485,12 @@ export const exportData = async (userId: string, options: ExportOptions = {}) =>
 
           return {
             userId,
-            sessionId: '', // TODO: link to session if available
+            sessionId: (log as any).sessionId || '',
+            sessionType: normalizeSessionType((log as any).sessionType),
+            sessionDateKey: (log as any).sessionDateKey || '',
+            sessionWeekKey: (log as any).sessionWeekKey || '',
+            sessionNumberInDay: (log as any).sessionNumberInDay || 0,
+            sessionNumberInWeek: (log as any).sessionNumberInWeek || 0,
             exerciseLogId: log.id,
             exerciseId: '', // TODO: get exercise ID
             exerciseName: log.exerciseName,
@@ -887,3 +907,52 @@ export const downloadActivityCSVs = async (userId: string, options: ExportOption
   }
 };
 
+// ---- Wellness export ----
+
+export const WELLNESS_CSV_HEADERS = [
+  'date',
+  'sleepQuality',
+  'fatigue',
+  'muscleSoreness',
+  'stress',
+  'mood',
+  'notes',
+] as const;
+
+/**
+ * Download wellness logs as a CSV file for a given date range.
+ * Imports are deferred to avoid circular dependencies with wellnessService.
+ */
+export const downloadWellnessCSV = async (
+  userId: string,
+  startDate?: Date,
+  endDate?: Date
+): Promise<number> => {
+  const { getWellnessByDateRange } = await import('@/services/wellnessService');
+
+  const start = startDate
+    ? `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`
+    : '1970-01-01';
+  const end = endDate
+    ? `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`
+    : new Date().toISOString().slice(0, 10);
+
+  const logs = await getWellnessByDateRange(userId, start, end);
+
+  if (logs.length === 0) return 0;
+
+  const rows = logs
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .map((l) => ({
+      date: l.date,
+      sleepQuality: l.sleepQuality ?? '',
+      fatigue: l.fatigue ?? '',
+      muscleSoreness: l.muscleSoreness ?? '',
+      stress: l.stress ?? '',
+      mood: l.mood ?? '',
+      notes: l.notes ?? '',
+    }));
+
+  downloadCSV(rows, [...WELLNESS_CSV_HEADERS], 'wellness_logs.csv');
+  return logs.length;
+};
