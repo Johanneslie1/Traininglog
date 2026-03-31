@@ -13,7 +13,10 @@ export default defineConfig(({ mode }) => {
   // Load env file based on `mode` in the current working directory.
   const env = loadEnv(mode, process.cwd(), '');
   const isDev = mode === 'development';
-  const basePath = isDev ? '/' : '/Traininglog/';
+  // VITE_BASE_PATH can be set per-deployment:
+  //   GitHub Pages: /Traininglog/  (set via scripts/build-gh-pages.mjs)
+  //   Vercel:       /              (not set — defaults to /)
+  const basePath = isDev ? '/' : (process.env.VITE_BASE_PATH || env.VITE_BASE_PATH || '/');
   
   return {
     base: basePath,

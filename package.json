@@ -29,7 +29,8 @@
     "test": "vitest",
     "test:watch": "vitest watch",
     "test:coverage": "vitest run --coverage",
-    "predeploy": "npm run build",
+    "build:gh-pages": "node scripts/build-gh-pages.mjs",
+    "predeploy": "npm run build:gh-pages",
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
