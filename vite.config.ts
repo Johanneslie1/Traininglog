@@ -162,17 +162,12 @@ export default defineConfig(({ mode }) => {
               return 'react-vendor';
             }
 
-            if (
-              normalizedId.includes('/node_modules/firebase/firestore/')
-            ) {
-              return 'firebase-firestore-vendor';
-            }
-
-            if (
-              normalizedId.includes('/node_modules/firebase/app/') ||
-              normalizedId.includes('/node_modules/firebase/auth/')
-            ) {
-              return 'firebase-core-vendor';
+            // All Firebase packages must stay in one chunk to avoid
+            // "Cannot access before initialization" errors caused by
+            // cross-chunk circular module initialization order.
+            if (normalizedId.includes('/node_modules/firebase/') ||
+                normalizedId.includes('/node_modules/@firebase/')) {
+              return 'firebase-vendor';
             }
 
             if (normalizedId.includes('/src/services/exerciseDatabaseService.ts')) {
