@@ -13,9 +13,10 @@ export default defineConfig(({ mode }) => {
   // Load env file based on `mode` in the current working directory.
   const env = loadEnv(mode, process.cwd(), '');
   const isDev = mode === 'development';
+  const basePath = isDev ? '/' : '/Traininglog/';
   
   return {
-    base: '/',
+    base: basePath,
     server: {
       port: 3000,
       strictPort: true,
@@ -66,17 +67,17 @@ export default defineConfig(({ mode }) => {
           theme_color: "#23272F",
           background_color: "#23272F",
           display: "standalone",
-          start_url: "/",
-          scope: "/",
+          start_url: basePath,
+          scope: basePath,
           icons: [
             {
-              src: "/icons/android-chrome-192x192.png",
+              src: `${basePath}icons/android-chrome-192x192.png`,
               sizes: "192x192",
               type: "image/png",
               purpose: "any maskable"
             },
             {
-              src: "/icons/android-chrome-512x512.png",
+              src: `${basePath}icons/android-chrome-512x512.png`,
               sizes: "512x512",
               type: "image/png",
               purpose: "any maskable"
