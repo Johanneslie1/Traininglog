@@ -31,6 +31,12 @@ type SourceLog = {
   supersetId?: string;
   supersetLabel?: string;
   supersetName?: string;
+  sessionId?: string;
+  sessionType?: string;
+  sessionDateKey?: string;
+  sessionWeekKey?: string;
+  sessionNumberInDay?: number;
+  sessionNumberInWeek?: number;
   collectionType: ExportSource;
 };
 
@@ -329,6 +335,12 @@ export const getAggregatedExportLogs = async (
       supersetId: log.supersetId,
       supersetLabel: log.supersetLabel,
       supersetName: log.supersetName,
+      sessionId: (log as unknown as Record<string, unknown>).sessionId as string | undefined,
+      sessionType: (log as unknown as Record<string, unknown>).sessionType as string | undefined,
+      sessionDateKey: (log as unknown as Record<string, unknown>).sessionDateKey as string | undefined,
+      sessionWeekKey: (log as unknown as Record<string, unknown>).sessionWeekKey as string | undefined,
+      sessionNumberInDay: (log as unknown as Record<string, unknown>).sessionNumberInDay as number | undefined,
+      sessionNumberInWeek: (log as unknown as Record<string, unknown>).sessionNumberInWeek as number | undefined,
       collectionType: 'exercise' as const,
     })),
     ...activityLogs.map((log) => ({
@@ -342,6 +354,12 @@ export const getAggregatedExportLogs = async (
       supersetId: log.supersetId,
       supersetLabel: log.supersetLabel,
       supersetName: log.supersetName,
+      sessionId: (log as unknown as Record<string, unknown>).sessionId as string | undefined,
+      sessionType: (log as unknown as Record<string, unknown>).sessionType as string | undefined,
+      sessionDateKey: (log as unknown as Record<string, unknown>).sessionDateKey as string | undefined,
+      sessionWeekKey: (log as unknown as Record<string, unknown>).sessionWeekKey as string | undefined,
+      sessionNumberInDay: (log as unknown as Record<string, unknown>).sessionNumberInDay as number | undefined,
+      sessionNumberInWeek: (log as unknown as Record<string, unknown>).sessionNumberInWeek as number | undefined,
       collectionType: 'activity' as const,
     })),
     ...strengthLogs.map((log) => ({
@@ -356,6 +374,12 @@ export const getAggregatedExportLogs = async (
       supersetId: log.supersetId,
       supersetLabel: log.supersetLabel,
       supersetName: log.supersetName,
+      sessionId: (log as unknown as Record<string, unknown>).sessionId as string | undefined,
+      sessionType: (log as unknown as Record<string, unknown>).sessionType as string | undefined,
+      sessionDateKey: (log as unknown as Record<string, unknown>).sessionDateKey as string | undefined,
+      sessionWeekKey: (log as unknown as Record<string, unknown>).sessionWeekKey as string | undefined,
+      sessionNumberInDay: (log as unknown as Record<string, unknown>).sessionNumberInDay as number | undefined,
+      sessionNumberInWeek: (log as unknown as Record<string, unknown>).sessionNumberInWeek as number | undefined,
       collectionType: 'strength' as const,
     })),
     ...legacyExerciseLogs.map((log) => ({
@@ -369,6 +393,12 @@ export const getAggregatedExportLogs = async (
       supersetId: log.supersetId,
       supersetLabel: log.supersetLabel,
       supersetName: log.supersetName,
+      sessionId: (log as unknown as Record<string, unknown>).sessionId as string | undefined,
+      sessionType: (log as unknown as Record<string, unknown>).sessionType as string | undefined,
+      sessionDateKey: (log as unknown as Record<string, unknown>).sessionDateKey as string | undefined,
+      sessionWeekKey: (log as unknown as Record<string, unknown>).sessionWeekKey as string | undefined,
+      sessionNumberInDay: (log as unknown as Record<string, unknown>).sessionNumberInDay as number | undefined,
+      sessionNumberInWeek: (log as unknown as Record<string, unknown>).sessionNumberInWeek as number | undefined,
       collectionType: 'legacyExerciseLog' as const,
     })),
     ...topLevelLegacyExerciseLogs.map((log) => ({
@@ -382,6 +412,12 @@ export const getAggregatedExportLogs = async (
       supersetId: log.supersetId,
       supersetLabel: log.supersetLabel,
       supersetName: log.supersetName,
+      sessionId: (log as unknown as Record<string, unknown>).sessionId as string | undefined,
+      sessionType: (log as unknown as Record<string, unknown>).sessionType as string | undefined,
+      sessionDateKey: (log as unknown as Record<string, unknown>).sessionDateKey as string | undefined,
+      sessionWeekKey: (log as unknown as Record<string, unknown>).sessionWeekKey as string | undefined,
+      sessionNumberInDay: (log as unknown as Record<string, unknown>).sessionNumberInDay as number | undefined,
+      sessionNumberInWeek: (log as unknown as Record<string, unknown>).sessionNumberInWeek as number | undefined,
       collectionType: 'topLevelExerciseLog' as const,
     })),
     ...localLogs,

@@ -1,6 +1,7 @@
 import { ActivityType } from './activityTypes';
 import { Prescription } from './program';
 import { SuggestedPrescriptionSet } from './sets';
+import { SessionType } from './sessionType';
 
 // Training type enum for unified system
 export enum TrainingType {
@@ -186,6 +187,18 @@ export interface ExerciseLog {
   instructions?: string;
   /** Assistant-generated suggestion payload for log editor */
   prescriptionAssistant?: ExercisePrescriptionAssistantData;
+  /** Normalized training session identifier */
+  sessionId?: string;
+  /** Session mode for this log entry */
+  sessionType?: SessionType;
+  /** Local calendar date key (yyyy-mm-dd) for session grouping */
+  sessionDateKey?: string;
+  /** ISO week key (yyyy-Www) for weekly session numbering */
+  sessionWeekKey?: string;
+  /** 1-based session number within the day */
+  sessionNumberInDay?: number;
+  /** 1-based session number within the ISO week */
+  sessionNumberInWeek?: number;
 }
 
 export type ExerciseType = Exercise['type'];

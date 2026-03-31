@@ -9,6 +9,7 @@ import { RootState } from '@/store/store';
 import { ExerciseSet } from '@/types/sets';
 import { Exercise } from '@/types/exercise';
 import toast from 'react-hot-toast';
+import { SessionType } from '@/types/sessionType';
 
 interface OtherActivityPickerProps {
   onClose: () => void;
@@ -16,6 +17,8 @@ interface OtherActivityPickerProps {
   onActivityLogged: () => void;
   selectedDate?: Date;
   isWarmupMode?: boolean;
+  selectedSessionId?: string | null;
+  selectedSessionType?: SessionType;
 }
 
 const OtherActivityPicker: React.FC<OtherActivityPickerProps> = ({
@@ -23,7 +26,9 @@ const OtherActivityPicker: React.FC<OtherActivityPickerProps> = ({
   onBack,
   onActivityLogged,
   selectedDate = new Date(),
-  isWarmupMode = false
+  isWarmupMode = false,
+  selectedSessionId,
+  selectedSessionType = 'main'
 }) => {
   const [data, setData] = useState<OtherActivity[]>([]);
   const [selected, setSelected] = useState<OtherActivity | null>(null);
@@ -95,7 +100,9 @@ const OtherActivityPicker: React.FC<OtherActivityPickerProps> = ({
               userId: user.id,
               sets: sets,
               activityType: ActivityType.OTHER,
-              isWarmup: isWarmupMode
+              isWarmup: isWarmupMode,
+              sessionId: selectedSessionId || undefined,
+              sessionType: selectedSessionType
             };
 
             console.log('💾 OtherActivityPicker: Calling addExerciseLog with:', exerciseLogData);

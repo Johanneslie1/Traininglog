@@ -14,6 +14,7 @@ import {
 import { getAuth } from 'firebase/auth';
 import { db } from './config';
 import { ActivityLog, ActivityLogInput, normalizeActivityType, mapExerciseTypeToActivityType } from '@/types/activityLog';
+import { ensureSessionContextForLog } from './sessionTrackingService';
 
 // Helper function to clean undefined values from objects
 const cleanObject = (obj: any): any => {
@@ -87,10 +88,16 @@ export const addActivityLog = async (
     }
 
     const normalizedActivityType = normalizeActivityType(logData.activityType);
+    const effectiveDate = selectedDate || new Date();
+    const sessionContext = await ensureSessionContextForLog(effectiveUserId, effectiveDate, {
+      requestedSessionId: logData.sessionId,
+      requestedSessionType: logData.sessionType,
+      forceNewSession: logData.startNewSession === true,
+    });
 
     const activityData = cleanObject({
       ...logData,
-      timestamp: Timestamp.fromDate(selectedDate || new Date()),
+      timestamp: Timestamp.fromDate(effectiveDate),
       createdAt: existingId ? undefined : Timestamp.now(),
       deviceId: window.navigator.userAgent,
       userId: effectiveUserId,
@@ -99,6 +106,12 @@ export const addActivityLog = async (
       supersetId: logData.supersetId,
       supersetLabel: logData.supersetLabel,
       supersetName: logData.supersetName,
+      sessionId: sessionContext.sessionId,
+      sessionType: sessionContext.sessionType,
+      sessionDateKey: sessionContext.sessionDateKey,
+      sessionWeekKey: sessionContext.sessionWeekKey,
+      sessionNumberInDay: sessionContext.sessionNumberInDay,
+      sessionNumberInWeek: sessionContext.sessionNumberInWeek,
       categories: logData.categories || []
     });
 
@@ -189,6 +202,12 @@ export const getActivityLogs = async (userId: string, startDate: Date, endDate: 
         supersetId: data.supersetId,
         supersetLabel: data.supersetLabel,
         supersetName: data.supersetName,
+        sessionId: data.sessionId,
+        sessionType: data.sessionType,
+        sessionDateKey: data.sessionDateKey,
+        sessionWeekKey: data.sessionWeekKey,
+        sessionNumberInDay: data.sessionNumberInDay,
+        sessionNumberInWeek: data.sessionNumberInWeek,
         categories: data.categories || [],
         notes: data.notes
       } as ActivityLog;

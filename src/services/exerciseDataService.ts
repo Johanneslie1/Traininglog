@@ -6,6 +6,7 @@ import { ActivityType } from '@/types/activityTypes';
 import { Prescription } from '@/types/program';
 import { ExercisePrescriptionAssistantData } from '@/types/exercise';
 import { resolveActivityTypeFromExerciseLike } from '@/utils/activityTypeResolver';
+import { SessionType } from '@/types/sessionType';
 
 export interface ExerciseData {
   id?: string;
@@ -24,6 +25,12 @@ export interface ExerciseData {
   sharedSessionExerciseId?: string;
   sharedSessionDateKey?: string;
   sharedSessionExerciseCompleted?: boolean;
+  sessionId?: string;
+  sessionType?: SessionType;
+  sessionDateKey?: string;
+  sessionWeekKey?: string;
+  sessionNumberInDay?: number;
+  sessionNumberInWeek?: number;
   prescription?: Prescription;
   instructionMode?: 'structured' | 'freeform';
   instructions?: string;
@@ -79,6 +86,7 @@ export class ExerciseDataService {
           ...(exercise.supersetName && { supersetName: exercise.supersetName }),
           activityType: resolvedActivityType,
           ...(typeof exercise.isWarmup === 'boolean' && { isWarmup: exercise.isWarmup }),
+          ...(exercise.sessionType && { sessionType: exercise.sessionType }),
           ...(exercise.prescription && { prescription: exercise.prescription }),
           ...(exercise.instructionMode && { instructionMode: exercise.instructionMode }),
           ...(exercise.instructions && { instructions: exercise.instructions }),
@@ -149,6 +157,7 @@ export class ExerciseDataService {
             ...(data.supersetName && { supersetName: data.supersetName }),
             ...(data.activityType && { activityType: data.activityType }),
             ...(typeof data.isWarmup === 'boolean' && { isWarmup: data.isWarmup }),
+            ...(data.sessionType && { sessionType: data.sessionType }),
             ...(data.prescription && { prescription: data.prescription }),
             ...(data.instructionMode && { instructionMode: data.instructionMode }),
             ...(data.instructions && { instructions: data.instructions }),

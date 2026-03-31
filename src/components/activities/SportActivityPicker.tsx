@@ -10,6 +10,7 @@ import { RootState } from '@/store/store';
 import { ExerciseSet } from '@/types/sets';
 import { Exercise } from '@/types/exercise';
 import toast from 'react-hot-toast';
+import { SessionType } from '@/types/sessionType';
 
 interface SportActivityPickerProps {
   onClose: () => void;
@@ -18,6 +19,8 @@ interface SportActivityPickerProps {
   selectedDate?: Date;
   editingExercise?: UnifiedExerciseData | null; // Add editing exercise prop
   isWarmupMode?: boolean;
+  selectedSessionId?: string | null;
+  selectedSessionType?: SessionType;
 }
 
 const SportActivityPicker: React.FC<SportActivityPickerProps> = ({
@@ -26,7 +29,9 @@ const SportActivityPicker: React.FC<SportActivityPickerProps> = ({
   onActivityLogged,
   selectedDate = new Date(),
   editingExercise = null,
-  isWarmupMode = false
+  isWarmupMode = false,
+  selectedSessionId,
+  selectedSessionType = 'main'
 }) => {
   const [data, setData] = useState<SportActivity[]>([]);
   const [selected, setSelected] = useState<SportActivity | null>(null);
@@ -130,6 +135,8 @@ const SportActivityPicker: React.FC<SportActivityPickerProps> = ({
               sets: sets,
               activityType: ActivityType.SPORT,
               isWarmup: isWarmupMode,
+              sessionId: editingExercise?.sessionId || selectedSessionId || undefined,
+              sessionType: editingExercise?.sessionType || selectedSessionType,
               prescription: exercise.prescription,
               instructionMode: exercise.instructionMode,
               instructions: Array.isArray(exercise.instructions)

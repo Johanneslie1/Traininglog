@@ -2,12 +2,12 @@ export default {
   preset: 'ts-jest',
   testEnvironment: 'node',
   testPathIgnorePatterns: ['/node_modules/', '/dist/'],
-  moduleFileExtensions: ['ts', 'js', 'json', 'node'],
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'json', 'node'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   transform: {
-    '^.+\\.ts$': 'ts-jest',
+    '^.+\\.tsx?$': 'ts-jest',
   },
   globals: {
     'ts-jest': {

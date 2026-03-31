@@ -21,6 +21,8 @@ import { resolveActivityTypeFromExerciseLike } from '@/utils/activityTypeResolve
 import { SupersetGroup } from '@/types/session';
 import { buildSupersetLabels } from '@/utils/supersetUtils';
 import { addActivityLog } from './activityLogs';
+import { ensureSessionContextForLog } from './sessionTrackingService';
+import { SessionType } from '@/types/sessionType';
 
 const LOCAL_EXERCISE_LOGS_KEY = 'exercise_logs';
 
@@ -107,6 +109,13 @@ type ExerciseLogInput = {
   sharedSessionExerciseId?: string;
   sharedSessionDateKey?: string;
   sharedSessionExerciseCompleted?: boolean;
+  sessionId?: string;
+  sessionType?: SessionType;
+  sessionDateKey?: string;
+  sessionWeekKey?: string;
+  sessionNumberInDay?: number;
+  sessionNumberInWeek?: number;
+  startNewSession?: boolean;
 };
 
 export const addExerciseLog = async (
@@ -146,6 +155,13 @@ export const addExerciseLog = async (
       }
     );
 
+    const effectiveDate = selectedDate || new Date();
+    const sessionContext = await ensureSessionContextForLog(effectiveUserId, effectiveDate, {
+      requestedSessionId: logData.sessionId,
+      requestedSessionType: logData.sessionType,
+      forceNewSession: logData.startNewSession === true,
+    });
+
     if (resolvedActivityType !== ActivityType.RESISTANCE) {
       return await addActivityLog(
         {
@@ -156,8 +172,14 @@ export const addExerciseLog = async (
           supersetId: logData.supersetId,
           supersetLabel: logData.supersetLabel,
           supersetName: logData.supersetName,
+          sessionId: sessionContext.sessionId,
+          sessionType: sessionContext.sessionType,
+          sessionDateKey: sessionContext.sessionDateKey,
+          sessionWeekKey: sessionContext.sessionWeekKey,
+          sessionNumberInDay: sessionContext.sessionNumberInDay,
+          sessionNumberInWeek: sessionContext.sessionNumberInWeek,
         },
-        selectedDate,
+        effectiveDate,
         existingId
       );
     }
@@ -181,6 +203,12 @@ export const addExerciseLog = async (
       ...(typeof logData.sharedSessionExerciseCompleted === 'boolean' && {
         sharedSessionExerciseCompleted: logData.sharedSessionExerciseCompleted
       }),
+      sessionId: sessionContext.sessionId,
+      sessionType: sessionContext.sessionType,
+      sessionDateKey: sessionContext.sessionDateKey,
+      sessionWeekKey: sessionContext.sessionWeekKey,
+      sessionNumberInDay: sessionContext.sessionNumberInDay,
+      sessionNumberInWeek: sessionContext.sessionNumberInWeek,
       ...(logData.prescription && { prescription: logData.prescription }),
       ...(logData.instructionMode && { instructionMode: logData.instructionMode }),
       ...(logData.instructions && { instructions: logData.instructions }),
@@ -237,6 +265,12 @@ export const addExerciseLog = async (
       sharedSessionExerciseId: logData.sharedSessionExerciseId,
       sharedSessionDateKey: logData.sharedSessionDateKey,
       sharedSessionExerciseCompleted: logData.sharedSessionExerciseCompleted,
+      sessionId: sessionContext.sessionId,
+      sessionType: sessionContext.sessionType,
+      sessionDateKey: sessionContext.sessionDateKey,
+      sessionWeekKey: sessionContext.sessionWeekKey,
+      sessionNumberInDay: sessionContext.sessionNumberInDay,
+      sessionNumberInWeek: sessionContext.sessionNumberInWeek,
       prescription: logData.prescription,
       instructionMode: logData.instructionMode,
       instructions: logData.instructions,
@@ -285,6 +319,12 @@ export const addExerciseLog = async (
       sharedSessionExerciseId: logData.sharedSessionExerciseId,
       sharedSessionDateKey: logData.sharedSessionDateKey,
       sharedSessionExerciseCompleted: logData.sharedSessionExerciseCompleted,
+      sessionId: logData.sessionId,
+      sessionType: logData.sessionType,
+      sessionDateKey: logData.sessionDateKey,
+      sessionWeekKey: logData.sessionWeekKey,
+      sessionNumberInDay: logData.sessionNumberInDay,
+      sessionNumberInWeek: logData.sessionNumberInWeek,
       prescription: logData.prescription,
       instructionMode: logData.instructionMode,
       instructions: logData.instructions,
@@ -435,6 +475,12 @@ export const getExerciseLogs = async (userId: string, startDate: Date, endDate: 
         sharedSessionExerciseId: data.sharedSessionExerciseId,
         sharedSessionDateKey: data.sharedSessionDateKey,
         sharedSessionExerciseCompleted: data.sharedSessionExerciseCompleted,
+        sessionId: data.sessionId,
+        sessionType: data.sessionType,
+        sessionDateKey: data.sessionDateKey,
+        sessionWeekKey: data.sessionWeekKey,
+        sessionNumberInDay: data.sessionNumberInDay,
+        sessionNumberInWeek: data.sessionNumberInWeek,
         prescription: data.prescription,
         instructionMode: data.instructionMode,
         instructions: data.instructions,
@@ -484,6 +530,12 @@ export const getLegacyExerciseLogs = async (userId: string, startDate: Date, end
         supersetId: data.supersetId,
         supersetLabel: data.supersetLabel,
         supersetName: data.supersetName,
+        sessionId: data.sessionId,
+        sessionType: data.sessionType,
+        sessionDateKey: data.sessionDateKey,
+        sessionWeekKey: data.sessionWeekKey,
+        sessionNumberInDay: data.sessionNumberInDay,
+        sessionNumberInWeek: data.sessionNumberInWeek,
       } as ExerciseLog;
     });
   } catch (error) {

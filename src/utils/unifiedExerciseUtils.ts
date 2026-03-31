@@ -10,6 +10,7 @@ import {
 import { getExerciseLogs as getLocalExerciseLogs } from '@/utils/localStorageUtils';
 import { deleteLocalExerciseLog } from '@/utils/localStorageUtils';
 import { auth } from '@/services/firebase/config';
+import { normalizeSessionType } from '@/types/sessionType';
 
 // Extended ExerciseData to support activity types
 export interface UnifiedExerciseData extends ExerciseData {
@@ -64,6 +65,12 @@ export async function getAllExercisesByDate(
       sharedSessionExerciseId: log.sharedSessionExerciseId,
       sharedSessionDateKey: log.sharedSessionDateKey,
       sharedSessionExerciseCompleted: log.sharedSessionExerciseCompleted,
+      sessionId: log.sessionId,
+      sessionType: log.sessionType,
+      sessionDateKey: log.sessionDateKey,
+      sessionWeekKey: log.sessionWeekKey,
+      sessionNumberInDay: log.sessionNumberInDay,
+      sessionNumberInWeek: log.sessionNumberInWeek,
       supersetId: log.supersetId,
       supersetLabel: log.supersetLabel,
       supersetName: log.supersetName,
@@ -81,6 +88,13 @@ export async function getAllExercisesByDate(
       sets: log.sets || [],
       deviceId: log.deviceId,
       activityType: normalizeActivityType(log.activityType),
+      sessionId: log.sessionId,
+      sessionType: log.sessionType,
+      sessionDateKey: log.sessionDateKey,
+      sessionWeekKey: log.sessionWeekKey,
+      sessionNumberInDay: log.sessionNumberInDay,
+      sessionNumberInWeek: log.sessionNumberInWeek,
+      isWarmup: normalizeSessionType(log.sessionType) === 'warmup',
       activityData: log
     }));
 
@@ -119,6 +133,12 @@ export async function getAllExercisesByDate(
         sharedSessionExerciseId: log.sharedSessionExerciseId,
         sharedSessionDateKey: log.sharedSessionDateKey,
         sharedSessionExerciseCompleted: log.sharedSessionExerciseCompleted,
+        sessionId: log.sessionId,
+        sessionType: log.sessionType,
+        sessionDateKey: log.sessionDateKey,
+        sessionWeekKey: log.sessionWeekKey,
+        sessionNumberInDay: log.sessionNumberInDay,
+        sessionNumberInWeek: log.sessionNumberInWeek,
         supersetId: log.supersetId,
         supersetLabel: log.supersetLabel,
         supersetName: log.supersetName,

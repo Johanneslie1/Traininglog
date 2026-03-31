@@ -11,6 +11,7 @@ import { ExerciseSet } from '@/types/sets';
 import { Exercise } from '@/types/exercise';
 import { ActivityType } from '@/types/activityTypes';
 import toast from 'react-hot-toast';
+import { SessionType } from '@/types/sessionType';
 
 interface EnduranceActivityPickerProps {
   onClose: () => void;
@@ -19,9 +20,11 @@ interface EnduranceActivityPickerProps {
   selectedDate?: Date;
   editingExercise?: any | null;
   isWarmupMode?: boolean;
+  selectedSessionId?: string | null;
+  selectedSessionType?: SessionType;
 }
 
-const EnduranceActivityPicker: React.FC<EnduranceActivityPickerProps> = ({ onClose, onBack, onActivityLogged, selectedDate = new Date(), editingExercise = null, isWarmupMode = false }) => {
+const EnduranceActivityPicker: React.FC<EnduranceActivityPickerProps> = ({ onClose, onBack, onActivityLogged, selectedDate = new Date(), editingExercise = null, isWarmupMode = false, selectedSessionId, selectedSessionType = 'main' }) => {
   const [selected, setSelected] = useState<EnduranceExercise | null>(null);
   const [view, setView] = useState<'list' | 'logging'>('list');
   const user = useSelector((state: RootState) => state.auth.user);
@@ -77,6 +80,8 @@ const EnduranceActivityPicker: React.FC<EnduranceActivityPickerProps> = ({ onClo
               sets: sets,
               activityType: ActivityType.ENDURANCE,
               isWarmup: isWarmupMode,
+              sessionId: editingExercise?.sessionId || selectedSessionId || undefined,
+              sessionType: editingExercise?.sessionType || selectedSessionType,
               prescription: exercise.prescription,
               instructionMode: exercise.instructionMode,
               instructions: Array.isArray(exercise.instructions)

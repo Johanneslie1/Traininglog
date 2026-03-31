@@ -11,6 +11,7 @@ import { ExerciseSet } from '@/types/sets';
 import { Exercise } from '@/types/exercise';
 import { ActivityType } from '@/types/activityTypes';
 import toast from 'react-hot-toast';
+import { SessionType } from '@/types/sessionType';
 
 interface StretchingActivityPickerProps {
 	onClose: () => void;
@@ -19,6 +20,8 @@ interface StretchingActivityPickerProps {
 	selectedDate?: Date;
 	editingExercise?: any | null;
 	isWarmupMode?: boolean;
+	selectedSessionId?: string | null;
+	selectedSessionType?: SessionType;
 }
 
 const StretchingActivityPicker: React.FC<StretchingActivityPickerProps> = ({
@@ -27,7 +30,9 @@ const StretchingActivityPicker: React.FC<StretchingActivityPickerProps> = ({
 	onActivityLogged,
 	selectedDate = new Date(),
 	editingExercise = null,
-	isWarmupMode = false
+	isWarmupMode = false,
+	selectedSessionId,
+	selectedSessionType = 'main'
 }) => {
 	const [selected, setSelected] = useState<StretchingExercise | null>(null);
 	const [view, setView] = useState<'list' | 'logging'>('list');
@@ -82,6 +87,8 @@ const StretchingActivityPicker: React.FC<StretchingActivityPickerProps> = ({
 							sets: sets,
 							activityType: ActivityType.STRETCHING,
 							isWarmup: isWarmupMode,
+							sessionId: editingExercise?.sessionId || selectedSessionId || undefined,
+							sessionType: editingExercise?.sessionType || selectedSessionType,
 							prescription: exercise.prescription,
 							instructionMode: exercise.instructionMode,
 							instructions: Array.isArray(exercise.instructions)

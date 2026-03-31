@@ -29,6 +29,24 @@ export class AnalyticsService {
     return exercises.filter((exercise) => !exercise.isWarmup);
   }
 
+  private static countWorkouts(exercises: UnifiedExerciseData[]): number {
+    if (exercises.length === 0) return 0;
+
+    const sessionIdSet = new Set(
+      exercises
+        .map((exercise) => exercise.sessionId)
+        .filter((sessionId): sessionId is string => Boolean(sessionId))
+    );
+
+    const legacyDateSet = new Set(
+      exercises
+        .filter((exercise) => !exercise.sessionId)
+        .map((exercise) => exercise.timestamp.toISOString().split('T')[0])
+    );
+
+    return sessionIdSet.size + legacyDateSet.size;
+  }
+
   /**
    * Fetch exercises within a date range with optional filters
    * @param userId - User ID
@@ -380,9 +398,7 @@ export class AnalyticsService {
       0
     );
     
-    const workoutDays = new Set(
-      filteredExercises.map(ex => ex.timestamp.toISOString().split('T')[0])
-    ).size;
+    const workoutCount = this.countWorkouts(filteredExercises);
     
     const totalSets = filteredExercises.reduce(
       (sum, ex) => sum + (ex.sets?.length || 0),
@@ -391,11 +407,11 @@ export class AnalyticsService {
     
     const uniqueExercises = new Set(filteredExercises.map(ex => ex.exerciseName)).size;
     
-    const averageVolumePerWorkout = workoutDays > 0 ? totalVolume / workoutDays : 0;
+    const averageVolumePerWorkout = workoutCount > 0 ? totalVolume / workoutCount : 0;
     
     const daysDiff = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
     const weeks = daysDiff / 7;
-    const averageWorkoutsPerWeek = weeks > 0 ? workoutDays / weeks : 0;
+    const averageWorkoutsPerWeek = weeks > 0 ? workoutCount / weeks : 0;
     
     // Get recent PRs (last 7 days)
     const sevenDaysAgo = new Date();
@@ -417,7 +433,7 @@ export class AnalyticsService {
     
     return {
       totalVolume: Math.round(totalVolume),
-      totalWorkouts: workoutDays,
+      totalWorkouts: workoutCount,
       totalSets,
       totalExercises: uniqueExercises,
       averageVolumePerWorkout: Math.round(averageVolumePerWorkout),
@@ -577,18 +593,14 @@ export class AnalyticsService {
       (sum, ex) => sum + this.calculateExerciseVolume(ex),
       0
     );
-    const currentWorkouts = new Set(
-      filteredCurrentExercises.map(ex => ex.timestamp.toISOString().split('T')[0])
-    ).size;
+    const currentWorkouts = this.countWorkouts(filteredCurrentExercises);
     const currentExerciseCount = new Set(filteredCurrentExercises.map(ex => ex.exerciseName)).size;
     
     const previousVolume = filteredPreviousExercises.reduce(
       (sum, ex) => sum + this.calculateExerciseVolume(ex),
       0
     );
-    const previousWorkouts = new Set(
-      filteredPreviousExercises.map(ex => ex.timestamp.toISOString().split('T')[0])
-    ).size;
+    const previousWorkouts = this.countWorkouts(filteredPreviousExercises);
     const previousExerciseCount = new Set(filteredPreviousExercises.map(ex => ex.exerciseName)).size;
     
     const volumeChange = previousVolume > 0 

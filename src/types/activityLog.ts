@@ -1,5 +1,6 @@
 import { ExerciseSet } from './sets';
 import { ActivityType as CanonicalActivityType } from './activityTypes';
+import { SessionType } from './sessionType';
 
 // Transitional support for legacy values stored in older documents
 export type LegacyActivityType = 'team_sports' | 'outdoor' | 'flexibility' | 'speed_agility';
@@ -35,6 +36,18 @@ export interface ActivityLog {
   supersetName?: string;
   /** Additional notes */
   notes?: string;
+  /** Normalized training session identifier */
+  sessionId?: string;
+  /** Session mode for this log entry */
+  sessionType?: SessionType;
+  /** Local calendar date key (yyyy-mm-dd) for session grouping */
+  sessionDateKey?: string;
+  /** ISO week key (yyyy-Www) for weekly session numbering */
+  sessionWeekKey?: string;
+  /** 1-based session number within the day */
+  sessionNumberInDay?: number;
+  /** 1-based session number within the ISO week */
+  sessionNumberInWeek?: number;
 }
 
 // Input type for creating activity logs
@@ -48,6 +61,13 @@ export type ActivityLogInput = {
   supersetName?: string;
   categories?: string[];
   notes?: string;
+  sessionId?: string;
+  sessionType?: SessionType;
+  sessionDateKey?: string;
+  sessionWeekKey?: string;
+  sessionNumberInDay?: number;
+  sessionNumberInWeek?: number;
+  startNewSession?: boolean;
 };
 
 export const normalizeActivityType = (

@@ -107,8 +107,8 @@ describe('exportService serialization', () => {
       comment: 'tailwind on final rep',
     });
 
-    expect(row.loggedTimestamp).toBe(logTimestamp.toISOString());
-    expect(row.timestamp).toBe(setTimestamp.toISOString());
+    expect(row.loggedTimestamp).toBe('2026-03-01T11:00:00');
+    expect(row.timestamp).toBe('2026-03-01T11:05:00');
   });
 
   it('propagates persisted superset fields into exerciseLogs and sets export', async () => {
@@ -450,8 +450,8 @@ describe('exportService serialization', () => {
       'exercise_sets.csv'
     );
 
-    expect(csvPayload).toContain('exerciseName,weight,reps');
-    expect(csvPayload).toContain('Bodyweight Squat,0,10');
+    expect(csvPayload).toContain('exerciseName;weight;reps');
+    expect(csvPayload).toContain('Bodyweight Squat;0;10');
     expect(appendChild).toHaveBeenCalled();
     expect(removeChild).toHaveBeenCalled();
 

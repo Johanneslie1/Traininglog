@@ -11,6 +11,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/services/firebase/config';
 import toast from 'react-hot-toast';
+import { SessionType } from '@/types/sessionType';
 
 interface SpeedAgilityActivityPickerProps {
   onClose: () => void;
@@ -19,6 +20,8 @@ interface SpeedAgilityActivityPickerProps {
   selectedDate?: Date;
   editingExercise?: UnifiedExerciseData | null;
   isWarmupMode?: boolean;
+  selectedSessionId?: string | null;
+  selectedSessionType?: SessionType;
 }
 
 const SpeedAgilityActivityPicker: React.FC<SpeedAgilityActivityPickerProps> = ({
@@ -27,7 +30,9 @@ const SpeedAgilityActivityPicker: React.FC<SpeedAgilityActivityPickerProps> = ({
   onActivityLogged,
   selectedDate = new Date(),
   editingExercise = null,
-  isWarmupMode = false
+  isWarmupMode = false,
+  selectedSessionId,
+  selectedSessionType = 'main'
 }) => {
   const [selectedActivity, setSelectedActivity] = useState<SpeedAgilityActivity | null>(null);
   const [view, setView] = useState<'list' | 'logging'>('list');
@@ -195,6 +200,8 @@ const SpeedAgilityActivityPicker: React.FC<SpeedAgilityActivityPickerProps> = ({
               sets: sets,
               activityType: ActivityType.SPEED_AGILITY,
               isWarmup: isWarmupMode,
+              sessionId: editingExercise?.sessionId || selectedSessionId || undefined,
+              sessionType: editingExercise?.sessionType || selectedSessionType,
               prescription: exercise.prescription,
               instructionMode: exercise.instructionMode,
               instructions: Array.isArray(exercise.instructions)

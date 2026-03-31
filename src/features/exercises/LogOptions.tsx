@@ -32,13 +32,15 @@ import { useSupersets } from '@/context/SupersetContext';
 import { SupersetGroup } from '@/types/session';
 import AppOverlay from '@/components/ui/AppOverlay';
 import { logger } from '@/utils/logger';
+import { SessionType } from '@/types/sessionType';
 
 interface LogOptionsProps {
   onClose: () => void;
   onExerciseAdded?: () => void;
   selectedDate?: Date;
   editingExercise?: UnifiedExerciseData | null; // Add editing exercise prop
-  initialWarmupMode?: boolean;
+  selectedSessionId?: string | null;
+  selectedSessionType?: SessionType;
 }
 
 type ViewState = 'main' | 'setEditor' | 'programPicker' | 'copyPrevious' | 'sport' | 'stretching' | 'endurance' | 'other' | 'speedAgility' | 'resistance' | 'editExercise' | 'selectType';
@@ -106,25 +108,31 @@ const activityTypes = [
   }
 ];
 
-export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExercise, initialWarmupMode = false }: LogOptionsProps): JSX.Element => {
+export const LogOptions = ({
+  onClose,
+  onExerciseAdded,
+  selectedDate,
+  editingExercise,
+  selectedSessionId,
+  selectedSessionType = 'main'
+}: LogOptionsProps): JSX.Element => {
   const [view, setView] = useState<ViewState>('main');
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [isWarmupMode, setIsWarmupMode] = useState(false);
   
   const user = useSelector((state: RootState) => state.auth.user);
   const { state: supersetState, addSuperset } = useSupersets();
+
+  const effectiveSessionType: SessionType = editingExercise?.sessionType || selectedSessionType;
+  const isWarmupMode = effectiveSessionType === 'warmup';
 
   // If we're editing an exercise, go directly to edit view
   useEffect(() => {
     if (editingExercise) {
       setView('editExercise');
-      setIsWarmupMode(Boolean(editingExercise.isWarmup));
       return;
     }
-
-    setIsWarmupMode(initialWarmupMode);
-  }, [editingExercise, initialWarmupMode]);
+  }, [editingExercise]);
 
   const resolveEffectiveActivityType = (exerciseLike: {
     activityType?: unknown;
@@ -242,6 +250,8 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
             sets: sets,
             activityType: resolvedActivityType,
             isWarmup: isWarmupMode || Boolean(selection.sourceIsWarmup),
+            sessionId: selectedSessionId || undefined,
+            sessionType: effectiveSessionType,
             prescription: exercise.prescription,
             instructionMode: exercise.instructionMode,
             supersetId: runtimeSupersetId,
@@ -265,6 +275,8 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
           timestamp: selectedDate || new Date(),
           activityType: resolvedActivityType,
           isWarmup: isWarmupMode || Boolean(selection.sourceIsWarmup),
+          sessionId: selectedSessionId || undefined,
+          sessionType: effectiveSessionType,
           supersetId: runtimeSupersetId,
           supersetLabel: runtimeSupersetLabel,
           supersetName: runtimeSupersetName,
@@ -343,7 +355,9 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
           userId: user.id,
           sets: exercise.sets || [],
           activityType: resolvedActivityType,
-          isWarmup: isWarmupMode || Boolean((exercise as any).isWarmup)
+          isWarmup: isWarmupMode || Boolean((exercise as any).isWarmup),
+          sessionId: selectedSessionId || undefined,
+          sessionType: effectiveSessionType,
         };
 
         logger.debug('LogOptions: Saving copied exercise', exerciseLogData);
@@ -398,6 +412,8 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
         selectedDate={selectedDate}
         editingExercise={editingExercise} // Pass editing exercise
         isWarmupMode={isWarmupMode}
+        selectedSessionId={selectedSessionId}
+        selectedSessionType={effectiveSessionType}
       />
     );
   }
@@ -414,6 +430,8 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
         selectedDate={selectedDate}
         editingExercise={editingExercise}
         isWarmupMode={isWarmupMode}
+        selectedSessionId={selectedSessionId}
+        selectedSessionType={effectiveSessionType}
       />
     );
   }
@@ -427,6 +445,8 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
         selectedDate={selectedDate}
         editingExercise={editingExercise}
         isWarmupMode={isWarmupMode}
+        selectedSessionId={selectedSessionId}
+        selectedSessionType={effectiveSessionType}
       />
     );
   }
@@ -443,6 +463,8 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
         selectedDate={selectedDate}
         editingExercise={editingExercise} // Pass editing exercise
         isWarmupMode={isWarmupMode}
+        selectedSessionId={selectedSessionId}
+        selectedSessionType={effectiveSessionType}
       />
     );
   }
@@ -458,6 +480,8 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
         }}
         selectedDate={selectedDate}
         isWarmupMode={isWarmupMode}
+        selectedSessionId={selectedSessionId}
+        selectedSessionType={effectiveSessionType}
       />
     );
   }
@@ -474,6 +498,8 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
         selectedDate={selectedDate}
         editingExercise={editingExercise}
         isWarmupMode={isWarmupMode}
+        selectedSessionId={selectedSessionId}
+        selectedSessionType={effectiveSessionType}
       />
     );
   }
@@ -524,6 +550,8 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
               sets: sets,
               activityType: selectedExercise.activityType,
               isWarmup: isWarmupMode,
+              sessionId: selectedSessionId || undefined,
+              sessionType: effectiveSessionType,
               prescription: selectedExercise.prescription,
               instructionMode: selectedExercise.instructionMode,
               instructions: typeof selectedExercise.instructions === 'string'
@@ -630,6 +658,8 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
                 sets: (sets || []) as unknown as Array<Record<string, unknown>>,
               }),
               isWarmup: isWarmupMode,
+              sessionId: editingExercise.sessionId || selectedSessionId || undefined,
+              sessionType: editingExercise.sessionType || effectiveSessionType,
               prescription: editingExercise.prescription,
               instructionMode: editingExercise.instructionMode,
               instructions: normalizedInstructions || undefined,
@@ -703,17 +733,12 @@ export const LogOptions = ({ onClose, onExerciseAdded, selectedDate, editingExer
                 />
               ))}
             </div>
-            <button
-              onClick={() => setIsWarmupMode((current) => !current)}
-              className={`w-full px-4 py-3 rounded-xl border transition-colors text-left ${
-                isWarmupMode
-                  ? 'bg-blue-600/20 border-blue-500 text-blue-200'
-                  : 'bg-white/10 border-border text-text-primary hover:bg-white/15'
-              }`}
-            >
-              <div className="font-semibold">{isWarmupMode ? '🔥 Warm-up mode enabled' : 'Warm-up mode disabled'}</div>
-              <div className="text-sm opacity-80">Logs from this dialog will be saved as warm-up entries.</div>
-            </button>
+            <div className="w-full px-4 py-3 rounded-xl border bg-white/10 border-border text-text-primary">
+              <div className="font-semibold">
+                Saving to {effectiveSessionType === 'warmup' ? 'Warm-up session' : 'Session'}
+              </div>
+              <div className="text-sm opacity-80">Session type follows the selected item in the session switcher.</div>
+            </div>
           </section>
 
           {/* Activity Types Section */}

@@ -12,6 +12,7 @@ import { RootState } from '@/store/store';
 import { ExerciseSet } from '@/types/sets';
 import toast from 'react-hot-toast';
 import { logger } from '@/utils/logger';
+import { SessionType } from '@/types/sessionType';
 
 interface ResistanceTrainingPickerProps {
   onClose: () => void;
@@ -20,6 +21,8 @@ interface ResistanceTrainingPickerProps {
   selectedDate?: Date;
   editingExercise?: UnifiedExerciseData | null;
   isWarmupMode?: boolean;
+  selectedSessionId?: string | null;
+  selectedSessionType?: SessionType;
 }
 
 const muscleGroups: Category[] = [
@@ -40,7 +43,9 @@ const ResistanceTrainingPicker: React.FC<ResistanceTrainingPickerProps> = ({
   onActivityLogged,
   selectedDate = new Date(),
   editingExercise = null,
-  isWarmupMode = false
+  isWarmupMode = false,
+  selectedSessionId,
+  selectedSessionType = 'main'
 }) => {
   const [view, setView] = useState<ViewState>('main');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
@@ -94,7 +99,9 @@ const ResistanceTrainingPicker: React.FC<ResistanceTrainingPickerProps> = ({
             userId: user.id,
             sets: sets,
             activityType: ActivityType.RESISTANCE,
-            isWarmup: isWarmupMode
+            isWarmup: isWarmupMode,
+            sessionId: selectedSessionId || undefined,
+            sessionType: selectedSessionType
           },
           selectedDate || new Date()
         );
@@ -165,6 +172,8 @@ const ResistanceTrainingPicker: React.FC<ResistanceTrainingPickerProps> = ({
               sets: sets,
               activityType: ActivityType.RESISTANCE,
               isWarmup: isWarmupMode,
+              sessionId: editingExercise?.sessionId || selectedSessionId || undefined,
+              sessionType: editingExercise?.sessionType || selectedSessionType,
               prescription: selectedExercise.prescription,
               instructionMode: selectedExercise.instructionMode,
               instructions: Array.isArray(selectedExercise.instructions)

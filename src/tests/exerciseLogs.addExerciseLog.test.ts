@@ -34,6 +34,7 @@ jest.mock('firebase/firestore', () => ({
   orderBy: jest.fn(),
   Timestamp: {
     fromDate: jest.fn((value: Date) => value),
+    now: jest.fn(() => new Date('2026-03-09T00:00:00.000Z')),
   },
   getDoc: getDocMock,
   setDoc: setDocMock,
@@ -49,6 +50,17 @@ jest.mock('@/services/firebase/config', () => ({
 
 jest.mock('@/services/firebase/activityLogs', () => ({
   addActivityLog: addActivityLogMock,
+}));
+
+jest.mock('@/services/firebase/sessionTrackingService', () => ({
+  ensureSessionContextForLog: jest.fn(async () => ({
+    sessionId: 'session-1',
+    sessionType: 'main',
+    sessionDateKey: '2026-03-09',
+    sessionWeekKey: '2026-W11',
+    sessionNumberInDay: 1,
+    sessionNumberInWeek: 1,
+  })),
 }));
 
 import { addExerciseLog } from '@/services/firebase/exerciseLogs';
