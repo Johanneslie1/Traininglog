@@ -65,7 +65,6 @@ const LEGACY_SET_KEYS = [
   'durationSec',
   'distanceMeters',
   'rpe',
-  'rir',
   'restTime',
   'restTimeSec',
   'comment',

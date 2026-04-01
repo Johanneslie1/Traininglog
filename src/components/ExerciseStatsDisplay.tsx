@@ -48,11 +48,6 @@ const ExerciseStatsDisplay: React.FC<ExerciseStatsDisplayProps> = ({
                 {stats.maxWeight} kg max
               </span>
             )}
-            {stats.averageRIR !== undefined && (
-              <span className="text-text-secondary">
-                RIR {stats.averageRIR.toFixed(1)}
-              </span>
-            )}
           </div>
         );
 
@@ -210,9 +205,6 @@ const ExerciseStatsDisplay: React.FC<ExerciseStatsDisplayProps> = ({
       case 'strength':
         if (set.weight && set.reps) {
           details.push(<span key="weight-reps">{set.weight}kg × {set.reps}</span>);
-        }
-        if (set.rir !== undefined) {
-          details.push(<span key="rir" className="text-text-secondary">RIR {set.rir}</span>);
         }
         break;      case 'plyometrics':
         if (set.reps) {

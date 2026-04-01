@@ -37,9 +37,6 @@ export const validateExerciseSet = (set: Partial<ExerciseSet>, exerciseType: Exe
       if (set.reps !== undefined && set.reps < 1) {
         errors.push('Reps must be at least 1');
       }
-      if (set.rir !== undefined && (set.rir < 0 || set.rir > 10)) {
-        errors.push('RIR must be between 0 and 10');
-      }
       break;
       
     case 'plyometrics':
@@ -150,9 +147,6 @@ export const getDefaultSetForType = (exerciseType: ExerciseType): Partial<Exerci
         break;
       case 'weight':
         defaultSet.weight = 0;
-        break;
-      case 'rir':
-        defaultSet.rir = 0;
         break;
       case 'rpe':
         defaultSet.rpe = 0;

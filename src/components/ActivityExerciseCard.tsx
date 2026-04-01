@@ -267,7 +267,6 @@ const ActivityExerciseCard: React.FC<ActivityExerciseCardProps> = ({
         return (
           <div className="flex items-center gap-2 text-sm">
             <span className="text-text-primary font-medium">{set.weight}kg × {set.reps}</span>
-            {set.rir !== undefined && <span className="text-text-secondary">RIR {set.rir}</span>}
             {set.rpe !== undefined && <span className="text-text-secondary">RPE {set.rpe}</span>}
           </div>
         );

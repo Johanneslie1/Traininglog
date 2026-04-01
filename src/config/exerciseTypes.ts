@@ -17,7 +17,7 @@ export const EXERCISE_TYPE_CONFIGS: Record<ExerciseType, ExerciseTypeConfig> = {
   strength: {
     type: 'strength',
     requiredStats: ['reps'],
-    optionalStats: ['weight', 'rir', 'restTime', 'notes'],
+    optionalStats: ['weight', 'restTime', 'notes'],
     displayName: 'Strength',
     description: 'Weight training and resistance exercises',
     categories: ['Compound', 'Isolation', 'Olympic', 'Power'],
@@ -277,12 +277,3 @@ export const RPE_SCALE = {
   10: { label: 'Maximum', description: 'Cannot continue' }
 };
 
-// RIR Scale (Reps in Reserve)
-export const RIR_SCALE = {
-  0: { label: 'RIR 0', description: 'Could not do any more reps' },
-  1: { label: 'RIR 1', description: 'Could do 1 more rep' },
-  2: { label: 'RIR 2', description: 'Could do 2 more reps' },
-  3: { label: 'RIR 3', description: 'Could do 3 more reps' },
-  4: { label: 'RIR 4', description: 'Could do 4 more reps' },
-  5: { label: 'RIR 5+', description: 'Could do 5+ more reps' }
-};

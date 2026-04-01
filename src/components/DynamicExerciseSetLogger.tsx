@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ExerciseSet } from '../types/sets';
 import { Exercise } from '../types/exercise';
-import { ExerciseType, getExerciseTypeConfig, STRETCH_TYPES, RPE_SCALE, RIR_SCALE, HR_ZONES } from '../config/exerciseTypes';
+import { ExerciseType, getExerciseTypeConfig, STRETCH_TYPES, RPE_SCALE, HR_ZONES } from '../config/exerciseTypes';
 import { validateExerciseSet, getDefaultSetForType, formatValidationErrors } from '../utils/exerciseValidation';
 import { useSettings } from '@/context/SettingsContext';
 
@@ -27,7 +27,6 @@ const DynamicExerciseSetLogger: React.FC<DynamicExerciseSetLoggerProps> = ({
   const [sets, setSets] = useState<ExerciseSet[]>([]);
   const [validationErrors, setValidationErrors] = useState<Record<number, string>>({});
   const [showRPEHelper, setShowRPEHelper] = useState(false);
-  const [showRIRHelper, setShowRIRHelper] = useState(false);
 
   console.log('🎯 DynamicExerciseSetLogger: Initialized for exercise:', exercise.name, {
     exerciseType,
@@ -153,30 +152,7 @@ const DynamicExerciseSetLogger: React.FC<DynamicExerciseSetLoggerProps> = ({
       case 'strength':
         fields.push(renderField(setIndex, 'reps', 'Reps'));
         fields.push(renderField(setIndex, 'weight', 'Weight (kg)'));
-        fields.push(
-          <div key="rir" className="space-y-1">
-            <label className="block text-sm font-medium text-gray-300">
-              RIR (Reps in Reserve) <span className="text-red-400">*</span>
-              <button
-                type="button"
-                onClick={() => setShowRIRHelper(!showRIRHelper)}
-                className="ml-1 text-blue-400 hover:text-blue-300"
-              >
-                ?
-              </button>
-            </label>
-            <select
-              value={sets[setIndex].rir || ''}
-              onChange={(e) => updateSet(setIndex, 'rir', parseInt(e.target.value))}
-              className="w-full px-3 py-2 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:outline-none focus:border-accent-primary"
-            >
-              <option value="">Select RIR</option>
-              {Object.entries(RIR_SCALE).map(([value, { label }]) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
-          </div>
-        );
+        fields.push(renderField(setIndex, 'rpe', 'RPE (Rate of Perceived Exertion)'));
         fields.push(renderField(setIndex, 'restTime', 'Rest Time (seconds)'));
         break;
 
@@ -320,28 +296,6 @@ const DynamicExerciseSetLogger: React.FC<DynamicExerciseSetLoggerProps> = ({
             </div>
             <button
               onClick={() => setShowRPEHelper(false)}
-              className="mt-4 px-4 py-2 bg-accent-primary text-text-primary rounded-lg hover:bg-accent-secondary transition-colors"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
-
-      {showRIRHelper && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowRIRHelper(false)}>
-          <div className="bg-bg-tertiary rounded-lg p-6 max-w-md w-full mx-4" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-medium text-text-primary mb-4">RIR Scale (Reps in Reserve)</h3>
-            <div className="space-y-2">
-              {Object.entries(RIR_SCALE).map(([value, { label, description }]) => (
-                <div key={value} className="flex justify-between text-sm">
-                  <span className="text-text-primary">{label}</span>
-                  <span className="text-gray-400">{description}</span>
-                </div>
-              ))}
-            </div>
-            <button
-              onClick={() => setShowRIRHelper(false)}
               className="mt-4 px-4 py-2 bg-accent-primary text-text-primary rounded-lg hover:bg-accent-secondary transition-colors"
             >
               Close

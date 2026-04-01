@@ -75,13 +75,6 @@ export const InlineSetRow: React.FC<InlineSetRowProps> = ({
           </div>
         );
         
-        if (set.rir !== undefined) {
-          fields.push(
-            <span key="rir" className="text-gray-400 text-sm">
-              RIR: {set.rir}
-            </span>
-          );
-        }
         break;
 
       case 'endurance':

@@ -51,22 +51,10 @@ const RPE_SCALE = {
   10: { label: 'Maximum', description: 'Maximum exertion' }
 } as const;
 
-// RIR Scale for reference
-const RIR_SCALE = {
-  0: 'No reps left',
-  1: '1 rep left',
-  2: '2 reps left',
-  3: '3 reps left',
-  4: '4 reps left',
-  5: '5+ reps left'
-} as const;
-
 const RPE_TOOLTIPS: Record<number, string> = {
   1: 'Very Easy', 2: 'Easy', 3: 'Light', 4: 'Moderate-', 5: 'Moderate',
   6: 'Moderate+', 7: 'Hard', 8: 'Very Hard', 9: 'Extremely Hard', 10: 'Maximum',
 };
-
-const RIR_TOOLTIPS: Record<number, string> = { ...RIR_SCALE };
 
 // Determine exercise type from exercise data
 const getExerciseType = (exercise: Exercise): string => {
@@ -102,8 +90,7 @@ const getDefaultSet = (exerciseType: string): ExerciseSet => {
       return {
         ...baseSet,
         weight: 0,
-        reps: 5,
-        rir: 0
+        reps: 5
       };
 
     case 'endurance':
@@ -653,23 +640,15 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
           </div>
         );
         fields.push(
-          <div key="rpe-rir" className="grid grid-cols-2 gap-3">
-            <SegmentedPicker
-              label="RPE"
-              value={sets[setIndex]?.rpe}
-              options={[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
-              onChange={(v) => updateSet(setIndex, 'rpe', v)}
-              tooltips={RPE_TOOLTIPS}
-              colorScheme="orange"
-            />
-            <SegmentedPicker
-              label="RIR"
-              value={sets[setIndex]?.rir}
-              options={[0, 1, 2, 3, 4, 5]}
-              onChange={(v) => updateSet(setIndex, 'rir', v)}
-              tooltips={RIR_TOOLTIPS}
-            />
-          </div>
+          <SegmentedPicker
+            key="rpe"
+            label="RPE"
+            value={sets[setIndex]?.rpe}
+            options={[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
+            onChange={(v) => updateSet(setIndex, 'rpe', v)}
+            tooltips={RPE_TOOLTIPS}
+            colorScheme="orange"
+          />
         );
         break;
 

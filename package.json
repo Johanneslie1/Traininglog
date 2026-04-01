@@ -23,6 +23,8 @@
     "migrate:nonresistance:apply:delete-source": "tsx scripts/migrateNonResistanceExerciseLogsToActivities.ts --apply --delete-source",
     "migrate:global-exercises:dry": "tsx scripts/migrateGlobalExercises.ts",
     "migrate:global-exercises:apply": "tsx scripts/migrateGlobalExercises.ts --apply",
+    "migrate:rir-rpe:dry": "tsx scripts/migrateRirToRpe.ts",
+    "migrate:rir-rpe:apply": "tsx scripts/migrateRirToRpe.ts --apply",
     "fix-exercises": "node scripts/fixExerciseTypes.js",
     "coach-access:rebuild:dry": "tsx scripts/rebuildCoachAthleteAccess.ts --dry-run",
     "coach-access:rebuild": "tsx scripts/rebuildCoachAthleteAccess.ts --apply",

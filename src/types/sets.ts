@@ -47,7 +47,6 @@ export interface ExerciseSet {
   // General metadata
   comment?: string;
   notes?: string;
-  rir?: number; // Reps in Reserve
   restTime?: number; // seconds
   
   // Timestamps (optional, can be on parent log)

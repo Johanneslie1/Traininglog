@@ -45,7 +45,6 @@ export const SET_EXPORT_HEADERS = [
   'durationSec',
   'distanceMeters',
   'rpe',
-  'rir',
   'restTime',
   'restTimeSec',
   'isWarmup',
@@ -249,7 +248,6 @@ export const serializeSetForExport = (
     durationSec: normalizedDurationSec,
     distanceMeters: normalizedDistanceMeters,
     rpe: set.rpe ?? 0,
-    rir: set.rir ?? 0,
     restTime: set.restTime ?? 0,
     restTimeSec: set.restTime ?? 0,
     isWarmup:
@@ -698,7 +696,7 @@ export const downloadActivityCSVs = async (userId: string, options: ExportOption
     // Export Resistance Training Sets
     if (setsByActivityType.resistance.length > 0) {
       const resistanceSets = setsByActivityType.resistance;
-      const headers = ['loggedDate', 'exerciseName', 'supersetId', 'supersetLabel', 'supersetName', 'setNumber', 'weight', 'reps', 'rpe', 'rir', 'setVolume', 'isWarmup', 'restTimeSec', 'comment'];
+      const headers = ['loggedDate', 'exerciseName', 'supersetId', 'supersetLabel', 'supersetName', 'setNumber', 'weight', 'reps', 'rpe', 'setVolume', 'isWarmup', 'restTimeSec', 'comment'];
       
       // Calculate summary
       const totalVolume = resistanceSets.reduce((sum, set) => sum + (set.setVolume || 0), 0);
@@ -716,7 +714,6 @@ export const downloadActivityCSVs = async (userId: string, options: ExportOption
         weight: `Max: ${maxWeight}`,
         reps: '',
         rpe: avgRPE > 0 ? `Avg: ${avgRPE.toFixed(1)}` : '',
-        rir: '',
         setVolume: `Total: ${totalVolume}`,
         isWarmup: '',
         restTimeSec: '',

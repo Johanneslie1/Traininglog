@@ -50,7 +50,6 @@ export interface FactGymSetRow {
   reps: number | '';
   weight: number | '';
   rpe: number | '';
-  rir: number | '';
   rest_sec: number | '';
   is_warmup: boolean;
   tonnage: number | '';      // reps * weight, empty if either is missing

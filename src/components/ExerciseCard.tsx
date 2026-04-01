@@ -392,7 +392,6 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
                 exercise.sets.forEach((set: any) => {
                   // Intensity metrics
                   if (hasValue(set.rpe)) performanceFields.push({ label: 'RPE', value: `${set.rpe}/10` });
-                  if (hasValue(set.rir)) performanceFields.push({ label: 'RIR', value: `${set.rir} reps left` });
                   if (hasValue(set.intensity)) performanceFields.push({ label: 'Intensity', value: `${set.intensity}/10` });
                   if (hasValue(set.performance)) performanceFields.push({ label: 'Performance', value: `${set.performance}/10` });
                   

@@ -25,7 +25,7 @@ export const TRAINING_TYPE_CONFIG: Record<TrainingType, TrainingTypeDefinition> 
       trackDuration: false,
       trackDistance: false
     },
-    setFields: ['weight', 'reps', 'rpe', 'rir', 'difficulty', 'restTime', 'comment'],
+    setFields: ['weight', 'reps', 'rpe', 'difficulty', 'restTime', 'comment'],
     summaryMetric: 'volume'
   },
 

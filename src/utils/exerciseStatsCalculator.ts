@@ -8,7 +8,6 @@ export interface ExerciseStats {
   totalDistance?: number; // For endurance exercises
   totalDuration?: number; // For time-based exercises
   averageRPE?: number;
-  averageRIR?: number;
   maxWeight?: number;
   maxReps?: number;
   totalHRZoneTime?: {
@@ -45,14 +44,9 @@ export const calculateExerciseSessionStats = (sets: ExerciseSet[], exerciseType:
   
   // Calculate basic stats
   const rpeValues = sets.filter(set => set.rpe !== undefined).map(set => set.rpe!);
-  const rirValues = sets.filter(set => set.rir !== undefined).map(set => set.rir!);
   
   if (rpeValues.length > 0) {
     stats.averageRPE = rpeValues.reduce((sum, rpe) => sum + rpe, 0) / rpeValues.length;
-  }
-  
-  if (rirValues.length > 0) {
-    stats.averageRIR = rirValues.reduce((sum, rir) => sum + rir, 0) / rirValues.length;
   }
   
   // Type-specific calculations
@@ -187,7 +181,7 @@ export const calculateAggregateStats = (exerciseLogs: ExerciseLog[]): Map<string
         maxReps: Math.max(existingStats.maxReps || 0, sessionStats.maxReps || 0)
       };
       
-      // Average RPE and RIR (weighted by number of sets)
+      // Average RPE (weighted by number of sets)
       if (existingStats.averageRPE && sessionStats.averageRPE) {
         const totalSets = existingStats.totalSets + sessionStats.totalSets;
         aggregated.averageRPE = (
@@ -196,16 +190,6 @@ export const calculateAggregateStats = (exerciseLogs: ExerciseLog[]): Map<string
         ) / totalSets;
       } else {
         aggregated.averageRPE = existingStats.averageRPE || sessionStats.averageRPE;
-      }
-      
-      if (existingStats.averageRIR && sessionStats.averageRIR) {
-        const totalSets = existingStats.totalSets + sessionStats.totalSets;
-        aggregated.averageRIR = (
-          (existingStats.averageRIR * existingStats.totalSets) +
-          (sessionStats.averageRIR * sessionStats.totalSets)
-        ) / totalSets;
-      } else {
-        aggregated.averageRIR = existingStats.averageRIR || sessionStats.averageRIR;
       }
       
       // Aggregate HR zone time
@@ -243,9 +227,6 @@ export const formatStatsForDisplay = (stats: ExerciseStats, exerciseType: Exerci
       }
       if (stats.maxWeight) {
         formatted['Max Weight'] = `${stats.maxWeight} kg`;
-      }
-      if (stats.averageRIR !== undefined) {
-        formatted['Average RIR'] = stats.averageRIR.toFixed(1);
       }
       if (stats.strengthMetrics?.oneRepMax) {
         formatted['Est. 1RM'] = `${stats.strengthMetrics.oneRepMax.toFixed(1)} kg`;

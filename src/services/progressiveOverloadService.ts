@@ -27,17 +27,6 @@ const calculateAverageRPE = (sets: ExerciseSet[]): number => {
 };
 
 /**
- * Calculate average RIR (Reps in Reserve) from exercise sets
- */
-const calculateAverageRIR = (sets: ExerciseSet[]): number => {
-  const setsWithRIR = sets.filter(s => s.rir !== undefined && s.rir >= 0);
-  if (setsWithRIR.length === 0) return 2; // Default moderate RIR
-  
-  const totalRIR = setsWithRIR.reduce((sum, set) => sum + (set.rir || 0), 0);
-  return totalRIR / setsWithRIR.length;
-};
-
-/**
  * Get the average reps from the last session
  */
 const getAverageReps = (sets: ExerciseSet[]): number => {
@@ -51,7 +40,7 @@ const getAverageReps = (sets: ExerciseSet[]): number => {
  * Main function to calculate progressive overload suggestions
  * 
  * Algorithm considers:
- * - Previous session's RPE/RIR (intensity markers)
+ * - Previous session's RPE (intensity marker)
  * - Days since last session (recovery time)
  * - Volume trends
  * - Conservative approach for safety
@@ -72,7 +61,6 @@ export function calculateProgressiveSuggestions(
 
   // Calculate metrics from last session
   const avgRPE = calculateAverageRPE(lastSets);
-  const avgRIR = calculateAverageRIR(lastSets);
   const lastReps = getAverageReps(lastSets);
   
   // Determine progression strategy based on intensity and recovery
@@ -137,9 +125,9 @@ export function calculateProgressiveSuggestions(
     }
   }
   
-  // Strategy 5: Low intensity (RPE < 6) or high RIR (>= 4)
+  // Strategy 5: Low intensity (RPE < 6)
   // Action: Significant increase possible
-  else if (avgRPE < 6 || avgRIR >= 4) {
+  else if (avgRPE < 6) {
     if (daysSinceLastSession >= 3) {
       weightIncrease = 5;
       repsIncrease = 1;
@@ -186,7 +174,6 @@ export function calculateProgressiveSuggestions(
       weight: newWeight,
       reps: newReps,
       rpe: setRPE,
-      rir: set.rir, // Copy RIR if it exists
       difficulty: set.difficulty,
       restTime: set.restTime,
       notes: '', // Clear notes for new session

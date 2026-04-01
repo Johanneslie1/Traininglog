@@ -383,7 +383,6 @@ export const applyTemplate = (
       reps: typeof templateSet.reps === 'number' ? templateSet.reps : 0,
       restTime: templateSet.rest,
       rpe: templateSet.rpe,
-      rir: templateSet.rir,
       duration: templateSet.duration,
       notes: templateSet.notes || '',
       comment: templateSet.notes || ''

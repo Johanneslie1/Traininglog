@@ -25,7 +25,6 @@ export const testUTCFix = async (userId: string) => {
         weight: 100,
         reps: 10,
         difficulty: 'MODERATE' as any,
-        rir: 2,
         rpe: 7
       }],
       exerciseType: 'strength' as const,
@@ -34,7 +33,6 @@ export const testUTCFix = async (userId: string) => {
     
     const strengthResult = await saveLog(strengthExercise, testDate);
     console.log('✅ Strength exercise saved:', strengthResult);
-    
     // Test 2: Save an endurance activity
     console.log('\n🏃 Test 2: Saving endurance activity...');
     const enduranceActivity = {

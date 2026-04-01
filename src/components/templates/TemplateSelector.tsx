@@ -272,12 +272,6 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                               <span className="text-text-primary font-medium">{set.rpe}</span>
                             </div>
                           )}
-                          {set.rir !== undefined && (
-                            <div>
-                              <span className="text-text-secondary">RIR: </span>
-                              <span className="text-text-primary font-medium">{set.rir}</span>
-                            </div>
-                          )}
                           {set.duration && (
                             <div>
                               <span className="text-text-secondary">Duration: </span>

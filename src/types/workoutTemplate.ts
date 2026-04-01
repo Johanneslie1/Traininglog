@@ -22,7 +22,6 @@ export interface TemplateSet {
   weightPercent?: number; // Percentage of 1RM or previous max (e.g., 85 = 85%)
   rest?: number; // Rest time in seconds
   rpe?: number; // Target RPE (Rate of Perceived Exertion)
-  rir?: number; // Target RIR (Reps in Reserve)
   duration?: number; // For timed sets (in seconds)
   notes?: string; // Additional instructions for this set
 }
