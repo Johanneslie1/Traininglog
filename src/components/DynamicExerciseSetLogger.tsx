@@ -144,6 +144,63 @@ const DynamicExerciseSetLogger: React.FC<DynamicExerciseSetLoggerProps> = ({
     );
   };
 
+  const renderRPEField = (setIndex: number) => {
+    const currentRpe = sets[setIndex].rpe;
+    const selectedRpe = typeof currentRpe === 'number' ? currentRpe : 5;
+    const scaleEntry = RPE_SCALE[selectedRpe as keyof typeof RPE_SCALE];
+    const isRequired = config.requiredStats.includes('rpe');
+
+    return (
+      <div key="rpe" className="space-y-2 md:col-span-2 lg:col-span-3">
+        <div className="flex items-center justify-between">
+          <label className="block text-sm font-medium text-gray-300">
+            RPE (Rate of Perceived Exertion) {isRequired && <span className="text-red-400">*</span>}
+            <button
+              type="button"
+              onClick={() => setShowRPEHelper(!showRPEHelper)}
+              className="ml-1 text-blue-400 hover:text-blue-300"
+            >
+              ?
+            </button>
+          </label>
+          {!isRequired && currentRpe !== undefined && (
+            <button
+              type="button"
+              onClick={() => updateSet(setIndex, 'rpe', undefined)}
+              className="text-xs text-gray-400 hover:text-gray-200 transition-colors"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+
+        <div className="rounded-lg border border-border bg-bg-tertiary px-3 py-3">
+          <input
+            type="range"
+            min={1}
+            max={10}
+            step={1}
+            value={selectedRpe}
+            onChange={(e) => updateSet(setIndex, 'rpe', parseInt(e.target.value, 10))}
+            className="w-full accent-accent-primary"
+            aria-label="RPE slider"
+          />
+          <div className="mt-2 flex items-center justify-between text-xs text-gray-400">
+            <span>1 Very Light</span>
+            <span>10 Maximum</span>
+          </div>
+          <div className="mt-2 text-sm text-text-primary">
+            {currentRpe === undefined ? (
+              <span className="text-gray-400">Not set. Move the slider to log RPE.</span>
+            ) : (
+              <span>{currentRpe} - {scaleEntry?.label ?? 'Unknown effort level'}</span>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderSetFields = (setIndex: number) => {
     const fields: JSX.Element[] = [];
 
@@ -152,37 +209,14 @@ const DynamicExerciseSetLogger: React.FC<DynamicExerciseSetLoggerProps> = ({
       case 'strength':
         fields.push(renderField(setIndex, 'reps', 'Reps'));
         fields.push(renderField(setIndex, 'weight', 'Weight (kg)'));
-        fields.push(renderField(setIndex, 'rpe', 'RPE (Rate of Perceived Exertion)'));
+        fields.push(renderRPEField(setIndex));
         fields.push(renderField(setIndex, 'restTime', 'Rest Time (seconds)'));
         break;
 
       case 'plyometrics':
         fields.push(renderField(setIndex, 'reps', 'Reps'));
         fields.push(renderField(setIndex, 'height', 'Height/Distance (cm)'));
-        fields.push(
-          <div key="rpe" className="space-y-1">
-            <label className="block text-sm font-medium text-gray-300">
-              RPE (Rate of Perceived Exertion) <span className="text-red-400">*</span>
-              <button
-                type="button"
-                onClick={() => setShowRPEHelper(!showRPEHelper)}
-                className="ml-1 text-blue-400 hover:text-blue-300"
-              >
-                ?
-              </button>
-            </label>
-            <select
-              value={sets[setIndex].rpe || ''}
-              onChange={(e) => updateSet(setIndex, 'rpe', parseInt(e.target.value))}
-              className="w-full px-3 py-2 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:outline-none focus:border-accent-primary"
-            >
-              <option value="">Select RPE</option>
-              {Object.entries(RPE_SCALE).map(([value, { label }]) => (
-                <option key={value} value={value}>{value} - {label}</option>
-              ))}
-            </select>
-          </div>
-        );
+        fields.push(renderRPEField(setIndex));
         fields.push(renderField(setIndex, 'restTime', 'Rest Time (seconds)'));
         break;
 
@@ -191,30 +225,7 @@ const DynamicExerciseSetLogger: React.FC<DynamicExerciseSetLoggerProps> = ({
       case 'other':
         fields.push(renderField(setIndex, 'duration', 'Duration (minutes)'));
         fields.push(renderField(setIndex, 'distance', 'Distance (km)'));
-        fields.push(
-          <div key="rpe" className="space-y-1">
-            <label className="block text-sm font-medium text-gray-300">
-              RPE (Rate of Perceived Exertion) <span className="text-red-400">*</span>
-              <button
-                type="button"
-                onClick={() => setShowRPEHelper(!showRPEHelper)}
-                className="ml-1 text-blue-400 hover:text-blue-300"
-              >
-                ?
-              </button>
-            </label>
-            <select
-              value={sets[setIndex].rpe || ''}
-              onChange={(e) => updateSet(setIndex, 'rpe', parseInt(e.target.value))}
-              className="w-full px-3 py-2 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:outline-none focus:border-accent-primary"
-            >
-              <option value="">Select RPE</option>
-              {Object.entries(RPE_SCALE).map(([value, { label }]) => (
-                <option key={value} value={value}>{value} - {label}</option>
-              ))}
-            </select>
-          </div>
-        );
+        fields.push(renderRPEField(setIndex));
         
         // HR Zones
         fields.push(
