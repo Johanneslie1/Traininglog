@@ -8,7 +8,17 @@ jest.mock('@/services/logAggregationService', () => ({
   getAggregatedExportLogs: jest.fn(async () => []),
 }));
 
-import { exportData, getExportPreview, serializeSetForExport, downloadCSV } from '@/services/exportService';
+jest.mock('@/services/wellnessService', () => ({
+  getWellnessByDateRange: jest.fn(async () => []),
+}));
+
+import {
+  exportData,
+  getExportPreview,
+  serializeSetForExport,
+  downloadCSV,
+  downloadWellnessCSV,
+} from '@/services/exportService';
 import { ActivityType } from '@/types/activityTypes';
 
 const mockedWorkouts = jest.requireMock('@/services/firebase/workouts') as {
@@ -16,6 +26,9 @@ const mockedWorkouts = jest.requireMock('@/services/firebase/workouts') as {
 };
 const mockedLogAggregationService = jest.requireMock('@/services/logAggregationService') as {
   getAggregatedExportLogs: any;
+};
+const mockedWellnessService = jest.requireMock('@/services/wellnessService') as {
+  getWellnessByDateRange: any;
 };
 
 const localStorageMock = {
@@ -454,6 +467,84 @@ describe('exportService serialization', () => {
     expect(csvPayload).toContain('Bodyweight Squat;0;10');
     expect(appendChild).toHaveBeenCalled();
     expect(removeChild).toHaveBeenCalled();
+
+    Object.defineProperty(globalThis, 'Blob', {
+      value: originalBlob,
+      configurable: true,
+    });
+
+    Object.defineProperty(globalThis, 'URL', {
+      value: originalURL,
+      configurable: true,
+    });
+
+    if (originalDocument === undefined) {
+      delete (globalThis as { document?: unknown }).document;
+    } else {
+      Object.defineProperty(globalThis, 'document', {
+        value: originalDocument,
+        configurable: true,
+      });
+    }
+  });
+
+  it('includes userId in wellness CSV export rows', async () => {
+    mockedWellnessService.getWellnessByDateRange.mockResolvedValue([
+      {
+        date: '2026-03-10',
+        sleepQuality: 4,
+        fatigue: 2,
+        muscleSoreness: 1,
+        stress: 3,
+        mood: 5,
+        notes: 'solid recovery',
+      },
+    ]);
+
+    let csvPayload = '';
+    const originalDocument = (globalThis as { document?: unknown }).document;
+    const originalURL = globalThis.URL;
+    const originalBlob = globalThis.Blob;
+
+    const mockBlob = function(parts: BlobPart[]) {
+      csvPayload = String(parts[0] ?? '');
+      return { parts } as unknown as Blob;
+    } as unknown as typeof Blob;
+
+    Object.defineProperty(globalThis, 'Blob', {
+      value: mockBlob,
+      configurable: true,
+    });
+
+    const documentMock = {
+      createElement: jest.fn(() => ({
+        setAttribute: jest.fn(),
+        style: {},
+        click: jest.fn(),
+      })),
+      body: {
+        appendChild: jest.fn(),
+        removeChild: jest.fn(),
+      },
+    };
+
+    Object.defineProperty(globalThis, 'document', {
+      value: documentMock,
+      configurable: true,
+    });
+
+    Object.defineProperty(globalThis, 'URL', {
+      value: {
+        createObjectURL: jest.fn(() => 'blob:mock-url'),
+      },
+      configurable: true,
+    });
+
+    const count = await downloadWellnessCSV('user-42');
+
+    expect(count).toBe(1);
+    expect(csvPayload).toContain('userId;date;sleepQuality;fatigue;muscleSoreness;stress;mood;notes');
+    expect(csvPayload).toContain('user-42;2026-03-10;4;2;1;3;5;solid recovery');
 
     Object.defineProperty(globalThis, 'Blob', {
       value: originalBlob,
