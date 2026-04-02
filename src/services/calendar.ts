@@ -1,50 +1,154 @@
 import { ExerciseLog } from '@/types/exercise';
-import { getAllExercisesByDate } from '@/utils/unifiedExerciseUtils';
-import { addExerciseLog } from '@/services/firebase/exerciseLogs';
-import { addActivityLog } from '@/services/firebase/activityLogs';
-import { ActivityType } from '@/types/activityTypes';
-import { startOfWeek, endOfWeek } from 'date-fns';
+import { getExerciseLogsByDate, saveExerciseLog } from '@/utils/localStorageUtils';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
+import { db } from '@/services/firebase/config';
+import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
+import { toLocalDateString } from '@/utils/dateUtils';
+
+export interface CalendarDaySummary {
+  date: Date;
+  sessionDateKey: string;
+  sessionCount: number;
+  hasSessions: boolean;
+}
 
 const getCurrentUserId = (): string | null => {
   const auth = getAuth();
   return auth.currentUser?.uid || null;
 };
 
+export const getMonthSessionSummaries = async (month: Date): Promise<CalendarDaySummary[]> => {
+  const userId = getCurrentUserId();
+  const startDate = startOfMonth(month);
+  const endDate = endOfMonth(month);
+  const monthDays = eachDayOfInterval({ start: startDate, end: endDate });
+
+  if (!userId) {
+    return monthDays.map((date) => ({
+      date,
+      sessionDateKey: toLocalDateString(date),
+      sessionCount: 0,
+      hasSessions: false,
+    }));
+  }
+
+  try {
+    const startDateKey = toLocalDateString(startDate);
+    const endDateKey = toLocalDateString(endDate);
+    const sessionsQuery = query(
+      collection(db, 'users', userId, 'sessions'),
+      where('sessionDateKey', '>=', startDateKey),
+      where('sessionDateKey', '<=', endDateKey)
+    );
+    const snapshot = await getDocs(sessionsQuery);
+    const sessionCounts = new Map<string, number>();
+
+    snapshot.docs.forEach((sessionDoc) => {
+      const sessionData = sessionDoc.data() as { sessionDateKey?: unknown; sessionType?: unknown; isWarmup?: unknown };
+      if (sessionData.sessionType === 'warmup' || sessionData.isWarmup === true) {
+        return;
+      }
+
+      const sessionDateKey = sessionData.sessionDateKey;
+      if (typeof sessionDateKey !== 'string' || sessionDateKey.length === 0) {
+        return;
+      }
+
+      sessionCounts.set(sessionDateKey, (sessionCounts.get(sessionDateKey) || 0) + 1);
+    });
+
+    return monthDays.map((date) => {
+      const sessionDateKey = toLocalDateString(date);
+      const sessionCount = sessionCounts.get(sessionDateKey) || 0;
+
+      return {
+        date,
+        sessionDateKey,
+        sessionCount,
+        hasSessions: sessionCount > 0,
+      };
+    });
+  } catch (error) {
+    console.error('Error fetching month session summaries:', error);
+    return monthDays.map((date) => ({
+      date,
+      sessionDateKey: toLocalDateString(date),
+      sessionCount: 0,
+      hasSessions: false,
+    }));
+  }
+};
+
+export const getWeekSessionSummaries = async (weekStart: Date): Promise<CalendarDaySummary[]> => {
+  const userId = getCurrentUserId();
+  const startDate = startOfWeek(weekStart, { weekStartsOn: 1 });
+  const endDate = endOfWeek(weekStart, { weekStartsOn: 1 });
+  const weekDays = eachDayOfInterval({ start: startDate, end: endDate });
+
+  if (!userId) {
+    return weekDays.map((date) => ({
+      date,
+      sessionDateKey: toLocalDateString(date),
+      sessionCount: 0,
+      hasSessions: false,
+    }));
+  }
+
+  try {
+    const startDateKey = toLocalDateString(startDate);
+    const endDateKey = toLocalDateString(endDate);
+    const sessionsQuery = query(
+      collection(db, 'users', userId, 'sessions'),
+      where('sessionDateKey', '>=', startDateKey),
+      where('sessionDateKey', '<=', endDateKey)
+    );
+    const snapshot = await getDocs(sessionsQuery);
+    const sessionCounts = new Map<string, number>();
+
+    snapshot.docs.forEach((sessionDoc) => {
+      const sessionData = sessionDoc.data() as { sessionDateKey?: unknown; sessionType?: unknown; isWarmup?: unknown };
+      if (sessionData.sessionType === 'warmup' || sessionData.isWarmup === true) {
+        return;
+      }
+
+      const sessionDateKey = sessionData.sessionDateKey;
+      if (typeof sessionDateKey !== 'string' || sessionDateKey.length === 0) {
+        return;
+      }
+
+      sessionCounts.set(sessionDateKey, (sessionCounts.get(sessionDateKey) || 0) + 1);
+    });
+
+    return weekDays.map((date) => {
+      const sessionDateKey = toLocalDateString(date);
+      const sessionCount = sessionCounts.get(sessionDateKey) || 0;
+
+      return {
+        date,
+        sessionDateKey,
+        sessionCount,
+        hasSessions: sessionCount > 0,
+      };
+    });
+  } catch (error) {
+    console.error('Error fetching week session summaries:', error);
+    return weekDays.map((date) => ({
+      date,
+      sessionDateKey: toLocalDateString(date),
+      sessionCount: 0,
+      hasSessions: false,
+    }));
+  }
+};
+
 export const getWorkoutsByDate = async (date: Date): Promise<ExerciseLog[]> => {
   try {
-    const userId = getCurrentUserId();
-    if (!userId) return [];
-
-    const logs = await getAllExercisesByDate(date, userId);
-
-    return logs
-      .filter(
-        (log): log is (typeof logs)[number] & { id: string; exerciseName: string } =>
-          !!log.id && !!log.exerciseName
-      )
-      .map((log) => ({
-        id: log.id,
-        exerciseName: log.exerciseName,
-        sets: log.sets || [],
-        timestamp: log.timestamp instanceof Date ? log.timestamp : new Date(log.timestamp),
-        deviceId: log.deviceId,
-        userId: log.userId,
-        activityType: log.activityType,
-        isWarmup: log.isWarmup,
-        sharedSessionAssignmentId: log.sharedSessionAssignmentId,
-        sharedSessionId: log.sharedSessionId,
-        sharedSessionExerciseId: log.sharedSessionExerciseId,
-        sharedSessionDateKey: log.sharedSessionDateKey,
-        sharedSessionExerciseCompleted: log.sharedSessionExerciseCompleted,
-        supersetId: log.supersetId,
-        supersetLabel: log.supersetLabel,
-        supersetName: log.supersetName,
-        prescription: log.prescription,
-        instructionMode: log.instructionMode,
-        instructions: log.instructions,
-        prescriptionAssistant: log.prescriptionAssistant
-      }));
+    const logs = await getExerciseLogsByDate(date);
+    // Filter out logs without IDs and ensure all required properties are present
+    return logs.filter((log): log is ExerciseLog => {
+      return !!log.id && !!log.exerciseName && !!log.sets && !!log.timestamp;
+    });
   } catch (error) {
     console.error('Error getting workouts by date:', error);
     return [];
@@ -52,79 +156,33 @@ export const getWorkoutsByDate = async (date: Date): Promise<ExerciseLog[]> => {
 };
 
 export const getWorkoutDays = async (month: Date): Promise<Date[]> => {
-  const userId = getCurrentUserId();
-  if (!userId) return [];
-  
-  const startDate = new Date(month.getFullYear(), month.getMonth(), 1);
-  const endDate = new Date(month.getFullYear(), month.getMonth() + 1, 0);
-  
-  const days: Date[] = [];
-  const currentDate = new Date(startDate);
-  
-  while (currentDate <= endDate) {
-    const exercises = await getAllExercisesByDate(new Date(currentDate), userId);
-    if (exercises.length > 0) {
-      days.push(new Date(currentDate));
-    }
-    currentDate.setDate(currentDate.getDate() + 1);
-  }
-  
-  return days;
+  const summaries = await getMonthSessionSummaries(month);
+  return summaries
+    .filter((summary) => summary.hasSessions)
+    .map((summary) => summary.date);
+};
+
+export const getWorkoutDaysForWeek = async (weekStart: Date): Promise<Date[]> => {
+  const summaries = await getWeekSessionSummaries(weekStart);
+  return summaries
+    .filter((summary) => summary.hasSessions)
+    .map((summary) => summary.date);
 };
 
 export const copyWorkoutFromDate = async (sourceDate: Date, targetDate: Date): Promise<boolean> => {
   try {
-    const userId = getCurrentUserId();
-    if (!userId) {
-      return false;
-    }
-
-    const workouts = await getAllExercisesByDate(sourceDate, userId);
+    const workouts = await getExerciseLogsByDate(sourceDate);
     if (workouts.length === 0) return false;
 
-    // Save each workout to canonical Firestore path for its activity type
-    for (const workout of workouts) {
-      if (!workout.exerciseName) {
-        continue;
-      }
+    const targetWorkouts = workouts.map(workout => ({
+      ...workout,
+      id: crypto.randomUUID(),
+      timestamp: targetDate
+    }));
 
-      if (workout.activityType && workout.activityType !== ActivityType.RESISTANCE) {
-        await addActivityLog(
-          {
-            activityName: workout.exerciseName,
-            userId,
-            sets: workout.sets || [],
-            activityType: workout.activityType,
-            supersetId: workout.supersetId,
-            supersetLabel: workout.supersetLabel,
-            supersetName: workout.supersetName,
-          },
-          targetDate
-        );
-      } else {
-        await addExerciseLog(
-          {
-            exerciseName: workout.exerciseName,
-            userId,
-            sets: workout.sets || [],
-            activityType: workout.activityType,
-            supersetId: workout.supersetId,
-            supersetLabel: workout.supersetLabel,
-            supersetName: workout.supersetName,
-            isWarmup: workout.isWarmup,
-            sharedSessionAssignmentId: workout.sharedSessionAssignmentId,
-            sharedSessionId: workout.sharedSessionId,
-            sharedSessionExerciseId: workout.sharedSessionExerciseId,
-            sharedSessionDateKey: workout.sharedSessionDateKey,
-            sharedSessionExerciseCompleted: workout.sharedSessionExerciseCompleted,
-            prescription: workout.prescription,
-            instructionMode: workout.instructionMode,
-            instructions: workout.instructions,
-            prescriptionAssistant: workout.prescriptionAssistant,
-          },
-          targetDate
-        );
-      }
+    // Save each workout to the target date
+    for (const workout of targetWorkouts) {
+      await saveExerciseLog(workout);
     }
 
     return true;
@@ -132,25 +190,4 @@ export const copyWorkoutFromDate = async (sourceDate: Date, targetDate: Date): P
     console.error('Error copying workout:', error);
     return false;
   }
-};
-
-export const getWorkoutDaysForWeek = async (weekStartDate: Date): Promise<Date[]> => {
-  const userId = getCurrentUserId();
-  if (!userId) return [];
-  
-  const weekStart = startOfWeek(weekStartDate, { weekStartsOn: 1 }); // Monday
-  const weekEnd = endOfWeek(weekStartDate, { weekStartsOn: 1 });
-  
-  const days: Date[] = [];
-  const currentDate = new Date(weekStart);
-  
-  while (currentDate <= weekEnd) {
-    const exercises = await getAllExercisesByDate(new Date(currentDate), userId);
-    if (exercises.length > 0) {
-      days.push(new Date(currentDate));
-    }
-    currentDate.setDate(currentDate.getDate() + 1);
-  }
-  
-  return days;
 };
