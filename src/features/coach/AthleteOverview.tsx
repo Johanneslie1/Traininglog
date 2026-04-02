@@ -2,18 +2,20 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import { 
   getAthleteSummaryStats, 
   getAthleteExerciseLogs, 
   getAthleteSessionHistory,
   getAthleteAssignedPrograms,
   getAthleteAssignedSessions,
-  exportAthleteSessionsCsv,
   exportAllAthletesSessionsCsv,
   AthleteExerciseLog, 
   AthleteSessionHistoryItem,
   AthleteSummaryStats 
 } from '@/services/coachService';
+import { downloadPowerBiZip } from '@/services/powerBiExportService';
+import { RootState } from '@/store/store';
 
 import { 
   ArrowLeftIcon, 
@@ -93,6 +95,7 @@ const HISTORY_FETCH_LIMIT = 500;
 const AthleteOverview: React.FC = () => {
   const { athleteId } = useParams<{ athleteId: string }>();
   const navigate = useNavigate();
+  const { user } = useSelector((state: RootState) => state.auth);
   
   const [stats, setStats] = useState<AthleteSummaryStats | null>(null);
   const [exercises, setExercises] = useState<AthleteExerciseLog[]>([]);
@@ -209,17 +212,36 @@ const AthleteOverview: React.FC = () => {
       return;
     }
 
+    if (!user?.id) {
+      toast.error('Please log in to export athlete data');
+      return;
+    }
+
     setIsExportingAthlete(true);
     try {
-      const result = await exportAthleteSessionsCsv(
-        athleteId,
-        exportDateRange.startDate || undefined,
-        exportDateRange.endDate || undefined
+      const fromDate = exportDateRange.startDate
+        ? `${exportDateRange.startDate.getFullYear()}-${String(exportDateRange.startDate.getMonth() + 1).padStart(2, '0')}-${String(exportDateRange.startDate.getDate()).padStart(2, '0')}`
+        : undefined;
+
+      const result = await downloadPowerBiZip(
+        {
+          scope: 'athlete',
+          targetAthleteId: athleteId,
+          fromDate,
+        },
+        {
+          id: user.id,
+          firstName: user.firstName || '',
+          lastName: user.lastName || '',
+          role: user.role,
+        }
       );
-      toast.success(`Exported ${result.rowCount} rows for ${result.athleteName}`);
+      toast.success(
+        `Export ready! ${result.gymSetCount} gym sets · ${result.activityCount} activity rows · ${result.athleteCount} athlete(s)`
+      );
     } catch (error) {
-      console.error('Failed to export athlete CSV:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to export athlete CSV');
+      console.error('Failed to export athlete Power BI file:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to export athlete Power BI file');
     } finally {
       setIsExportingAthlete(false);
     }
@@ -380,7 +402,7 @@ const AthleteOverview: React.FC = () => {
         <div className="bg-bg-secondary border border-border rounded-lg p-4 mb-8 space-y-4">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-base font-semibold">Coach Export</h2>
-            <div className="text-xs text-text-tertiary">CSV includes athleteName and athleteId on exercise rows</div>
+            <div className="text-xs text-text-tertiary">Player export uses the same Power BI ZIP format as athlete self-export</div>
           </div>
 
           <div className="space-y-2">
@@ -438,7 +460,7 @@ const AthleteOverview: React.FC = () => {
               className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-accent-primary hover:bg-accent-hover text-text-inverse rounded-lg text-sm font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <DownloadIcon className="h-4 w-4" />
-              {isExportingAthlete ? 'Exporting athlete...' : 'Export this athlete CSV'}
+              {isExportingAthlete ? 'Exporting athlete...' : 'Export this athlete Power BI ZIP'}
             </button>
             <button
               type="button"
