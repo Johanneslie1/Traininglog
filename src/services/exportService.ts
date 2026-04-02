@@ -907,8 +907,8 @@ export const downloadActivityCSVs = async (userId: string, options: ExportOption
 // ---- Wellness export ----
 
 export const WELLNESS_CSV_HEADERS = [
-  'userId',
-  'date',
+  'athleteId',
+  'loggedDate',
   'sleepQuality',
   'fatigue',
   'muscleSoreness',
@@ -942,8 +942,8 @@ export const downloadWellnessCSV = async (
   const rows = logs
     .sort((a, b) => a.date.localeCompare(b.date))
     .map((l) => ({
-      userId,
-      date: l.date,
+      athleteId: userId,
+      loggedDate: l.date,
       sleepQuality: l.sleepQuality ?? '',
       fatigue: l.fatigue ?? '',
       muscleSoreness: l.muscleSoreness ?? '',

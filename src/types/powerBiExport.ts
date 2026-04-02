@@ -107,8 +107,8 @@ export interface DimExerciseRow {
 // ---------------------------------------------------------------------------
 
 export interface FactWellnessRow {
-  user_id: string;
-  date: string;             // YYYY-MM-DD
+  athlete_id: string;
+  logged_date: string;      // YYYY-MM-DD
   sleep_quality: number | '';
   fatigue: number | '';
   muscle_soreness: number | '';

@@ -268,8 +268,8 @@ export const downloadPowerBiZip = async (
     const selfWellness = await getWellnessByDateRange(currentUser.id, wellnessStart, wellnessEnd);
     selfWellness.forEach((w) => {
       wellnessRows.push({
-        user_id: currentUser.id,
-        date: w.date,
+        athlete_id: currentUser.id,
+        logged_date: w.date,
         sleep_quality: w.sleepQuality ?? '',
         fatigue: w.fatigue ?? '',
         muscle_soreness: w.muscleSoreness ?? '',
@@ -490,8 +490,8 @@ export const downloadPowerBiZip = async (
   const folder = zip.folder(`training_export_${dateStamp}`)!;
 
   const wellnessHeaders: (keyof FactWellnessRow)[] = [
-    'user_id',
-    'date',
+    'athlete_id',
+    'logged_date',
     'sleep_quality',
     'fatigue',
     'muscle_soreness',

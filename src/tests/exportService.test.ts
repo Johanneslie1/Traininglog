@@ -488,7 +488,7 @@ describe('exportService serialization', () => {
     }
   });
 
-  it('includes userId in wellness CSV export rows', async () => {
+  it('includes athleteId in wellness CSV export rows', async () => {
     mockedWellnessService.getWellnessByDateRange.mockResolvedValue([
       {
         date: '2026-03-10',
@@ -543,7 +543,7 @@ describe('exportService serialization', () => {
     const count = await downloadWellnessCSV('user-42');
 
     expect(count).toBe(1);
-    expect(csvPayload).toContain('userId;date;sleepQuality;fatigue;muscleSoreness;stress;mood;notes');
+    expect(csvPayload).toContain('athleteId;loggedDate;sleepQuality;fatigue;muscleSoreness;stress;mood;notes');
     expect(csvPayload).toContain('user-42;2026-03-10;4;2;1;3;5;solid recovery');
 
     Object.defineProperty(globalThis, 'Blob', {
