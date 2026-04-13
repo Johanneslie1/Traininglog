@@ -108,7 +108,7 @@ export async function saveWellnessLog(
     await addDoc(ref, { ...basePayload, timestamp: serverTimestamp() });
   } else {
     const existingDoc = snap.docs[0];
-    const updatePayload: Record<string, unknown> = {
+    const updatePayload: Record<string, any> = {
       userId,
       date,
       dateEpochDay,

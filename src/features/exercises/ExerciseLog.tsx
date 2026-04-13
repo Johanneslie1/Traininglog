@@ -37,7 +37,7 @@ import { buildSupersetLabels } from '@/utils/supersetUtils';
 import { SupersetGroup } from '@/types/session';
 import { useExerciseLogCalendar } from '@/context/ExerciseLogCalendarContext';
 import { isExerciseLogMainView } from '@/features/exercises/exerciseLogViewState';
-import { getSessionTypeLabel, normalizeSessionType, SessionType } from '@/types/sessionType';
+import { getSessionTypeLabel, SessionType } from '@/types/sessionType';
 
 interface ExerciseLogProps {}
 
@@ -555,48 +555,6 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   const sessionFilteredExercises = selectedSessionId
     ? exercises.filter((ex) => ex.sessionId === selectedSessionId)
     : exercises;
-
-  const currentSessionMeta = useMemo(() => {
-    // Prefer the explicitly selected session from the switcher
-    if (selectedSessionId && availableSessions.length > 0) {
-      const session = availableSessions.find((s) => s.sessionId === selectedSessionId);
-      if (session) {
-        return {
-          label: session.name || `${getSessionTypeLabel(session.sessionType)} ${session.sessionNumberInDay}`,
-          detail: `Week #${session.sessionNumberInWeek} • ${session.sessionDateKey}`,
-        };
-      }
-    }
-
-    if (exercises.length === 0) {
-      return null;
-    }
-
-    // Legacy fallback: derive from exercise metadata when no session docs exist yet
-    const withSession = exercises
-      .filter((exercise): exercise is UnifiedExerciseData & SharedSessionExerciseMeta => Boolean(exercise.sessionId))
-      .sort((a, b) => {
-        const timeA = a.timestamp instanceof Date ? a.timestamp.getTime() : 0;
-        const timeB = b.timestamp instanceof Date ? b.timestamp.getTime() : 0;
-        return timeB - timeA;
-      });
-
-    if (withSession.length === 0) {
-      return {
-        label: 'Session 1',
-        detail: getDateKey(selectedDate),
-      };
-    }
-
-    const latest = withSession[0];
-    const dayNumber = latest.sessionNumberInDay || 1;
-    const weekNumber = latest.sessionNumberInWeek || 1;
-
-    return {
-      label: `${getSessionTypeLabel(normalizeSessionType(latest.sessionType))} ${dayNumber}`,
-      detail: `Week #${weekNumber} • ${latest.sessionDateKey || getDateKey(selectedDate)}`,
-    };
-  }, [exercises, availableSessions, selectedSessionId, getDateKey, selectedDate]);
 
   const loadSessionsForDate = useCallback(async (date: Date) => {
     if (!user?.id) return;
