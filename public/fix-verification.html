@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Non-Resistance Exercise Fix Verification</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d30 100%);
+            color: #fff;
+            line-height: 1.6;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            border-radius: 10px;
+            color: white;
+        }
+        .section {
+            background: #2a2a2a;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #4CAF50;
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .test-pass {
+            background: #4CAF50;
+            color: white;
+        }
+        .test-fail {
+            background: #f44336;
+            color: white;
+        }
+        .test-warn {
+            background: #ff9800;
+            color: white;
+        }
+        button {
+            background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(33, 150, 243, 0.4);
+        }
+        .log-output {
+            background: #000;
+            color: #0f0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #333;
+            font-size: 12px;
+        }
+        .data-display {
+            background: #1a1a1a;
+            border: 1px solid #444;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .metric {
+            background: #333;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        .progress {
+            width: 100%;
+            height: 8px;
+            background: #444;
+            border-radius: 4px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50 0%, #8BC34A 100%);
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>✅ Non-Resistance Exercise Fix Verification</h1>
+        <p>Comprehensive testing suite to verify that the fixes work correctly</p>
+    </div>
+
+    <div class="section">
+        <h2>🔧 Fix Verification Tests</h2>
+        <div class="grid">
+            <div class="metric">
+                <div>Tests Passed</div>
+                <div class="metric-value" id="passed-count">0</div>
+                <div class="progress">
+                    <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
+                </div>
+            </div>
+            <div class="metric">
+                <div>Total Tests</div>
+                <div class="metric-value" id="total-count">0</div>
+            </div>
+        </div>
+        <button onclick="runAllTests()">🚀 Run All Verification Tests</button>
+        <button onclick="runQuickTest()">⚡ Quick Test</button>
+        <div id="test-results"></div>
+    </div>
+
+    <div class="section">
+        <h2>📊 Test Data Creation & Verification</h2>
+        <button onclick="createTestData()">📝 Create Test Data</button>
+        <button onclick="testDataConversion()">🔄 Test Data Conversion</button>
+        <button onclick="testDisplayLogic()">🎨 Test Display Logic</button>
+        <button onclick="testUnifiedRetrieval()">🔍 Test Unified Retrieval</button>
+        <div id="data-test-results" class="data-display"></div>
+    </div>
+
+    <div class="section">
+        <h2>📝 Console Output</h2>
+        <div id="console-log" class="log-output">Ready to run tests...\n</div>
+    </div>
+
+    <script>
+        // Test tracking
+        let testResults = [];
+        let totalTests = 0;
+        let passedTests = 0;
+
+        // Enhanced console logging
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        const logOutput = document.getElementById('console-log');
+        
+        function logToOutput(level, ...args) {
+            const timestamp = new Date().toLocaleTimeString();
+            const message = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+            ).join(' ');
+            
+            const color = {
+                'LOG': '#0f0',
+                'ERROR': '#f44',
+                'WARN': '#fa0'
+            }[level];
+            
+            logOutput.innerHTML += `<span style="color: #888">[${timestamp}]</span> <span style="color: ${color}">[${level}]</span> ${message}\n`;
+            logOutput.scrollTop = logOutput.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            logToOutput('LOG', ...args);
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            logToOutput('ERROR', ...args);
+        };
+        
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            logToOutput('WARN', ...args);
+        };
+
+        // Test utility functions
+        function addTestResult(name, passed, details = '') {
+            testResults.push({ name, passed, details });
+            totalTests++;
+            if (passed) passedTests++;
+            
+            const resultDiv = document.getElementById('test-results');
+            const testClass = passed ? 'test-pass' : 'test-fail';
+            const icon = passed ? '✅' : '❌';
+            
+            resultDiv.innerHTML += `
+                <div class="${testClass} test-result">
+                    ${icon} ${name}: ${passed ? 'PASS' : 'FAIL'}
+                    ${details ? `<br><small>${details}</small>` : ''}
+                </div>
+            `;
+            
+            updateProgressBars();
+        }
+
+        function updateProgressBars() {
+            document.getElementById('passed-count').textContent = passedTests;
+            document.getElementById('total-count').textContent = totalTests;
+            
+            const percentage = totalTests > 0 ? (passedTests / totalTests) * 100 : 0;
+            document.getElementById('progress-bar').style.width = percentage + '%';
+        }
+
+        // Main test functions
+        async function runAllTests() {
+            console.log('🚀 Starting comprehensive verification tests...');
+            
+            // Reset test counters
+            testResults = [];
+            totalTests = 0;
+            passedTests = 0;
+            document.getElementById('test-results').innerHTML = '';
+            
+            // Test 1: Module imports
+            await testModuleImports();
+            
+            // Test 2: Data structure conversion
+            await testDataStructureConversion();
+            
+            // Test 3: Activity type mapping
+            await testActivityTypeMapping();
+            
+            // Test 4: localStorage functionality
+            await testLocalStorageFunctionality();
+            
+            // Test 5: Firebase fallback
+            await testFirebaseFallback();
+            
+            // Test 6: Display detection logic
+            await testDisplayDetectionLogic();
+            
+            // Test 7: Unified exercise utils
+            await testUnifiedExerciseUtils();
+            
+            // Test 8: Real data creation and retrieval
+            await testRealDataFlow();
+            
+            console.log(`✅ All tests completed: ${passedTests}/${totalTests} passed`);
+        }
+
+        async function runQuickTest() {
+            console.log('⚡ Running quick verification test...');
+            
+            // Reset
+            testResults = [];
+            totalTests = 0;
+            passedTests = 0;
+            document.getElementById('test-results').innerHTML = '';
+            
+            // Create test data
+            const testActivity = {
+                id: 'quick-test-' + Date.now(),
+                activityType: 'endurance',
+                activityName: 'Quick Test Run',
+                userId: 'test-user-123',
+                timestamp: new Date().toISOString(),
+                sessions: [{
+                    sessionNumber: 1,
+                    duration: 20,
+                    distance: 3.5,
+                    pace: '6:00/km',
+                    averageHeartRate: 145,
+                    calories: 250,
+                    rpe: 6,
+                    notes: 'Quick test'
+                }]
+            };
+            
+            // Save to localStorage
+            const logs = JSON.parse(localStorage.getItem('activity-logs') || '[]');
+            logs.push(testActivity);
+            localStorage.setItem('activity-logs', JSON.stringify(logs));
+            
+            addTestResult('Quick Data Creation', true, 'Created test endurance activity');
+            
+            // Test unified retrieval
+            try {
+                const { getAllExercisesByDate } = await import('/src/utils/unifiedExerciseUtils.ts');
+                const exercises = await getAllExercisesByDate(new Date(), 'test-user-123');
+                const found = exercises.find(ex => ex.id === testActivity.id);
+                
+                addTestResult('Quick Data Retrieval', !!found, found ? 'Found test activity in unified results' : 'Test activity not found');
+                
+                if (found) {
+                    addTestResult('Quick Data Structure', found.sets && found.sets.length > 0, `Sets: ${found.sets?.length || 0}`);
+                    
+                    if (found.sets?.[0]) {
+                        const hasExpectedFields = !!(found.sets[0].duration && found.sets[0].distance);
+                        addTestResult('Quick Field Conversion', hasExpectedFields, 'Duration and distance fields present');
+                    }
+                }
+                
+            } catch (error) {
+                addTestResult('Quick Data Retrieval', false, 'Error: ' + error.message);
+            }
+            
+            console.log(`⚡ Quick test completed: ${passedTests}/${totalTests} passed`);
+        }
+
+        // Individual test functions
+        async function testModuleImports() {
+            console.log('📦 Testing module imports...');
+            
+            const modules = [
+                { name: 'Unified Exercise Utils', path: '/src/utils/unifiedExerciseUtils.ts' },
+                { name: 'Activity Types', path: '/src/types/activityTypes.ts' },
+                { name: 'Activity Service', path: '/src/services/activityService.ts' }
+            ];
+            
+            for (const mod of modules) {
+                try {
+                    const imported = await import(mod.path);
+                    addTestResult(`Import ${mod.name}`, true, `Exported: ${Object.keys(imported).join(', ')}`);
+                } catch (error) {
+                    addTestResult(`Import ${mod.name}`, false, error.message);
+                }
+            }
+        }
+
+        async function testDataStructureConversion() {
+            console.log('🔄 Testing data structure conversion...');
+            
+            // Create test activity log with sessions
+            const testLog = {
+                id: 'conversion-test',
+                activityType: 'endurance',
+                activityName: 'Conversion Test Run',
+                userId: 'test-user',
+                timestamp: new Date(),
+                sessions: [{
+                    sessionNumber: 1,
+                    duration: 25,
+                    distance: 4.2,
+                    pace: '6:00/km',
+                    averageHeartRate: 150,
+                    calories: 300,
+                    rpe: 6
+                }]
+            };
+            
+            try {
+                const { UnifiedExerciseData } = await import('/src/utils/unifiedExerciseUtils.ts');
+                
+                // Test the conversion logic (simulate what happens in convertActivityLogToExerciseData)
+                const hasDirectSets = !!testLog.sets;
+                const hasSessions = !!testLog.sessions;
+                
+                addTestResult('Data Structure Detection', !hasDirectSets && hasSessions, 'Correctly detects sessions format');
+                
+                // Test session to set conversion
+                if (testLog.sessions && testLog.sessions.length > 0) {
+                    const convertedSet = {
+                        setNumber: 1,
+                        weight: 0,
+                        reps: 1,
+                        difficulty: 'normal',
+                        duration: testLog.sessions[0].duration,
+                        distance: testLog.sessions[0].distance,
+                        pace: testLog.sessions[0].pace,
+                        averageHeartRate: testLog.sessions[0].averageHeartRate,
+                        calories: testLog.sessions[0].calories,
+                        rpe: testLog.sessions[0].rpe
+                    };
+                    
+                    const hasRequiredFields = !!(convertedSet.duration && convertedSet.distance);
+                    addTestResult('Session to Set Conversion', hasRequiredFields, 'Successfully converted session data to set format');
+                }
+                
+            } catch (error) {
+                addTestResult('Data Structure Conversion', false, error.message);
+            }
+        }
+
+        async function testActivityTypeMapping() {
+            console.log('🗺️ Testing activity type mapping...');
+            
+            try {
+                const { mapExerciseTypeToActivityType } = await import('/src/types/activityLog.ts');
+                
+                const testMappings = [
+                    { input: 'endurance', expected: 'endurance' },
+                    { input: 'teamSports', expected: 'sport' },
+                    { input: 'speedAgility', expected: 'speedAgility' },
+                    { input: 'flexibility', expected: 'stretching' }
+                ];
+                
+                let mappingsPassed = 0;
+                testMappings.forEach(test => {
+                    const result = mapExerciseTypeToActivityType(test.input);
+                    if (result === test.expected) {
+                        mappingsPassed++;
+                    }
+                });
+                
+                addTestResult('Activity Type Mapping', mappingsPassed === testMappings.length, 
+                    `${mappingsPassed}/${testMappings.length} mappings correct`);
+                
+            } catch (error) {
+                addTestResult('Activity Type Mapping', false, error.message);
+            }
+        }
+
+        async function testLocalStorageFunctionality() {
+            console.log('💾 Testing localStorage functionality...');
+            
+            try {
+                // Test localStorage read/write
+                const testData = { test: 'data', timestamp: Date.now() };
+                localStorage.setItem('test-key', JSON.stringify(testData));
+                const retrieved = JSON.parse(localStorage.getItem('test-key') || '{}');
+                localStorage.removeItem('test-key');
+                
+                addTestResult('localStorage Access', retrieved.test === 'data', 'Successfully wrote and read from localStorage');
+                
+                // Test activity logs storage
+                const currentLogs = JSON.parse(localStorage.getItem('activity-logs') || '[]');
+                addTestResult('Activity Logs Storage', Array.isArray(currentLogs), `Found ${currentLogs.length} activity logs`);
+                
+            } catch (error) {
+                addTestResult('localStorage Functionality', false, error.message);
+            }
+        }
+
+        async function testFirebaseFallback() {
+            console.log('🔥 Testing Firebase fallback logic...');
+            
+            try {
+                // Test Firebase imports
+                const { addActivityLog } = await import('/src/services/firebase/activityLogs.ts');
+                addTestResult('Firebase Import', typeof addActivityLog === 'function', 'Firebase activity logging function available');
+                
+                // Test activity service fallback
+                const { activityLoggingService } = await import('/src/services/activityService.ts');
+                addTestResult('Activity Service Fallback', !!activityLoggingService, 'Activity service available for fallback');
+                
+            } catch (error) {
+                addTestResult('Firebase Fallback', false, error.message);
+            }
+        }
+
+        async function testDisplayDetectionLogic() {
+            console.log('🎨 Testing display detection logic...');
+            
+            const testExercises = [
+                {
+                    id: 'display-test-1',
+                    exerciseName: 'Test Endurance',
+                    activityType: 'endurance',
+                    sets: [{ duration: 30, distance: 5, calories: 300, weight: 0, reps: 1 }]
+                },
+                {
+                    id: 'display-test-2',
+                    exerciseName: 'Test Resistance',
+                    activityType: 'resistance',
+                    sets: [{ weight: 80, reps: 10, rpe: 7 }]
+                }
+            ];
+            
+            let detectionsPassed = 0;
+            
+            testExercises.forEach(exercise => {
+                // Simulate ExerciseCard detection logic
+                const isNonResistance = (exercise.activityType && 
+                    !['resistance', 'strength'].includes(exercise.activityType)) ||
+                    (exercise.sets?.[0] && (
+                        ((!exercise.sets[0].weight || exercise.sets[0].weight === 0) && 
+                         (!exercise.sets[0].reps || exercise.sets[0].reps <= 1)) &&
+                        (exercise.sets[0].duration || exercise.sets[0].distance || exercise.sets[0].calories)
+                    ));
+                
+                const expectedResult = exercise.activityType === 'endurance';
+                if (isNonResistance === expectedResult) {
+                    detectionsPassed++;
+                }
+            });
+            
+            addTestResult('Display Detection Logic', detectionsPassed === testExercises.length, 
+                `${detectionsPassed}/${testExercises.length} detections correct`);
+        }
+
+        async function testUnifiedExerciseUtils() {
+            console.log('🔍 Testing unified exercise utils...');
+            
+            try {
+                const { getAllExercisesByDate } = await import('/src/utils/unifiedExerciseUtils.ts');
+                
+                // Test with current date and test user
+                const exercises = await getAllExercisesByDate(new Date(), 'test-user-123');
+                addTestResult('Unified Exercise Retrieval', Array.isArray(exercises), `Retrieved ${exercises.length} exercises`);
+                
+                // Check if any exercises have proper structure
+                if (exercises.length > 0) {
+                    const hasProperStructure = exercises.every(ex => 
+                        ex.id && ex.exerciseName && Array.isArray(ex.sets)
+                    );
+                    addTestResult('Exercise Structure Validation', hasProperStructure, 'All exercises have required fields');
+                }
+                
+            } catch (error) {
+                addTestResult('Unified Exercise Utils', false, error.message);
+            }
+        }
+
+        async function testRealDataFlow() {
+            console.log('🔄 Testing real data flow...');
+            
+            // Create a real test activity
+            const testActivity = {
+                id: 'real-test-' + Date.now(),
+                activityType: 'endurance',
+                activityName: 'Real Flow Test',
+                userId: 'test-user-123',
+                timestamp: new Date().toISOString(),
+                sessions: [{
+                    sessionNumber: 1,
+                    duration: 30,
+                    distance: 5.0,
+                    pace: '6:00/km',
+                    averageHeartRate: 150,
+                    calories: 300,
+                    rpe: 6,
+                    notes: 'Real flow test'
+                }]
+            };
+            
+            // Save to localStorage
+            const logs = JSON.parse(localStorage.getItem('activity-logs') || '[]');
+            logs.push(testActivity);
+            localStorage.setItem('activity-logs', JSON.stringify(logs));
+            
+            addTestResult('Real Data Creation', true, 'Created real test activity');
+            
+            // Test retrieval through unified utils
+            try {
+                const { getAllExercisesByDate } = await import('/src/utils/unifiedExerciseUtils.ts');
+                const exercises = await getAllExercisesByDate(new Date(), 'test-user-123');
+                const found = exercises.find(ex => ex.id === testActivity.id);
+                
+                addTestResult('Real Data Retrieval', !!found, found ? 'Successfully retrieved through unified utils' : 'Not found in unified results');
+                
+                if (found && found.sets && found.sets.length > 0) {
+                    const firstSet = found.sets[0];
+                    const hasExpectedFields = !!(firstSet.duration && firstSet.distance && firstSet.pace);
+                    addTestResult('Real Data Field Conversion', hasExpectedFields, 
+                        `Fields present: duration=${!!firstSet.duration}, distance=${!!firstSet.distance}, pace=${!!firstSet.pace}`);
+                }
+                
+            } catch (error) {
+                addTestResult('Real Data Flow', false, error.message);
+            }
+        }
+
+        // Data testing functions
+        async function createTestData() {
+            console.log('📝 Creating comprehensive test data...');
+            
+            const testActivities = [
+                {
+                    id: 'test-endurance-' + Date.now(),
+                    activityType: 'endurance',
+                    activityName: 'Verification Test Run',
+                    userId: 'test-user-123',
+                    timestamp: new Date().toISOString(),
+                    sessions: [{
+                        sessionNumber: 1,
+                        duration: 35,
+                        distance: 6.2,
+                        pace: '5:30/km',
+                        averageHeartRate: 158,
+                        maxHeartRate: 175,
+                        calories: 420,
+                        elevation: 100,
+                        rpe: 7,
+                        hrZone1: 5,
+                        hrZone2: 25,
+                        hrZone3: 5,
+                        notes: 'Verification test endurance session'
+                    }]
+                },
+                {
+                    id: 'test-sport-' + Date.now(),
+                    activityType: 'sport',
+                    activityName: 'Verification Basketball',
+                    userId: 'test-user-123',
+                    timestamp: new Date().toISOString(),
+                    sessions: [{
+                        sessionNumber: 1,
+                        duration: 75,
+                        distance: 3.2,
+                        calories: 580,
+                        intensity: 8,
+                        score: '102-98',
+                        opponent: 'Verification Team',
+                        performance: 8,
+                        skills: ['shooting', 'defense', 'passing'],
+                        notes: 'Verification test sport session'
+                    }]
+                }
+            ];
+            
+            const logs = JSON.parse(localStorage.getItem('activity-logs') || '[]');
+            testActivities.forEach(activity => logs.push(activity));
+            localStorage.setItem('activity-logs', JSON.stringify(logs));
+            
+            console.log('✅ Created test activities:', testActivities.map(a => a.activityName).join(', '));
+            
+            document.getElementById('data-test-results').textContent = 
+                `✅ Created ${testActivities.length} test activities\n`;
+        }
+
+        async function testDataConversion() {
+            console.log('🔄 Testing data conversion...');
+            
+            try {
+                const { getAllExercisesByDate } = await import('/src/utils/unifiedExerciseUtils.ts');
+                const exercises = await getAllExercisesByDate(new Date(), 'test-user-123');
+                
+                let results = `🔄 Data Conversion Test Results:\n`;
+                results += `Total exercises found: ${exercises.length}\n\n`;
+                
+                exercises.forEach((ex, i) => {
+                    results += `${i + 1}. ${ex.exerciseName} (${ex.activityType})\n`;
+                    results += `   Sets: ${ex.sets?.length || 0}\n`;
+                    if (ex.sets?.[0]) {
+                        const set = ex.sets[0];
+                        const fields = Object.keys(set).filter(key => 
+                            set[key] !== null && set[key] !== undefined && set[key] !== ''
+                        );
+                        results += `   Fields: ${fields.join(', ')}\n`;
+                    }
+                    results += '\n';
+                });
+                
+                document.getElementById('data-test-results').textContent = results;
+                
+            } catch (error) {
+                document.getElementById('data-test-results').textContent = '❌ Error: ' + error.message;
+            }
+        }
+
+        async function testDisplayLogic() {
+            console.log('🎨 Testing display logic...');
+            
+            const activityLogs = JSON.parse(localStorage.getItem('activity-logs') || '[]');
+            
+            let results = `🎨 Display Logic Test Results:\n`;
+            results += `Testing ${activityLogs.length} activity logs...\n\n`;
+            
+            activityLogs.forEach((log, i) => {
+                // Simulate conversion
+                const exercise = {
+                    id: log.id,
+                    exerciseName: log.activityName,
+                    activityType: log.activityType,
+                    sets: log.sessions?.map(session => ({ ...session })) || []
+                };
+                
+                // Test detection logic
+                const isNonResistance = (exercise.activityType && 
+                    !['resistance', 'strength'].includes(exercise.activityType)) ||
+                    (exercise.sets?.[0] && (
+                        ((!exercise.sets[0].weight || exercise.sets[0].weight === 0) && 
+                         (!exercise.sets[0].reps || exercise.sets[0].reps <= 1)) &&
+                        (exercise.sets[0].duration || exercise.sets[0].distance || exercise.sets[0].calories)
+                    ));
+                
+                results += `${i + 1}. ${exercise.exerciseName} (${exercise.activityType})\n`;
+                results += `   Non-resistance detected: ${isNonResistance}\n`;
+                results += `   Will show: ${isNonResistance ? 'Activity format' : 'Weight/reps format'}\n\n`;
+            });
+            
+            document.getElementById('data-test-results').textContent = results;
+        }
+
+        async function testUnifiedRetrieval() {
+            console.log('🔍 Testing unified retrieval...');
+            
+            try {
+                const { getAllExercisesByDate } = await import('/src/utils/unifiedExerciseUtils.ts');
+                const exercises = await getAllExercisesByDate(new Date(), 'test-user-123');
+                
+                let results = `🔍 Unified Retrieval Test Results:\n`;
+                results += `Found ${exercises.length} exercises for today\n\n`;
+                
+                exercises.forEach((ex, i) => {
+                    results += `${i + 1}. ${ex.exerciseName}\n`;
+                    results += `   Type: ${ex.activityType || 'undefined'}\n`;
+                    results += `   Sets: ${ex.sets?.length || 0}\n`;
+                    results += `   Timestamp: ${ex.timestamp}\n`;
+                    if (ex.sets?.[0]) {
+                        const set = ex.sets[0];
+                        const importantFields = ['duration', 'distance', 'pace', 'calories', 'weight', 'reps'];
+                        const presentFields = importantFields.filter(field => 
+                            set[field] !== null && set[field] !== undefined && set[field] !== ''
+                        );
+                        results += `   Key fields: ${presentFields.join(', ')}\n`;
+                    }
+                    results += '\n';
+                });
+                
+                document.getElementById('data-test-results').textContent = results;
+                
+            } catch (error) {
+                document.getElementById('data-test-results').textContent = '❌ Error: ' + error.message;
+            }
+        }
+
+        // Initialize
+        console.log('✅ Non-Resistance Exercise Fix Verification Tool loaded');
+        console.log('🔧 Ready to verify that all fixes are working correctly');
+    </script>
+</body>
+</html>

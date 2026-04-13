@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Non-Resistance Exercise Issues</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .section {
+            background: #2a2a2a;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .dangerous {
+            background: #dc3545;
+        }
+        .dangerous:hover {
+            background: #c82333;
+        }
+        .success {
+            background: #28a745;
+        }
+        .success:hover {
+            background: #218838;
+        }
+        .log-output {
+            background: #000;
+            color: #0f0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #333;
+        }
+        .data-display {
+            background: #1a1a1a;
+            border: 1px solid #444;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Non-Resistance Exercise Debug Tool</h1>
+    
+    <div class="section">
+        <h2>📊 Current Storage Analysis</h2>
+        <button onclick="analyzeCurrentData()">Analyze Current Data</button>
+        <button onclick="checkUnifiedExerciseUtils()">Test Unified Utils</button>
+        <button onclick="checkToday()">Check Today's Exercises</button>
+        <div id="analysis-output" class="data-display"></div>
+    </div>
+
+    <div class="section">
+        <h2>🧪 Test Data Creation</h2>
+        <button onclick="createTestEnduranceExercise()" class="success">Create Test Endurance</button>
+        <button onclick="createTestSportExercise()" class="success">Create Test Sport</button>
+        <button onclick="createTestSpeedAgilityExercise()" class="success">Create Test Speed & Agility</button>
+        <button onclick="createTestStretchingExercise()" class="success">Create Test Stretching</button>
+        <div id="test-output" class="log-output"></div>
+    </div>
+
+    <div class="section">
+        <h2>🗑️ Data Management</h2>
+        <button onclick="clearActivityLogs()" class="dangerous">Clear Activity Logs</button>
+        <button onclick="clearExerciseLogs()" class="dangerous">Clear Exercise Logs</button>
+        <button onclick="clearAllData()" class="dangerous">Clear All Data</button>
+    </div>
+
+    <div class="section">
+        <h2>📝 Console Log</h2>
+        <div id="console-log" class="log-output">Console output will appear here...</div>
+    </div>
+
+    <script>
+        // Override console.log to capture output
+        const originalLog = console.log;
+        const logOutput = document.getElementById('console-log');
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            const message = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+            ).join(' ');
+            logOutput.textContent += new Date().toLocaleTimeString() + ': ' + message + '\n';
+            logOutput.scrollTop = logOutput.scrollHeight;
+        };
+
+        function analyzeCurrentData() {
+            console.log('🔍 ANALYZING CURRENT STORAGE DATA');
+            
+            // Check exercise logs
+            const exerciseLogs = localStorage.getItem('exercise-logs');
+            const exercises = exerciseLogs ? JSON.parse(exerciseLogs) : [];
+            console.log(`📊 Exercise logs: ${exercises.length} entries`);
+            
+            // Check activity logs  
+            const activityLogs = localStorage.getItem('activity-logs');
+            const activities = activityLogs ? JSON.parse(activityLogs) : [];
+            console.log(`📊 Activity logs: ${activities.length} entries`);
+            
+            if (activities.length > 0) {
+                console.log('📋 Activity types found:');
+                const byType = activities.reduce((acc, log) => {
+                    acc[log.activityType] = (acc[log.activityType] || 0) + 1;
+                    return acc;
+                }, {});
+                console.log(byType);
+                
+                // Show recent activities
+                console.log('📋 Recent activities:');
+                activities.slice(-5).forEach((log, i) => {
+                    console.log(`${i + 1}. ${log.activityName} (${log.activityType}) - ${new Date(log.timestamp).toLocaleDateString()}`);
+                });
+            }
+            
+            // Update analysis display
+            const analysisDiv = document.getElementById('analysis-output');
+            analysisDiv.innerHTML = `
+                <h3>Storage Summary:</h3>
+                <p>Exercise Logs: ${exercises.length}</p>
+                <p>Activity Logs: ${activities.length}</p>
+                <p>Activity Types: ${activities.length > 0 ? Object.keys(activities.reduce((acc, log) => {
+                    acc[log.activityType] = true;
+                    return acc;
+                }, {})).join(', ') : 'None'}</p>
+            `;
+        }
+
+        async function checkUnifiedExerciseUtils() {
+            console.log('🔧 TESTING UNIFIED EXERCISE UTILS');
+            
+            try {
+                // Try to import and test the utils
+                const { getAllExercisesByDate } = await import('/src/utils/unifiedExerciseUtils.ts');
+                
+                const today = new Date();
+                const userId = 'test-user-123'; // Use test user ID
+                
+                console.log('📅 Getting exercises for today:', today.toDateString());
+                const exercises = await getAllExercisesByDate(today, userId);
+                
+                console.log(`✅ Found ${exercises.length} exercises for today`);
+                exercises.forEach((ex, i) => {
+                    console.log(`${i + 1}. ${ex.exerciseName} (${ex.activityType || 'no-type'}) - Sets: ${ex.sets?.length || 0}`);
+                });
+                
+            } catch (error) {
+                console.error('❌ Error testing unified utils:', error);
+            }
+        }
+
+        function checkToday() {
+            console.log('📅 CHECKING TODAY\'S DATA');
+            
+            const today = new Date();
+            const todayStr = today.toDateString();
+            
+            // Check activity logs for today
+            const activityLogs = JSON.parse(localStorage.getItem('activity-logs') || '[]');
+            const todayActivities = activityLogs.filter(log => 
+                new Date(log.timestamp).toDateString() === todayStr
+            );
+            
+            // Check exercise logs for today  
+            const exerciseLogs = JSON.parse(localStorage.getItem('exercise-logs') || '[]');
+            const todayExercises = exerciseLogs.filter(log => 
+                new Date(log.timestamp).toDateString() === todayStr
+            );
+            
+            console.log(`📊 Today (${todayStr}):`);
+            console.log(`- Activities: ${todayActivities.length}`);
+            console.log(`- Exercises: ${todayExercises.length}`);
+            
+            if (todayActivities.length > 0) {
+                console.log('📋 Today\'s activities:');
+                todayActivities.forEach((log, i) => {
+                    console.log(`${i + 1}. ${log.activityName} (${log.activityType})`);
+                    console.log(`   Sessions: ${log.sessions?.length || 0}`);
+                    if (log.sessions?.[0]) {
+                        console.log(`   First session:`, log.sessions[0]);
+                    }
+                });
+            }
+        }
+
+        function createTestEnduranceExercise() {
+            console.log('🏃 Creating test endurance exercise');
+            
+            const testLog = {
+                id: 'test-endurance-' + Date.now(),
+                activityType: 'endurance',
+                activityName: 'Test Morning Run',
+                userId: 'test-user-123',
+                timestamp: new Date().toISOString(),
+                sessions: [{
+                    sessionNumber: 1,
+                    duration: 30,
+                    distance: 5.2,
+                    pace: '5:45/km',
+                    averageHeartRate: 155,
+                    maxHeartRate: 172,
+                    calories: 350,
+                    elevation: 80,
+                    rpe: 7,
+                    hrZone1: 5,
+                    hrZone2: 20,
+                    hrZone3: 5,
+                    notes: 'Good steady run'
+                }]
+            };
+            
+            const logs = JSON.parse(localStorage.getItem('activity-logs') || '[]');
+            logs.push(testLog);
+            localStorage.setItem('activity-logs', JSON.stringify(logs));
+            
+            console.log('✅ Created endurance exercise:', testLog.activityName);
+            document.getElementById('test-output').textContent += `✅ Created: ${testLog.activityName}\n`;
+        }
+
+        function createTestSportExercise() {
+            console.log('⚽ Creating test sport exercise');
+            
+            const testLog = {
+                id: 'test-sport-' + Date.now(),
+                activityType: 'sport',
+                activityName: 'Test Basketball Training',
+                userId: 'test-user-123',
+                timestamp: new Date().toISOString(),
+                sessions: [{
+                    sessionNumber: 1,
+                    duration: 60,
+                    distance: 2.5,
+                    calories: 450,
+                    intensity: 8,
+                    score: '95-88',
+                    opponent: 'Practice Team',
+                    performance: 8,
+                    skills: ['shooting', 'defense'],
+                    notes: 'Great practice session'
+                }]
+            };
+            
+            const logs = JSON.parse(localStorage.getItem('activity-logs') || '[]');
+            logs.push(testLog);
+            localStorage.setItem('activity-logs', JSON.stringify(logs));
+            
+            console.log('✅ Created sport exercise:', testLog.activityName);
+            document.getElementById('test-output').textContent += `✅ Created: ${testLog.activityName}\n`;
+        }
+
+        function createTestSpeedAgilityExercise() {
+            console.log('⚡ Creating test speed & agility exercise');
+            
+            const testLog = {
+                id: 'test-speedagility-' + Date.now(),
+                activityType: 'speedAgility',
+                activityName: 'Test Sprint Drills',
+                userId: 'test-user-123',
+                timestamp: new Date().toISOString(),
+                sessions: [{
+                    sessionNumber: 1,
+                    reps: 8,
+                    time: 12.5,
+                    distance: 50,
+                    height: 30,
+                    restTime: 90,
+                    rpe: 8,
+                    intensity: 9,
+                    drillType: 'sprint',
+                    notes: 'Explosive training'
+                }]
+            };
+            
+            const logs = JSON.parse(localStorage.getItem('activity-logs') || '[]');
+            logs.push(testLog);
+            localStorage.setItem('activity-logs', JSON.stringify(logs));
+            
+            console.log('✅ Created speed & agility exercise:', testLog.activityName);
+            document.getElementById('test-output').textContent += `✅ Created: ${testLog.activityName}\n`;
+        }
+
+        function createTestStretchingExercise() {
+            console.log('🧘 Creating test stretching exercise');
+            
+            const testLog = {
+                id: 'test-stretching-' + Date.now(),
+                activityType: 'stretching',
+                activityName: 'Test Yoga Session',
+                userId: 'test-user-123',
+                timestamp: new Date().toISOString(),
+                sessions: [{
+                    sessionNumber: 1,
+                    duration: 20,
+                    holdTime: 30,
+                    intensity: 6,
+                    stretchType: 'static',
+                    bodyPart: 'full-body',
+                    flexibility: 7,
+                    notes: 'Relaxing session'
+                }]
+            };
+            
+            const logs = JSON.parse(localStorage.getItem('activity-logs') || '[]');
+            logs.push(testLog);
+            localStorage.setItem('activity-logs', JSON.stringify(logs));
+            
+            console.log('✅ Created stretching exercise:', testLog.activityName);
+            document.getElementById('test-output').textContent += `✅ Created: ${testLog.activityName}\n`;
+        }
+
+        function clearActivityLogs() {
+            if (confirm('Are you sure you want to clear all activity logs?')) {
+                localStorage.removeItem('activity-logs');
+                console.log('🗑️ Cleared activity logs');
+            }
+        }
+
+        function clearExerciseLogs() {
+            if (confirm('Are you sure you want to clear all exercise logs?')) {
+                localStorage.removeItem('exercise-logs');
+                console.log('🗑️ Cleared exercise logs');
+            }
+        }
+
+        function clearAllData() {
+            if (confirm('Are you sure you want to clear ALL exercise and activity data?')) {
+                localStorage.removeItem('activity-logs');
+                localStorage.removeItem('exercise-logs');
+                console.log('🗑️ Cleared all data');
+            }
+        }
+
+        // Initialize
+        console.log('🔍 Non-Resistance Exercise Debug Tool loaded');
+        console.log('Click the buttons above to analyze and test the exercise logging system');
+    </script>
+</body>
+</html>

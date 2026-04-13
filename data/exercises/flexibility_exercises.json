@@ -1,0 +1,686 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "lastUpdated": "2025-08-08",
+    "description": "Comprehensive flexibility and stretching exercises database",
+    "totalExercises": 40
+  },
+  "categories": {
+    "staticStretching": {
+      "name": "Static Stretching",
+      "description": "Held stretches for muscle lengthening",
+      "icon": "🧘"
+    },
+    "dynamicStretching": {
+      "name": "Dynamic Stretching", 
+      "description": "Active movement-based stretching",
+      "icon": "🤸"
+    },
+    "yoga": {
+      "name": "Yoga",
+      "description": "Yoga poses and sequences",
+      "icon": "🕉️"
+    },
+    "mobilityWork": {
+      "name": "Mobility Work",
+      "description": "Joint mobility and movement preparation",
+      "icon": "🔄"
+    },
+    "pnfStretching": {
+      "name": "PNF Stretching",
+      "description": "Proprioceptive Neuromuscular Facilitation",
+      "icon": "💪"
+    },
+    "myofascialRelease": {
+      "name": "Myofascial Release",
+      "description": "Foam rolling and self-massage",
+      "icon": "🏗️"
+    }
+  },
+  "exercises": [
+    {
+      "id": "hamstring_static",
+      "name": "Static Hamstring Stretch",
+      "category": "staticStretching",
+      "description": "Seated or standing stretch for hamstring muscles",
+      "difficulty": "beginner",
+      "equipment": ["mat"],
+      "targetAreas": ["hamstrings", "calves"],
+      "primaryMetrics": ["duration", "intensity"],
+      "optionalMetrics": ["sets", "hold_time"],
+      "instructions": [
+        "Sit with one leg extended, other bent",
+        "Reach toward toes of extended leg",
+        "Feel stretch in back of thigh",
+        "Hold position without bouncing"
+      ],
+      "tips": [
+        "Keep back straight, hinge at hips",
+        "Don't force the stretch",
+        "Breathe deeply throughout hold"
+      ],
+      "tags": ["lower_body", "post_workout", "flexibility"]
+    },
+    {
+      "id": "quad_static",
+      "name": "Static Quadriceps Stretch",
+      "category": "staticStretching", 
+      "description": "Standing stretch for front thigh muscles",
+      "difficulty": "beginner",
+      "equipment": [],
+      "targetAreas": ["quadriceps", "hip_flexors"],
+      "primaryMetrics": ["duration", "intensity"],
+      "optionalMetrics": ["sets", "balance_difficulty"],
+      "instructions": [
+        "Stand on one leg",
+        "Pull other heel toward glutes",
+        "Keep knees together",
+        "Hold with wall support if needed"
+      ],
+      "tips": [
+        "Don't pull on foot, push hip forward",
+        "Keep standing leg slightly bent",
+        "Focus on hip flexor stretch too"
+      ],
+      "tags": ["lower_body", "balance", "post_workout"]
+    },
+    {
+      "id": "calf_static",
+      "name": "Static Calf Stretch",
+      "category": "staticStretching",
+      "description": "Wall or step stretch for calf muscles",
+      "difficulty": "beginner",
+      "equipment": ["wall"],
+      "targetAreas": ["calves", "achilles"],
+      "primaryMetrics": ["duration", "intensity"],
+      "optionalMetrics": ["sets"],
+      "instructions": [
+        "Place hands on wall",
+        "Step one foot back",
+        "Keep back leg straight",
+        "Lean forward feeling stretch in calf"
+      ],
+      "tips": [
+        "Keep back heel on ground",
+        "Point toes straight ahead",
+        "Bend front knee for deeper stretch"
+      ],
+      "tags": ["lower_body", "post_run", "injury_prevention"]
+    },
+    {
+      "id": "shoulder_static",
+      "name": "Static Shoulder Stretch",
+      "category": "staticStretching",
+      "description": "Cross-body stretch for shoulder muscles",
+      "difficulty": "beginner",
+      "equipment": [],
+      "targetAreas": ["shoulders", "upper_back"],
+      "primaryMetrics": ["duration", "intensity"],
+      "optionalMetrics": ["sets"],
+      "instructions": [
+        "Pull arm across body",
+        "Use other arm to pull gently",
+        "Feel stretch in back of shoulder",
+        "Keep shoulders level"
+      ],
+      "tips": [
+        "Don't rotate torso",
+        "Pull arm, not wrist",
+        "Relax the stretched arm"
+      ],
+      "tags": ["upper_body", "desk_work", "post_workout"]
+    },
+    {
+      "id": "chest_doorway",
+      "name": "Doorway Chest Stretch",
+      "category": "staticStretching",
+      "description": "Doorway stretch for chest and front shoulders",
+      "difficulty": "beginner",
+      "equipment": ["doorway"],
+      "targetAreas": ["chest", "front_shoulders"],
+      "primaryMetrics": ["duration", "intensity"],
+      "optionalMetrics": ["arm_height_variation"],
+      "instructions": [
+        "Place forearm on doorway",
+        "Step forward through doorway",
+        "Feel stretch across chest",
+        "Vary arm height for different areas"
+      ],
+      "tips": [
+        "Keep elbow at shoulder height",
+        "Don't overstretch",
+        "Try different arm positions"
+      ],
+      "tags": ["upper_body", "posture", "desk_work"]
+    },
+    {
+      "id": "hip_flexor_lunge",
+      "name": "Hip Flexor Lunge Stretch",
+      "category": "staticStretching",
+      "description": "Lunge position stretch for hip flexors",
+      "difficulty": "beginner",
+      "equipment": ["mat"],
+      "targetAreas": ["hip_flexors", "quadriceps"],
+      "primaryMetrics": ["duration", "intensity"],
+      "optionalMetrics": ["sets", "depth"],
+      "instructions": [
+        "Kneel in lunge position",
+        "Keep front knee over ankle",
+        "Push hips forward",
+        "Feel stretch in front of back leg"
+      ],
+      "tips": [
+        "Keep torso upright",
+        "Don't let front knee go past toes",
+        "Squeeze glutes for deeper stretch"
+      ],
+      "tags": ["lower_body", "sitting_relief", "post_workout"]
+    },
+    {
+      "id": "spinal_twist",
+      "name": "Seated Spinal Twist",
+      "category": "staticStretching",
+      "description": "Seated rotation stretch for spine and back",
+      "difficulty": "beginner",
+      "equipment": ["mat"],
+      "targetAreas": ["spine", "lower_back", "obliques"],
+      "primaryMetrics": ["duration", "intensity"],
+      "optionalMetrics": ["sets", "rotation_degree"],
+      "instructions": [
+        "Sit with legs extended",
+        "Cross one leg over the other",
+        "Twist toward bent knee",
+        "Use arm for gentle leverage"
+      ],
+      "tips": [
+        "Keep both sitting bones down",
+        "Twist from core, not just arms",
+        "Look over shoulder"
+      ],
+      "tags": ["core", "back_health", "flexibility"]
+    },
+    {
+      "id": "leg_swings",
+      "name": "Dynamic Leg Swings",
+      "category": "dynamicStretching",
+      "description": "Forward and lateral leg swings for warm-up",
+      "difficulty": "beginner",
+      "equipment": ["wall"],
+      "targetAreas": ["hips", "hamstrings", "adductors"],
+      "primaryMetrics": ["reps", "range_of_motion"],
+      "optionalMetrics": ["sets", "intensity"],
+      "instructions": [
+        "Hold wall for balance",
+        "Swing leg forward and back",
+        "Then swing leg side to side",
+        "Keep torso upright"
+      ],
+      "tips": [
+        "Start small and build range",
+        "Keep supporting leg straight",
+        "Control the movement"
+      ],
+      "tags": ["warm_up", "pre_workout", "dynamic"]
+    },
+    {
+      "id": "arm_circles",
+      "name": "Dynamic Arm Circles",
+      "category": "dynamicStretching",
+      "description": "Circular arm movements for shoulder warm-up",
+      "difficulty": "beginner",
+      "equipment": [],
+      "targetAreas": ["shoulders", "upper_back"],
+      "primaryMetrics": ["reps", "range_of_motion"],
+      "optionalMetrics": ["direction", "size"],
+      "instructions": [
+        "Extend arms to sides",
+        "Make small circles forward",
+        "Gradually increase circle size",
+        "Reverse direction"
+      ],
+      "tips": [
+        "Keep arms straight",
+        "Start slowly and build speed",
+        "Feel stretch in shoulders"
+      ],
+      "tags": ["warm_up", "shoulder_health", "pre_workout"]
+    },
+    {
+      "id": "walking_lunges",
+      "name": "Walking Lunges",
+      "category": "dynamicStretching",
+      "description": "Moving lunges for hip and leg mobility",
+      "difficulty": "intermediate",
+      "equipment": [],
+      "targetAreas": ["hips", "quadriceps", "glutes"],
+      "primaryMetrics": ["reps", "distance"],
+      "optionalMetrics": ["depth", "tempo"],
+      "instructions": [
+        "Step forward into lunge",
+        "Lower back knee toward ground",
+        "Push off front foot to next lunge",
+        "Alternate legs walking forward"
+      ],
+      "tips": [
+        "Keep torso upright",
+        "Don't let front knee cave in",
+        "Control the descent"
+      ],
+      "tags": ["warm_up", "functional", "lower_body"]
+    },
+    {
+      "id": "high_knees",
+      "name": "High Knees March",
+      "category": "dynamicStretching",
+      "description": "Marching with high knee lift",
+      "difficulty": "beginner",
+      "equipment": [],
+      "targetAreas": ["hip_flexors", "core", "legs"],
+      "primaryMetrics": ["duration", "reps"],
+      "optionalMetrics": ["knee_height", "tempo"],
+      "instructions": [
+        "March in place",
+        "Lift knees to hip height",
+        "Pump arms naturally",
+        "Stay on balls of feet"
+      ],
+      "tips": [
+        "Keep core engaged",
+        "Land softly",
+        "Maintain good posture"
+      ],
+      "tags": ["warm_up", "cardio", "coordination"]
+    },
+    {
+      "id": "butt_kicks",
+      "name": "Butt Kicks",
+      "category": "dynamicStretching",
+      "description": "Heel kicks toward glutes",
+      "difficulty": "beginner",
+      "equipment": [],
+      "targetAreas": ["quadriceps", "calves"],
+      "primaryMetrics": ["duration", "reps"],
+      "optionalMetrics": ["height", "tempo"],
+      "instructions": [
+        "Jog in place",
+        "Kick heels toward glutes",
+        "Keep knees pointing down",
+        "Pump arms naturally"
+      ],
+      "tips": [
+        "Don't lean forward",
+        "Focus on quick turnover",
+        "Land on balls of feet"
+      ],
+      "tags": ["warm_up", "running_prep", "dynamic"]
+    },
+    {
+      "id": "mountain_pose",
+      "name": "Mountain Pose (Tadasana)",
+      "category": "yoga",
+      "description": "Basic standing yoga pose for alignment",
+      "difficulty": "beginner",
+      "equipment": ["yoga_mat"],
+      "targetAreas": ["posture", "core", "legs"],
+      "primaryMetrics": ["duration", "quality"],
+      "optionalMetrics": ["breath_count"],
+      "instructions": [
+        "Stand tall with feet hip-width apart",
+        "Engage leg muscles",
+        "Lengthen spine",
+        "Breathe deeply and evenly"
+      ],
+      "tips": [
+        "Ground through all four corners of feet",
+        "Lift crown of head toward ceiling",
+        "Relax shoulders away from ears"
+      ],
+      "tags": ["foundation", "posture", "mindfulness"]
+    },
+    {
+      "id": "downward_dog",
+      "name": "Downward Facing Dog",
+      "category": "yoga",
+      "description": "Inverted V-shape pose for full body stretch",
+      "difficulty": "intermediate",
+      "equipment": ["yoga_mat"],
+      "targetAreas": ["shoulders", "hamstrings", "calves", "back"],
+      "primaryMetrics": ["duration", "quality"],
+      "optionalMetrics": ["modifications_used"],
+      "instructions": [
+        "Start on hands and knees",
+        "Tuck toes and lift hips up",
+        "Straighten legs if possible",
+        "Create inverted V shape"
+      ],
+      "tips": [
+        "Press hands firmly into mat",
+        "External rotate arms",
+        "Pedal feet to warm calves"
+      ],
+      "tags": ["inversion", "full_body", "strength"]
+    },
+    {
+      "id": "childs_pose",
+      "name": "Child's Pose (Balasana)",
+      "category": "yoga",
+      "description": "Resting pose for back and hip stretch",
+      "difficulty": "beginner",
+      "equipment": ["yoga_mat"],
+      "targetAreas": ["back", "hips", "shoulders"],
+      "primaryMetrics": ["duration", "relaxation"],
+      "optionalMetrics": ["arm_variations"],
+      "instructions": [
+        "Kneel on mat",
+        "Sit back on heels",
+        "Fold forward with arms extended",
+        "Rest forehead on mat"
+      ],
+      "tips": [
+        "Separate knees if more comfortable",
+        "Use props under forehead if needed",
+        "Focus on deep breathing"
+      ],
+      "tags": ["restorative", "relaxation", "back_relief"]
+    },
+    {
+      "id": "warrior_1",
+      "name": "Warrior I (Virabhadrasana I)",
+      "category": "yoga",
+      "description": "Standing lunge pose with arms overhead",
+      "difficulty": "intermediate",
+      "equipment": ["yoga_mat"],
+      "targetAreas": ["hips", "legs", "shoulders"],
+      "primaryMetrics": ["duration", "balance"],
+      "optionalMetrics": ["depth", "alignment"],
+      "instructions": [
+        "Step one foot back 3-4 feet",
+        "Turn back foot out 45 degrees",
+        "Bend front knee over ankle",
+        "Reach arms overhead"
+      ],
+      "tips": [
+        "Square hips toward front",
+        "Keep front knee tracking over ankle",
+        "Ground through back foot"
+      ],
+      "tags": ["strength", "balance", "hip_opening"]
+    },
+    {
+      "id": "pigeon_pose",
+      "name": "Pigeon Pose",
+      "category": "yoga",
+      "description": "Deep hip opening pose",
+      "difficulty": "advanced",
+      "equipment": ["yoga_mat", "props"],
+      "targetAreas": ["hips", "hip_flexors"],
+      "primaryMetrics": ["duration", "depth"],
+      "optionalMetrics": ["modifications_used"],
+      "instructions": [
+        "From downward dog, bring one knee forward",
+        "Lower hips toward mat",
+        "Extend back leg straight",
+        "Fold forward if comfortable"
+      ],
+      "tips": [
+        "Use props under hip if needed",
+        "Don't force the position",
+        "Breathe deeply and relax"
+      ],
+      "tags": ["hip_opening", "deep_stretch", "advanced"]
+    },
+    {
+      "id": "cat_cow",
+      "name": "Cat-Cow Stretch",
+      "category": "mobilityWork",
+      "description": "Spinal mobility movement on hands and knees",
+      "difficulty": "beginner",
+      "equipment": ["yoga_mat"],
+      "targetAreas": ["spine", "core"],
+      "primaryMetrics": ["reps", "range_of_motion"],
+      "optionalMetrics": ["tempo", "control"],
+      "instructions": [
+        "Start on hands and knees",
+        "Arch back and look up (cow)",
+        "Round spine and tuck chin (cat)",
+        "Move slowly between positions"
+      ],
+      "tips": [
+        "Initiate movement from pelvis",
+        "Keep hands and knees grounded",
+        "Coordinate with breathing"
+      ],
+      "tags": ["spinal_mobility", "warm_up", "core"]
+    },
+    {
+      "id": "hip_circles",
+      "name": "Hip Circles",
+      "category": "mobilityWork",
+      "description": "Circular hip movements for mobility",
+      "difficulty": "beginner",
+      "equipment": [],
+      "targetAreas": ["hips"],
+      "primaryMetrics": ["reps", "range_of_motion"],
+      "optionalMetrics": ["direction", "size"],
+      "instructions": [
+        "Stand with hands on hips",
+        "Make large circles with hips",
+        "Keep upper body relatively still",
+        "Change direction"
+      ],
+      "tips": [
+        "Start small and build range",
+        "Feel stretch in all directions",
+        "Keep knees soft"
+      ],
+      "tags": ["hip_mobility", "warm_up", "functional"]
+    },
+    {
+      "id": "shoulder_rolls",
+      "name": "Shoulder Rolls",
+      "category": "mobilityWork",
+      "description": "Circular shoulder movements for mobility",
+      "difficulty": "beginner",
+      "equipment": [],
+      "targetAreas": ["shoulders", "upper_back"],
+      "primaryMetrics": ["reps", "range_of_motion"],
+      "optionalMetrics": ["direction", "speed"],
+      "instructions": [
+        "Stand or sit tall",
+        "Roll shoulders up, back, down, forward",
+        "Make complete circles",
+        "Reverse direction"
+      ],
+      "tips": [
+        "Exaggerate the movement",
+        "Keep arms relaxed at sides",
+        "Focus on squeezing shoulder blades"
+      ],
+      "tags": ["shoulder_mobility", "posture", "desk_relief"]
+    },
+    {
+      "id": "ankle_circles",
+      "name": "Ankle Circles",
+      "category": "mobilityWork",
+      "description": "Circular ankle movements for mobility",
+      "difficulty": "beginner",
+      "equipment": [],
+      "targetAreas": ["ankles", "calves"],
+      "primaryMetrics": ["reps", "range_of_motion"],
+      "optionalMetrics": ["direction"],
+      "instructions": [
+        "Sit or stand holding onto support",
+        "Lift one foot off ground",
+        "Make circles with foot",
+        "Change direction and switch feet"
+      ],
+      "tips": [
+        "Make full circles",
+        "Keep leg still, move only foot",
+        "Feel stretch in ankle and calf"
+      ],
+      "tags": ["ankle_mobility", "injury_prevention", "circulation"]
+    },
+    {
+      "id": "neck_rolls",
+      "name": "Gentle Neck Rolls",
+      "category": "mobilityWork",
+      "description": "Careful neck mobility movements",
+      "difficulty": "beginner",
+      "equipment": [],
+      "targetAreas": ["neck", "upper_shoulders"],
+      "primaryMetrics": ["reps", "comfort"],
+      "optionalMetrics": ["range_of_motion"],
+      "instructions": [
+        "Sit or stand tall",
+        "Slowly roll head in half circles",
+        "Go side to front to other side",
+        "Don't roll back past ears"
+      ],
+      "tips": [
+        "Move very slowly",
+        "Stop if any pain",
+        "Keep shoulders relaxed"
+      ],
+      "tags": ["neck_mobility", "desk_relief", "gentle"]
+    },
+    {
+      "id": "pnf_hamstring",
+      "name": "PNF Hamstring Stretch",
+      "category": "pnfStretching",
+      "description": "Contract-relax hamstring stretching technique",
+      "difficulty": "intermediate",
+      "equipment": ["strap", "mat"],
+      "targetAreas": ["hamstrings"],
+      "primaryMetrics": ["duration", "intensity_improvement"],
+      "optionalMetrics": ["contract_duration", "sets"],
+      "instructions": [
+        "Lie on back with leg elevated",
+        "Contract hamstring for 5 seconds",
+        "Relax and stretch deeper",
+        "Repeat contract-relax cycle"
+      ],
+      "tips": [
+        "Contract at about 80% effort",
+        "Breathe normally during contraction",
+        "Gain range after each cycle"
+      ],
+      "tags": ["advanced_stretching", "flexibility_gains", "therapeutic"]
+    },
+    {
+      "id": "pnf_hip_flexor",
+      "name": "PNF Hip Flexor Stretch",
+      "category": "pnfStretching",
+      "description": "Contract-relax hip flexor stretching",
+      "difficulty": "intermediate",
+      "equipment": ["mat"],
+      "targetAreas": ["hip_flexors"],
+      "primaryMetrics": ["duration", "intensity_improvement"],
+      "optionalMetrics": ["contract_duration", "sets"],
+      "instructions": [
+        "Lie on edge of table or bed",
+        "Let one leg hang off edge",
+        "Contract hip flexor for 5 seconds",
+        "Relax and let gravity stretch deeper"
+      ],
+      "tips": [
+        "Support upper leg if needed",
+        "Don't force the stretch",
+        "Focus on relaxation phase"
+      ],
+      "tags": ["advanced_stretching", "sitting_relief", "therapeutic"]
+    },
+    {
+      "id": "foam_roll_quads",
+      "name": "Foam Roll Quadriceps",
+      "category": "myofascialRelease",
+      "description": "Foam rolling for front thigh muscles",
+      "difficulty": "intermediate",
+      "equipment": ["foam_roller"],
+      "targetAreas": ["quadriceps", "IT_band"],
+      "primaryMetrics": ["duration", "pressure"],
+      "optionalMetrics": ["tender_spots_found"],
+      "instructions": [
+        "Lie face down over foam roller",
+        "Support weight on forearms",
+        "Roll from hip to just above knee",
+        "Pause on tender spots"
+      ],
+      "tips": [
+        "Control pressure with arms",
+        "Breathe deeply through discomfort",
+        "Don't roll directly on kneecap"
+      ],
+      "tags": ["recovery", "muscle_maintenance", "self_massage"]
+    },
+    {
+      "id": "foam_roll_calves",
+      "name": "Foam Roll Calves",
+      "category": "myofascialRelease",
+      "description": "Foam rolling for calf muscles",
+      "difficulty": "beginner",
+      "equipment": ["foam_roller"],
+      "targetAreas": ["calves", "achilles"],
+      "primaryMetrics": ["duration", "pressure"],
+      "optionalMetrics": ["tender_spots_found"],
+      "instructions": [
+        "Sit with calf on foam roller",
+        "Support weight with hands",
+        "Roll from ankle to knee",
+        "Cross legs for more pressure"
+      ],
+      "tips": [
+        "Roll slowly and deliberately",
+        "Point and flex foot while rolling",
+        "Adjust pressure as needed"
+      ],
+      "tags": ["recovery", "running_recovery", "self_massage"]
+    },
+    {
+      "id": "foam_roll_back",
+      "name": "Foam Roll Upper Back",
+      "category": "myofascialRelease",
+      "description": "Foam rolling for upper back and shoulders",
+      "difficulty": "beginner",
+      "equipment": ["foam_roller"],
+      "targetAreas": ["upper_back", "lats"],
+      "primaryMetrics": ["duration", "comfort"],
+      "optionalMetrics": ["range_covered"],
+      "instructions": [
+        "Lie on back with roller under shoulders",
+        "Support head with hands",
+        "Roll from shoulders to mid-back",
+        "Pause on tight spots"
+      ],
+      "tips": [
+        "Don't roll lower back",
+        "Keep core engaged",
+        "Move slowly and breathe"
+      ],
+      "tags": ["posture", "desk_relief", "upper_body"]
+    },
+    {
+      "id": "lacrosse_ball_feet",
+      "name": "Lacrosse Ball Foot Massage",
+      "category": "myofascialRelease",
+      "description": "Self-massage for foot and plantar fascia",
+      "difficulty": "beginner",
+      "equipment": ["lacrosse_ball"],
+      "targetAreas": ["plantar_fascia", "feet"],
+      "primaryMetrics": ["duration", "pressure"],
+      "optionalMetrics": ["tender_spots_found"],
+      "instructions": [
+        "Stand with ball under foot",
+        "Roll ball from heel to toes",
+        "Apply comfortable pressure",
+        "Focus on arch of foot"
+      ],
+      "tips": [
+        "Use wall for balance if needed",
+        "Start gentle and increase pressure",
+        "Great for plantar fasciitis"
+      ],
+      "tags": ["foot_health", "recovery", "injury_prevention"]
+    }
+  ]
+}

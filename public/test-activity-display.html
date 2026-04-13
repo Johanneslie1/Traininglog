@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Activity Display Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #1a1a1a; color: white; }
+        .test-container { margin: 20px 0; padding: 20px; border: 1px solid #333; border-radius: 8px; }
+        .activity-card { background: #2a2a2a; padding: 15px; margin: 10px 0; border-radius: 8px; }
+        .activity-header { color: #8B5CF6; font-weight: bold; margin-bottom: 10px; }
+        .field-row { display: flex; justify-content: space-between; margin: 5px 0; }
+        .field-label { color: #888; }
+        .field-value { color: white; }
+        button { background: #8B5CF6; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
+        .success { color: #4ade80; }
+        .error { color: #ef4444; }
+    </style>
+</head>
+<body>
+    <h1>Activity Logging Display & Export Test</h1>
+    <p>This test validates that endurance, sports, and speed & agility training data is displayed and exported correctly.</p>
+
+    <div class="test-container">
+        <h2>Test Activity Data</h2>
+        <div id="test-activities"></div>
+        <button onclick="testActivityLogging()">Generate Test Data</button>
+        <button onclick="testExport()">Test CSV Export</button>
+        <button onclick="clearTestData()">Clear Test Data</button>
+    </div>
+
+    <div class="test-container">
+        <h2>Export Test Results</h2>
+        <div id="export-results"></div>
+    </div>
+
+    <script>
+        // Test data for different activity types
+        const testActivities = {
+            endurance: {
+                id: 'test-endurance-' + Date.now(),
+                activityType: 'endurance',
+                activityName: 'Morning Run',
+                userId: 'test-user',
+                timestamp: new Date(),
+                sessions: [{
+                    sessionNumber: 1,
+                    duration: 45,
+                    distance: 8.5,
+                    pace: '5:30/km',
+                    averageHeartRate: 155,
+                    maxHeartRate: 172,
+                    calories: 520,
+                    elevation: 120,
+                    rpe: 7,
+                    hrZone1: 10,
+                    hrZone2: 25,
+                    hrZone3: 10,
+                    notes: 'Good steady pace run'
+                }]
+            },
+            sport: {
+                id: 'test-sport-' + Date.now(),
+                activityType: 'sport',
+                activityName: 'Basketball Training',
+                userId: 'test-user',
+                timestamp: new Date(),
+                sessions: [{
+                    sessionNumber: 1,
+                    duration: 90,
+                    distance: 3.2,
+                    calories: 650,
+                    intensity: 8,
+                    score: '85-72',
+                    opponent: 'Local Team',
+                    performance: 8,
+                    skills: ['shooting', 'defense', 'passing'],
+                    notes: 'Great game with good team coordination'
+                }]
+            },
+            speedAgility: {
+                id: 'test-speed-' + Date.now(),
+                activityType: 'speedAgility',
+                activityName: 'Sprint Training',
+                userId: 'test-user',
+                timestamp: new Date(),
+                sessions: [{
+                    sessionNumber: 1,
+                    reps: 8,
+                    time: 12.5,
+                    distance: 100,
+                    height: 45,
+                    restTime: 180,
+                    rpe: 9,
+                    intensity: 9,
+                    drillType: 'sprint',
+                    notes: 'Explosive power training session'
+                }]
+            }
+        };
+
+        function testActivityLogging() {
+            console.log('🧪 Testing activity logging and display...');
+            
+            // Save test activities to localStorage
+            const existingLogs = JSON.parse(localStorage.getItem('activity-logs') || '[]');
+            
+            // Add our test activities
+            Object.values(testActivities).forEach(activity => {
+                existingLogs.push(activity);
+            });
+            
+            localStorage.setItem('activity-logs', JSON.stringify(existingLogs));
+            
+            // Display the test activities
+            displayTestActivities();
+            
+            document.getElementById('export-results').innerHTML = '<div class="success">✅ Test activities generated and stored successfully!</div>';
+        }
+
+        function displayTestActivities() {
+            const container = document.getElementById('test-activities');
+            container.innerHTML = '';
+            
+            Object.entries(testActivities).forEach(([type, activity]) => {
+                const session = activity.sessions[0];
+                const card = document.createElement('div');
+                card.className = 'activity-card';
+                
+                let fieldsHtml = '';
+                
+                if (type === 'endurance') {
+                    fieldsHtml = `
+                        <div class="field-row"><span class="field-label">Duration:</span><span class="field-value">${session.duration} min</span></div>
+                        <div class="field-row"><span class="field-label">Distance:</span><span class="field-value">${session.distance} km</span></div>
+                        <div class="field-row"><span class="field-label">Pace:</span><span class="field-value">${session.pace}</span></div>
+                        <div class="field-row"><span class="field-label">Avg HR:</span><span class="field-value">${session.averageHeartRate} bpm</span></div>
+                        <div class="field-row"><span class="field-label">Max HR:</span><span class="field-value">${session.maxHeartRate} bpm</span></div>
+                        <div class="field-row"><span class="field-label">Calories:</span><span class="field-value">${session.calories} kcal</span></div>
+                        <div class="field-row"><span class="field-label">Elevation:</span><span class="field-value">${session.elevation} m</span></div>
+                        <div class="field-row"><span class="field-label">RPE:</span><span class="field-value">${session.rpe}/10</span></div>
+                        <div class="field-row"><span class="field-label">Zone 1:</span><span class="field-value">${session.hrZone1} min</span></div>
+                        <div class="field-row"><span class="field-label">Zone 2:</span><span class="field-value">${session.hrZone2} min</span></div>
+                        <div class="field-row"><span class="field-label">Zone 3:</span><span class="field-value">${session.hrZone3} min</span></div>
+                    `;
+                } else if (type === 'sport') {
+                    fieldsHtml = `
+                        <div class="field-row"><span class="field-label">Duration:</span><span class="field-value">${session.duration} min</span></div>
+                        <div class="field-row"><span class="field-label">Distance:</span><span class="field-value">${session.distance} km</span></div>
+                        <div class="field-row"><span class="field-label">Calories:</span><span class="field-value">${session.calories} kcal</span></div>
+                        <div class="field-row"><span class="field-label">Score:</span><span class="field-value">${session.score}</span></div>
+                        <div class="field-row"><span class="field-label">Opponent:</span><span class="field-value">${session.opponent}</span></div>
+                        <div class="field-row"><span class="field-label">Performance:</span><span class="field-value">${session.performance}/10</span></div>
+                        <div class="field-row"><span class="field-label">Skills:</span><span class="field-value">${session.skills.join(', ')}</span></div>
+                        <div class="field-row"><span class="field-label">Intensity:</span><span class="field-value">${session.intensity}/10</span></div>
+                    `;
+                } else if (type === 'speedAgility') {
+                    fieldsHtml = `
+                        <div class="field-row"><span class="field-label">Reps:</span><span class="field-value">${session.reps}</span></div>
+                        <div class="field-row"><span class="field-label">Time:</span><span class="field-value">${session.time} sec</span></div>
+                        <div class="field-row"><span class="field-label">Distance:</span><span class="field-value">${session.distance} m</span></div>
+                        <div class="field-row"><span class="field-label">Height:</span><span class="field-value">${session.height} cm</span></div>
+                        <div class="field-row"><span class="field-label">Rest Time:</span><span class="field-value">${session.restTime} sec</span></div>
+                        <div class="field-row"><span class="field-label">RPE:</span><span class="field-value">${session.rpe}/10</span></div>
+                        <div class="field-row"><span class="field-label">Intensity:</span><span class="field-value">${session.intensity}/10</span></div>
+                        <div class="field-row"><span class="field-label">Drill Type:</span><span class="field-value">${session.drillType}</span></div>
+                    `;
+                }
+                
+                card.innerHTML = `
+                    <div class="activity-header">${activity.activityName} (${type.charAt(0).toUpperCase() + type.slice(1)})</div>
+                    ${fieldsHtml}
+                    <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #444;">
+                        <span class="field-label">Notes:</span> <span class="field-value">${session.notes}</span>
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+
+        function testExport() {
+            console.log('🧪 Testing CSV export functionality...');
+            
+            const logs = JSON.parse(localStorage.getItem('activity-logs') || '[]');
+            const testLogs = logs.filter(log => log.userId === 'test-user');
+            
+            if (testLogs.length === 0) {
+                document.getElementById('export-results').innerHTML = '<div class="error">❌ No test data found. Generate test data first!</div>';
+                return;
+            }
+            
+            // Simulate the export process
+            const csvHeaders = ['Date', 'Exercise', 'Activity Type', 'Set'];
+            const hasEndurance = testLogs.some(log => log.activityType === 'endurance');
+            const hasSport = testLogs.some(log => log.activityType === 'sport');
+            const hasSpeedAgility = testLogs.some(log => log.activityType === 'speedAgility');
+            
+            if (hasEndurance) {
+                csvHeaders.push('Duration (min)', 'Distance (km)', 'Pace', 'Avg HR', 'Max HR', 'Calories', 'Elevation', 'RPE', 'Zone 1', 'Zone 2', 'Zone 3');
+            }
+            if (hasSport) {
+                csvHeaders.push('Duration (min)', 'Distance (km)', 'Calories', 'Score', 'Opponent', 'Performance');
+            }
+            if (hasSpeedAgility) {
+                csvHeaders.push('Reps', 'Time (sec)', 'Distance (m)', 'Height (cm)', 'Rest Time (sec)', 'Drill Type');
+            }
+            
+            csvHeaders.push('Intensity', 'Notes');
+            
+            let csvContent = csvHeaders.join(',') + '\n';
+            
+            testLogs.forEach(log => {
+                log.sessions.forEach((session, index) => {
+                    const row = [
+                        new Date().toLocaleDateString(),
+                        log.activityName,
+                        log.activityType,
+                        index + 1
+                    ];
+                    
+                    if (hasEndurance && log.activityType === 'endurance') {
+                        row.push(
+                            session.duration, session.distance, session.pace,
+                            session.averageHeartRate, session.maxHeartRate,
+                            session.calories, session.elevation, session.rpe,
+                            session.hrZone1, session.hrZone2, session.hrZone3
+                        );
+                    } else if (hasEndurance) {
+                        row.push('', '', '', '', '', '', '', '', '', '', '');
+                    }
+                    
+                    if (hasSport && log.activityType === 'sport') {
+                        row.push(
+                            session.duration, session.distance, session.calories,
+                            session.score, session.opponent, session.performance
+                        );
+                    } else if (hasSport) {
+                        row.push('', '', '', '', '', '');
+                    }
+                    
+                    if (hasSpeedAgility && log.activityType === 'speedAgility') {
+                        row.push(
+                            session.reps, session.time, session.distance,
+                            session.height, session.restTime, session.drillType
+                        );
+                    } else if (hasSpeedAgility) {
+                        row.push('', '', '', '', '', '');
+                    }
+                    
+                    row.push(session.intensity || '', session.notes || '');
+                    csvContent += row.join(',') + '\n';
+                });
+            });
+            
+            // Create and download CSV
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'test-activity-export.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            document.getElementById('export-results').innerHTML = `
+                <div class="success">✅ CSV export test completed successfully!</div>
+                <div>Headers included: ${csvHeaders.join(', ')}</div>
+                <div>Data rows: ${testLogs.reduce((total, log) => total + log.sessions.length, 0)}</div>
+                <div>Activity types: ${[...new Set(testLogs.map(log => log.activityType))].join(', ')}</div>
+            `;
+        }
+
+        function clearTestData() {
+            const logs = JSON.parse(localStorage.getItem('activity-logs') || '[]');
+            const filteredLogs = logs.filter(log => log.userId !== 'test-user');
+            localStorage.setItem('activity-logs', JSON.stringify(filteredLogs));
+            
+            document.getElementById('test-activities').innerHTML = '';
+            document.getElementById('export-results').innerHTML = '<div class="success">✅ Test data cleared!</div>';
+        }
+
+        // Load any existing test data on page load
+        window.onload = function() {
+            const logs = JSON.parse(localStorage.getItem('activity-logs') || '[]');
+            const testLogs = logs.filter(log => log.userId === 'test-user');
+            if (testLogs.length > 0) {
+                displayTestActivities();
+            }
+        };
+    </script>
+</body>
+</html>

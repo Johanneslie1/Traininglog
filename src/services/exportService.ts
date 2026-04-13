@@ -1,0 +1,957 @@
+import { getUserWorkouts } from './firebase/workouts';
+import { DifficultyCategory } from '@/types/difficulty';
+import { ActivityType } from '@/types/activityTypes';
+import { mapExerciseTypeToActivityType, normalizeActivityType } from '@/types/activityLog';
+import { getAggregatedExportLogs } from '@/services/logAggregationService';
+import { SupersetGroup } from '@/types/session';
+import { buildSupersetLabels, SupersetLabelMetadata } from '@/utils/supersetUtils';
+import { normalizeDistanceMeters, normalizeDurationSeconds } from '@/utils/activityFieldContract';
+import { toLocalDateString, toLocalTimestamp } from '@/utils/dateUtils';
+import { normalizeSessionType } from '@/types/sessionType';
+
+export interface ExportOptions {
+  includeSessions?: boolean;
+  includeExerciseLogs?: boolean;
+  includeSets?: boolean;
+  startDate?: Date;
+  endDate?: Date;
+  separateByActivityType?: boolean;
+}
+
+export const SET_EXPORT_HEADERS = [
+  'userId',
+  'sessionId',
+  'sessionType',
+  'sessionDateKey',
+  'sessionWeekKey',
+  'sessionNumberInDay',
+  'sessionNumberInWeek',
+  'exerciseLogId',
+  'exerciseName',
+  'exerciseType',
+  'activityType',
+  'supersetId',
+  'supersetLabel',
+  'supersetName',
+  'exerciseDate',
+  'loggedDate',
+  'loggedTimestamp',
+  'exerciseNumber',
+  'setNumber',
+  'reps',
+  'weight',
+  'duration',
+  'distance',
+  'durationSec',
+  'distanceMeters',
+  'rpe',
+  'restTime',
+  'restTimeSec',
+  'isWarmup',
+  'setVolume',
+  'comment',
+  'notes',
+  'hrZone1',
+  'hrZone2',
+  'hrZone3',
+  'hrZone4',
+  'hrZone5',
+  'averageHeartRate',
+  'maxHeartRate',
+  'averageHR',
+  'maxHR',
+  'heartRate',
+  'calories',
+  'height',
+  'drillMetric',
+  'score',
+  'opponent',
+  'performance',
+  'stretchType',
+  'intensity',
+  'bodyPart',
+  'holdTime',
+  'flexibility',
+  'pace',
+  'elevation'
+] as const;
+
+// Helper function to safely convert date to local timestamp string
+const safeDateToLocalTimestamp = (date: Date | any): string => {
+  if (!date) return '';
+  
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return '';
+  
+  return toLocalTimestamp(d);
+};
+
+const DEFAULT_EXPORT_START_DATE = new Date('1970-01-01T00:00:00.000Z');
+
+const getDateKeyFromTimestamp = (timestamp: Date | undefined): string => {
+  if (!timestamp) return '';
+  return toLocalDateString(timestamp);
+};
+
+const toSafeKey = (value: string): string =>
+  value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+const getSupersetNumberFromLabel = (label: string | undefined): string | null => {
+  if (!label) return null;
+  const match = label.trim().toLowerCase().match(/^(\d+)[a-z]+$/);
+  return match ? match[1] : null;
+};
+
+const readLegacySupersetDataForDate = (dateKey: string): { supersets: SupersetGroup[]; exerciseOrder: string[] } => {
+  try {
+    const supersetsRaw = localStorage.getItem(`superset_data_${dateKey}`);
+    const exerciseOrderRaw = localStorage.getItem(`exercise_order_${dateKey}`);
+
+    const supersets = supersetsRaw ? (JSON.parse(supersetsRaw) as SupersetGroup[]) : [];
+    const exerciseOrder = exerciseOrderRaw ? (JSON.parse(exerciseOrderRaw) as string[]) : [];
+
+    return {
+      supersets: Array.isArray(supersets) ? supersets : [],
+      exerciseOrder: Array.isArray(exerciseOrder) ? exerciseOrder : [],
+    };
+  } catch (error) {
+    console.warn('Failed to parse legacy superset data for export fallback:', error);
+    return { supersets: [], exerciseOrder: [] };
+  }
+};
+
+const getDateRange = (startDate?: Date, endDate?: Date) => {
+  const start = new Date(startDate || DEFAULT_EXPORT_START_DATE);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(endDate || new Date());
+  end.setHours(23, 59, 59, 999);
+
+  return { start, end };
+};
+
+const inferActivityTypeFromSetShape = (sets: Array<Record<string, any>>): ActivityType | undefined => {
+  if (!Array.isArray(sets) || sets.length === 0) {
+    return undefined;
+  }
+
+  const hasMetric = (predicate: (set: Record<string, any>) => boolean): boolean =>
+    sets.some((set) => predicate(set || {}));
+
+  if (hasMetric((set) => set.drillMetric !== undefined || set.restTime !== undefined || set.height !== undefined)) {
+    return ActivityType.SPEED_AGILITY;
+  }
+
+  if (hasMetric((set) => set.stretchType !== undefined || set.holdTime !== undefined || set.flexibility !== undefined || set.bodyPart !== undefined)) {
+    return ActivityType.STRETCHING;
+  }
+
+  if (hasMetric((set) => set.score !== undefined || set.opponent !== undefined || set.teamBased === true)) {
+    return ActivityType.SPORT;
+  }
+
+  if (hasMetric((set) => set.pace !== undefined || set.elevation !== undefined || set.hrZone1 !== undefined || set.hrZone2 !== undefined || set.hrZone3 !== undefined || set.hrZone4 !== undefined || set.hrZone5 !== undefined)) {
+    return ActivityType.ENDURANCE;
+  }
+
+  if (hasMetric((set) => set.duration !== undefined || set.time !== undefined || set.distance !== undefined || set.calories !== undefined || set.heartRate !== undefined || set.averageHeartRate !== undefined || set.maxHeartRate !== undefined)) {
+    return ActivityType.OTHER;
+  }
+
+  return undefined;
+};
+
+const resolveExportActivityType = (log: Record<string, any>, defaultType: ActivityType = ActivityType.OTHER): ActivityType => {
+  if (log.activityType) {
+    return normalizeActivityType(log.activityType);
+  }
+
+  if (log.exerciseType) {
+    return normalizeActivityType(mapExerciseTypeToActivityType(String(log.exerciseType)));
+  }
+
+  const inferredFromSets = inferActivityTypeFromSetShape(Array.isArray(log.sets) ? log.sets : []);
+  return inferredFromSets || defaultType;
+};
+
+const removeUndefinedFields = <T>(obj: T): T => {
+  if (Array.isArray(obj)) {
+    return obj.map(removeUndefinedFields) as unknown as T;
+  }
+
+  if (obj && typeof obj === 'object') {
+    const cleaned: Record<string, unknown> = {};
+    Object.entries(obj as Record<string, unknown>).forEach(([key, value]) => {
+      if (value !== undefined) {
+        cleaned[key] = removeUndefinedFields(value);
+      }
+    });
+    return cleaned as T;
+  }
+
+  return obj;
+};
+
+const readNumericSetValue = (set: Record<string, unknown>, key: string): number => {
+  const value = set[key];
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+};
+
+export const serializeSetForExport = (
+  userId: string,
+  log: {
+    id: string;
+    exerciseName: string;
+    collectionType: string;
+    activityType: ActivityType;
+    timestamp: Date;
+    supersetId?: string;
+    supersetLabel?: string;
+    supersetName?: string;
+    exerciseNumber?: number;
+  },
+  set: Record<string, any>,
+  index: number
+) => {
+  const normalizedDurationSec = normalizeDurationSeconds(set.duration, log.activityType);
+  const normalizedDistanceMeters = normalizeDistanceMeters(set.distance, log.activityType);
+  const sessionType = normalizeSessionType((log as any).sessionType);
+
+  return removeUndefinedFields({
+    userId,
+    sessionId: (log as any).sessionId || '',
+    sessionType,
+    sessionDateKey: (log as any).sessionDateKey || '',
+    sessionWeekKey: (log as any).sessionWeekKey || '',
+    sessionNumberInDay: (log as any).sessionNumberInDay || 0,
+    sessionNumberInWeek: (log as any).sessionNumberInWeek || 0,
+    exerciseLogId: log.id,
+    exerciseName: log.exerciseName,
+    exerciseType: log.collectionType,
+    activityType: log.activityType,
+    supersetId: log.supersetId || '',
+    supersetLabel: log.supersetLabel || '',
+    supersetName: log.supersetName || '',
+    exerciseDate: log.timestamp ? toLocalDateString(log.timestamp) : '',
+    loggedDate: log.timestamp ? toLocalDateString(log.timestamp) : '',
+    loggedTimestamp: safeDateToLocalTimestamp(log.timestamp),
+    exerciseNumber: log.exerciseNumber ?? 0,
+    setNumber: index + 1,
+    reps: set.reps ?? 0,
+    weight: set.weight ?? 0,
+    duration: set.duration ?? 0,
+    distance: set.distance ?? 0,
+    durationSec: normalizedDurationSec,
+    distanceMeters: normalizedDistanceMeters,
+    rpe: set.rpe ?? 0,
+    restTime: set.restTime ?? 0,
+    restTimeSec: set.restTime ?? 0,
+    isWarmup:
+      set.difficulty === DifficultyCategory.WARMUP ||
+      sessionType === 'warmup' ||
+      (log as any).isWarmup === true,
+    difficulty: set.difficulty || '',
+    setVolume: (set.reps || 0) * (set.weight || 0),
+    comment: set.comment || '',
+    notes: set.notes || '',
+    hrZone1: set.hrZone1 ?? 0,
+    hrZone2: set.hrZone2 ?? 0,
+    hrZone3: set.hrZone3 ?? 0,
+    hrZone4: set.hrZone4 ?? 0,
+    hrZone5: set.hrZone5 ?? 0,
+    averageHeartRate: set.averageHeartRate ?? 0,
+    maxHeartRate: set.maxHeartRate ?? 0,
+    heartRate: set.heartRate ?? 0,
+    averageHR: set.averageHeartRate ?? 0,
+    maxHR: set.maxHeartRate ?? 0,
+    calories: set.calories ?? 0,
+    height: set.height ?? 0,
+    drillMetric: set.drillMetric || '',
+    performance: set.performance || '',
+    score: set.score ?? 0,
+    opponent: set.opponent || '',
+    stretchType: set.stretchType || '',
+    intensity: set.intensity ?? 0,
+    bodyPart: set.bodyPart || '',
+    holdTime: set.holdTime ?? 0,
+    flexibility: set.flexibility ?? 0,
+    pace: set.pace || '',
+    elevation: set.elevation ?? 0,
+    timestamp: safeDateToLocalTimestamp(set.timestamp)
+  });
+};
+
+export const exportData = async (userId: string, options: ExportOptions = {}) => {
+  const {
+    includeSessions = true,
+    includeExerciseLogs = true,
+    includeSets = true,
+    startDate,
+    endDate
+  } = options;
+
+  const results = {
+    sessions: [] as any[],
+    exerciseLogs: [] as any[],
+    sets: [] as any[]
+  };
+
+  try {
+    // Export sessions
+    if (includeSessions) {
+      let sessions = await getUserWorkouts(userId);
+      
+      // Filter by date range if provided
+      if (startDate || endDate) {
+        sessions = sessions.filter(session => {
+          const sessionDate = new Date(session.date);
+          if (startDate && sessionDate < startDate) return false;
+          if (endDate && sessionDate > endDate) return false;
+          return true;
+        });
+      }
+      
+      results.sessions = sessions.map(session => ({
+        userId: session.userId,
+        sessionId: session.id,
+        sessionDate: session.date,
+        startTime: '', // Not available in current data
+        endTime: '', // Not available in current data
+        notes: session.notes || '',
+        totalVolume: session.totalVolume || 0,
+        sessionRPE: session.sessionRPE || 0,
+        exerciseCount: session.exercises?.length || 0,
+        setCount: session.exercises?.reduce((total, ex) => total + (ex.sets?.length || 0), 0) || 0,
+        durationMinutes: 0, // TODO: calculate from timestamps
+        createdAt: '', // Not available in current data
+        updatedAt: '' // Not available in current data
+      }));
+    }
+
+    // Export exercise logs
+    if (includeExerciseLogs || includeSets) {
+      const { start, end } = getDateRange(startDate, endDate);
+      const aggregatedLogs = await getAggregatedExportLogs(userId, start, end);
+
+      const unifiedLogs = aggregatedLogs
+        .map((log) => ({
+          ...log,
+          activityType: resolveExportActivityType(log as Record<string, any>, ActivityType.OTHER),
+        }))
+        .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+
+      const inferredSupersetMetadataByLogId = new Map<string, {
+        supersetId: string;
+        supersetLabel: string;
+        supersetName: string;
+      }>();
+
+      const inferredGroupByDateAndKey = new Map<string, {
+        supersetId: string;
+        supersetName: string;
+      }>();
+
+      unifiedLogs.forEach((log) => {
+        const dateKey = getDateKeyFromTimestamp(log.timestamp);
+        if (!dateKey) return;
+
+        const providedId = String(log.supersetId || '').trim();
+        const providedLabel = String(log.supersetLabel || '').trim();
+        const providedName = String(log.supersetName || '').trim();
+        const labelSupersetNumber = getSupersetNumberFromLabel(providedLabel);
+
+        const groupKey = providedId
+          ? `id:${providedId}`
+          : labelSupersetNumber
+            ? `label:${labelSupersetNumber}`
+            : providedName
+              ? `name:${toSafeKey(providedName)}`
+              : '';
+
+        if (!groupKey) return;
+
+        const mapKey = `${dateKey}|${groupKey}`;
+        const existing = inferredGroupByDateAndKey.get(mapKey);
+        if (!existing) {
+          const fallbackIdSeed = labelSupersetNumber
+            ? `label-${labelSupersetNumber}`
+            : providedName
+              ? `name-${toSafeKey(providedName)}`
+              : `id-${toSafeKey(providedId)}`;
+
+          inferredGroupByDateAndKey.set(mapKey, {
+            supersetId: providedId || `legacy-superset-${dateKey}-${fallbackIdSeed}`,
+            supersetName: providedName || (labelSupersetNumber ? `Superset ${labelSupersetNumber}` : 'Superset')
+          });
+        }
+      });
+
+      unifiedLogs.forEach((log) => {
+        const dateKey = getDateKeyFromTimestamp(log.timestamp);
+        if (!dateKey) return;
+
+        const providedId = String(log.supersetId || '').trim();
+        const providedLabel = String(log.supersetLabel || '').trim();
+        const providedName = String(log.supersetName || '').trim();
+        const labelSupersetNumber = getSupersetNumberFromLabel(providedLabel);
+
+        const groupKey = providedId
+          ? `id:${providedId}`
+          : labelSupersetNumber
+            ? `label:${labelSupersetNumber}`
+            : providedName
+              ? `name:${toSafeKey(providedName)}`
+              : '';
+
+        if (!groupKey) return;
+
+        const groupMeta = inferredGroupByDateAndKey.get(`${dateKey}|${groupKey}`);
+        if (!groupMeta) return;
+
+        inferredSupersetMetadataByLogId.set(log.id, {
+          supersetId: groupMeta.supersetId,
+          supersetLabel: providedLabel,
+          supersetName: providedName || groupMeta.supersetName
+        });
+      });
+
+      const legacyLabelCacheByDate = new Map<string, Record<string, SupersetLabelMetadata>>();
+
+      const resolveSupersetMetadata = (log: {
+        id: string;
+        timestamp: Date;
+        supersetId?: string;
+        supersetLabel?: string;
+        supersetName?: string;
+      }) => {
+        const inferredMeta = inferredSupersetMetadataByLogId.get(log.id);
+        if (inferredMeta) {
+          return inferredMeta;
+        }
+
+        if (log.supersetLabel || log.supersetId || log.supersetName) {
+          const labelSupersetNumber = getSupersetNumberFromLabel(log.supersetLabel);
+          const derivedSupersetId = log.supersetId || (labelSupersetNumber
+            ? `legacy-superset-${getDateKeyFromTimestamp(log.timestamp)}-label-${labelSupersetNumber}`
+            : '');
+
+          return {
+            supersetId: derivedSupersetId,
+            supersetLabel: log.supersetLabel || '',
+            supersetName: log.supersetName || (labelSupersetNumber ? `Superset ${labelSupersetNumber}` : ''),
+          };
+        }
+
+        const dateKey = getDateKeyFromTimestamp(log.timestamp);
+        if (!dateKey) {
+          return { supersetId: '', supersetLabel: '', supersetName: '' };
+        }
+
+        if (!legacyLabelCacheByDate.has(dateKey)) {
+          const { supersets, exerciseOrder } = readLegacySupersetDataForDate(dateKey);
+          legacyLabelCacheByDate.set(dateKey, buildSupersetLabels(supersets, exerciseOrder));
+        }
+
+        const labelsByExerciseId = legacyLabelCacheByDate.get(dateKey) || {};
+        const fallback = labelsByExerciseId[log.id];
+
+        return {
+          supersetId: fallback?.supersetId || '',
+          supersetLabel: fallback?.label || '',
+          supersetName: fallback?.supersetName || '',
+        };
+      };
+
+      if (includeExerciseLogs) {
+        results.exerciseLogs = unifiedLogs.map(log => {
+          const supersetMeta = resolveSupersetMetadata(log);
+          const totalReps = log.sets.reduce((sum, set) => sum + readNumericSetValue(set, 'reps'), 0);
+          const maxWeight = log.sets.length > 0
+            ? Math.max(...log.sets.map(set => readNumericSetValue(set, 'weight')))
+            : 0;
+          const totalVolume = log.sets.reduce(
+            (sum, set) => sum + (readNumericSetValue(set, 'reps') * readNumericSetValue(set, 'weight')),
+            0
+          );
+          const averageRPE = log.sets.length > 0
+            ? log.sets.reduce((sum, set) => sum + readNumericSetValue(set, 'rpe'), 0) / log.sets.length
+            : 0;
+
+          return {
+            userId,
+            sessionId: (log as any).sessionId || '',
+            sessionType: normalizeSessionType((log as any).sessionType),
+            sessionDateKey: (log as any).sessionDateKey || '',
+            sessionWeekKey: (log as any).sessionWeekKey || '',
+            sessionNumberInDay: (log as any).sessionNumberInDay || 0,
+            sessionNumberInWeek: (log as any).sessionNumberInWeek || 0,
+            exerciseLogId: log.id,
+            exerciseId: '', // TODO: get exercise ID
+            exerciseName: log.exerciseName,
+            supersetId: supersetMeta.supersetId,
+            supersetLabel: supersetMeta.supersetLabel,
+            supersetName: supersetMeta.supersetName,
+            category: log.collectionType,
+            type: log.activityType,
+            setCount: log.sets.length,
+            totalReps,
+            maxWeight,
+            totalVolume,
+            averageRPE,
+            notes: log.sets.map(set => set.comment || set.notes || '').filter(n => n).join('; '),
+            createdAt: safeDateToLocalTimestamp(log.timestamp)
+          };
+        });
+      }
+
+      if (includeSets) {
+        // Assign exerciseNumber per date group (1-based order within each day)
+        const exerciseNumberByLogId = new Map<string, number>();
+        const logsByDate = new Map<string, typeof unifiedLogs>();
+        unifiedLogs.forEach((log) => {
+          const dateKey = getDateKeyFromTimestamp(log.timestamp);
+          if (!logsByDate.has(dateKey)) logsByDate.set(dateKey, []);
+          logsByDate.get(dateKey)!.push(log);
+        });
+        logsByDate.forEach((logsForDate) => {
+          // Sort by createdAt if available, otherwise keep original order
+          const sorted = [...logsForDate].sort((a, b) => {
+            const aCreated = (a as any).createdAt as Date | undefined;
+            const bCreated = (b as any).createdAt as Date | undefined;
+            if (aCreated && bCreated) {
+              return aCreated.getTime() - bCreated.getTime();
+            }
+            return 0;
+          });
+          sorted.forEach((log, idx) => {
+            exerciseNumberByLogId.set(log.id, idx + 1);
+          });
+        });
+
+        results.sets = unifiedLogs.flatMap(log =>
+          log.sets.map((set, index) => {
+            const supersetMeta = resolveSupersetMetadata(log);
+            return serializeSetForExport(
+              userId,
+              {
+                ...log,
+                supersetId: supersetMeta.supersetId,
+                supersetLabel: supersetMeta.supersetLabel,
+                supersetName: supersetMeta.supersetName,
+                exerciseNumber: exerciseNumberByLogId.get(log.id) ?? 0,
+              },
+              set,
+              index
+            );
+          })
+        );
+      }
+    }
+
+    return results;
+  } catch (error) {
+    console.error('Export error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    throw new Error(`Failed to export data: ${errorMessage}`);
+  }
+};
+
+export interface ExportPreview {
+  sessionCount: number;
+  exerciseCount: number;
+  setCount: number;
+}
+
+/**
+ * Get a preview of how much data will be exported for the given date range
+ */
+export const getExportPreview = async (userId: string, startDate?: Date, endDate?: Date): Promise<ExportPreview> => {
+  const [sessionsResult, logsResult] = await Promise.allSettled([
+    exportData(userId, {
+      includeSessions: true,
+      includeExerciseLogs: false,
+      includeSets: false,
+      startDate,
+      endDate,
+    }),
+    exportData(userId, {
+      includeSessions: false,
+      includeExerciseLogs: true,
+      includeSets: true,
+      startDate,
+      endDate,
+    }),
+  ]);
+
+  if (sessionsResult.status === 'rejected') {
+    console.error('Error getting session preview count:', sessionsResult.reason);
+  }
+
+  if (logsResult.status === 'rejected') {
+    console.error('Error getting exercise/set preview counts:', logsResult.reason);
+    const reason = logsResult.reason instanceof Error
+      ? logsResult.reason.message
+      : String(logsResult.reason || 'Unknown error');
+    throw new Error(`Failed to load export preview logs: ${reason}`);
+  }
+
+  return {
+    sessionCount: sessionsResult.status === 'fulfilled' ? sessionsResult.value.sessions.length : 0,
+    exerciseCount: logsResult.status === 'fulfilled' ? logsResult.value.exerciseLogs.length : 0,
+    setCount: logsResult.status === 'fulfilled' ? logsResult.value.sets.length : 0,
+  };
+};
+
+const arrayToCSV = (data: any[], headers: string[]): string => {
+  const delimiter = ';';
+
+  const formatNumberForCsv = (value: number): string => {
+    // Keep integers as-is and convert decimal separator for locale-aware imports.
+    if (!Number.isFinite(value)) return '';
+    const raw = Number.isInteger(value) ? value.toString() : value.toString();
+    return raw.replace('.', ',');
+  };
+
+  const formatCellForCsv = (value: unknown): string => {
+    if (typeof value === 'number') {
+      return formatNumberForCsv(value);
+    }
+
+    if (typeof value === 'string') {
+      return value.replace(/(\d+)\.(\d+)/g, '$1,$2');
+    }
+
+    if (value === null || value === undefined) {
+      return '';
+    }
+
+    return String(value);
+  };
+
+  const csvRows = [headers.join(delimiter)];
+  data.forEach(row => {
+    const values = headers.map(header => {
+      const value = formatCellForCsv(row[header]);
+      // Escape quotes and wrap in quotes if contains delimiter, quote, or newline
+      if (typeof value === 'string' && (value.includes(delimiter) || value.includes('"') || value.includes('\n'))) {
+        return `"${value.replace(/"/g, '""')}"`;
+      }
+      return value;
+    });
+    csvRows.push(values.join(delimiter));
+  });
+  return `\uFEFF${csvRows.join('\n')}`;
+};
+
+export const downloadCSV = (data: any[], headers: string[], filename: string) => {
+  const csv = arrayToCSV(data, headers);
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+/**
+ * Download separate CSV files for each activity type with only relevant columns
+ */
+export const downloadActivityCSVs = async (userId: string, options: ExportOptions = {}) => {
+  try {
+    const data = await exportData(userId, options);
+    
+    if (!data.sets || data.sets.length === 0) {
+      throw new Error('No sets found to export');
+    }
+
+    // Group sets by activity type
+    const setsByActivityType: { [key: string]: any[] } = {
+      resistance: [],
+      endurance: [],
+      speedAgility: [],
+      stretching: [],
+      sport: [],
+      other: []
+    };
+
+    data.sets.forEach(set => {
+      const activityType = set.activityType || 'other';
+      const key = activityType === 'speed_agility' ? 'speedAgility' : activityType;
+      if (setsByActivityType[key]) {
+        setsByActivityType[key].push(set);
+      } else {
+        setsByActivityType.other.push(set);
+      }
+    });
+
+    let exportedFiles = 0;
+
+    // Export Resistance Training Sets
+    if (setsByActivityType.resistance.length > 0) {
+      const resistanceSets = setsByActivityType.resistance;
+      const headers = ['loggedDate', 'exerciseName', 'supersetId', 'supersetLabel', 'supersetName', 'setNumber', 'weight', 'reps', 'rpe', 'setVolume', 'isWarmup', 'restTimeSec', 'comment'];
+      
+      // Calculate summary
+      const totalVolume = resistanceSets.reduce((sum, set) => sum + (set.setVolume || 0), 0);
+      const totalSets = resistanceSets.length;
+      const avgRPE = resistanceSets.filter(s => s.rpe > 0).length > 0
+        ? resistanceSets.reduce((sum, set) => sum + (set.rpe || 0), 0) / resistanceSets.filter(s => s.rpe > 0).length
+        : 0;
+      const maxWeight = Math.max(...resistanceSets.map(s => s.weight || 0));
+
+      // Add summary row
+      const summaryRow = {
+        loggedDate: 'SUMMARY',
+        exerciseName: `Total Sets: ${totalSets}`,
+        setNumber: '',
+        weight: `Max: ${maxWeight}`,
+        reps: '',
+        rpe: avgRPE > 0 ? `Avg: ${avgRPE.toFixed(1)}` : '',
+        setVolume: `Total: ${totalVolume}`,
+        isWarmup: '',
+        restTimeSec: '',
+        comment: ''
+      };
+
+      downloadCSV([...resistanceSets, summaryRow], headers, 'resistance_sets.csv');
+      exportedFiles++;
+    }
+
+    // Export Endurance Sets
+    if (setsByActivityType.endurance.length > 0) {
+      const enduranceSets = setsByActivityType.endurance;
+      const headers = ['loggedDate', 'exerciseName', 'supersetId', 'supersetLabel', 'supersetName', 'setNumber', 'reps', 'duration', 'distance', 'durationSec', 'distanceMeters', 'rpe', 'pace', 'averageHeartRate', 'maxHeartRate', 'averageHR', 'maxHR', 'hrZone1', 'hrZone2', 'hrZone3', 'hrZone4', 'hrZone5', 'calories', 'elevation', 'comment', 'notes'];
+      
+      // Calculate summary
+      const totalDuration = enduranceSets.reduce((sum, set) => sum + (set.durationSec || 0), 0);
+      const totalDistance = enduranceSets.reduce((sum, set) => sum + (set.distanceMeters || 0), 0);
+      const totalCalories = enduranceSets.reduce((sum, set) => sum + (set.calories || 0), 0);
+      const avgHR = enduranceSets.filter(s => s.averageHR > 0).length > 0
+        ? enduranceSets.reduce((sum, set) => sum + (set.averageHR || 0), 0) / enduranceSets.filter(s => s.averageHR > 0).length
+        : 0;
+
+      const summaryRow = {
+        loggedDate: 'SUMMARY',
+        exerciseName: `Total Sessions: ${enduranceSets.length}`,
+        setNumber: '',
+        reps: '',
+        duration: '',
+        distance: '',
+        durationSec: `Total: ${totalDuration}`,
+        distanceMeters: `Total: ${totalDistance}`,
+        rpe: '',
+        pace: '',
+        averageHeartRate: avgHR > 0 ? `Avg: ${avgHR.toFixed(0)}` : '',
+        maxHeartRate: '',
+        averageHR: avgHR > 0 ? `Avg: ${avgHR.toFixed(0)}` : '',
+        maxHR: '',
+        hrZone1: '',
+        hrZone2: '',
+        hrZone3: '',
+        hrZone4: '',
+        hrZone5: '',
+        calories: `Total: ${totalCalories}`,
+        elevation: '',
+        comment: '',
+        notes: ''
+      };
+
+      downloadCSV([...enduranceSets, summaryRow], headers, 'endurance_sets.csv');
+      exportedFiles++;
+    }
+
+    // Export Speed & Agility Sets
+    if (setsByActivityType.speedAgility.length > 0) {
+      const speedAgilitySets = setsByActivityType.speedAgility;
+      const headers = ['loggedDate', 'exerciseName', 'supersetId', 'supersetLabel', 'supersetName', 'setNumber', 'reps', 'durationSec', 'distanceMeters', 'height', 'rpe', 'restTimeSec', 'drillMetric', 'performance', 'intensity', 'comment', 'notes'];
+      
+      // Calculate summary
+      const totalReps = speedAgilitySets.reduce((sum, set) => sum + (set.reps || 0), 0);
+      const totalDuration = speedAgilitySets.reduce((sum, set) => sum + (set.durationSec || 0), 0);
+      const avgHeight = speedAgilitySets.filter(s => s.height > 0).length > 0
+        ? speedAgilitySets.reduce((sum, set) => sum + (set.height || 0), 0) / speedAgilitySets.filter(s => s.height > 0).length
+        : 0;
+
+      const summaryRow = {
+        loggedDate: 'SUMMARY',
+        exerciseName: `Total Drills: ${speedAgilitySets.length}`,
+        setNumber: '',
+        reps: `Total: ${totalReps}`,
+        durationSec: `Total: ${totalDuration}`,
+        distanceMeters: '',
+        height: avgHeight > 0 ? `Avg: ${avgHeight.toFixed(1)}` : '',
+        rpe: '',
+        restTimeSec: '',
+        drillMetric: '',
+        performance: '',
+        intensity: '',
+        comment: '',
+        notes: ''
+      };
+
+      downloadCSV([...speedAgilitySets, summaryRow], headers, 'speed_agility_sets.csv');
+      exportedFiles++;
+    }
+
+    // Export Stretching Sets
+    if (setsByActivityType.stretching.length > 0) {
+      const stretchingSets = setsByActivityType.stretching;
+      const headers = ['loggedDate', 'exerciseName', 'supersetId', 'supersetLabel', 'supersetName', 'setNumber', 'reps', 'durationSec', 'holdTime', 'rpe', 'intensity', 'bodyPart', 'stretchType', 'flexibility', 'comment', 'notes'];
+      
+      // Calculate summary
+      const totalHoldTime = stretchingSets.reduce((sum, set) => sum + (set.holdTime || 0), 0);
+      const avgIntensity = stretchingSets.filter(s => s.intensity > 0).length > 0
+        ? stretchingSets.reduce((sum, set) => sum + (set.intensity || 0), 0) / stretchingSets.filter(s => s.intensity > 0).length
+        : 0;
+      const avgFlexibility = stretchingSets.filter(s => s.flexibility > 0).length > 0
+        ? stretchingSets.reduce((sum, set) => sum + (set.flexibility || 0), 0) / stretchingSets.filter(s => s.flexibility > 0).length
+        : 0;
+
+      const summaryRow = {
+        loggedDate: 'SUMMARY',
+        exerciseName: `Total Stretches: ${stretchingSets.length}`,
+        setNumber: '',
+        reps: '',
+        durationSec: '',
+        holdTime: `Total: ${totalHoldTime}`,
+        rpe: '',
+        intensity: avgIntensity > 0 ? `Avg: ${avgIntensity.toFixed(1)}` : '',
+        bodyPart: '',
+        stretchType: '',
+        flexibility: avgFlexibility > 0 ? `Avg: ${avgFlexibility.toFixed(1)}` : '',
+        comment: '',
+        notes: ''
+      };
+
+      downloadCSV([...stretchingSets, summaryRow], headers, 'stretching_sets.csv');
+      exportedFiles++;
+    }
+
+    // Export Sport Sets
+    if (setsByActivityType.sport.length > 0) {
+      const sportSets = setsByActivityType.sport;
+      const headers = ['loggedDate', 'exerciseName', 'supersetId', 'supersetLabel', 'supersetName', 'setNumber', 'reps', 'durationSec', 'distanceMeters', 'rpe', 'intensity', 'heartRate', 'calories', 'score', 'opponent', 'performance', 'comment', 'notes'];
+      
+      // Calculate summary
+      const totalDuration = sportSets.reduce((sum, set) => sum + (set.durationSec || 0), 0);
+      const totalCalories = sportSets.reduce((sum, set) => sum + (set.calories || 0), 0);
+      const avgIntensity = sportSets.filter(s => s.intensity > 0).length > 0
+        ? sportSets.reduce((sum, set) => sum + (set.intensity || 0), 0) / sportSets.filter(s => s.intensity > 0).length
+        : 0;
+
+      const summaryRow = {
+        loggedDate: 'SUMMARY',
+        exerciseName: `Total Activities: ${sportSets.length}`,
+        setNumber: '',
+        reps: '',
+        durationSec: `Total: ${totalDuration}`,
+        distanceMeters: '',
+        rpe: '',
+        intensity: avgIntensity > 0 ? `Avg: ${avgIntensity.toFixed(1)}` : '',
+        heartRate: '',
+        calories: `Total: ${totalCalories}`,
+        score: '',
+        opponent: '',
+        performance: '',
+        comment: '',
+        notes: ''
+      };
+
+      downloadCSV([...sportSets, summaryRow], headers, 'sport_sets.csv');
+      exportedFiles++;
+    }
+
+    // Export Other Sets (fallback)
+    if (setsByActivityType.other.length > 0) {
+      const otherSets = setsByActivityType.other;
+      const headers = ['loggedDate', 'exerciseName', 'supersetId', 'supersetLabel', 'supersetName', 'activityType', 'setNumber', 'reps', 'weight', 'duration', 'distance', 'durationSec', 'distanceMeters', 'height', 'rpe', 'intensity', 'pace', 'elevation', 'comment', 'notes'];
+      
+      const summaryRow = {
+        loggedDate: 'SUMMARY',
+        exerciseName: `Total Sets: ${otherSets.length}`,
+        activityType: '',
+        setNumber: '',
+        reps: '',
+        weight: '',
+        duration: '',
+        distance: '',
+        durationSec: '',
+        distanceMeters: '',
+        height: '',
+        rpe: '',
+        intensity: '',
+        pace: '',
+        elevation: '',
+        comment: '',
+        notes: ''
+      };
+
+      downloadCSV([...otherSets, summaryRow], headers, 'other_sets.csv');
+      exportedFiles++;
+    }
+
+    return exportedFiles;
+  } catch (error) {
+    console.error('Activity-specific export error:', error);
+    throw error;
+  }
+};
+
+// ---- Wellness export ----
+
+export const WELLNESS_CSV_HEADERS = [
+  'athleteId',
+  'loggedDate',
+  'sleepQuality',
+  'fatigue',
+  'muscleSoreness',
+  'stress',
+  'mood',
+  'notes',
+] as const;
+
+/**
+ * Download wellness logs as a CSV file for a given date range.
+ * Imports are deferred to avoid circular dependencies with wellnessService.
+ */
+export const downloadWellnessCSV = async (
+  userId: string,
+  startDate?: Date,
+  endDate?: Date
+): Promise<number> => {
+  const { getWellnessByDateRange } = await import('@/services/wellnessService');
+
+  const start = startDate
+    ? `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`
+    : '1970-01-01';
+  const end = endDate
+    ? `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`
+    : new Date().toISOString().slice(0, 10);
+
+  const logs = await getWellnessByDateRange(userId, start, end);
+
+  if (logs.length === 0) return 0;
+
+  const rows = logs
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .map((l) => ({
+      athleteId: userId,
+      loggedDate: l.date,
+      sleepQuality: l.sleepQuality ?? '',
+      fatigue: l.fatigue ?? '',
+      muscleSoreness: l.muscleSoreness ?? '',
+      stress: l.stress ?? '',
+      mood: l.mood ?? '',
+      notes: l.notes ?? '',
+    }));
+
+  downloadCSV(rows, [...WELLNESS_CSV_HEADERS], 'wellness_logs.csv');
+  return logs.length;
+};

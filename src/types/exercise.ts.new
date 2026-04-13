@@ -1,0 +1,100 @@
+export type ExerciseType = 'strength' | 'cardio' | 'flexibility' | 'bodyweight';
+export type ExerciseCategory = 'compound' | 'isolation' | 'olympic' | 'cardio' | 'stretching' | 'power';
+export type UnitType = 'kg' | 'lbs' | 'time' | 'distance' | 'reps';
+export type DifficultyLevel = 'easy' | 'medium' | 'hard';
+
+export interface ExerciseMetrics {
+  trackWeight?: boolean;
+  trackReps?: boolean;
+  trackTime?: boolean;
+  trackDistance?: boolean;
+  trackRPE?: boolean;
+}
+
+export interface ExerciseBase {
+  id: string;
+  name: string;
+  description: string;
+  type: ExerciseType;
+  category: ExerciseCategory;
+  primaryMuscles: MuscleGroup[];
+  secondaryMuscles: MuscleGroup[];
+  equipment?: string[];
+  instructions: string[];
+  tips?: string[];
+  videoUrl?: string;
+  imageUrl?: string;
+  customExercise?: boolean;
+  defaultUnit: UnitType;
+  metrics: ExerciseMetrics;
+}
+
+export interface Exercise extends ExerciseBase {}
+
+export type MuscleGroup =
+  | 'chest'
+  | 'back'
+  | 'shoulders'
+  | 'biceps'
+  | 'triceps'
+  | 'forearms'
+  | 'quadriceps'
+  | 'hamstrings'
+  | 'calves'
+  | 'glutes'
+  | 'core'
+  | 'traps'
+  | 'lats'
+  | 'lower_back'
+  | 'full_body';
+
+export interface ExerciseFilter {
+  type?: Exercise['type'][];
+  category?: Exercise['category'][];
+  muscles?: MuscleGroup[];
+  equipment?: string[];
+  searchText?: string;
+}
+
+/** Represents a set of an exercise with reps and optional weight */
+export interface ExerciseSet {
+  /** Number of repetitions performed */
+  reps: number;
+  /** Weight used in kg (optional for bodyweight exercises) */
+  weight: number;
+  /** Rating of Perceived Exertion (1-10) */
+  rpe?: string;
+  /** Difficulty level of the set */
+  difficulty?: DifficultyLevel;
+}
+
+/** Base logged exercise entry with required fields */
+export interface ExerciseLogBase {
+  /** Unique identifier for the logged exercise */
+  id: string;
+  /** Name of the exercise performed */
+  exerciseName: string;
+  /** Name for Exercise compatibility */
+  name: string;
+  /** Array of sets performed */
+  sets: ExerciseSet[];
+  /** When the exercise was performed */
+  timestamp: Date;
+  /** Type of exercise */
+  type: ExerciseType;
+  /** Exercise category */
+  category: ExerciseCategory;
+  /** Primary muscles targeted */
+  primaryMuscles: MuscleGroup[];
+  /** Secondary muscles targeted */
+  secondaryMuscles: MuscleGroup[];
+  /** Default unit for measurements */
+  defaultUnit: UnitType;
+  /** Exercise metrics configuration */
+  metrics: ExerciseMetrics;
+  /** Device ID for syncing */
+  deviceId?: string;
+}
+
+/** A logged exercise entry with all fields */
+export interface ExerciseLog extends ExerciseLogBase {}

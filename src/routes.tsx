@@ -1,0 +1,300 @@
+import React, { Suspense, lazy } from 'react';
+import { Routes, Route, Navigate, useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
+import { usePrograms } from '@/context/ProgramsContext';
+import { Exercise } from '@/types/exercise';
+import { ExerciseSet } from '@/types/sets';
+import { Program } from '@/types/program';
+
+// Lazy load components
+const Login = lazy(() => import('@/features/auth/Login'));
+const Register = lazy(() => import('@/features/auth/Register'));
+const ExerciseLog = lazy(() => import('@/features/exercises/ExerciseLog'));
+const ProfilePage = lazy(() => import('@/features/profile/ProfilePage'));
+const SettingsPage = lazy(() => import('@/features/settings/SettingsPage'));
+const ProgramList = lazy(() => import('@/features/programs/ProgramList'));
+const ProgramDetail = lazy(() => import('@/features/programs/ProgramDetail'));
+const AthleteTeamsHub = lazy(() => import('@/features/teams/AthleteTeamsHub'));
+const TeamDetail = lazy(() => import('@/features/teams/TeamDetail'));
+const JoinTeam = lazy(() => import('@/features/teams/JoinTeam'));
+const CoachDashboard = lazy(() => import('@/features/coach/CoachDashboard'));
+const AthleteOverview = lazy(() => import('@/features/coach/AthleteOverview'));
+const Debug = lazy(() => import('@/features/debug/Debug'));
+const ExerciseOverview = lazy(() => import('@/pages/ExerciseOverview'));
+const SpeedAgilityPlyoPage = lazy(() => import('@/pages/SpeedAgilityPlyoPage'));
+const AnalyticsDashboard = lazy(() => import('@/pages/AnalyticsDashboard'));
+const WellnessPage = lazy(() => import('@/features/wellness/WellnessPage'));
+
+// Wrapper to fetch program by id and render ProgramDetail
+const ProgramDetailWrapper: React.FC = () => {
+  const { id } = useParams();
+  const { programs, updateProgram, refresh, isLoading } = usePrograms();
+  const navigate = useNavigate();
+  const [hasRequestedRefresh, setHasRequestedRefresh] = React.useState(false);
+  const program = programs.find((p: Program) => p.id === id);
+
+  React.useEffect(() => {
+    if (!program && !isLoading && !hasRequestedRefresh) {
+      setHasRequestedRefresh(true);
+      void refresh();
+    }
+  }, [program, isLoading, hasRequestedRefresh, refresh]);
+
+  if (!program) {
+    if (isLoading || !hasRequestedRefresh) {
+      return <div className="text-text-primary p-4">Loading program...</div>;
+    }
+
+    return <div className="text-text-primary p-4">Program not found</div>;
+  }
+
+  return <ProgramDetail program={program} onBack={() => navigate('/programs')} onUpdate={updated => updateProgram(program.id, updated)} />;
+};
+
+// Wrapper for program selection mode
+const ProgramSelectionWrapper: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { programs } = usePrograms();
+  const state = location.state as { onSelect?: (exercises: { exercise: Exercise; sets: ExerciseSet[] }[]) => void } | null;
+
+  if (!programs.length) {
+    return <div className="text-text-primary p-4">No programs found</div>;
+  }
+
+  return (
+    <ProgramDetail
+      program={programs[0]} // Show first program by default
+      selectionMode={true}
+      onBack={() => navigate('/')}
+      onUpdate={(updated) => {
+        // In selection mode, if exercise selection is made, pass it back through location state
+        if (state?.onSelect) {
+          // Extract selected exercises from the updated program
+          const selectedExercises = updated.sessions.flatMap(s => 
+            s.exercises.map(e => ({
+              exercise: {
+                id: e.id,
+                name: e.name,
+                description: '', // Required by Exercise type
+                type: 'strength',
+                category: 'compound',
+                primaryMuscles: [],
+                secondaryMuscles: [],
+                instructions: [],
+                defaultUnit: 'kg',
+                metrics: {
+                  trackWeight: true,
+                  trackReps: true
+                }
+              } as Exercise,
+              sets: [] // Empty sets - will be logged during workout
+            }))
+          );
+          state.onSelect(selectedExercises);
+        }
+        navigate('/');
+      }}
+    />
+  );
+};
+
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+}
+
+interface RoleRouteProps {
+  children: React.ReactNode;
+  allowedRole: 'coach' | 'athlete';
+  redirectTo: string;
+}
+
+// Protected Route wrapper
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
+  const { isAuthenticated, isLoading } = useSelector((state: RootState) => state.auth);
+  // Remove verbose logging - this component renders frequently
+  
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[100dvh] bg-bg-primary text-text-primary">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
+        <div className="ml-3 text-text-primary">Loading authentication...</div>
+      </div>
+    );
+  }
+
+  return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
+};
+
+const RoleRoute: React.FC<RoleRouteProps> = ({ children, allowedRole, redirectTo }) => {
+  const userRole = useSelector((state: RootState) => state.auth.user?.role);
+
+  if (userRole !== allowedRole) {
+    return <Navigate to={redirectTo} replace />;
+  }
+
+  return <>{children}</>;
+};
+
+// App Routes
+const AppRoutes: React.FC = () => {
+  // Remove frequent rendering log
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-[100dvh] bg-bg-primary text-text-primary">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
+        <div className="ml-3 text-text-primary">Loading...</div>
+      </div>
+    }>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <ExerciseLog />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/exercises"
+          element={
+            <ProtectedRoute>
+              <ExerciseOverview />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/speed-agility"
+          element={
+            <ProtectedRoute>
+              <SpeedAgilityPlyoPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/analytics"
+          element={
+            <ProtectedRoute>
+              <AnalyticsDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/wellness"
+          element={
+            <ProtectedRoute>
+              <WellnessPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/programs"
+          element={
+            <ProtectedRoute>
+              <ProgramList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <SettingsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/programs/:id"
+          element={
+            <ProtectedRoute>
+              <ProgramDetailWrapper />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/teams"
+          element={
+            <ProtectedRoute>
+              <RoleRoute allowedRole="athlete" redirectTo="/coach?tab=teams">
+                <AthleteTeamsHub />
+              </RoleRoute>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/teams/:id"
+          element={
+            <ProtectedRoute>
+              <TeamDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/join/:inviteCode"
+          element={
+            <ProtectedRoute>
+              <JoinTeam />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/join"
+          element={
+            <ProtectedRoute>
+              <JoinTeam />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/coach"
+          element={
+            <ProtectedRoute>
+              <RoleRoute allowedRole="coach" redirectTo="/teams?tab=teams">
+                <CoachDashboard />
+              </RoleRoute>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/coach/athlete/:athleteId"
+          element={
+            <ProtectedRoute>
+              <RoleRoute allowedRole="coach" redirectTo="/teams?tab=teams">
+                <AthleteOverview />
+              </RoleRoute>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/program-selection"
+          element={
+            <ProtectedRoute>
+              <ProgramSelectionWrapper />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/debug"
+          element={
+            <ProtectedRoute>
+              <Debug />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    </Suspense>
+  );
+};
+
+export default AppRoutes;

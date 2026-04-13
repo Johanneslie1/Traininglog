@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Speed & Agility Classification Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #1a1a1a; color: white; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #333; border-radius: 8px; }
+        .success { color: #4ade80; }
+        .error { color: #f87171; }
+        .info { color: #60a5fa; }
+        button { background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 5px; }
+        button:hover { background: #2563eb; }
+        pre { background: #111; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Speed & Agility Classification Test</h1>
+    
+    <div class="test-section">
+        <h2>Test Status</h2>
+        <div id="testStatus">Click "Run Tests" to begin...</div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Actions</h2>
+        <button onclick="runClassificationTests()">🔍 Run Classification Tests</button>
+        <button onclick="testSpeedAgilityFlow()">⚡ Test Speed & Agility Flow</button>
+        <button onclick="clearTestData()">🗑️ Clear Test Data</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test Results</h2>
+        <div id="testResults"></div>
+    </div>
+
+    <script>
+        // Test the classification fixes
+        async function runClassificationTests() {
+            const statusDiv = document.getElementById('testStatus');
+            const resultsDiv = document.getElementById('testResults');
+            
+            statusDiv.innerHTML = '<span class="info">🔄 Running classification tests...</span>';
+            resultsDiv.innerHTML = '';
+            
+            try {
+                // Test 1: Check ActivityType enum
+                const { ActivityType } = await import('/src/types/activityTypes.ts');
+                console.log('✅ ActivityType enum loaded:', ActivityType);
+                
+                // Test 2: Check mapping function
+                const { mapExerciseTypeToActivityType } = await import('/src/types/activityLog.ts');
+                const speedAgilityType = mapExerciseTypeToActivityType('speedAgility');
+                console.log('✅ Mapping result:', speedAgilityType);
+                
+                // Test 3: Check if it returns the correct enum value
+                const isCorrect = speedAgilityType === ActivityType.SPEED_AGILITY;
+                console.log('✅ Is mapping correct?', isCorrect, speedAgilityType, '===', ActivityType.SPEED_AGILITY);
+                
+                const results = [
+                    `<div class="success">✅ ActivityType.SPEED_AGILITY = "${ActivityType.SPEED_AGILITY}"</div>`,
+                    `<div class="${isCorrect ? 'success' : 'error'}">${isCorrect ? '✅' : '❌'} Mapping function returns: "${speedAgilityType}"</div>`,
+                    `<div class="${isCorrect ? 'success' : 'error'}">${isCorrect ? '✅' : '❌'} Classification is ${isCorrect ? 'CORRECT' : 'INCORRECT'}</div>`
+                ];
+                
+                resultsDiv.innerHTML = results.join('');
+                statusDiv.innerHTML = `<span class="${isCorrect ? 'success' : 'error'}">${isCorrect ? '✅ All tests passed!' : '❌ Tests failed!'}</span>`;
+                
+            } catch (error) {
+                console.error('❌ Test failed:', error);
+                statusDiv.innerHTML = '<span class="error">❌ Test failed - check console for details</span>';
+                resultsDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+        
+        // Test the complete speed & agility flow
+        async function testSpeedAgilityFlow() {
+            const statusDiv = document.getElementById('testStatus');
+            const resultsDiv = document.getElementById('testResults');
+            
+            statusDiv.innerHTML = '<span class="info">🔄 Testing Speed & Agility flow...</span>';
+            
+            try {
+                // Get user from Redux store
+                const state = window.reduxStore?.getState();
+                const user = state?.auth?.user;
+                
+                if (!user?.id) {
+                    throw new Error('No authenticated user found');
+                }
+                
+                console.log('👤 User ID:', user.id);
+                
+                // Test saving a speed & agility exercise
+                const { saveLog } = await import('/src/services/firebase/unifiedLogs.ts');
+                
+                const testData = {
+                    exerciseName: 'Test Butt Kicks',
+                    userId: user.id,
+                    sets: [{
+                        setNumber: 1,
+                        reps: 20,
+                        duration: 30,
+                        time: 1.5,
+                        distance: 10,
+                        height: 50,
+                        intensity: 7,
+                        rpe: 6,
+                        restTime: 90,
+                        notes: 'Test exercise for classification'
+                    }]
+                };
+                
+                console.log('💾 Saving test exercise:', testData);
+                
+                const docId = await saveLog(
+                    testData,
+                    'speedAgility', // This should trigger the correct classification
+                    new Date()
+                );
+                
+                console.log('✅ Exercise saved with ID:', docId);
+                
+                // Test retrieval and classification
+                const { getAllExercisesByDate } = await import('/src/utils/unifiedExerciseUtils.ts');
+                const exercises = await getAllExercisesByDate(new Date(), user.id);
+                
+                const testExercise = exercises.find(ex => ex.id === docId);
+                
+                if (testExercise) {
+                    const isCorrectType = testExercise.activityType === 'speedAgility';
+                    
+                    resultsDiv.innerHTML = [
+                        `<div class="success">✅ Exercise saved successfully</div>`,
+                        `<div class="info">📝 Exercise name: ${testExercise.exerciseName}</div>`,
+                        `<div class="${isCorrectType ? 'success' : 'error'}">${isCorrectType ? '✅' : '❌'} Activity type: ${testExercise.activityType}</div>`,
+                        `<div class="info">📊 Sets: ${testExercise.sets?.length || 0}</div>`
+                    ].join('');
+                    
+                    statusDiv.innerHTML = `<span class="${isCorrectType ? 'success' : 'error'}">${isCorrectType ? '✅ Speed & Agility flow working correctly!' : '❌ Speed & Agility flow has issues!'}</span>`;
+                } else {
+                    resultsDiv.innerHTML = '<div class="error">❌ Could not retrieve saved exercise</div>';
+                    statusDiv.innerHTML = '<span class="error">❌ Retrieval failed</span>';
+                }
+                
+            } catch (error) {
+                console.error('❌ Flow test failed:', error);
+                statusDiv.innerHTML = '<span class="error">❌ Flow test failed - check console for details</span>';
+                resultsDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+        
+        // Clear test data
+        async function clearTestData() {
+            const statusDiv = document.getElementById('testStatus');
+            statusDiv.innerHTML = '<span class="info">🗑️ Clearing test data...</span>';
+            
+            try {
+                const state = window.reduxStore?.getState();
+                const user = state?.auth?.user;
+                
+                if (!user?.id) {
+                    throw new Error('No authenticated user found');
+                }
+                
+                const { getAllExercisesByDate } = await import('/src/utils/unifiedExerciseUtils.ts');
+                const { deleteExercise } = await import('/src/utils/unifiedExerciseUtils.ts');
+                
+                const exercises = await getAllExercisesByDate(new Date(), user.id);
+                const testExercises = exercises.filter(ex => 
+                    ex.exerciseName.includes('Test') || 
+                    ex.exerciseName.includes('Butt Kicks')
+                );
+                
+                for (const exercise of testExercises) {
+                    await deleteExercise(exercise, user.id);
+                    console.log('🗑️ Deleted test exercise:', exercise.exerciseName);
+                }
+                
+                statusDiv.innerHTML = `<span class="success">✅ Cleared ${testExercises.length} test exercises</span>`;
+                
+            } catch (error) {
+                console.error('❌ Clear test data failed:', error);
+                statusDiv.innerHTML = '<span class="error">❌ Clear failed - check console for details</span>';
+            }
+        }
+        
+        // Auto-run classification tests on load
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(runClassificationTests, 1000);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,836 @@
+import { useState } from 'react'
+import toast from 'react-hot-toast';
+import { TrainingTypeSelector } from '@/components/TrainingTypeSelector';
+import { TrainingType } from '@/types/exercise';
+import { Exercise } from '@/types/exercise';
+import { ExerciseSet } from '@/types/sets';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
+import CopyFromPreviousSessionDialog from './CopyFromPreviousSessionDialog';
+import CategoryButton, { Category } from './CategoryButton';
+import ProgramExercisePicker from '@/features/programs/ProgramExercisePicker';
+import { ProgramExerciseSelection } from '@/features/programs/ProgramExercisePicker';
+import { UniversalSetLogger } from '@/components/UniversalSetLogger';
+import { addExerciseLog } from '@/services/firebase/exerciseLogs';
+import SportActivityPicker from '@/components/activities/SportActivityPicker';
+import SpeedAgilityActivityPicker from '@/components/activities/SpeedAgilityActivityPicker';
+import StretchingActivityPicker from '@/components/activities/StretchingActivityPicker';
+import EnduranceActivityPicker from '@/components/activities/EnduranceActivityPicker';
+import OtherActivityPicker from '@/components/activities/OtherActivityPicker';
+import ResistanceTrainingPicker from '@/components/activities/ResistanceTrainingPicker';
+import { UnifiedExerciseData } from '@/utils/unifiedExerciseUtils';
+import { useEffect } from 'react';
+import { CreateUniversalExerciseDialog } from '@/components/exercises/CreateUniversalExerciseDialog';
+import { ActivityType } from '@/types/activityTypes';
+import { ExerciseData } from '@/services/exerciseDataService';
+import { auth } from '@/services/firebase/config';
+import { saveExerciseLog } from '@/utils/localStorageUtils';
+import { generateExercisePrescriptionAssistant } from '@/services/exercisePrescriptionAssistantService';
+import { ExercisePrescriptionAssistantData } from '@/types/exercise';
+import { resolveActivityTypeFromExerciseLike } from '@/utils/activityTypeResolver';
+import { useSupersets } from '@/context/SupersetContext';
+import { SupersetGroup } from '@/types/session';
+import AppOverlay from '@/components/ui/AppOverlay';
+import { logger } from '@/utils/logger';
+import { SessionType } from '@/types/sessionType';
+
+interface LogOptionsProps {
+  onClose: () => void;
+  onExerciseAdded?: () => void;
+  selectedDate?: Date;
+  editingExercise?: UnifiedExerciseData | null; // Add editing exercise prop
+  selectedSessionId?: string | null;
+  selectedSessionType?: SessionType;
+}
+
+type ViewState = 'main' | 'setEditor' | 'programPicker' | 'copyPrevious' | 'sport' | 'stretching' | 'endurance' | 'other' | 'speedAgility' | 'resistance' | 'editExercise' | 'selectType';
+
+const helperCategories: Category[] = [
+  { id: 'programs', name: 'Add from Program', icon: '📋', bgColor: 'bg-bg-tertiary', iconBgColor: 'bg-purple-600', textColor: 'text-text-primary' },
+  { id: 'copyPrevious', name: 'Copy from Previous', icon: '📝', bgColor: 'bg-bg-tertiary', iconBgColor: 'bg-blue-600', textColor: 'text-text-primary' },
+];
+
+// Activity types for the main selection
+const activityTypes = [
+  {
+    id: 'resistance',
+    name: 'Resistance Training',
+    description: 'Weight lifting, strength training',
+    icon: '🏋️‍♂️',
+    bgColor: 'bg-blue-600 dark:bg-blue-600',
+    textColor: 'text-white',
+    examples: 'Squats, Deadlifts, Bench Press'
+  },
+  {
+    id: 'sport',
+    name: 'Sports',
+    description: 'Team sports, individual competitions',
+    icon: '⚽',
+    bgColor: 'bg-green-600 dark:bg-green-600',
+    textColor: 'text-white',
+    examples: 'Football, Basketball, Tennis'
+  },
+  {
+    id: 'stretching',
+    name: 'Stretching & Flexibility',
+    description: 'Static stretches, yoga, mobility',
+    icon: '🧘‍♀️',
+    bgColor: 'bg-purple-600 dark:bg-purple-600',
+    textColor: 'text-white',
+    examples: 'Yoga, Static Stretches, PNF'
+  },
+  {
+    id: 'endurance',
+    name: 'Endurance Training',
+    description: 'Cardio, running, cycling',
+    icon: '🏃‍♂️',
+    bgColor: 'bg-red-600 dark:bg-red-600',
+    textColor: 'text-white',
+    examples: 'Running, Cycling, Swimming'
+  },
+  {
+    id: 'speedAgility',
+  name: 'Speed, Agility & Plyometrics',
+  description: 'Sprints, jumps, plyometrics, change of direction',
+    icon: '⚡',
+    bgColor: 'bg-amber-600 dark:bg-amber-600',
+    textColor: 'text-white',
+  examples: 'Plyometrics, Ladder, Sprints, Jumps'
+  },
+  {
+    id: 'other',
+    name: 'Other Activities',
+    description: 'Custom activities and tracking',
+    icon: '🎯',
+    bgColor: 'bg-gray-600 dark:bg-gray-600',
+    textColor: 'text-white',
+    examples: 'Meditation, Therapy, Custom'
+  }
+];
+
+export const LogOptions = ({
+  onClose,
+  onExerciseAdded,
+  selectedDate,
+  editingExercise,
+  selectedSessionId,
+  selectedSessionType = 'main'
+}: LogOptionsProps): JSX.Element => {
+  const [view, setView] = useState<ViewState>('main');
+  const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  
+  const user = useSelector((state: RootState) => state.auth.user);
+  const { state: supersetState, addSuperset } = useSupersets();
+
+  const effectiveSessionType: SessionType = editingExercise?.sessionType || selectedSessionType;
+  const isWarmupMode = effectiveSessionType === 'warmup';
+
+  // If we're editing an exercise, go directly to edit view
+  useEffect(() => {
+    if (editingExercise) {
+      setView('editExercise');
+      return;
+    }
+  }, [editingExercise]);
+
+  const resolveEffectiveActivityType = (exerciseLike: {
+    activityType?: unknown;
+    type?: unknown;
+    trainingType?: unknown;
+    exerciseType?: unknown;
+    drillType?: unknown;
+    stretchType?: unknown;
+    sportType?: unknown;
+    enduranceType?: unknown;
+    teamBased?: unknown;
+    defaultUnit?: unknown;
+    metrics?: Record<string, unknown>;
+    sets?: Array<Record<string, unknown>>;
+  }): ActivityType => {
+    return resolveActivityTypeFromExerciseLike(exerciseLike, {
+      fallback: ActivityType.RESISTANCE,
+      preferHintOverExplicit: true,
+    });
+  };
+
+  const handleTrainingTypeSelected = (type: TrainingType) => {
+    switch(type) {
+      case TrainingType.STRENGTH:
+        setView('resistance');
+        break;
+      case TrainingType.ENDURANCE:
+        setView('endurance');
+        break;
+      case TrainingType.FLEXIBILITY:
+        setView('stretching');
+        break;
+      case TrainingType.SPEED_AGILITY:
+        setView('speedAgility');
+        break;
+      case TrainingType.TEAM_SPORTS:
+        setView('sport');
+        break;
+      case TrainingType.OTHER:
+        setView('other');
+        break;
+      default:
+        setView('main');
+    }
+  };
+  const handleProgramSelected = async (exercises: ProgramExerciseSelection[]) => {
+    const userId = user?.id || auth.currentUser?.uid;
+
+    if (!userId) {
+      toast.error('You need to be logged in to add exercises');
+      return;
+    }
+
+    if (exercises.length === 0) {
+      toast('No exercises selected', { icon: 'ℹ️' });
+      return;
+    }
+
+    try {
+      const createRuntimeSupersetId = (): string => {
+        if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+          return crypto.randomUUID();
+        }
+        return `superset-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+      };
+
+      // Check if any exercises have pre-filled sets (from prescriptions)
+      const hasPrefilledSets = exercises.some(ex => ex.sets && ex.sets.length > 0);
+      let savedCount = 0;
+      const runtimeSupersetIdBySourceKey = new Map<string, string>();
+      const importedSupersetGroupsById = new Map<string, { name?: string; exerciseIds: string[] }>();
+      
+      for (const selection of exercises) {
+        const { exercise } = selection;
+        const sets: ExerciseSet[] = [];
+        const resolvedActivityType = resolveActivityTypeFromExerciseLike(exercise, { fallback: ActivityType.RESISTANCE });
+
+        const sourceSupersetToken =
+          selection.sourceProgramSupersetId ||
+          selection.sourceProgramSupersetLabel ||
+          exercise.supersetId ||
+          exercise.supersetLabel;
+
+        let runtimeSupersetId: string | undefined;
+        if (sourceSupersetToken) {
+          const sourceGroupKey = `${selection.sourceSessionId || 'session'}::${sourceSupersetToken}`;
+          runtimeSupersetId = runtimeSupersetIdBySourceKey.get(sourceGroupKey);
+          if (!runtimeSupersetId) {
+            runtimeSupersetId = createRuntimeSupersetId();
+            runtimeSupersetIdBySourceKey.set(sourceGroupKey, runtimeSupersetId);
+          }
+        }
+
+        const runtimeSupersetLabel = selection.sourceProgramSupersetLabel || exercise.supersetLabel;
+        const runtimeSupersetName = selection.sourceProgramSupersetName || exercise.supersetName;
+
+        const prescriptionAssistant = await generateExercisePrescriptionAssistant({
+          exercise: {
+            id: exercise.id,
+            name: exercise.name,
+            activityType: resolvedActivityType,
+            prescription: exercise.prescription
+          },
+          userId,
+          sessionContext: {
+            date: (selectedDate || new Date()).toISOString().slice(0, 10),
+            warmupDone: true
+          }
+        });
+
+        const createdId = await addExerciseLog(
+          {
+            exerciseName: exercise.name,
+            userId,
+            sets: sets,
+            activityType: resolvedActivityType,
+            isWarmup: isWarmupMode || Boolean(selection.sourceIsWarmup),
+            sessionId: selectedSessionId || undefined,
+            sessionType: effectiveSessionType,
+            prescription: exercise.prescription,
+            instructionMode: exercise.instructionMode,
+            supersetId: runtimeSupersetId,
+            supersetLabel: runtimeSupersetLabel,
+            supersetName: runtimeSupersetName,
+            instructions: typeof exercise.instructions === 'string'
+              ? exercise.instructions
+              : Array.isArray(exercise.instructions)
+                ? exercise.instructions[0]
+                : undefined,
+            prescriptionAssistant,
+          },
+          selectedDate || new Date()
+        );
+
+        saveExerciseLog({
+          id: createdId,
+          exerciseName: exercise.name,
+          userId,
+          sets,
+          timestamp: selectedDate || new Date(),
+          activityType: resolvedActivityType,
+          isWarmup: isWarmupMode || Boolean(selection.sourceIsWarmup),
+          sessionId: selectedSessionId || undefined,
+          sessionType: effectiveSessionType,
+          supersetId: runtimeSupersetId,
+          supersetLabel: runtimeSupersetLabel,
+          supersetName: runtimeSupersetName,
+          prescription: exercise.prescription,
+          instructionMode: exercise.instructionMode,
+          instructions: typeof exercise.instructions === 'string'
+            ? exercise.instructions
+            : Array.isArray(exercise.instructions)
+              ? exercise.instructions[0]
+              : undefined,
+          prescriptionAssistant
+        });
+
+        if (runtimeSupersetId) {
+          const group = importedSupersetGroupsById.get(runtimeSupersetId) || {
+            name: runtimeSupersetName,
+            exerciseIds: []
+          };
+          group.name = group.name || runtimeSupersetName;
+          group.exerciseIds.push(createdId);
+          importedSupersetGroupsById.set(runtimeSupersetId, group);
+        }
+
+        savedCount += 1;
+      }
+
+      const nextOrderStart = supersetState.supersets.length;
+      Array.from(importedSupersetGroupsById.entries())
+        .filter(([, group]) => group.exerciseIds.length >= 2)
+        .forEach(([id, group], index) => {
+          const nextSuperset: SupersetGroup = {
+            id,
+            name: group.name,
+            exerciseIds: group.exerciseIds,
+            order: nextOrderStart + index,
+          };
+          addSuperset(nextSuperset);
+        });
+
+      onExerciseAdded?.();
+      onClose();
+      
+      // Show appropriate toast message
+      if (hasPrefilledSets) {
+        toast.success(`Added ${savedCount} exercise${savedCount !== 1 ? 's' : ''} with program values`);
+      } else {
+        toast.success(`Added ${savedCount} exercise${savedCount !== 1 ? 's' : ''} from program`);
+      }
+    } catch (error) {
+      logger.error('LogOptions: Error saving program exercises', error);
+      toast.error('Failed to add exercises. Please try again.');
+    }
+  };
+
+  const handleCopiedExercises = async (exercises: ExerciseData[]) => {
+    if (!user?.id) {
+      throw new Error('User not authenticated');
+    }
+
+    try {
+      logger.debug('LogOptions: Processing copied exercises', { count: exercises.length });
+      
+      for (const exercise of exercises) {
+        if (!exercise.exerciseName) {
+          logger.warn('LogOptions: Skipping exercise without name', exercise);
+          continue;
+        }
+
+        const resolvedActivityType = resolveEffectiveActivityType({
+          ...exercise,
+          sets: (exercise.sets || []) as unknown as Array<Record<string, unknown>>,
+        });
+
+        const exerciseLogData = {
+          exerciseName: exercise.exerciseName,
+          userId: user.id,
+          sets: exercise.sets || [],
+          activityType: resolvedActivityType,
+          isWarmup: isWarmupMode || Boolean((exercise as any).isWarmup),
+          sessionId: selectedSessionId || undefined,
+          sessionType: effectiveSessionType,
+        };
+
+        logger.debug('LogOptions: Saving copied exercise', exerciseLogData);
+        await addExerciseLog(
+          exerciseLogData,
+          selectedDate || new Date()
+        );
+      }
+
+      setView('main');
+      onExerciseAdded?.();
+      toast.success(`Copied ${exercises.length} exercise${exercises.length !== 1 ? 's' : ''}`);
+      logger.debug('LogOptions: Successfully saved all copied exercises');
+    } catch (error) {
+      logger.error('LogOptions: Error saving copied exercises', error);
+      const message = error instanceof Error ? error.message : 'Failed to save copied exercises';
+      toast.error(message);
+      throw error instanceof Error ? error : new Error(message);
+    }
+  };
+
+  // Conditional rendering for different views
+
+  // Handle selectType view
+  if (view === 'selectType') {
+    return (
+      <div className="flex flex-col h-full">
+        <div className="flex items-center justify-between mb-4 pb-4 border-b border-border">
+          <h2 className="text-xl font-bold text-text-primary">Select Training Type</h2>
+          <button onClick={onClose} className="text-text-tertiary hover:text-text-primary">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          <TrainingTypeSelector onSelect={handleTrainingTypeSelected} />
+        </div>
+      </div>
+    );
+  }
+
+  if (view === 'sport') {
+    return (
+      <SportActivityPicker
+        onClose={onClose}
+        onBack={() => setView('main')}
+        onActivityLogged={() => {
+          onExerciseAdded?.();
+          setView('main');
+        }}
+        selectedDate={selectedDate}
+        editingExercise={editingExercise} // Pass editing exercise
+        isWarmupMode={isWarmupMode}
+        selectedSessionId={selectedSessionId}
+        selectedSessionType={effectiveSessionType}
+      />
+    );
+  }
+
+  if (view === 'resistance') {
+    return (
+      <ResistanceTrainingPicker
+        onClose={onClose}
+        onBack={() => setView('main')}
+        onActivityLogged={() => {
+          onExerciseAdded?.();
+          setView('main');
+        }}
+        selectedDate={selectedDate}
+        editingExercise={editingExercise}
+        isWarmupMode={isWarmupMode}
+        selectedSessionId={selectedSessionId}
+        selectedSessionType={effectiveSessionType}
+      />
+    );
+  }
+
+  if (view === 'stretching') {
+    return (
+      <StretchingActivityPicker
+        onClose={onClose}
+        onBack={() => setView('main')}
+        onActivityLogged={() => { onExerciseAdded?.(); setView('main'); }}
+        selectedDate={selectedDate}
+        editingExercise={editingExercise}
+        isWarmupMode={isWarmupMode}
+        selectedSessionId={selectedSessionId}
+        selectedSessionType={effectiveSessionType}
+      />
+    );
+  }
+
+  if (view === 'endurance') {
+    return (
+      <EnduranceActivityPicker
+        onClose={onClose}
+        onBack={() => setView('main')}
+        onActivityLogged={() => {
+          onExerciseAdded?.();
+          setView('main');
+        }}
+        selectedDate={selectedDate}
+        editingExercise={editingExercise} // Pass editing exercise
+        isWarmupMode={isWarmupMode}
+        selectedSessionId={selectedSessionId}
+        selectedSessionType={effectiveSessionType}
+      />
+    );
+  }
+
+  if (view === 'other') {
+    return (
+      <OtherActivityPicker
+        onClose={onClose}
+        onBack={() => setView('main')}
+        onActivityLogged={() => {
+          onExerciseAdded?.();
+          setView('main');
+        }}
+        selectedDate={selectedDate}
+        isWarmupMode={isWarmupMode}
+        selectedSessionId={selectedSessionId}
+        selectedSessionType={effectiveSessionType}
+      />
+    );
+  }
+
+  if (view === 'speedAgility') {
+    return (
+      <SpeedAgilityActivityPicker
+        onClose={onClose}
+        onBack={() => setView('main')}
+        onActivityLogged={() => {
+          onExerciseAdded?.();
+          setView('main');
+        }}
+        selectedDate={selectedDate}
+        editingExercise={editingExercise}
+        isWarmupMode={isWarmupMode}
+        selectedSessionId={selectedSessionId}
+        selectedSessionType={effectiveSessionType}
+      />
+    );
+  }
+
+  if (view === 'programPicker') {
+    return (
+      <ProgramExercisePicker
+        onClose={() => setView('main')}
+        onSelectExercises={handleProgramSelected}
+      />
+    );
+  }
+
+  if (view === 'copyPrevious') {
+    return (
+      <CopyFromPreviousSessionDialog
+        isOpen={true}
+        onClose={() => setView('main')}
+        onExercisesSelected={handleCopiedExercises}
+        currentDate={selectedDate || new Date()}
+        userId={user?.id || ''}
+      />
+    );
+  }
+
+  if (view === 'setEditor' && selectedExercise) {
+    return (
+      <UniversalSetLogger
+        exercise={selectedExercise}
+        onCancel={() => {
+          setSelectedExercise(null);
+          setView('main');
+        }}
+        onSave={async (sets: ExerciseSet[], metadata?: { prescriptionAssistant?: ExercisePrescriptionAssistantData }) => {
+          try {
+            logger.debug('LogOptions: Starting to save exercise sets', {
+              exercise: selectedExercise,
+              sets,
+              user: user?.id,
+              selectedDate
+            });
+
+            if (!user?.id) throw new Error('User not authenticated');
+
+            const exerciseLogData = {
+              exerciseName: selectedExercise.name,
+              userId: user.id,
+              sets: sets,
+              activityType: selectedExercise.activityType,
+              isWarmup: isWarmupMode,
+              sessionId: selectedSessionId || undefined,
+              sessionType: effectiveSessionType,
+              prescription: selectedExercise.prescription,
+              instructionMode: selectedExercise.instructionMode,
+              instructions: typeof selectedExercise.instructions === 'string'
+                ? selectedExercise.instructions
+                : Array.isArray(selectedExercise.instructions)
+                  ? selectedExercise.instructions[0]
+                  : undefined,
+              prescriptionAssistant: metadata?.prescriptionAssistant || selectedExercise.prescriptionAssistant,
+            };
+
+            logger.debug('LogOptions: Calling addExerciseLog', exerciseLogData);
+
+            const docId = await addExerciseLog(
+              exerciseLogData,
+              selectedDate || new Date()
+            );
+
+            logger.debug('LogOptions: Exercise saved successfully', { docId });
+
+            onExerciseAdded?.();
+            setSelectedExercise(null);
+            setView('main');
+          } catch (error) {
+            logger.error('LogOptions: Error saving exercise', error);
+            toast.error(error instanceof Error ? error.message : 'Failed to save exercise');
+          }
+        }}
+        initialSets={editingExercise?.sets}
+        isEditing={!!editingExercise}
+      />
+    );
+  }
+
+  if (view === 'editExercise' && editingExercise) {
+    const effectiveActivityType = resolveEffectiveActivityType({
+      ...editingExercise,
+      sets: (editingExercise.sets || []) as unknown as Array<Record<string, unknown>>,
+    });
+
+    const instructionsValue = editingExercise.instructions as unknown;
+    const normalizedInstructions = typeof instructionsValue === 'string'
+      ? instructionsValue
+      : Array.isArray(instructionsValue)
+        ? instructionsValue.find(
+            (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0
+          ) || ''
+        : '';
+
+    // Convert UnifiedExerciseData to Exercise format for UniversalSetLogger
+    const exerciseForLogger: Exercise = {
+      id: editingExercise.id || `edit-${Date.now()}`,
+      name: editingExercise.exerciseName,
+      description: editingExercise.exerciseName,
+      activityType: effectiveActivityType,
+      type: effectiveActivityType === ActivityType.RESISTANCE ? 'strength' :
+        effectiveActivityType === ActivityType.ENDURANCE ? 'endurance' :
+        effectiveActivityType === ActivityType.STRETCHING ? 'flexibility' :
+        effectiveActivityType === ActivityType.SPORT ? 'teamSports' :
+        effectiveActivityType === ActivityType.SPEED_AGILITY ? 'speed_agility' : 'other',
+      category: 'general',
+      equipment: [],
+      instructions: normalizedInstructions ? [normalizedInstructions] : [],
+      difficulty: 'intermediate',
+      primaryMuscles: [],
+      secondaryMuscles: [],
+      targetAreas: [],
+      metrics: {
+        trackWeight: effectiveActivityType === ActivityType.RESISTANCE,
+        trackReps: true,
+        trackTime: effectiveActivityType !== ActivityType.RESISTANCE,
+        trackDistance: effectiveActivityType === ActivityType.ENDURANCE,
+        trackRPE: true
+      },
+      defaultUnit: effectiveActivityType === ActivityType.RESISTANCE ? 'kg' : 'time',
+      prescription: editingExercise.prescription,
+      instructionMode: editingExercise.instructionMode,
+      prescriptionAssistant: editingExercise.prescriptionAssistant
+    };
+
+    return (
+      <UniversalSetLogger
+        exercise={exerciseForLogger}
+        onCancel={() => {
+          setView('main');
+        }}
+        onSave={async (sets: ExerciseSet[], metadata?: { prescriptionAssistant?: ExercisePrescriptionAssistantData }) => {
+          try {
+            logger.debug('LogOptions: Updating exercise', {
+              exercise: editingExercise,
+              sets,
+              user: user?.id,
+              selectedDate
+            });
+
+            if (!user?.id) throw new Error('User not authenticated');
+
+            // Update the existing exercise with new sets
+            const exerciseLogData = {
+              exerciseName: editingExercise.exerciseName,
+              userId: user.id,
+              sets: sets,
+              activityType: resolveEffectiveActivityType({
+                ...editingExercise,
+                sets: (sets || []) as unknown as Array<Record<string, unknown>>,
+              }),
+              isWarmup: isWarmupMode,
+              sessionId: editingExercise.sessionId || selectedSessionId || undefined,
+              sessionType: editingExercise.sessionType || effectiveSessionType,
+              prescription: editingExercise.prescription,
+              instructionMode: editingExercise.instructionMode,
+              instructions: normalizedInstructions || undefined,
+              prescriptionAssistant: metadata?.prescriptionAssistant || editingExercise.prescriptionAssistant
+            };
+
+            logger.debug('LogOptions: Calling addExerciseLog with existing ID', editingExercise.id);
+
+            const docId = await addExerciseLog(
+              exerciseLogData,
+              editingExercise.timestamp || new Date(),
+              editingExercise.id // Pass existing ID to update
+            );
+
+            logger.debug('LogOptions: Exercise updated successfully', { docId });
+
+            onExerciseAdded?.();
+            setView('main');
+          } catch (error) {
+            logger.error('LogOptions: Error updating exercise', error);
+            toast.error(error instanceof Error ? error.message : 'Failed to update exercise');
+          }
+        }}
+        initialSets={editingExercise.sets}
+        isEditing={true}
+      />
+    );
+  }
+
+  return (
+    <AppOverlay
+      isOpen={true}
+      onClose={onClose}
+      className="z-50 flex flex-col bg-black/90"
+      ariaLabel={editingExercise ? 'Edit exercise' : 'Add exercise'}
+    >
+      {/* Header - Fixed at top */}
+      <header className="sticky top-0 flex items-center justify-between p-4 bg-bg-secondary border-b border-border">
+        <h2 className="text-xl font-bold text-text-primary">
+          {editingExercise ? 'Edit Exercise' : 'Add Exercise'}
+        </h2>
+        <button 
+          onClick={onClose}
+          className="p-2 hover:bg-white/10 rounded-lg transition-colors text-text-tertiary hover:text-text-primary"
+          aria-label="Close"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </header>
+
+      {/* Main Content - Scrollable */}
+      <main className="flex-1 overflow-y-auto overscroll-contain pb-safe min-h-0">
+        <div className="max-w-md mx-auto p-4 space-y-6 md:space-y-8">
+          {/* Quick Add Section */}
+          <section className="space-y-3 md:space-y-4">
+            <h3 className="text-lg font-semibold text-text-primary">Quick Add</h3>
+            <div className="grid grid-cols-2 gap-3 md:gap-4">
+              {helperCategories.map(category => (
+                <CategoryButton
+                  key={category.id}
+                  category={category}
+                  onClick={() => {
+                    if (category.id === 'programs') {
+                      setView('programPicker');
+                    } else if (category.id === 'copyPrevious') {
+                      setView('copyPrevious');
+                    }
+                  }}
+                />
+              ))}
+            </div>
+            <div className="w-full px-4 py-3 rounded-xl border bg-white/10 border-border text-text-primary">
+              <div className="font-semibold">
+                Saving to {effectiveSessionType === 'warmup' ? 'Warm-up session' : 'Session'}
+              </div>
+              <div className="text-sm opacity-80">Session type follows the selected item in the session switcher.</div>
+            </div>
+          </section>
+
+          {/* Activity Types Section */}
+          <section className="space-y-3 md:space-y-4">
+            <h3 className="text-lg font-semibold text-text-primary">Choose Activity Type</h3>
+            <div className="grid grid-cols-1 gap-3 md:gap-4">
+              {activityTypes.map(activityType => (
+                <div
+                  key={activityType.id}
+                  onClick={() => {
+                    if (activityType.id === 'resistance') {
+                      // For resistance training, show the resistance training menu
+                      setView('resistance');
+                    } else if (activityType.id === 'sport') {
+                      setView('sport');
+                    } else if (activityType.id === 'stretching') {
+                      setView('stretching');
+                    } else if (activityType.id === 'endurance') {
+                      setView('endurance');
+                    } else if (activityType.id === 'other') {
+                      setView('other');
+                    } else if (activityType.id === 'speedAgility') {
+                      setView('speedAgility');
+                    }
+                  }}
+                  className={`
+                    ${activityType.bgColor}
+                    rounded-xl p-4 cursor-pointer
+                    transition-all duration-200 ease-in-out
+                    hover:scale-105 hover:shadow-lg
+                    active:scale-95
+                    border border-border
+                  `}
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="text-3xl">{activityType.icon}</div>
+                    <div className="flex-1">
+                      <h4 className={`font-semibold text-lg ${activityType.textColor}`}>
+                        {activityType.name}
+                      </h4>
+                      <p className={`text-sm opacity-90 ${activityType.textColor}`}>
+                        {activityType.description}
+                      </p>
+                      <p className={`text-xs opacity-75 mt-1 ${activityType.textColor}`}>
+                        {activityType.examples}
+                      </p>
+                    </div>
+                    <div className="text-text-tertiary">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="space-y-3 md:space-y-4 border-t border-border pt-4">
+            <button
+              onClick={() => setShowCreateDialog(true)}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/10 border border-border text-text-primary hover:bg-white/15 transition-colors"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 102 0v-5h5a1 1 0 100-2h-5V4a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              Create New Exercise
+            </button>
+          </section>
+        </div>
+      </main>
+      
+      {/* Create Exercise Dialog */}
+      {showCreateDialog && (
+        <CreateUniversalExerciseDialog
+          onClose={() => setShowCreateDialog(false)}
+          onSuccess={(_exerciseId) => {
+            setShowCreateDialog(false);
+            // Optionally handle the created exercise
+          }}
+          searchQuery=""
+        />
+      )}
+    </AppOverlay>
+  );
+};
+
+export default LogOptions;
+
+
+
+
+
+
+

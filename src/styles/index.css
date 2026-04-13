@@ -1,0 +1,222 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --app-nav-height: 0rem;
+  --app-safe-bottom: env(safe-area-inset-bottom);
+  --app-bottom-offset: calc(var(--app-nav-height) + var(--app-safe-bottom));
+  --app-floating-offset: calc(var(--app-bottom-offset) + 1rem);
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  min-height: 100dvh;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-purple-gradient text-white font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors;
+  }
+  
+  .btn-secondary {
+    background-color: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+    @apply font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors hover:opacity-90;
+  }
+
+  .card {
+    background-color: var(--color-bg-secondary);
+    @apply rounded-lg shadow-sm p-4;
+  }
+
+  .input {
+    background-color: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-border);
+    @apply w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent;
+  }
+
+  .input-secondary {
+    background-color: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-border);
+    @apply px-3 py-2 rounded-lg focus:outline-none focus:border-purple-500;
+  }
+
+  .purple-gradient {
+    @apply bg-purple-gradient;
+  }
+
+  .tooltip-container {
+    @apply relative;
+  }
+
+  .tooltip {
+    @apply invisible absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 rounded bg-black/90 text-white text-xs whitespace-nowrap;
+  }
+
+  .tooltip-container:hover .tooltip {
+    @apply visible;
+  }
+
+  /* Mobile-optimized input controls */
+  .resistance-input-control {
+    min-height: 44px; /* Apple's recommended minimum touch target size */
+    touch-action: manipulation; /* Prevents double-tap zoom on buttons */
+  }
+
+  .resistance-button {
+    min-width: 40px;
+    min-height: 40px;
+    touch-action: manipulation;
+    user-select: none;
+  }
+
+  /* Improve input focus states on mobile */
+  .resistance-input {
+    -webkit-appearance: none;
+    -moz-appearance: textfield;
+    appearance: none;
+  }
+
+  .resistance-input::-webkit-outer-spin-button,
+  .resistance-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .resistance-input:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.5);
+  }
+}
+
+/* Custom Date Picker Styles */
+@layer utilities {
+  .date-picker-dark {
+    color-scheme: dark;
+  }
+  
+  .date-picker-dark::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    opacity: 0.7;
+    cursor: pointer;
+    transform: scale(1.2);
+    transition: opacity 0.2s ease;
+  }
+  
+  .date-picker-dark::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+  }
+  
+  .date-picker-dark::-webkit-datetime-edit {
+    color: #ffffff;
+  }
+  
+  .date-picker-dark::-webkit-datetime-edit-fields-wrapper {
+    color: #ffffff;
+  }
+  
+  .date-picker-dark::-webkit-datetime-edit-text {
+    color: #a3a3a3;
+  }
+  
+  .date-picker-dark::-webkit-datetime-edit-month-field,
+  .date-picker-dark::-webkit-datetime-edit-day-field,
+  .date-picker-dark::-webkit-datetime-edit-year-field {
+    color: #ffffff;
+  }
+  
+  .date-picker-dark:focus::-webkit-datetime-edit {
+    color: #ffffff;
+  }
+}
+
+/* Set addition animation */
+@keyframes set-added {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  50% {
+    transform: translateY(0) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes set-highlight {
+  0% {
+    box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(139, 92, 246, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(139, 92, 246, 0);
+  }
+}
+
+.set-added-animation {
+  animation: set-added 0.3s ease-out, set-highlight 0.6s ease-out;
+}
+
+/* Swipe delete animation */
+@keyframes swipe-delete {
+  0% {
+    opacity: 1;
+    transform: translateX(0);
+    max-height: 100px;
+  }
+  50% {
+    opacity: 0;
+    transform: translateX(-100%);
+    max-height: 100px;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-100%);
+    max-height: 0;
+    padding: 0;
+    margin: 0;
+  }
+}
+
+.set-delete-animation {
+  animation: swipe-delete 0.3s ease-out forwards;
+}
+
+/* Inline editing tap feedback */
+.inline-edit-tap {
+  transition: background-color 0.15s ease;
+}
+
+.inline-edit-tap:active {
+  background-color: rgba(139, 92, 246, 0.2);
+}
+
+@layer utilities {
+  .pb-app-content {
+    padding-bottom: calc(var(--app-bottom-offset) + 1.25rem);
+  }
+
+  .bottom-app-floating {
+    bottom: var(--app-floating-offset);
+  }
+}

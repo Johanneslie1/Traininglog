@@ -1,0 +1,84 @@
+import React, { useEffect, useState } from 'react';
+import { ResistanceExercise } from '@/types/activityTypes';
+import { ActivityType } from '@/types/activityTypes';
+import { enrich, applyFilters, collectFacets } from '@/utils/resistanceFilters';
+import UniversalExercisePicker from './UniversalExercisePicker';
+import UniversalActivityLogger from './UniversalActivityLogger';
+import { strengthTemplate } from '@/config/defaultTemplates';
+import { getMergedExercisesByActivityType } from '@/services/exerciseDatabaseService';
+import { useAuth } from '@/hooks/useAuth';
+
+interface ResistanceActivityPickerProps {
+  onClose: () => void;
+  onBack: () => void;
+  onActivityLogged: () => void;
+  selectedDate?: Date;
+}
+
+const ResistanceActivityPicker: React.FC<ResistanceActivityPickerProps> = ({
+  onClose,
+  onBack,
+  onActivityLogged,
+  selectedDate = new Date()
+}) => {
+  const { user } = useAuth();
+  const [selectedExercise, setSelectedExercise] = useState<ResistanceExercise | null>(null);
+  const [resistanceExercises, setResistanceExercises] = useState<ResistanceExercise[]>([]);
+  const [view, setView] = useState<'list' | 'logging'>('list');
+
+  useEffect(() => {
+    const loadResistanceExercises = async () => {
+      try {
+        const mergedExercises = await getMergedExercisesByActivityType(ActivityType.RESISTANCE, user?.id);
+        setResistanceExercises(mergedExercises as ResistanceExercise[]);
+      } catch (error) {
+        console.error('ResistanceActivityPicker: failed loading exercises', error);
+        setResistanceExercises([]);
+      }
+    };
+
+    loadResistanceExercises();
+  }, [user?.id]);
+
+  function handleSelect(ex: ResistanceExercise) {
+    setSelectedExercise(ex);
+    setView('logging');
+  }
+
+  if (view === 'logging' && selectedExercise) {
+    return (
+      <UniversalActivityLogger
+  template={strengthTemplate}
+        activityName={selectedExercise.name}
+        onClose={onClose}
+        onBack={() => setView('list')}
+        onActivityLogged={onActivityLogged}
+        selectedDate={selectedDate}
+        editingExercise={null}
+      />
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50">
+      <div className="bg-[#1a1a1a] rounded-xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden">
+        <div className="absolute top-4 left-4 flex gap-2">
+          <button onClick={onBack} className="px-3 py-1 rounded-md bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 text-sm">← Back</button>
+        </div>
+        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white">✕</button>
+        <UniversalExercisePicker
+          data={resistanceExercises}
+          enrich={enrich as any}
+          collectFacets={collectFacets as any}
+          applyFilters={applyFilters as any}
+          onSelect={handleSelect}
+          title="Resistance Training"
+          subtitle="Browse and filter all resistance exercises"
+          activityType={ActivityType.RESISTANCE}
+        />
+      </div>
+    </div>
+  );
+};
+
+export default ResistanceActivityPicker;

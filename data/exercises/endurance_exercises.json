@@ -1,0 +1,372 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "lastUpdated": "2025-08-08",
+    "description": "Comprehensive endurance exercises database",
+    "totalExercises": 45
+  },
+  "categories": {
+    "running": {
+      "name": "Running",
+      "description": "Running-based cardiovascular exercises",
+      "icon": "🏃"
+    },
+    "cycling": {
+      "name": "Cycling", 
+      "description": "Bicycle-based endurance training",
+      "icon": "🚴"
+    },
+    "swimming": {
+      "name": "Swimming",
+      "description": "Water-based cardiovascular exercise",
+      "icon": "🏊"
+    },
+    "walking": {
+      "name": "Walking",
+      "description": "Walking and hiking activities",
+      "icon": "🚶"
+    },
+    "rowing": {
+      "name": "Rowing",
+      "description": "Rowing machine and water rowing",
+      "icon": "🚣"
+    },
+    "crossTraining": {
+      "name": "Cross Training",
+      "description": "Mixed cardiovascular activities",
+      "icon": "🔄"
+    }
+  },
+  "exercises": [
+    {
+      "id": "run_steady_state",
+      "name": "Steady State Running",
+      "category": "running",
+      "description": "Continuous running at a comfortable, sustainable pace",
+      "difficulty": "beginner",
+      "equipment": ["running_shoes"],
+      "primaryMetrics": ["duration", "distance", "pace"],
+      "optionalMetrics": ["averageHR", "maxHR", "rpe", "elevation"],
+      "instructions": [
+        "Warm up with 5-10 minutes of light jogging",
+        "Maintain a conversational pace throughout",
+        "Focus on consistent breathing and form",
+        "Cool down with walking and stretching"
+      ],
+      "tips": [
+        "Should be able to hold a conversation while running",
+        "Aim for 60-70% of maximum heart rate",
+        "Land midfoot, avoid overstriding"
+      ],
+      "tags": ["aerobic", "base_building", "recovery"]
+    },
+    {
+      "id": "run_intervals",
+      "name": "Running Intervals",
+      "category": "running",
+      "description": "Alternating periods of high and low intensity running",
+      "difficulty": "intermediate",
+      "equipment": ["running_shoes", "timer"],
+      "primaryMetrics": ["duration", "distance", "rpe"],
+      "optionalMetrics": ["averageHR", "maxHR", "hrZone2", "hrZone3"],
+      "instructions": [
+        "Warm up thoroughly with easy pace",
+        "Run hard intervals at 80-90% effort",
+        "Recover between intervals at easy pace",
+        "Cool down with easy running and stretching"
+      ],
+      "tips": [
+        "Start conservatively and build intensity",
+        "Focus on maintaining form even when tired",
+        "Adjust recovery time based on fitness level"
+      ],
+      "tags": ["anaerobic", "speed", "vo2max"]
+    },
+    {
+      "id": "run_tempo",
+      "name": "Tempo Running",
+      "category": "running",
+      "description": "Sustained running at lactate threshold pace",
+      "difficulty": "intermediate",
+      "equipment": ["running_shoes"],
+      "primaryMetrics": ["duration", "distance", "pace"],
+      "optionalMetrics": ["averageHR", "rpe"],
+      "instructions": [
+        "Warm up with 10-15 minutes easy running",
+        "Run at comfortably hard pace (threshold)",
+        "Should feel challenging but sustainable",
+        "Cool down with easy running"
+      ],
+      "tips": [
+        "Target 75-85% of maximum heart rate",
+        "Should feel like a 7-8/10 effort",
+        "Maintain consistent pace throughout"
+      ],
+      "tags": ["threshold", "lactate", "racing"]
+    },
+    {
+      "id": "run_long",
+      "name": "Long Distance Running", 
+      "category": "running",
+      "description": "Extended duration running for endurance building",
+      "difficulty": "intermediate",
+      "equipment": ["running_shoes", "hydration"],
+      "primaryMetrics": ["duration", "distance"],
+      "optionalMetrics": ["averageHR", "rpe", "elevation", "calories"],
+      "instructions": [
+        "Start at very easy, conversational pace",
+        "Gradually build distance over time",
+        "Stay hydrated throughout",
+        "Listen to your body and adjust as needed"
+      ],
+      "tips": [
+        "Should be mostly aerobic (60-70% max HR)",
+        "Focus on time on feet rather than pace",
+        "Practice race day nutrition and hydration"
+      ],
+      "tags": ["aerobic", "endurance", "base_building"]
+    },
+    {
+      "id": "cycle_steady",
+      "name": "Steady State Cycling",
+      "category": "cycling", 
+      "description": "Continuous cycling at moderate, sustainable intensity",
+      "difficulty": "beginner",
+      "equipment": ["bicycle", "helmet"],
+      "primaryMetrics": ["duration", "distance"],
+      "optionalMetrics": ["averageHR", "maxHR", "rpe", "elevation"],
+      "instructions": [
+        "Warm up with easy pedaling",
+        "Maintain steady, comfortable effort",
+        "Keep cadence around 80-90 RPM",
+        "Cool down with easy pedaling"
+      ],
+      "tips": [
+        "Focus on smooth, circular pedal stroke",
+        "Adjust gearing to maintain cadence",
+        "Stay relaxed in upper body"
+      ],
+      "tags": ["aerobic", "endurance", "low_impact"]
+    },
+    {
+      "id": "cycle_intervals",
+      "name": "Cycling Intervals",
+      "category": "cycling",
+      "description": "High intensity cycling intervals with recovery periods",
+      "difficulty": "intermediate", 
+      "equipment": ["bicycle", "helmet", "timer"],
+      "primaryMetrics": ["duration", "rpe"],
+      "optionalMetrics": ["distance", "averageHR", "maxHR", "hrZone3"],
+      "instructions": [
+        "Warm up thoroughly with easy spinning",
+        "Perform high intensity efforts",
+        "Recover completely between intervals",
+        "Cool down with easy pedaling"
+      ],
+      "tips": [
+        "Maintain high cadence during intervals",
+        "Use appropriate gearing for power output",
+        "Focus on breathing and form"
+      ],
+      "tags": ["anaerobic", "power", "vo2max"]
+    },
+    {
+      "id": "swim_freestyle",
+      "name": "Freestyle Swimming",
+      "category": "swimming",
+      "description": "Continuous freestyle swimming for endurance",
+      "difficulty": "intermediate",
+      "equipment": ["pool", "goggles", "swimsuit"],
+      "primaryMetrics": ["duration", "distance"],
+      "optionalMetrics": ["rpe", "stroke_count"],
+      "instructions": [
+        "Warm up with easy swimming",
+        "Focus on technique and breathing",
+        "Maintain steady pace throughout",
+        "Cool down with easy swimming or backstroke"
+      ],
+      "tips": [
+        "Bilateral breathing every 3-5 strokes",
+        "High elbow catch and pull",
+        "Rotate body, not just arms"
+      ],
+      "tags": ["full_body", "low_impact", "technique"]
+    },
+    {
+      "id": "swim_intervals",
+      "name": "Swimming Intervals",
+      "category": "swimming",
+      "description": "Structured swimming intervals with rest periods",
+      "difficulty": "advanced",
+      "equipment": ["pool", "goggles", "pool_clock"],
+      "primaryMetrics": ["duration", "distance", "rpe"],
+      "optionalMetrics": ["stroke_count", "rest_time"],
+      "instructions": [
+        "Warm up with easy swimming and drills",
+        "Swim intervals at target pace",
+        "Take prescribed rest between intervals",
+        "Cool down with easy swimming"
+      ],
+      "tips": [
+        "Focus on maintaining technique when tired",
+        "Use pool clock for accurate timing",
+        "Adjust interval distance based on fitness"
+      ],
+      "tags": ["structured", "pace", "anaerobic"]
+    },
+    {
+      "id": "walk_brisk",
+      "name": "Brisk Walking",
+      "category": "walking",
+      "description": "Fast-paced walking for cardiovascular health",
+      "difficulty": "beginner",
+      "equipment": ["walking_shoes"],
+      "primaryMetrics": ["duration", "distance"],
+      "optionalMetrics": ["pace", "averageHR", "rpe"],
+      "instructions": [
+        "Start at comfortable pace",
+        "Gradually increase to brisk pace",
+        "Pump arms naturally",
+        "Maintain good posture throughout"
+      ],
+      "tips": [
+        "Land heel-to-toe with each step",
+        "Should be slightly out of breath but able to talk",
+        "Aim for 3-4 mph pace"
+      ],
+      "tags": ["low_impact", "accessible", "recovery"]
+    },
+    {
+      "id": "hike_trail",
+      "name": "Trail Hiking",
+      "category": "walking",
+      "description": "Hiking on trails with varying terrain and elevation",
+      "difficulty": "intermediate",
+      "equipment": ["hiking_boots", "backpack", "water"],
+      "primaryMetrics": ["duration", "distance", "elevation"],
+      "optionalMetrics": ["rpe", "calories"],
+      "instructions": [
+        "Choose appropriate trail for fitness level",
+        "Maintain steady pace on flat sections",
+        "Use shorter steps on inclines",
+        "Take breaks as needed"
+      ],
+      "tips": [
+        "Bring plenty of water and snacks",
+        "Check weather and trail conditions",
+        "Inform someone of your hiking plans"
+      ],
+      "tags": ["outdoor", "variable_intensity", "adventure"]
+    },
+    {
+      "id": "row_steady",
+      "name": "Steady State Rowing",
+      "category": "rowing",
+      "description": "Continuous rowing at moderate intensity",
+      "difficulty": "beginner",
+      "equipment": ["rowing_machine"],
+      "primaryMetrics": ["duration", "distance"],
+      "optionalMetrics": ["stroke_rate", "averageHR", "rpe"],
+      "instructions": [
+        "Set up machine with proper foot placement",
+        "Start with easy pace to warm up",
+        "Maintain consistent stroke rate",
+        "Focus on leg drive and smooth technique"
+      ],
+      "tips": [
+        "Drive with legs, then back, then arms",
+        "Maintain stroke rate around 20-24 SPM",
+        "Keep core engaged throughout"
+      ],
+      "tags": ["full_body", "low_impact", "strength_endurance"]
+    },
+    {
+      "id": "row_intervals",
+      "name": "Rowing Intervals",
+      "category": "rowing",
+      "description": "High intensity rowing intervals with recovery",
+      "difficulty": "intermediate",
+      "equipment": ["rowing_machine", "timer"],
+      "primaryMetrics": ["duration", "distance", "rpe"],
+      "optionalMetrics": ["stroke_rate", "power", "averageHR"],
+      "instructions": [
+        "Warm up with easy rowing",
+        "Row intervals at high intensity",
+        "Recover with easy pace or complete rest",
+        "Cool down with easy rowing"
+      ],
+      "tips": [
+        "Increase stroke rate for intervals",
+        "Focus on power output during work periods",
+        "Maintain technique even when fatigued"
+      ],
+      "tags": ["anaerobic", "power", "full_body"]
+    },
+    {
+      "id": "elliptical_steady",
+      "name": "Elliptical Training",
+      "category": "crossTraining",
+      "description": "Low impact elliptical machine training",
+      "difficulty": "beginner",
+      "equipment": ["elliptical_machine"],
+      "primaryMetrics": ["duration"],
+      "optionalMetrics": ["distance", "resistance", "averageHR", "rpe"],
+      "instructions": [
+        "Start with light resistance",
+        "Maintain steady pace throughout",
+        "Use arm handles for full body workout",
+        "Cool down gradually"
+      ],
+      "tips": [
+        "Stand tall with good posture",
+        "Land midfoot on pedals",
+        "Adjust resistance for desired intensity"
+      ],
+      "tags": ["low_impact", "full_body", "machine"]
+    },
+    {
+      "id": "stairclimber",
+      "name": "Stair Climbing",
+      "category": "crossTraining",
+      "description": "Stair climbing machine or actual stairs",
+      "difficulty": "intermediate",
+      "equipment": ["stair_machine"],
+      "primaryMetrics": ["duration"],
+      "optionalMetrics": ["floors", "averageHR", "rpe", "calories"],
+      "instructions": [
+        "Start at comfortable pace",
+        "Use handrails lightly for balance only",
+        "Take full steps, avoid tiptoeing",
+        "Maintain steady rhythm"
+      ],
+      "tips": [
+        "Lean slightly forward but keep chest up",
+        "Drive with full leg, not just calves",
+        "Start with shorter sessions and build up"
+      ],
+      "tags": ["high_intensity", "leg_focused", "functional"]
+    },
+    {
+      "id": "jump_rope",
+      "name": "Jump Rope",
+      "category": "crossTraining",
+      "description": "Cardiovascular training with jump rope",
+      "difficulty": "intermediate",
+      "equipment": ["jump_rope"],
+      "primaryMetrics": ["duration", "reps"],
+      "optionalMetrics": ["rpe", "averageHR"],
+      "instructions": [
+        "Start with basic bounce step",
+        "Keep elbows close to body",
+        "Land lightly on balls of feet",
+        "Maintain steady rhythm"
+      ],
+      "tips": [
+        "Use wrists to turn rope, not arms",
+        "Start with 30-second intervals",
+        "Progress to different footwork patterns"
+      ],
+      "tags": ["coordination", "agility", "portable"]
+    }
+  ]
+}
