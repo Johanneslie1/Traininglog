@@ -588,11 +588,11 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                   {isPowerBiExporting
                     ? 'Exporting…'
                     : !user?.id
-                    ? 'Login Required'
-                    : 'Export for Power BI (ZIP)'}
+                      ? 'Login Required'
+                      : 'Export for Power BI (Recommended)'}
                 </button>
                 <p className="text-sm text-text-secondary">
-                  Downloads a ZIP with fact_gym_sets.csv, fact_activity.csv, dim_exercise.csv, dim_athlete.csv and export_meta.json — ready to connect to Power BI.
+                  Downloads a ZIP with fact_gym_sets.csv, fact_activity.csv, fact_wellness.csv, dim_exercise.csv, dim_athlete.csv and export_meta.json, ready for Power BI modeling.
                 </p>
 
                 {/* JSON Backup Export */}

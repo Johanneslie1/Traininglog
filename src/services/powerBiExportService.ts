@@ -224,6 +224,26 @@ const getCoachUid = (): string => {
   return uid;
 };
 
+const runWithConcurrency = async <T>(
+  items: T[],
+  concurrency: number,
+  worker: (item: T) => Promise<void>
+): Promise<void> => {
+  if (items.length === 0) return;
+
+  let index = 0;
+  const workerCount = Math.max(1, Math.min(concurrency, items.length));
+
+  const runners = Array.from({ length: workerCount }, async () => {
+    while (index < items.length) {
+      const current = items[index++];
+      await worker(current);
+    }
+  });
+
+  await Promise.all(runners);
+};
+
 // ---------------------------------------------------------------------------
 // Main export function
 // ---------------------------------------------------------------------------
@@ -337,53 +357,65 @@ export const downloadPowerBiZip = async (
         active: true,
       });
     } else {
-      // Full team export — iterate every unique athlete across all teams
-      const seenAthletes = new Set<string>();
+      // Full team export — gather every unique athlete, then export with bounded concurrency.
+      const athletesById = new Map<string, {
+        id: string;
+        athleteName: string;
+        teamName: string;
+        active: boolean;
+      }>();
 
       for (let i = 0; i < teams.length; i++) {
         const team = teams[i];
         const members = membersPerTeam[i];
 
         for (const member of members) {
-          if (seenAthletes.has(member.id)) continue;
-          seenAthletes.add(member.id);
+          if (athletesById.has(member.id)) continue;
 
-          const athleteName =
-            [member.firstName, member.lastName].filter(Boolean).join(' ') ||
-            member.email ||
-            member.id;
-
-          try {
-            const hasAccess = await verifyCoachAthleteRelationship(member.id);
-            if (!hasAccess) continue;
-
-            await syncCoachAthleteAccess(coachId, member.id);
-            const data = await exportData(member.id, exportOptions);
-
-            processRawSets(
-              data.sets,
+          athletesById.set(member.id, {
+            id: member.id,
+            athleteName:
+              [member.firstName, member.lastName].filter(Boolean).join(' ') ||
+              member.email ||
               member.id,
-              athleteName,
-              gymSets,
-              activityRows,
-              allRawSets
-            );
-          } catch (err) {
-            console.warn(`[powerBiExport] Skipping athlete ${member.id}:`, err);
-            continue;
-          }
-
-          dimAthletes.push({
-            athlete_id: member.id,
-            athlete_name: athleteName,
-            role: 'athlete',
-            team: teamNameById.get(team.id) || team.id,
-            position: '',
-            date_of_birth: '',
+            teamName: teamNameById.get(team.id) || team.id,
             active: member.status === 'active',
           });
         }
       }
+
+      const athletes = Array.from(athletesById.values());
+
+      await runWithConcurrency(athletes, 4, async (athlete) => {
+        try {
+          const hasAccess = await verifyCoachAthleteRelationship(athlete.id);
+          if (!hasAccess) return;
+
+          await syncCoachAthleteAccess(coachId, athlete.id);
+          const data = await exportData(athlete.id, exportOptions);
+
+          processRawSets(
+            data.sets,
+            athlete.id,
+            athlete.athleteName,
+            gymSets,
+            activityRows,
+            allRawSets
+          );
+
+          dimAthletes.push({
+            athlete_id: athlete.id,
+            athlete_name: athlete.athleteName,
+            role: 'athlete',
+            team: athlete.teamName,
+            position: '',
+            date_of_birth: '',
+            active: athlete.active,
+          });
+        } catch (err) {
+          console.warn(`[powerBiExport] Skipping athlete ${athlete.id}:`, err);
+        }
+      });
 
       // Include the coach's own data at the top
       const selfData = await exportData(currentUser.id, exportOptions);
@@ -432,6 +464,7 @@ export const downloadPowerBiZip = async (
     'exercise_id',
     'exercise_name',
     'logged_date',
+    'exercise_order',
     'set_number',
     'reps',
     'weight',
@@ -452,6 +485,9 @@ export const downloadPowerBiZip = async (
     'exercise_name',
     'activity_type',
     'logged_date',
+    'exercise_order',
+    'set_number',
+    'reps',
     'duration_sec',
     'distance_meters',
     'avg_hr',
@@ -464,6 +500,9 @@ export const downloadPowerBiZip = async (
     'calories',
     'rpe',
     'is_warmup',
+    'hold_time',
+    'intensity',
+    'height',
     'notes',
   ];
 

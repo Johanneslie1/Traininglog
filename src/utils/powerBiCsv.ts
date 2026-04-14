@@ -4,10 +4,8 @@ export const rowsToCSVForPowerBi = (rows: Record<string, any>[], headers: string
 
   const formatNumberForPowerBi = (val: number): string => {
     if (!Number.isFinite(val)) return '';
-    return new Intl.NumberFormat('nb-NO', {
-      useGrouping: false,
-      maximumFractionDigits: 20,
-    }).format(val);
+    // Use a stable dot-decimal format for locale-independent Power BI parsing.
+    return Number.isInteger(val) ? String(val) : String(val);
   };
 
   const escape = (val: unknown): string => {
@@ -28,5 +26,5 @@ export const rowsToCSVForPowerBi = (rows: Record<string, any>[], headers: string
     ...rows.map((row) => headers.map((h) => escape(row[h])).join(delimiter)),
   ];
 
-  return lines.join('\n');
+  return `\uFEFF${lines.join('\n')}`;
 };

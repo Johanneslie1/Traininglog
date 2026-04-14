@@ -570,21 +570,11 @@ export interface ExportPreview {
  * Get a preview of how much data will be exported for the given date range
  */
 export const getExportPreview = async (userId: string, startDate?: Date, endDate?: Date): Promise<ExportPreview> => {
+  const { start, end } = getDateRange(startDate, endDate);
+
   const [sessionsResult, logsResult] = await Promise.allSettled([
-    exportData(userId, {
-      includeSessions: true,
-      includeExerciseLogs: false,
-      includeSets: false,
-      startDate,
-      endDate,
-    }),
-    exportData(userId, {
-      includeSessions: false,
-      includeExerciseLogs: true,
-      includeSets: true,
-      startDate,
-      endDate,
-    }),
+    getUserWorkouts(userId),
+    getAggregatedExportLogs(userId, start, end),
   ]);
 
   if (sessionsResult.status === 'rejected') {
@@ -599,10 +589,20 @@ export const getExportPreview = async (userId: string, startDate?: Date, endDate
     throw new Error(`Failed to load export preview logs: ${reason}`);
   }
 
+  const sessionCount = sessionsResult.status === 'fulfilled'
+    ? sessionsResult.value.filter((session) => {
+      const sessionDate = new Date(session.date);
+      return sessionDate >= start && sessionDate <= end;
+    }).length
+    : 0;
+
+  const logs = logsResult.status === 'fulfilled' ? logsResult.value : [];
+  const setCount = logs.reduce((sum, log) => sum + (Array.isArray(log.sets) ? log.sets.length : 0), 0);
+
   return {
-    sessionCount: sessionsResult.status === 'fulfilled' ? sessionsResult.value.sessions.length : 0,
-    exerciseCount: logsResult.status === 'fulfilled' ? logsResult.value.exerciseLogs.length : 0,
-    setCount: logsResult.status === 'fulfilled' ? logsResult.value.sets.length : 0,
+    sessionCount,
+    exerciseCount: logs.length,
+    setCount,
   };
 };
 
