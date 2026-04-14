@@ -171,6 +171,13 @@ export default defineConfig(({ mode }) => {
               return 'firebase-firestore-vendor';
             }
 
+            if (
+              normalizedId.includes('/node_modules/firebase/auth') ||
+              normalizedId.includes('/node_modules/@firebase/auth')
+            ) {
+              return 'firebase-auth-vendor';
+            }
+
             if (normalizedId.includes('/node_modules/firebase/') ||
                 normalizedId.includes('/node_modules/@firebase/')) {
               return 'firebase-core-vendor';
