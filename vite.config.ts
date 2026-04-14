@@ -162,12 +162,18 @@ export default defineConfig(({ mode }) => {
               return 'react-vendor';
             }
 
-            // All Firebase packages must stay in one chunk to avoid
-            // "Cannot access before initialization" errors caused by
-            // cross-chunk circular module initialization order.
+            // Split Firebase into predictable chunks so bundle budget checks can
+            // track size growth while keeping related internals grouped.
+            if (
+              normalizedId.includes('/node_modules/firebase/firestore') ||
+              normalizedId.includes('/node_modules/@firebase/firestore')
+            ) {
+              return 'firebase-firestore-vendor';
+            }
+
             if (normalizedId.includes('/node_modules/firebase/') ||
                 normalizedId.includes('/node_modules/@firebase/')) {
-              return 'firebase-vendor';
+              return 'firebase-core-vendor';
             }
 
             if (normalizedId.includes('/src/services/exerciseDatabaseService.ts')) {
