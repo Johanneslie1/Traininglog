@@ -170,27 +170,47 @@ export async function deleteExercise(exercise: UnifiedExerciseData, userId: stri
     let localStorageDeleted = false;
     let errors: string[] = [];
 
+    const isActivity = exercise.activityType && exercise.activityType !== ActivityType.RESISTANCE;
+
     // Always try to delete from Firestore first (if we have an ID)
     if (exercise.id) {
-      try {
-        await deleteExerciseLog(exercise.id, userId);
-        firestoreDeleted = true;
-        console.log('✅ Deleted from Firestore:', exercise.id);
-      } catch (firestoreError) {
-        const errorMsg = firestoreError instanceof Error ? firestoreError.message : 'Unknown Firestore error';
-        errors.push(`Firestore: ${errorMsg}`);
-        console.warn('⚠️ Firestore deletion failed:', errorMsg);
-      }
-
-      if (exercise.activityType && exercise.activityType !== ActivityType.RESISTANCE) {
-        try {
-          await deleteFirebaseActivityLog(exercise.id, userId);
-          firestoreDeleted = true;
+      const deletePrimary = async () => {
+        if (isActivity) {
+          await deleteFirebaseActivityLog(exercise.id!, userId);
           console.log('✅ Deleted activity log from Firestore activities collection:', exercise.id);
-        } catch (activityDeleteError) {
-          const errorMsg = activityDeleteError instanceof Error ? activityDeleteError.message : 'Unknown Firestore activity delete error';
-          errors.push(`Firestore activity: ${errorMsg}`);
-          console.warn('⚠️ Firestore activity deletion failed:', errorMsg);
+          return;
+        }
+
+        await deleteExerciseLog(exercise.id!, userId);
+        console.log('✅ Deleted from Firestore exercises collection:', exercise.id);
+      };
+
+      const deleteFallback = async () => {
+        if (isActivity) {
+          await deleteExerciseLog(exercise.id!, userId);
+          console.log('✅ Fallback delete succeeded in Firestore exercises collection:', exercise.id);
+          return;
+        }
+
+        await deleteFirebaseActivityLog(exercise.id!, userId);
+        console.log('✅ Fallback delete succeeded in Firestore activities collection:', exercise.id);
+      };
+
+      try {
+        await deletePrimary();
+        firestoreDeleted = true;
+      } catch (primaryError) {
+        const primaryMsg = primaryError instanceof Error ? primaryError.message : 'Unknown primary Firestore error';
+        errors.push(`Firestore primary: ${primaryMsg}`);
+        console.warn('⚠️ Primary Firestore deletion failed:', primaryMsg);
+
+        try {
+          await deleteFallback();
+          firestoreDeleted = true;
+        } catch (fallbackError) {
+          const fallbackMsg = fallbackError instanceof Error ? fallbackError.message : 'Unknown fallback Firestore error';
+          errors.push(`Firestore fallback: ${fallbackMsg}`);
+          console.warn('⚠️ Fallback Firestore deletion failed:', fallbackMsg);
         }
       }
     }

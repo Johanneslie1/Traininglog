@@ -151,7 +151,8 @@ export const addExerciseLog = async (
       },
       {
         fallback: ActivityType.RESISTANCE,
-        preferHintOverOther: true,
+        // Keep explicit type from UI payload authoritative for non-resistance logs.
+        preferHintOverOther: false,
       }
     );
 

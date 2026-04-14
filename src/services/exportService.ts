@@ -158,7 +158,16 @@ const inferActivityTypeFromSetShape = (sets: Array<Record<string, any>>): Activi
     return ActivityType.ENDURANCE;
   }
 
-  if (hasMetric((set) => set.duration !== undefined || set.time !== undefined || set.distance !== undefined || set.calories !== undefined || set.heartRate !== undefined || set.averageHeartRate !== undefined || set.maxHeartRate !== undefined)) {
+  const hasDuration = hasMetric((set) => set.duration !== undefined || set.time !== undefined);
+  const hasDistance = hasMetric((set) => set.distance !== undefined);
+  const hasEnduranceVitals = hasMetric((set) => set.calories !== undefined || set.heartRate !== undefined || set.averageHeartRate !== undefined || set.maxHeartRate !== undefined);
+
+  // Legacy logs frequently have only duration+distance for endurance activities.
+  if ((hasDuration && hasDistance) || hasEnduranceVitals) {
+    return ActivityType.ENDURANCE;
+  }
+
+  if (hasDuration) {
     return ActivityType.OTHER;
   }
 

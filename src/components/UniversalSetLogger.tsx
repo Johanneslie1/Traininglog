@@ -37,6 +37,8 @@ interface UniversalSetLoggerProps {
   prescriptionAssistant?: ExercisePrescriptionAssistantData;
 }
 
+const EMPTY_INITIAL_SETS: ExerciseSet[] = [];
+
 // RPE Scale for reference
 const RPE_SCALE = {
   1: { label: 'Very Easy', description: 'No exertion at all' },
@@ -138,7 +140,8 @@ const getDefaultSet = (exerciseType: string): ExerciseSet => {
         ...baseSet,
         duration: 0,
         distance: 0,
-        rpe: 0
+        rpe: 0,
+        calories: 0,
       };
   }
 };
@@ -159,7 +162,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
   exercise,
   onSave,
   onCancel,
-  initialSets = [],
+  initialSets,
   isEditing = false,
   prescription,
   instructionMode,
@@ -192,6 +195,16 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
   
   // Ref for scrolling to new sets
   const setListRef = useRef<HTMLDivElement>(null);
+
+  const normalizedInitialSets = useMemo(
+    () => (Array.isArray(initialSets) ? initialSets : EMPTY_INITIAL_SETS),
+    [initialSets]
+  );
+
+  const initialSetsSeed = useMemo(
+    () => JSON.stringify(normalizedInitialSets),
+    [normalizedInitialSets]
+  );
 
   // Check if exercise has instructions from program prescription
   const hasInstructions = exercise.instructions && exercise.instructions.length > 0;
@@ -284,11 +297,12 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
 
   // Initialize sets without auto-prefill to keep first-set editing flow fast
   useEffect(() => {
-    if (initialSets && initialSets.length > 0) {
+    if (normalizedInitialSets.length > 0) {
       // Editing existing exercise - use provided sets
-      const clonedSets = initialSets.map(set => ({ ...set }));
+      const clonedSets = normalizedInitialSets.map(set => ({ ...set }));
       setSets(clonedSets);
-      const ids = clonedSets.map((_, index) => `set-${exercise.name}-${index}-${Date.now()}`);
+      const seed = Date.now();
+      const ids = clonedSets.map((_, index) => `set-${exercise.name}-${index}-${seed}`);
       setSetIds(ids);
     } else {
       // Always start with a single editable set
@@ -296,7 +310,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
       setSets([defaultSet]);
       setSetIds([`set-${exercise.name}-0-${Date.now()}`]);
     }
-  }, [initialSets, exerciseType, exercise.name, isEditing]);
+  }, [initialSetsSeed, exerciseType, exercise.name, isEditing]);
 
   const addSet = useCallback(() => {
     const lastSet = sets[sets.length - 1];
