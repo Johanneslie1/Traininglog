@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store/store';
 import { getExportPreview, ExportPreview, downloadWellnessCSV } from '@/services/exportService';
-import { downloadPowerBiZip } from '@/services/powerBiExportService';
+import { downloadPowerBiZip, buildPowerBiFiles } from '@/services/powerBiExportService';
 import { getAllAthletes } from '@/services/coachService';
 import { useIsCoach } from '@/hooks/useUserRole';
 import type { PowerBiExportScope } from '@/types/powerBiExport';
@@ -11,6 +11,7 @@ import { useTheme, Theme } from '@/context/ThemeContext';
 import { useSettings } from '@/context/SettingsContext';
 import { updateUserRole } from '@/services/firebase/auth';
 import { setUser } from '@/features/auth/authSlice';
+import { uploadToOneDrive, signOutOneDrive, isOneDriveSignedIn } from '@/services/onedriveService';
 import toast from 'react-hot-toast';
 
 type DateRangePreset = 'last7days' | 'last30days' | 'thisMonth' | 'lastMonth' | 'allTime' | 'custom';
@@ -97,7 +98,19 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
   const [athletes, setAthletes] = useState<{ id: string; name: string }[]>([]);
   const [isLoadingAthletes, setIsLoadingAthletes] = useState(false);
   const [isPowerBiExporting, setIsPowerBiExporting] = useState(false);
+  const [oneDriveClientId, setOneDriveClientId] = useState<string>(
+    () => localStorage.getItem('onedrive_client_id') ?? ''
+  );
+  const [isUploadingToOneDrive, setIsUploadingToOneDrive] = useState(false);
+  const [oneDriveSignedIn, setOneDriveSignedIn] = useState(false);
+  const [showClientIdInput, setShowClientIdInput] = useState(false);
   const isCoach = useIsCoach();
+
+  // Check OneDrive sign-in state when settings panel opens
+  useEffect(() => {
+    if (!isOpen || !oneDriveClientId) return;
+    isOneDriveSignedIn(oneDriveClientId).then(setOneDriveSignedIn);
+  }, [isOpen, oneDriveClientId]);
 
   // Fetch export preview when date range changes
   const fetchPreview = useCallback(async () => {
@@ -214,65 +227,108 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleExportWellness = async () => {
+  const handleSaveClientId = (value: string) => {
+    const trimmed = value.trim();
+    setOneDriveClientId(trimmed);
+    localStorage.setItem('onedrive_client_id', trimmed);
+    if (trimmed) setShowClientIdInput(false);
+  };
+
+  const handleSignOutOneDrive = async () => {
+    await signOutOneDrive(oneDriveClientId);
+    setOneDriveSignedIn(false);
+    toast('Signed out of OneDrive.');
+  };
+
+  const handleUploadToOneDrive = async () => {
     if (!user?.id) {
-      toast.error('Please log in to export your data.');
+      toast.error('Please log in to upload your data.');
       return;
     }
-    setIsExportingWellness(true);
+    if (!oneDriveClientId.trim()) {
+      setShowClientIdInput(true);
+      toast('Enter your Azure Application (client) ID to continue.', { icon: 'ðŸ”‘' });
+      return;
+    }
+    setIsUploadingToOneDrive(true);
     try {
-      const count = await downloadWellnessCSV(
-        user.id,
-        dateRange.startDate ?? undefined,
-        dateRange.endDate ?? undefined
+      const d = dateRange.startDate;
+      const fromDate = d
+        ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+        : undefined;
+
+      const { files, gymSetCount, activityCount, sessionCount } = await buildPowerBiFiles(
+        {
+          scope: exportScope,
+          targetAthleteId: exportScope === 'athlete' ? selectedAthleteId : undefined,
+          fromDate,
+        },
+        {
+          id: user.id,
+          firstName: user.firstName || '',
+          lastName: user.lastName || '',
+          role: user.role,
+        }
       );
-      if (count === 0) {
-        toast('No wellness data found for the selected range.');
-      } else {
-        toast.success(`Exported ${count} wellness entr${count === 1 ? 'y' : 'ies'} to wellness_logs.csv`);
+
+      const result = await uploadToOneDrive(oneDriveClientId, files);
+      setOneDriveSignedIn(true);
+      toast.success(
+        `Uploaded ${result.uploadedFiles.length} files to OneDrive /TrainingLog/ · ${sessionCount} sessions · ${gymSetCount + activityCount} rows`
+      );
+    } catch (error) {
+      console.error('OneDrive upload failed:', error);
+      const msg = error instanceof Error ? error.message : 'Unknown error';
+      toast.error(`OneDrive upload failed: ${msg}`);
+    } finally {
+      setIsUploadingToOneDrive(false);
       }
-    } catch (error) {
-      console.error('Wellness export failed:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      toast.error(`Wellness export failed: ${errorMessage}`);
-    } finally {
-      setIsExportingWellness(false);
-    }
-  };
+    };
 
-  const handleExportJson = async () => {
-    if (!user?.id) {
-      alert('Please log in to export your data.');
-      return;
-    }
+    const handleExportWellness = async () => {
+      if (!user?.id) {
+        toast.error('Please log in to export your data.');
+        return;
+      }
+      setIsExportingWellness(true);
+      try {
+        const count = await downloadWellnessCSV(
+          user.id,
+          dateRange.startDate ?? undefined,
+          dateRange.endDate ?? undefined
+        );
+        if (count === 0) {
+          toast('No wellness data found for the selected range.');
+        } else {
+          toast.success(`Exported ${count} wellness entries to CSV.`);
+        }
+      } catch (error) {
+        console.error('Wellness export failed:', error);
+        toast.error('Wellness export failed.');
+      } finally {
+        setIsExportingWellness(false);
+      }
+    };
 
-    setIsExportingJson(true);
-    try {
-      const backupData = await exportFullBackup(user.id);
-      downloadBackupJson(backupData);
+    const handleExportJson = async () => {
+      if (!user?.id) {
+        toast.error('Please log in to export your data.');
+        return;
+      }
+      setIsExportingJson(true);
+      try {
+        const backup = await exportFullBackup(user.id);
+        downloadBackupJson(backup);
+        toast.success('Backup exported successfully!');
+      } catch (error) {
+        console.error('JSON export failed:', error);
+        toast.error('JSON export failed.');
+      } finally {
+        setIsExportingJson(false);
+      }
+    };
 
-      const exerciseCount = backupData.exercises.length;
-      const programCount = backupData.programs.length;
-      const totalSets = backupData.exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
-
-      alert(
-        `JSON Backup completed!\n\n` +
-        `Exported:\n` +
-        `• ${exerciseCount} exercise logs (${totalSets} total sets)\n` +
-        `• ${programCount} programs\n` +
-        `• App settings\n\n` +
-        `Check your downloads folder.`
-      );
-    } catch (error) {
-      console.error('JSON export failed:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      alert(`JSON export failed: ${errorMessage}`);
-    } finally {
-      setIsExportingJson(false);
-    }
-  };
-
-  const { theme, setTheme } = useTheme();
+    const { theme, setTheme } = useTheme();
   const { settings: appSettings, updateSetting } = useSettings();
 
   const [settings, setSettings] = useState<Setting[]>([
@@ -453,7 +509,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
               <div className="pt-4 border-t border-border space-y-4">
                 <h3 className="text-lg font-medium text-text-primary">Export Data</h3>
 
-                {/* Export scope selector — visible to coaches only */}
+                {/* Export scope selector â€” visible to coaches only */}
                 {isCoach && (
                   <div className="space-y-2">
                     <label className="text-sm text-text-secondary">Export scope</label>
@@ -479,7 +535,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                   </div>
                 )}
 
-                {/* Athlete selector — only when scope === 'athlete' */}
+                {/* Athlete selector â€” only when scope === 'athlete' */}
                 {isCoach && exportScope === 'athlete' && (
                   <div>
                     <label className="block text-sm text-text-secondary mb-1">Select athlete</label>
@@ -503,9 +559,9 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                   </div>
                 )}
 
-                {/* Date Range — "Export since" for incremental Power BI refreshes */}
+                {/* Date Range â€” "Export since" for incremental Power BI refreshes */}
                 <div className="space-y-2">
-                  <label className="text-sm text-text-secondary">Date range (optional — leave blank for all data)</label>
+                  <label className="text-sm text-text-secondary">Date range (optional â€” leave blank for all data)</label>
                   <div className="flex flex-wrap gap-2">
                     {[
                       { key: 'last7days' as DateRangePreset, label: 'Last 7 days' },
@@ -586,14 +642,92 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                   className="w-full bg-accent-primary text-white py-3 px-4 rounded-md hover:bg-accent-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
                 >
                   {isPowerBiExporting
-                    ? 'Exporting…'
+                    ? 'Exportingâ€¦'
                     : !user?.id
                       ? 'Login Required'
                       : 'Export for Power BI (Recommended)'}
                 </button>
                 <p className="text-sm text-text-secondary">
-                  Downloads a ZIP with fact_gym_sets.csv, fact_activity.csv, fact_wellness.csv, dim_exercise.csv, dim_athlete.csv and export_meta.json, ready for Power BI modeling.
+                  Downloads a ZIP with fact_gym_sets.csv, fact_activity.csv, <strong>fact_sessions.csv</strong>, fact_wellness.csv, dim_exercise.csv, dim_athlete.csv and export_meta.json, ready for Power BI modeling.
                 </p>
+
+                {/* OneDrive Upload */}
+                <div className="pt-4 border-t border-border space-y-3">
+                  <div>
+                    <h4 className="text-sm font-medium text-text-primary mb-1">
+                      Upload to OneDrive
+                      {oneDriveSignedIn && (
+                        <span className="ml-2 text-xs text-emerald-500 font-normal">â— Connected</span>
+                      )}
+                    </h4>
+                    <p className="text-xs text-text-secondary">
+                      Uploads all CSVs directly to <code>/TrainingLog/</code> in your OneDrive so Power BI can auto-refresh. Requires a free Azure app registration â€” see instructions below.
+                    </p>
+                  </div>
+
+                  {/* Client ID input */}
+                  {(showClientIdInput || !oneDriveClientId) ? (
+                    <div className="space-y-2">
+                      <label className="block text-xs text-text-secondary">
+                        Azure Application (client) ID
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                        defaultValue={oneDriveClientId}
+                        onBlur={(e) => handleSaveClientId(e.target.value)}
+                        className="w-full bg-bg-tertiary text-text-primary px-3 py-2 rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-accent-primary text-sm font-mono"
+                      />
+                      <details className="text-xs text-text-secondary">
+                        <summary className="cursor-pointer hover:text-text-primary">
+                          How to get a client ID (one-time setup)
+                        </summary>
+                        <ol className="mt-2 space-y-1 pl-4 list-decimal">
+                          <li>Go to <strong>portal.azure.com</strong> â†’ Azure Active Directory â†’ App registrations â†’ New registration</li>
+                          <li>Name: "TrainingLog Export", Supported account types: <em>Personal Microsoft accounts</em></li>
+                          <li>Redirect URI: Single-page application (SPA) â†’ paste your app URL</li>
+                          <li>After creation, copy the <strong>Application (client) ID</strong></li>
+                          <li>Under API permissions â†’ Add â†’ Microsoft Graph â†’ Files.ReadWrite (delegated)</li>
+                          <li>Paste the client ID above and save</li>
+                        </ol>
+                      </details>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-xs text-text-secondary">
+                      <span>Client ID: <code className="font-mono">{oneDriveClientId.slice(0, 8)}â€¦</code></span>
+                      <button
+                        onClick={() => setShowClientIdInput(true)}
+                        className="text-accent-primary hover:underline"
+                      >
+                        Change
+                      </button>
+                      {oneDriveSignedIn && (
+                        <button
+                          onClick={handleSignOutOneDrive}
+                          className="text-red-400 hover:underline ml-auto"
+                        >
+                          Sign out
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  <button
+                    onClick={handleUploadToOneDrive}
+                    disabled={
+                      isUploadingToOneDrive ||
+                      !user?.id ||
+                      (exportScope === 'athlete' && !selectedAthleteId)
+                    }
+                    className="w-full bg-blue-700 text-white py-3 px-4 rounded-md hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                  >
+                    {isUploadingToOneDrive
+                      ? 'Uploading to OneDriveâ€¦'
+                      : !user?.id
+                        ? 'Login Required'
+                        : 'Upload to OneDrive (Power BI Auto-Refresh)'}
+                  </button>
+                </div>
 
                 {/* JSON Backup Export */}
                 <div className="pt-4 border-t border-border space-y-3">
@@ -608,7 +742,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                     disabled={isExportingWellness || !user?.id}
                     className="w-full bg-emerald-600 text-white py-3 px-4 rounded-md hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
-                    {isExportingWellness ? 'Exporting…' : !user?.id ? 'Login Required' : 'Export Wellness (CSV)'}
+                    {isExportingWellness ? 'Exportingâ€¦' : !user?.id ? 'Login Required' : 'Export Wellness (CSV)'}
                   </button>
                 </div>
 
@@ -644,3 +778,4 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
 };
 
 export default Settings;
+

@@ -28,6 +28,7 @@ import type {
   ExportMeta,
   FactActivityRow,
   FactGymSetRow,
+  FactSessionRow,
   FactWellnessRow,
   PowerBiExportOptions,
 } from '@/types/powerBiExport';
@@ -51,6 +52,16 @@ export interface PowerBiExportResult {
   gymSetCount: number;
   activityCount: number;
   athleteCount: number;
+}
+
+export interface PowerBiFile {
+  name: string;
+  content: string;
+}
+
+export interface PowerBiFilesResult extends PowerBiExportResult {
+  files: PowerBiFile[];
+  sessionCount: number;
 }
 
 // Re-export so the UI can use without another import
@@ -87,6 +98,21 @@ const toEmpty = (val: unknown): number | '' => {
 };
 
 const asBool = (val: unknown): boolean => Boolean(val);
+
+/** ISO week key (YYYY-Www) from a YYYY-MM-DD date string. */
+const dateStringToWeekKey = (dateStr: string): string => {
+  if (!dateStr) return '';
+  const d = new Date(`${dateStr}T12:00:00`);
+  if (isNaN(d.getTime())) return '';
+  const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = tmp.getUTCDay() || 7;
+  tmp.setUTCDate(tmp.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1));
+  const weekNum = Math.ceil(
+    (((tmp.getTime() - yearStart.getTime()) / 86_400_000) + 1) / 7
+  );
+  return `${tmp.getUTCFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+};
 
 /** Lowercase snake_case slug used as exercise_id. */
 const toSlug = (name: string): string =>
@@ -188,8 +214,157 @@ const buildDimExercise = (allRawSets: Record<string, unknown>[]): DimExerciseRow
 };
 
 // ---------------------------------------------------------------------------
-// CSV serialiser
+// Session fact builder
 // ---------------------------------------------------------------------------
+
+interface SessionAccumulator {
+  athlete_id: string;
+  athlete_name: string;
+  session_id: string;
+  session_type: string;
+  date: string;
+  activity_types: Set<string>;
+  has_warmup: boolean;
+  total_sets: number;
+  total_reps: number;
+  total_volume_kg: number;
+  total_distance_m: number;
+  avg_hr_values: number[];
+  max_hr: number;
+  hr_zone1_sec: number;
+  hr_zone2_sec: number;
+  hr_zone3_sec: number;
+  hr_zone4_sec: number;
+  hr_zone5_sec: number;
+  calories: number;
+  rpe_values: number[];
+}
+
+const buildFactSessions = (
+  gymSets: FactGymSetRow[],
+  activityRows: FactActivityRow[]
+): FactSessionRow[] => {
+  const map = new Map<string, SessionAccumulator>();
+
+  const getOrCreate = (
+    athleteId: string,
+    athleteName: string,
+    sessionId: string,
+    sessionType: string,
+    date: string
+  ): SessionAccumulator => {
+    const key = `${athleteId}::${sessionId}`;
+    if (!map.has(key)) {
+      map.set(key, {
+        athlete_id: athleteId,
+        athlete_name: athleteName,
+        session_id: sessionId,
+        session_type: sessionType,
+        date,
+        activity_types: new Set(),
+        has_warmup: false,
+        total_sets: 0,
+        total_reps: 0,
+        total_volume_kg: 0,
+        total_distance_m: 0,
+        avg_hr_values: [],
+        max_hr: 0,
+        hr_zone1_sec: 0,
+        hr_zone2_sec: 0,
+        hr_zone3_sec: 0,
+        hr_zone4_sec: 0,
+        hr_zone5_sec: 0,
+        calories: 0,
+        rpe_values: [],
+      });
+    }
+    return map.get(key)!;
+  };
+
+  gymSets.forEach((s) => {
+    if (!s.session_id) return;
+    const acc = getOrCreate(
+      s.athlete_id, s.athlete_name, s.session_id, s.session_type, s.logged_date
+    );
+    acc.activity_types.add('resistance');
+    if (s.is_warmup) acc.has_warmup = true;
+    acc.total_sets++;
+    if (typeof s.reps === 'number') acc.total_reps += s.reps;
+    if (typeof s.tonnage === 'number') acc.total_volume_kg += s.tonnage;
+    if (typeof s.rpe === 'number') acc.rpe_values.push(s.rpe);
+  });
+
+  activityRows.forEach((s) => {
+    if (!s.session_id) return;
+    const acc = getOrCreate(
+      s.athlete_id, s.athlete_name, s.session_id, s.session_type, s.logged_date
+    );
+    acc.activity_types.add(s.activity_type || 'other');
+    if (s.is_warmup) acc.has_warmup = true;
+    acc.total_sets++;
+    if (typeof s.reps === 'number') acc.total_reps += s.reps;
+    if (typeof s.distance_meters === 'number' && s.distance_meters > 0)
+      acc.total_distance_m += s.distance_meters;
+    if (typeof s.avg_hr === 'number' && s.avg_hr > 0) acc.avg_hr_values.push(s.avg_hr);
+    if (typeof s.max_hr === 'number' && s.max_hr > acc.max_hr) acc.max_hr = s.max_hr;
+    if (typeof s.hr_zone1 === 'number' && s.hr_zone1 > 0) acc.hr_zone1_sec += s.hr_zone1;
+    if (typeof s.hr_zone2 === 'number' && s.hr_zone2 > 0) acc.hr_zone2_sec += s.hr_zone2;
+    if (typeof s.hr_zone3 === 'number' && s.hr_zone3 > 0) acc.hr_zone3_sec += s.hr_zone3;
+    if (typeof s.hr_zone4 === 'number' && s.hr_zone4 > 0) acc.hr_zone4_sec += s.hr_zone4;
+    if (typeof s.hr_zone5 === 'number' && s.hr_zone5 > 0) acc.hr_zone5_sec += s.hr_zone5;
+    if (typeof s.calories === 'number' && s.calories > 0) acc.calories += s.calories;
+    if (typeof s.rpe === 'number') acc.rpe_values.push(s.rpe);
+  });
+
+  const rows: FactSessionRow[] = [];
+  map.forEach((acc) => {
+    const avgRpe =
+      acc.rpe_values.length > 0
+        ? Math.round(
+            (acc.rpe_values.reduce((a, b) => a + b, 0) / acc.rpe_values.length) * 10
+          ) / 10
+        : undefined;
+    const avgHr =
+      acc.avg_hr_values.length > 0
+        ? Math.round(
+            acc.avg_hr_values.reduce((a, b) => a + b, 0) / acc.avg_hr_values.length
+          )
+        : undefined;
+
+    rows.push({
+      athlete_id: acc.athlete_id,
+      athlete_name: acc.athlete_name,
+      session_id: acc.session_id,
+      session_type: acc.session_type,
+      date: acc.date,
+      week_key: dateStringToWeekKey(acc.date),
+      activity_types: Array.from(acc.activity_types).sort().join('|'),
+      has_warmup: acc.has_warmup,
+      duration_min: '',
+      total_sets: acc.total_sets,
+      total_reps: acc.total_reps > 0 ? acc.total_reps : '',
+      total_volume_kg:
+        acc.total_volume_kg > 0 ? Math.round(acc.total_volume_kg * 10) / 10 : '',
+      total_distance_m: acc.total_distance_m > 0 ? Math.round(acc.total_distance_m) : '',
+      avg_hr: avgHr ?? '',
+      max_hr: acc.max_hr > 0 ? acc.max_hr : '',
+      hr_zone1_sec: acc.hr_zone1_sec > 0 ? acc.hr_zone1_sec : '',
+      hr_zone2_sec: acc.hr_zone2_sec > 0 ? acc.hr_zone2_sec : '',
+      hr_zone3_sec: acc.hr_zone3_sec > 0 ? acc.hr_zone3_sec : '',
+      hr_zone4_sec: acc.hr_zone4_sec > 0 ? acc.hr_zone4_sec : '',
+      hr_zone5_sec: acc.hr_zone5_sec > 0 ? acc.hr_zone5_sec : '',
+      calories: acc.calories > 0 ? Math.round(acc.calories) : '',
+      session_rpe: avgRpe ?? '',
+      session_load: '',
+    });
+  });
+
+  return rows.sort((a, b) => {
+    const dateDiff = a.date.localeCompare(b.date);
+    if (dateDiff !== 0) return dateDiff;
+    return a.athlete_id.localeCompare(b.athlete_id);
+  });
+};
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -249,19 +424,17 @@ const runWithConcurrency = async <T>(
 // ---------------------------------------------------------------------------
 
 /**
- * Generates and downloads a ZIP file containing Power BI-compatible CSVs.
+ * Builds all Power BI CSV files and returns them as in-memory strings.
+ * Use this when you want to upload to OneDrive rather than download a ZIP.
  *
  * - scope 'self'    → only the current user's data
  * - scope 'athlete' → one specific athlete (requires coach role + relationship)
  * - scope 'team'    → all athletes the coach manages + coach's own data
- *
- * @param options         Export scope and optional incremental date filter
- * @param currentUser     Current user from Redux (id, name, role)
  */
-export const downloadPowerBiZip = async (
+export const buildPowerBiFiles = async (
   options: PowerBiExportOptions,
   currentUser: PowerBiExportCurrentUser
-): Promise<PowerBiExportResult> => {
+): Promise<PowerBiFilesResult> => {
   const { scope, targetAthleteId, fromDate } = options;
   const startDate = fromDate ? new Date(`${fromDate}T00:00:00`) : undefined;
   const exportOptions = { startDate };
@@ -282,7 +455,6 @@ export const downloadPowerBiZip = async (
     const data = await exportData(currentUser.id, exportOptions);
     processRawSets(data.sets, currentUser.id, selfName, gymSets, activityRows, allRawSets);
 
-    // Wellness data for own account
     const wellnessStart = fromDate ?? '1970-01-01';
     const wellnessEnd = toIsoDate(new Date());
     const selfWellness = await getWellnessByDateRange(currentUser.id, wellnessStart, wellnessEnd);
@@ -309,12 +481,10 @@ export const downloadPowerBiZip = async (
       active: true,
     });
   } else {
-    // For athlete/team scopes, load team metadata once
     const teams = await getCoachTeams();
     const membersPerTeam = await Promise.all(teams.map((t) => getTeamMembers(t.id)));
     const teamNameById = new Map(teams.map((t) => [t.id, t.name]));
 
-    // Helper: find member record and team name for a given athleteId
     const resolveAthleteInfo = (
       athleteId: string
     ): { athleteName: string; teamName: string } => {
@@ -334,19 +504,13 @@ export const downloadPowerBiZip = async (
     };
 
     if (scope === 'athlete') {
-      if (!targetAthleteId) {
-        throw new Error('targetAthleteId is required for athlete scope');
-      }
-
+      if (!targetAthleteId) throw new Error('targetAthleteId is required for athlete scope');
       const hasAccess = await verifyCoachAthleteRelationship(targetAthleteId);
       if (!hasAccess) throw new Error('No access to this athlete');
-
       await syncCoachAthleteAccess(coachId, targetAthleteId);
       const data = await exportData(targetAthleteId, exportOptions);
-
       const { athleteName, teamName } = resolveAthleteInfo(targetAthleteId);
       processRawSets(data.sets, targetAthleteId, athleteName, gymSets, activityRows, allRawSets);
-
       dimAthletes.push({
         athlete_id: targetAthleteId,
         athlete_name: athleteName,
@@ -357,7 +521,6 @@ export const downloadPowerBiZip = async (
         active: true,
       });
     } else {
-      // Full team export — gather every unique athlete, then export with bounded concurrency.
       const athletesById = new Map<string, {
         id: string;
         athleteName: string;
@@ -368,10 +531,8 @@ export const downloadPowerBiZip = async (
       for (let i = 0; i < teams.length; i++) {
         const team = teams[i];
         const members = membersPerTeam[i];
-
         for (const member of members) {
           if (athletesById.has(member.id)) continue;
-
           athletesById.set(member.id, {
             id: member.id,
             athleteName:
@@ -385,24 +546,13 @@ export const downloadPowerBiZip = async (
       }
 
       const athletes = Array.from(athletesById.values());
-
       await runWithConcurrency(athletes, 4, async (athlete) => {
         try {
           const hasAccess = await verifyCoachAthleteRelationship(athlete.id);
           if (!hasAccess) return;
-
           await syncCoachAthleteAccess(coachId, athlete.id);
           const data = await exportData(athlete.id, exportOptions);
-
-          processRawSets(
-            data.sets,
-            athlete.id,
-            athlete.athleteName,
-            gymSets,
-            activityRows,
-            allRawSets
-          );
-
+          processRawSets(data.sets, athlete.id, athlete.athleteName, gymSets, activityRows, allRawSets);
           dimAthletes.push({
             athlete_id: athlete.id,
             athlete_name: athlete.athleteName,
@@ -417,17 +567,9 @@ export const downloadPowerBiZip = async (
         }
       });
 
-      // Include the coach's own data at the top
       const selfData = await exportData(currentUser.id, exportOptions);
       if (selfData.sets.length > 0) {
-        processRawSets(
-          selfData.sets,
-          currentUser.id,
-          selfName,
-          gymSets,
-          activityRows,
-          allRawSets
-        );
+        processRawSets(selfData.sets, currentUser.id, selfName, gymSets, activityRows, allRawSets);
       }
       dimAthletes.unshift({
         athlete_id: currentUser.id,
@@ -441,9 +583,9 @@ export const downloadPowerBiZip = async (
     }
   }
 
-  // ---- Build dimension tables ----
+  // ---- Build dimension and session tables ----
   const dimExercise = buildDimExercise(allRawSets);
-  const wellnessRowCount = wellnessRows.length;
+  const sessionRows = buildFactSessions(gymSets, activityRows);
 
   const meta: ExportMeta = {
     exported_at: new Date().toISOString(),
@@ -451,100 +593,81 @@ export const downloadPowerBiZip = async (
     scope,
     from_date: fromDate ?? null,
     athlete_count: dimAthletes.length,
-    row_count: gymSets.length + activityRows.length + wellnessRowCount,
+    row_count: gymSets.length + activityRows.length + sessionRows.length + wellnessRows.length,
   };
 
-  // ---- Column headers (snake_case order for Power BI) ----
+  // ---- Column headers ----
   const gymSetHeaders: (keyof FactGymSetRow)[] = [
-    'athlete_id',
-    'athlete_name',
-    'session_id',
-    'session_type',
-    'exercise_log_id',
-    'exercise_id',
-    'exercise_name',
-    'logged_date',
-    'exercise_order',
-    'set_number',
-    'reps',
-    'weight',
-    'rpe',
-    'rest_sec',
-    'is_warmup',
-    'tonnage',
-    'set_volume',
-    'notes',
+    'athlete_id', 'athlete_name', 'session_id', 'session_type', 'exercise_log_id',
+    'exercise_id', 'exercise_name', 'logged_date', 'exercise_order', 'set_number',
+    'reps', 'weight', 'rpe', 'rest_sec', 'is_warmup', 'tonnage', 'set_volume', 'notes',
   ];
 
   const activityHeaders: (keyof FactActivityRow)[] = [
-    'athlete_id',
-    'athlete_name',
-    'session_id',
-    'session_type',
-    'exercise_log_id',
-    'exercise_name',
-    'activity_type',
-    'logged_date',
-    'exercise_order',
-    'set_number',
-    'reps',
-    'duration_sec',
-    'distance_meters',
-    'avg_hr',
-    'max_hr',
-    'hr_zone1',
-    'hr_zone2',
-    'hr_zone3',
-    'hr_zone4',
-    'hr_zone5',
-    'calories',
-    'rpe',
-    'is_warmup',
-    'hold_time',
-    'intensity',
-    'height',
-    'notes',
+    'athlete_id', 'athlete_name', 'session_id', 'session_type', 'exercise_log_id',
+    'exercise_name', 'activity_type', 'logged_date', 'exercise_order', 'set_number',
+    'reps', 'duration_sec', 'distance_meters', 'avg_hr', 'max_hr',
+    'hr_zone1', 'hr_zone2', 'hr_zone3', 'hr_zone4', 'hr_zone5',
+    'calories', 'rpe', 'is_warmup', 'hold_time', 'intensity', 'height', 'notes',
+  ];
+
+  const sessionHeaders: (keyof FactSessionRow)[] = [
+    'athlete_id', 'athlete_name', 'session_id', 'session_type', 'date', 'week_key',
+    'activity_types', 'has_warmup', 'duration_min', 'total_sets', 'total_reps',
+    'total_volume_kg', 'total_distance_m', 'avg_hr', 'max_hr',
+    'hr_zone1_sec', 'hr_zone2_sec', 'hr_zone3_sec', 'hr_zone4_sec', 'hr_zone5_sec',
+    'calories', 'session_rpe', 'session_load',
+  ];
+
+  const wellnessHeaders: (keyof FactWellnessRow)[] = [
+    'athlete_id', 'logged_date', 'sleep_quality', 'fatigue', 'muscle_soreness',
+    'stress', 'mood', 'notes',
   ];
 
   const dimExerciseHeaders: (keyof DimExerciseRow)[] = [
-    'exercise_id',
-    'exercise_name',
-    'exercise_type',
-    'activity_type',
+    'exercise_id', 'exercise_name', 'exercise_type', 'activity_type',
   ];
 
   const dimAthleteHeaders: (keyof DimAthleteRow)[] = [
-    'athlete_id',
-    'athlete_name',
-    'role',
-    'team',
-    'position',
-    'date_of_birth',
-    'active',
+    'athlete_id', 'athlete_name', 'role', 'team', 'position', 'date_of_birth', 'active',
   ];
 
-  // ---- Bundle as ZIP ----
+  const files: PowerBiFile[] = [
+    { name: 'fact_gym_sets.csv',   content: rowsToCSVForPowerBi(gymSets, gymSetHeaders) },
+    { name: 'fact_activity.csv',   content: rowsToCSVForPowerBi(activityRows, activityHeaders) },
+    { name: 'fact_sessions.csv',   content: rowsToCSVForPowerBi(sessionRows, sessionHeaders) },
+    { name: 'fact_wellness.csv',   content: rowsToCSVForPowerBi(wellnessRows, wellnessHeaders) },
+    { name: 'dim_exercise.csv',    content: rowsToCSVForPowerBi(dimExercise, dimExerciseHeaders) },
+    { name: 'dim_athlete.csv',     content: rowsToCSVForPowerBi(dimAthletes, dimAthleteHeaders) },
+    { name: 'export_meta.json',    content: JSON.stringify(meta, null, 2) },
+  ];
+
+  return {
+    files,
+    gymSetCount: gymSets.length,
+    activityCount: activityRows.length,
+    athleteCount: dimAthletes.length,
+    sessionCount: sessionRows.length,
+  };
+};
+
+/**
+ * Generates and downloads a ZIP file containing Power BI-compatible CSVs.
+ * Wrapper around buildPowerBiFiles that packages the output as a ZIP download.
+ */
+export const downloadPowerBiZip = async (
+  options: PowerBiExportOptions,
+  currentUser: PowerBiExportCurrentUser
+): Promise<PowerBiExportResult> => {
+  const result = await buildPowerBiFiles(options, currentUser);
+
   const dateStamp = toIsoDate(new Date());
   const zip = new JSZip();
   const folder = zip.folder(`training_export_${dateStamp}`)!;
 
-  const wellnessHeaders: (keyof FactWellnessRow)[] = [
-    'athlete_id',
-    'logged_date',
-    'sleep_quality',
-    'fatigue',
-    'muscle_soreness',
-    'stress',
-    'mood',
-    'notes',
-  ];
-
-  folder.file('fact_gym_sets.csv', rowsToCSVForPowerBi(gymSets, gymSetHeaders));
-  folder.file('fact_activity.csv', rowsToCSVForPowerBi(activityRows, activityHeaders));
-  folder.file('fact_wellness.csv', rowsToCSVForPowerBi(wellnessRows, wellnessHeaders));
-  folder.file('dim_exercise.csv', rowsToCSVForPowerBi(dimExercise, dimExerciseHeaders));
-  folder.file('dim_athlete.csv', rowsToCSVForPowerBi(dimAthletes, dimAthleteHeaders));
-  folder.file('export_meta.json', JSON.stringify(meta, null, 2));
+  for (const file of result.files) {
+    folder.file(file.name, file.content);
+  }
 
   const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
   const url = URL.createObjectURL(blob);
@@ -558,8 +681,8 @@ export const downloadPowerBiZip = async (
   setTimeout(() => URL.revokeObjectURL(url), 5000);
 
   return {
-    gymSetCount: gymSets.length,
-    activityCount: activityRows.length,
-    athleteCount: dimAthletes.length,
+    gymSetCount: result.gymSetCount,
+    activityCount: result.activityCount,
+    athleteCount: result.athleteCount,
   };
 };

@@ -30,6 +30,8 @@ interface SessionDoc extends SessionContext {
   name?: string;
   status: 'active' | 'completed';
   startedAt: Timestamp;
+  /** Written when the session is explicitly completed or superseded by a new session. */
+  endedAt?: Timestamp;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
@@ -191,11 +193,13 @@ export const ensureSessionContextForLog = async (
   const sessionNumberInWeek = weekSnapshot.size + 1;
 
   const previouslyActiveSessions = daySessionsOfType.filter((session) => session.status === 'active');
+  const completedAt = Timestamp.now();
   await Promise.all(
     previouslyActiveSessions.map((session) =>
       updateDoc(doc(db, 'users', userId, 'sessions', session.id), {
         status: 'completed',
-        updatedAt: Timestamp.now(),
+        endedAt: completedAt,
+        updatedAt: completedAt,
       })
     )
   );
@@ -272,6 +276,24 @@ export const renameSession = async (userId: string, sessionId: string, name: str
   await updateDoc(sessionRef, {
     ...(trimmed ? { name: trimmed } : { name: deleteField() }),
     updatedAt: Timestamp.now(),
+  });
+};
+
+/**
+ * Marks a session as completed and records its end time.
+ * Safe to call multiple times — subsequent calls are no-ops if already completed.
+ */
+export const completeSession = async (userId: string, sessionId: string): Promise<void> => {
+  const sessionRef = doc(db, 'users', userId, 'sessions', sessionId);
+  const snap = await getDoc(sessionRef);
+  if (!snap.exists()) return;
+  const data = snap.data() as Partial<SessionDoc>;
+  if (data.status === 'completed') return;
+  const now = Timestamp.now();
+  await updateDoc(sessionRef, {
+    status: 'completed',
+    endedAt: now,
+    updatedAt: now,
   });
 };
 

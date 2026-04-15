@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Signing in…</title>
+</head>
+<body>
+<!--
+  MSAL v5 popup redirect target.
+
+  MSAL's popup flow (v5) works via BroadcastChannel:
+    1. Parent calls acquireTokenPopup() → opens this popup → listens on
+       BroadcastChannel(libraryState.id) for the auth-code response.
+    2. Microsoft redirects the popup here with #code=...&state=...
+    3. This script decodes the state to get the channel ID, then posts
+       the full auth response string to that channel.
+    4. Parent MSAL receives it, processes the code, closes the popup.
+
+  No MSAL import needed — pure vanilla JS.
+-->
+<script>
+(function () {
+  // Collect the response payload from hash or query string (without # / ?).
+  var hash   = window.location.hash;
+  var search = window.location.search;
+  var payload = '';
+  var stateValue = '';
+
+  if (hash && hash.length > 1) {
+    payload = hash.substring(1);
+  } else if (search && search.length > 1) {
+    payload = search.substring(1);
+  }
+
+  if (!payload) return;
+
+  try {
+    var params = new URLSearchParams(payload);
+    stateValue = params.get('state') || '';
+  } catch (e) { return; }
+
+  if (!stateValue) return;
+
+  try {
+    // MSAL state format: "{optional_user_state}|{base64(JSON)}"
+    // libraryState JSON contains { id, meta } — id is the BroadcastChannel name.
+    var parts = decodeURIComponent(stateValue).split('|');
+    var libraryStateBase64 = parts[parts.length - 1];
+
+    // Handle URL-safe base64 and missing padding.
+    libraryStateBase64 = libraryStateBase64.replace(/-/g, '+').replace(/_/g, '/');
+    var pad = libraryStateBase64.length % 4;
+    if (pad) { libraryStateBase64 += '===='.slice(pad); }
+
+    var libraryState = JSON.parse(atob(libraryStateBase64));
+    var channelId = libraryState.id;
+    if (!channelId) return;
+
+    // Post the full response payload to the parent MSAL's BroadcastChannel.
+    var channel = new BroadcastChannel(channelId);
+    channel.postMessage({ payload: payload, v: 1 });
+    channel.close();
+    window.close();
+  } catch (e) {
+    // If anything fails, the parent will time out gracefully.
+  }
+})();
+</script>
+</body>
+</html>

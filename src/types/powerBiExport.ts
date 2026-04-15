@@ -103,6 +103,41 @@ export interface DimExerciseRow {
 }
 
 // ---------------------------------------------------------------------------
+// fact_sessions.csv  (one row per session — session-level load summary)
+// ---------------------------------------------------------------------------
+
+export interface FactSessionRow {
+  athlete_id: string;
+  athlete_name: string;
+  session_id: string;
+  /** 'main' | 'warmup' */
+  session_type: string;
+  date: string;            // YYYY-MM-DD
+  week_key: string;        // ISO week: YYYY-Www
+  /** Pipe-separated distinct activity types in the session, e.g. "resistance|endurance" */
+  activity_types: string;
+  has_warmup: boolean;
+  /** Minutes from session startedAt to endedAt (empty until Phase 2 end-time tracking) */
+  duration_min: number | '';
+  total_sets: number;
+  total_reps: number | '';
+  total_volume_kg: number | '';   // sum of (reps × weight) across all resistance sets
+  total_distance_m: number | '';  // sum of distance across all activity sets
+  avg_hr: number | '';
+  max_hr: number | '';
+  hr_zone1_sec: number | '';      // seconds in zone 1 (summed across all sets)
+  hr_zone2_sec: number | '';
+  hr_zone3_sec: number | '';
+  hr_zone4_sec: number | '';
+  hr_zone5_sec: number | '';
+  calories: number | '';
+  /** Average RPE across all sets. Proxy for session RPE (1–10). */
+  session_rpe: number | '';
+  /** sRPE load = session_rpe × duration_min. Empty until duration is available. */
+  session_load: number | '';
+}
+
+// ---------------------------------------------------------------------------
 // fact_wellness.csv
 // ---------------------------------------------------------------------------
 
