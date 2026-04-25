@@ -3,10 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getTeamByInviteCode, joinTeam, Team } from '@/services/teamService';
 import { UsersIcon, CheckCircleIcon } from '@heroicons/react/outline';
 import toast from 'react-hot-toast';
+import { useSafeBackNavigation } from '@/hooks/useSafeBackNavigation';
 
 const JoinTeam: React.FC = () => {
   const { inviteCode } = useParams<{ inviteCode: string }>();
   const navigate = useNavigate();
+  const handleBack = useSafeBackNavigation('/');
   const [team, setTeam] = useState<Team | null>(null);
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
@@ -83,6 +85,14 @@ const JoinTeam: React.FC = () => {
   return (
     <div className="min-h-[100dvh] bg-bg-primary text-text-primary flex items-center justify-center p-4">
       <div className="max-w-md w-full">
+        <button
+          onClick={handleBack}
+          className="mb-4 inline-flex items-center justify-center rounded-lg border border-border px-3 py-2 text-sm text-text-primary hover:bg-bg-tertiary transition-colors"
+          aria-label="Back"
+        >
+          Back
+        </button>
+
         {/* Header */}
         <div className="text-center mb-8">
           <UsersIcon className="h-16 w-16 text-primary-500 mx-auto mb-4" />

@@ -1,11 +1,11 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import Settings from '@/components/Settings';
+import { useSafeBackNavigation } from '@/hooks/useSafeBackNavigation';
 
 const SettingsPage: React.FC = () => {
-  const navigate = useNavigate();
+  const handleClose = useSafeBackNavigation('/');
 
-  return <Settings isOpen={true} onClose={() => navigate(-1)} />;
+  return <Settings isOpen={true} onClose={handleClose} />;
 };
 
 export default SettingsPage;

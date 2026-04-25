@@ -4,9 +4,11 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { logout, setUser } from '@/features/auth/authSlice';
 import { logoutUser, updateUserProfile } from '@/services/firebase/auth';
+import { useSafeBackNavigation } from '@/hooks/useSafeBackNavigation';
 
 const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
+  const handleBack = useSafeBackNavigation('/');
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
   const [isEditing, setIsEditing] = useState(false);
@@ -88,7 +90,7 @@ const ProfilePage: React.FC = () => {
       <header className="sticky top-0 z-40 border-b border-border bg-bg-primary/95 backdrop-blur px-4 py-3">
         <div className="mx-auto max-w-2xl flex items-center gap-3">
           <button
-            onClick={() => navigate(-1)}
+            onClick={handleBack}
             className="inline-flex items-center justify-center rounded-lg border border-border px-3 py-2 text-sm hover:bg-bg-tertiary transition-colors"
             aria-label="Go back"
           >
