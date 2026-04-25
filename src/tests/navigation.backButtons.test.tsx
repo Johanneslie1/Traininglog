@@ -9,7 +9,7 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 
 // ─── Mock the safe-back hook so we can spy on calls ──────────────────────────
 const mockSafeBack = vi.fn();
@@ -77,15 +77,6 @@ import JoinTeam from '@/features/teams/JoinTeam';
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const wrap = (ui: React.ReactElement, path = '/') =>
   render(<MemoryRouter initialEntries={[path]}>{ui}</MemoryRouter>);
-
-const wrapWithRoute = (element: React.ReactElement, routePath: string, urlPath: string) =>
-  render(
-    <MemoryRouter initialEntries={[urlPath]}>
-      <Routes>
-        <Route path={routePath} element={element} />
-      </Routes>
-    </MemoryRouter>
-  );
 
 // ─── Tests ───────────────────────────────────────────────────────────────────
 describe('Back / Close button wiring', () => {
