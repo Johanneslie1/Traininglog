@@ -1,4 +1,5 @@
 import { ActivityType } from './activityTypes';
+import type { ExerciseFactorCategory } from '@/data/exerciseFactors';
 import { Prescription } from './program';
 import { SuggestedPrescriptionSet } from './sets';
 import { SessionType } from './sessionType';
@@ -37,6 +38,7 @@ export interface Exercise {
   type?: 'strength' | 'cardio' | 'flexibility' | 'bodyweight' | 'plyometrics' | 'endurance' | 'teamSports' | 'speedAgility' | 'other' | 'speed_agility';
   activityType?: ActivityType;
   category: string; // More flexible category system
+  exerciseFactorCategory?: ExerciseFactorCategory;
   difficulty?: 'beginner' | 'intermediate' | 'advanced';
   metricsConfig?: MetricsConfig; // NEW: metrics this exercise tracks
   

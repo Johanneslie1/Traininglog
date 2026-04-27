@@ -89,6 +89,18 @@ const SCORE_DESCRIPTORS: Record<WellnessMetricKey, string[]> = {
     'Great',
     'Flying',
   ],
+  readiness: [
+    'No go',
+    'Very low',
+    'Low',
+    'Below par',
+    'Moderate',
+    'Getting there',
+    'Good',
+    'Strong',
+    'Very ready',
+    'Peak',
+  ],
 };
 
 const SCORE_BADGE_LABELS = {
@@ -287,6 +299,7 @@ const WellnessPage: React.FC = () => {
           muscleSoreness: entry.muscleSoreness,
           stress: entry.stress,
           mood: entry.mood,
+          readiness: entry.readiness,
         });
         setNotes(entry.notes ?? '');
       } else {

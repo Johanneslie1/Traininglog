@@ -14,10 +14,11 @@ export interface WellnessLog {
   muscleSoreness?: number; // 1–10 (1 = none, 10 = very sore)
   stress?: number;        // 1–10 (1 = relaxed, 10 = very stressed)
   mood?: number;          // 1–10 (1 = very low, 10 = excellent)
+  readiness?: number;     // 1–10 (1 = not ready, 10 = fully ready)
   notes?: string;
 }
 
-export type WellnessMetricKey = 'sleepQuality' | 'fatigue' | 'muscleSoreness' | 'stress' | 'mood';
+export type WellnessMetricKey = 'sleepQuality' | 'fatigue' | 'muscleSoreness' | 'stress' | 'mood' | 'readiness';
 
 export interface WellnessMetricConfig {
   key: WellnessMetricKey;
@@ -56,6 +57,12 @@ export const WELLNESS_METRICS: WellnessMetricConfig[] = [
     key: 'mood',
     label: 'Mood',
     description: '1 = Very low · 10 = Excellent',
+    highIsGood: true,
+  },
+  {
+    key: 'readiness',
+    label: 'Readiness for Training',
+    description: '1 = Not ready · 10 = Fully ready',
     highIsGood: true,
   },
 ];

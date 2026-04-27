@@ -19,6 +19,7 @@ const WELLNESS_KEYS: WellnessMetricKey[] = [
   'muscleSoreness',
   'stress',
   'mood',
+  'readiness',
 ];
 
 const MS_PER_DAY = 86400000;
@@ -101,6 +102,7 @@ export async function saveWellnessLog(
     muscleSoreness: metrics.muscleSoreness,
     stress: metrics.stress,
     mood: metrics.mood,
+    readiness: metrics.readiness,
     notes,
   });
 

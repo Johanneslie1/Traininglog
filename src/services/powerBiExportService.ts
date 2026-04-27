@@ -36,6 +36,11 @@ import { getWellnessByDateRange } from '@/services/wellnessService';
 import { toLocalDateString, toLocalTimestamp } from '@/utils/dateUtils';
 import { rowsToCSVForPowerBi } from '@/utils/powerBiCsv';
 import { normalizeSessionType } from '@/types/sessionType';
+import {
+  getExerciseFactor,
+  inferExerciseFactorCategory,
+  type ExerciseFactorCategory,
+} from '@/data/exerciseFactors';
 
 // ---------------------------------------------------------------------------
 // Public interface
@@ -133,14 +138,35 @@ const buildGymSetRow = (
 ): FactGymSetRow => {
   const reps = typeof s.reps === 'number' && s.reps > 0 ? s.reps : null;
   const weight = typeof s.weight === 'number' && s.weight > 0 ? s.weight : null;
+  const rawRpe = typeof s.rpe === 'number' && isFinite(s.rpe) ? s.rpe : null;
+  const effectiveRpe = rawRpe !== null && rawRpe > 0 ? rawRpe : 7;
+  const exerciseName = String(s.exerciseName ?? '');
+  const overrideCategory =
+    typeof s.exerciseFactorCategory === 'string'
+      ? (s.exerciseFactorCategory as ExerciseFactorCategory)
+      : undefined;
+  const sourceCategory = typeof s.category === 'string' ? s.category : undefined;
+  const sourceType = typeof s.exerciseType === 'string' ? s.exerciseType : undefined;
+  const inferredFactorCategory = inferExerciseFactorCategory(
+    exerciseName,
+    sourceCategory,
+    sourceType
+  );
+  const factorCategory = overrideCategory ?? inferredFactorCategory;
+  const factor = getExerciseFactor(exerciseName, factorCategory, sourceCategory, sourceType);
+  const normalisedLoad =
+    reps !== null && weight !== null
+      ? Math.round(reps * weight * effectiveRpe * factor * 10) / 10
+      : '';
+
   return {
     athlete_id: athleteId,
     athlete_name: athleteName,
     session_id: String(s.sessionId ?? ''),
     session_type: normalizeSessionType(s.sessionType),
     exercise_log_id: String(s.exerciseLogId ?? ''),
-    exercise_id: toSlug(String(s.exerciseName ?? '')),
-    exercise_name: String(s.exerciseName ?? ''),
+    exercise_id: toSlug(exerciseName),
+    exercise_name: exerciseName,
     logged_date: toIsoDate(s.loggedDate ?? s.exerciseDate),
     exercise_order: typeof s.exerciseNumber === 'number' ? s.exerciseNumber : 0,
     set_number: typeof s.setNumber === 'number' ? s.setNumber : 0,
@@ -150,6 +176,9 @@ const buildGymSetRow = (
     rest_sec: toEmpty(s.restTimeSec ?? s.restTime),
     is_warmup: asBool(s.isWarmup),
     tonnage: reps !== null && weight !== null ? reps * weight : '',
+    exercise_factor_category: factorCategory,
+    exercise_factor: factor,
+    normalised_load: normalisedLoad,
     set_volume: toEmpty(s.setVolume),
     notes: String(s.notes ?? s.comment ?? ''),
   };
@@ -238,6 +267,7 @@ interface SessionAccumulator {
   hr_zone5_sec: number;
   calories: number;
   rpe_values: number[];
+  session_normalised_load: number;
 }
 
 const buildFactSessions = (
@@ -276,6 +306,7 @@ const buildFactSessions = (
         hr_zone5_sec: 0,
         calories: 0,
         rpe_values: [],
+        session_normalised_load: 0,
       });
     }
     return map.get(key)!;
@@ -291,6 +322,7 @@ const buildFactSessions = (
     acc.total_sets++;
     if (typeof s.reps === 'number') acc.total_reps += s.reps;
     if (typeof s.tonnage === 'number') acc.total_volume_kg += s.tonnage;
+    if (typeof s.normalised_load === 'number') acc.session_normalised_load += s.normalised_load;
     if (typeof s.rpe === 'number') acc.rpe_values.push(s.rpe);
   });
 
@@ -355,6 +387,10 @@ const buildFactSessions = (
       hr_zone5_sec: acc.hr_zone5_sec > 0 ? acc.hr_zone5_sec : '',
       calories: acc.calories > 0 ? Math.round(acc.calories) : '',
       session_rpe: avgRpe ?? '',
+      session_normalised_load:
+        acc.session_normalised_load > 0
+          ? Math.round(acc.session_normalised_load * 10) / 10
+          : '',
       session_load: '',
     });
   });
@@ -600,7 +636,8 @@ export const buildPowerBiFiles = async (
   const gymSetHeaders: (keyof FactGymSetRow)[] = [
     'athlete_id', 'athlete_name', 'session_id', 'session_type', 'exercise_log_id',
     'exercise_id', 'exercise_name', 'logged_date', 'exercise_order', 'set_number',
-    'reps', 'weight', 'rpe', 'rest_sec', 'is_warmup', 'tonnage', 'set_volume', 'notes',
+    'reps', 'weight', 'rpe', 'rest_sec', 'is_warmup', 'tonnage',
+    'exercise_factor_category', 'exercise_factor', 'normalised_load', 'set_volume', 'notes',
   ];
 
   const activityHeaders: (keyof FactActivityRow)[] = [
@@ -616,7 +653,7 @@ export const buildPowerBiFiles = async (
     'activity_types', 'has_warmup', 'duration_min', 'total_sets', 'total_reps',
     'total_volume_kg', 'total_distance_m', 'avg_hr', 'max_hr',
     'hr_zone1_sec', 'hr_zone2_sec', 'hr_zone3_sec', 'hr_zone4_sec', 'hr_zone5_sec',
-    'calories', 'session_rpe', 'session_load',
+    'calories', 'session_rpe', 'session_normalised_load', 'session_load',
   ];
 
   const wellnessHeaders: (keyof FactWellnessRow)[] = [

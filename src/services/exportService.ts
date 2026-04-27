@@ -923,6 +923,7 @@ export const WELLNESS_CSV_HEADERS = [
   'muscleSoreness',
   'stress',
   'mood',
+  'readiness',
   'notes',
 ] as const;
 
@@ -958,6 +959,7 @@ export const downloadWellnessCSV = async (
       muscleSoreness: l.muscleSoreness ?? '',
       stress: l.stress ?? '',
       mood: l.mood ?? '',
+      readiness: l.readiness ?? '',
       notes: l.notes ?? '',
     }));
 

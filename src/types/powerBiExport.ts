@@ -53,6 +53,10 @@ export interface FactGymSetRow {
   rest_sec: number | '';
   is_warmup: boolean;
   tonnage: number | '';      // reps * weight, empty if either is missing
+  exercise_factor_category?: string;
+  exercise_factor?: number;
+  /** Normalized load = reps × weight × rpe × exercise factor. */
+  normalised_load?: number | '';
   set_volume: number | '';
   notes: string;
 }
@@ -133,6 +137,7 @@ export interface FactSessionRow {
   calories: number | '';
   /** Average RPE across all sets. Proxy for session RPE (1–10). */
   session_rpe: number | '';
+  session_normalised_load?: number | '';
   /** sRPE load = session_rpe × duration_min. Empty until duration is available. */
   session_load: number | '';
 }
