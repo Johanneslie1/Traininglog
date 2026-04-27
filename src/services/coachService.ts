@@ -9,7 +9,7 @@ import {
   limit,
   Timestamp
 } from 'firebase/firestore';
-import { db } from './firebase/firebase';
+import { db } from '@/services/firebase/config';
 import { getAuth } from 'firebase/auth';
 import { getCoachTeams, getTeamMembers, TeamMember, syncCoachAthleteAccess } from './teamService';
 import { startOfDay, endOfDay } from '@/utils/dateUtils';

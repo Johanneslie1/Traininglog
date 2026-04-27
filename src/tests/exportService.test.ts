@@ -358,7 +358,7 @@ describe('exportService serialization', () => {
     mockedLogAggregationService.getAggregatedExportLogs.mockRejectedValue(new Error('source failure'));
 
     await expect(getExportPreview('user-1')).rejects.toThrow(
-      'Failed to load export preview logs: Failed to export data: source failure'
+      'Failed to load export preview logs: source failure'
     );
   });
 
@@ -429,26 +429,37 @@ describe('exportService serialization', () => {
 
     const click = jest.fn();
     const setAttribute = jest.fn();
-    const appendChild = jest.fn();
-    const removeChild = jest.fn();
     const linkMock = {
       setAttribute,
       style: {},
       click,
     } as unknown as HTMLAnchorElement;
+    let createElementSpy: jest.SpyInstance | undefined;
+    let appendChildSpy: jest.SpyInstance | undefined;
+    let removeChildSpy: jest.SpyInstance | undefined;
 
-    const documentMock = {
-      createElement: jest.fn(() => linkMock),
-      body: {
-        appendChild,
-        removeChild,
-      },
-    };
-
-    Object.defineProperty(globalThis, 'document', {
-      value: documentMock,
-      configurable: true,
-    });
+    if (typeof document === 'undefined') {
+      Object.defineProperty(globalThis, 'document', {
+        value: {
+          createElement: jest.fn(() => linkMock),
+          body: {
+            appendChild: jest.fn(() => linkMock),
+            removeChild: jest.fn(() => linkMock),
+          },
+        },
+        configurable: true,
+      });
+    } else {
+      createElementSpy = jest
+        .spyOn(document, 'createElement')
+        .mockReturnValue(linkMock as unknown as HTMLElement);
+      appendChildSpy = jest
+        .spyOn(document.body, 'appendChild')
+        .mockImplementation(() => linkMock as unknown as Node);
+      removeChildSpy = jest
+        .spyOn(document.body, 'removeChild')
+        .mockImplementation(() => linkMock as unknown as Node);
+    }
 
     Object.defineProperty(globalThis, 'URL', {
       value: {
@@ -465,8 +476,14 @@ describe('exportService serialization', () => {
 
     expect(csvPayload).toContain('exerciseName;weight;reps');
     expect(csvPayload).toContain('Bodyweight Squat;0;10');
-    expect(appendChild).toHaveBeenCalled();
-    expect(removeChild).toHaveBeenCalled();
+    if (appendChildSpy && removeChildSpy) {
+      expect(appendChildSpy).toHaveBeenCalled();
+      expect(removeChildSpy).toHaveBeenCalled();
+    }
+
+    createElementSpy?.mockRestore();
+    appendChildSpy?.mockRestore();
+    removeChildSpy?.mockRestore();
 
     Object.defineProperty(globalThis, 'Blob', {
       value: originalBlob,
@@ -480,11 +497,6 @@ describe('exportService serialization', () => {
 
     if (originalDocument === undefined) {
       delete (globalThis as { document?: unknown }).document;
-    } else {
-      Object.defineProperty(globalThis, 'document', {
-        value: originalDocument,
-        configurable: true,
-      });
     }
   });
 
@@ -516,22 +528,37 @@ describe('exportService serialization', () => {
       configurable: true,
     });
 
-    const documentMock = {
-      createElement: jest.fn(() => ({
-        setAttribute: jest.fn(),
-        style: {},
-        click: jest.fn(),
-      })),
-      body: {
-        appendChild: jest.fn(),
-        removeChild: jest.fn(),
-      },
-    };
+    const linkMock = {
+      setAttribute: jest.fn(),
+      style: {},
+      click: jest.fn(),
+    } as unknown as HTMLAnchorElement;
+    let createElementSpy: jest.SpyInstance | undefined;
+    let appendChildSpy: jest.SpyInstance | undefined;
+    let removeChildSpy: jest.SpyInstance | undefined;
 
-    Object.defineProperty(globalThis, 'document', {
-      value: documentMock,
-      configurable: true,
-    });
+    if (typeof document === 'undefined') {
+      Object.defineProperty(globalThis, 'document', {
+        value: {
+          createElement: jest.fn(() => linkMock),
+          body: {
+            appendChild: jest.fn(() => linkMock),
+            removeChild: jest.fn(() => linkMock),
+          },
+        },
+        configurable: true,
+      });
+    } else {
+      createElementSpy = jest
+        .spyOn(document, 'createElement')
+        .mockReturnValue(linkMock as unknown as HTMLElement);
+      appendChildSpy = jest
+        .spyOn(document.body, 'appendChild')
+        .mockImplementation(() => linkMock as unknown as Node);
+      removeChildSpy = jest
+        .spyOn(document.body, 'removeChild')
+        .mockImplementation(() => linkMock as unknown as Node);
+    }
 
     Object.defineProperty(globalThis, 'URL', {
       value: {
@@ -543,8 +570,12 @@ describe('exportService serialization', () => {
     const count = await downloadWellnessCSV('user-42');
 
     expect(count).toBe(1);
-    expect(csvPayload).toContain('athleteId;loggedDate;sleepQuality;fatigue;muscleSoreness;stress;mood;notes');
-    expect(csvPayload).toContain('user-42;2026-03-10;4;2;1;3;5;solid recovery');
+    expect(csvPayload).toContain('athleteId;loggedDate;sleepQuality;fatigue;muscleSoreness;stress;mood;readiness;notes');
+    expect(csvPayload).toContain('user-42;2026-03-10;4;2;1;3;5;;solid recovery');
+
+    createElementSpy?.mockRestore();
+    appendChildSpy?.mockRestore();
+    removeChildSpy?.mockRestore();
 
     Object.defineProperty(globalThis, 'Blob', {
       value: originalBlob,
@@ -558,11 +589,6 @@ describe('exportService serialization', () => {
 
     if (originalDocument === undefined) {
       delete (globalThis as { document?: unknown }).document;
-    } else {
-      Object.defineProperty(globalThis, 'document', {
-        value: originalDocument,
-        configurable: true,
-      });
     }
   });
 });

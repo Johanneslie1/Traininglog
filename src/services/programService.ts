@@ -5,7 +5,7 @@ import { normalizeEnduranceDurationMinutes } from '@/utils/prescriptionUtils';
 import { resolveActivityTypeFromExerciseLike } from '@/utils/activityTypeResolver';
 import { withExerciseSnapshots } from '@/services/exerciseSnapshotService';
 import speedAgilityExercises from '@/data/exercises/speedAgility.json';
-import { db } from './firebase/firebase';
+import { db } from '@/services/firebase/config';
 import {
   collection,
   doc,

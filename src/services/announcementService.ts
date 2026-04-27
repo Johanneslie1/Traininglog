@@ -8,7 +8,7 @@ import {
   setDoc
 } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
-import { db } from './firebase/firebase';
+import { db } from '@/services/firebase/config';
 import { getTeamMembers } from './teamService';
 import { CoachAnnouncement, CreateCoachAnnouncementInput } from '@/types/announcement';
 

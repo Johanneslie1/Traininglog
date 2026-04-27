@@ -9,7 +9,7 @@ import {
   query, 
   where
 } from 'firebase/firestore';
-import { db } from './firebase/firebase';
+import { db } from '@/services/firebase/config';
 import { getAuth } from 'firebase/auth';
 
 export interface Team {

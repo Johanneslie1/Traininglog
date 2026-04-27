@@ -1,5 +1,5 @@
 import type { ProgramSession, SharedSession, SharedSessionAssignment } from '@/types/program';
-import { db } from './firebase/firebase';
+import { db } from '@/services/firebase/config';
 import {
   collection,
   doc,
