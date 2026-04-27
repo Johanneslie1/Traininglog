@@ -21,6 +21,10 @@ import {
 } from '@/services/exportService';
 import { ActivityType } from '@/types/activityTypes';
 
+type RestorableSpy = {
+  mockRestore: () => void;
+};
+
 const mockedWorkouts = jest.requireMock('@/services/firebase/workouts') as {
   getUserWorkouts: any;
 };
@@ -434,9 +438,9 @@ describe('exportService serialization', () => {
       style: {},
       click,
     } as unknown as HTMLAnchorElement;
-    let createElementSpy: jest.SpyInstance | undefined;
-    let appendChildSpy: jest.SpyInstance | undefined;
-    let removeChildSpy: jest.SpyInstance | undefined;
+    let createElementSpy: RestorableSpy | undefined;
+    let appendChildSpy: RestorableSpy | undefined;
+    let removeChildSpy: RestorableSpy | undefined;
 
     if (typeof document === 'undefined') {
       Object.defineProperty(globalThis, 'document', {
@@ -533,9 +537,9 @@ describe('exportService serialization', () => {
       style: {},
       click: jest.fn(),
     } as unknown as HTMLAnchorElement;
-    let createElementSpy: jest.SpyInstance | undefined;
-    let appendChildSpy: jest.SpyInstance | undefined;
-    let removeChildSpy: jest.SpyInstance | undefined;
+    let createElementSpy: RestorableSpy | undefined;
+    let appendChildSpy: RestorableSpy | undefined;
+    let removeChildSpy: RestorableSpy | undefined;
 
     if (typeof document === 'undefined') {
       Object.defineProperty(globalThis, 'document', {
