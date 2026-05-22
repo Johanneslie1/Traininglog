@@ -59,6 +59,44 @@ jest.mock('@/services/firebase/workouts', () => ({
 
 jest.mock('@/services/exportService', () => ({
   downloadCSV: jest.fn(),
+  COACH_WELLNESS_CSV_HEADERS: ['athleteId', 'athleteName', 'loggedDate', 'sleepQuality', 'fatigue', 'muscleSoreness', 'stress', 'mood', 'readiness', 'notes'],
+  dateToWellnessExportKey: jest.fn((date?: Date) => {
+    if (!date) return '';
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  }),
+  getWellnessExportRows: jest.fn(async (identity: { athleteId: string; athleteName?: string }) => {
+    if (identity.athleteId === 'athlete-1') {
+      return [
+        {
+          athleteId: identity.athleteId,
+          athleteName: identity.athleteName,
+          loggedDate: '2026-03-01',
+          sleepQuality: 8,
+          fatigue: 3,
+          muscleSoreness: 2,
+          stress: 4,
+          mood: 7,
+          readiness: 9,
+          notes: 'ready',
+        },
+      ];
+    }
+
+    return [
+      {
+        athleteId: identity.athleteId,
+        athleteName: identity.athleteName,
+        loggedDate: '2026-03-02',
+        sleepQuality: 6,
+        fatigue: 5,
+        muscleSoreness: 4,
+        stress: 3,
+        mood: 6,
+        readiness: 7,
+        notes: '',
+      },
+    ];
+  }),
   SET_EXPORT_HEADERS: ['userId', 'exerciseLogId', 'exerciseName'],
   serializeSetForExport: jest.fn((userId: string, log: any, set: any, index: number) => ({
     userId,
@@ -269,10 +307,17 @@ jest.mock('firebase/firestore', () => {
   };
 });
 
-import { exportAthleteSessionsCsv, exportAllAthletesSessionsCsv, invalidateCoachAccessCache } from '@/services/coachService';
+import {
+  exportAthleteSessionsCsv,
+  exportAllAthletesSessionsCsv,
+  exportAthleteWellnessCsv,
+  exportAllAthletesWellnessCsv,
+  invalidateCoachAccessCache
+} from '@/services/coachService';
 
 const mockedExportService = jest.requireMock('@/services/exportService') as {
   downloadCSV: jest.Mock;
+  getWellnessExportRows: jest.Mock;
   exportData: jest.MockedFunction<
     (userId: string, options?: unknown) => Promise<{ sessions: any[]; exerciseLogs: any[]; sets: any[] }>
   >;
@@ -383,5 +428,33 @@ describe('coachService CSV exports', () => {
     expect(userIds.has('athlete-2')).toBe(true);
     expect(rows.every((row) => row.setNumber === 1)).toBe(true);
     expect(filename.startsWith('coach_exercise_sets_all_athletes_')).toBe(true);
+  });
+
+  it('exports selected athlete wellness rows with identity and readiness', async () => {
+    const result = await exportAthleteWellnessCsv('athlete-1');
+
+    expect(result).toEqual({ rowCount: 1, athleteName: 'Ada Lovelace' });
+
+    const [rows, headers, filename] = mockedExportService.downloadCSV.mock.calls[0] as [Array<Record<string, any>>, string[], string];
+    expect(headers).toContain('athleteName');
+    expect(headers).toContain('readiness');
+    expect(filename).toBe('athlete_wellness_logs.csv');
+    expect(rows[0]).toEqual(expect.objectContaining({
+      athleteId: 'athlete-1',
+      athleteName: 'Ada Lovelace',
+      readiness: 9,
+    }));
+  });
+
+  it('exports all athlete wellness rows into one coach CSV', async () => {
+    const result = await exportAllAthletesWellnessCsv();
+
+    expect(result).toEqual({ rowCount: 2, athleteCount: 2 });
+
+    const [rows, headers, filename] = mockedExportService.downloadCSV.mock.calls[0] as [Array<Record<string, any>>, string[], string];
+    expect(headers).toEqual(expect.arrayContaining(['athleteId', 'athleteName', 'readiness']));
+    expect(filename.startsWith('coach_wellness_all_athletes_')).toBe(true);
+    expect(rows.map((row) => row.athleteId)).toEqual(['athlete-1', 'athlete-2']);
+    expect(rows.every((row) => row.athleteName)).toBe(true);
   });
 });

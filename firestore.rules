@@ -134,7 +134,7 @@ service cloud.firestore {
 
       // Daily wellness check-in logs (sleep quality, fatigue, soreness, stress, mood)
       match /wellnessLogs/{logId} {
-        allow read: if isAuthenticated() && isOwner(userId);
+        allow read: if isAuthenticated() && (isOwner(userId) || hasCoachAthleteAccess(userId));
         allow create: if isAuthenticated() &&
           isOwner(userId) &&
           request.resource.data.userId == request.auth.uid &&
@@ -153,7 +153,7 @@ service cloud.firestore {
 
       // Football session RPE logs (RPE, duration, computed session load)
       match /srpeLogs/{logId} {
-        allow read: if isAuthenticated() && isOwner(userId);
+        allow read: if isAuthenticated() && (isOwner(userId) || hasCoachAthleteAccess(userId));
         allow create: if isAuthenticated() &&
           isOwner(userId) &&
           request.resource.data.userId == request.auth.uid &&

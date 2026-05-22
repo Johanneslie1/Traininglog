@@ -23,6 +23,8 @@ const WELLNESS_KEYS: WellnessMetricKey[] = [
   'readiness',
 ];
 
+const WELLNESS_SCALE_VERSION = 2;
+
 function assertNotFutureDate(date: string): void {
   const todayKey = toLocalDateString(new Date());
   if (date > todayKey) {
@@ -84,6 +86,7 @@ export async function saveWellnessLog(
     userId,
     date,
     dateEpochDay,
+    wellnessScaleVersion: WELLNESS_SCALE_VERSION,
     sleepQuality: metrics.sleepQuality,
     fatigue: metrics.fatigue,
     muscleSoreness: metrics.muscleSoreness,
@@ -101,6 +104,7 @@ export async function saveWellnessLog(
       userId,
       date,
       dateEpochDay,
+      wellnessScaleVersion: WELLNESS_SCALE_VERSION,
       timestamp: serverTimestamp(),
     };
 

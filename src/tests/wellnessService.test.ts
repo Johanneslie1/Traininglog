@@ -39,18 +39,24 @@ describe('wellnessService', () => {
     jest.clearAllMocks();
     jest.useFakeTimers().setSystemTime(new Date('2026-03-15T12:00:00'));
 
-    collectionMock.mockImplementation((...segments: string[]) => ({
-      kind: 'collection',
-      path: segments.map((segment) => String(segment)).join('/'),
-    }));
-
-    docMock.mockImplementation((...segments: unknown[]) => {
-      const normalizedSegments = segments.flatMap((segment) => {
-        if (segment && typeof segment === 'object' && 'path' in (segment as Record<string, unknown>)) {
-          return [String((segment as { path: string }).path)];
+    const normalizeFirestorePathSegments = (segments: unknown[]) =>
+      segments.flatMap((segment) => {
+        if (segment && typeof segment === 'object') {
+          if ('path' in (segment as Record<string, unknown>)) {
+            return [String((segment as { path: string }).path)];
+          }
+          return [];
         }
         return [String(segment)];
       });
+
+    collectionMock.mockImplementation((...segments: unknown[]) => ({
+      kind: 'collection',
+      path: normalizeFirestorePathSegments(segments).join('/'),
+    }));
+
+    docMock.mockImplementation((...segments: unknown[]) => {
+      const normalizedSegments = normalizeFirestorePathSegments(segments);
 
       return {
         kind: 'doc',
@@ -92,6 +98,7 @@ describe('wellnessService', () => {
         userId: 'user-42',
         date: '2026-03-10',
         dateEpochDay: 20522,
+        wellnessScaleVersion: 2,
         readiness: 8,
         sleepQuality: 7,
         notes: 'Ready',
@@ -117,6 +124,7 @@ describe('wellnessService', () => {
         userId: 'user-42',
         date: '2026-03-10',
         dateEpochDay: 20522,
+        wellnessScaleVersion: 2,
         readiness: 9,
         notes: { __deleteField: true },
         timestamp: { __serverTimestamp: true },

@@ -28,6 +28,37 @@ export function addDays(date: Date, days: number): Date {
   return next;
 }
 
+export interface WeekDateRange {
+  startDate: Date;
+  endDate: Date;
+  startDateKey: string;
+  endDateKey: string;
+  dateKeys: string[];
+}
+
+export function startOfLocalWeek(date: Date, weekStartsOn: 0 | 1 = 1): Date {
+  const start = startOfDay(date);
+  const day = start.getDay();
+  const diff = (day - weekStartsOn + 7) % 7;
+  return addDays(start, -diff);
+}
+
+export function getLocalWeekDateRange(date: Date, weekStartsOn: 0 | 1 = 1): WeekDateRange {
+  const startDate = startOfLocalWeek(date, weekStartsOn);
+  const endDate = endOfDay(addDays(startDate, 6));
+  const dateKeys = Array.from({ length: 7 }, (_, index) =>
+    toLocalDateString(addDays(startDate, index))
+  );
+
+  return {
+    startDate,
+    endDate,
+    startDateKey: dateKeys[0],
+    endDateKey: dateKeys[dateKeys.length - 1],
+    dateKeys,
+  };
+}
+
 export function dateKeyToLocalDate(dateKey: string): Date | null {
   const [year, month, day] = dateKey.split('-').map(Number);
   if (!year || !month || !day) return null;

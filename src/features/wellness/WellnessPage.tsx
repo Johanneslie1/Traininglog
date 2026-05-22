@@ -11,79 +11,57 @@ function toDateKey(date: Date): string {
   return toLocalDateString(date);
 }
 
-const SCORE_OPTIONS = Array.from({ length: 10 }, (_, i) => i + 1);
-
 const SCORE_DESCRIPTORS: Record<WellnessMetricKey, string[]> = {
   sleepQuality: [
     'Awful',
     'Very poor',
     'Poor',
-    'Restless',
     'Uneven',
     'Okay',
-    'Decent',
     'Good',
-    'Great',
-    'Elite',
+    'Excellent',
   ],
   fatigue: [
     'Fresh',
     'Light',
-    'Easy',
     'Managed',
     'Noticeable',
     'Heavy',
     'Drained',
-    'Rough',
-    'Spent',
     'Exhausted',
   ],
   muscleSoreness: [
     'Loose',
     'Fine',
     'Light',
-    'Mild',
     'Noticeable',
     'Tight',
     'Sore',
-    'Stiff',
     'Very sore',
-    'Destroyed',
   ],
   stress: [
     'Calm',
     'Settled',
-    'Easy',
     'Stable',
     'Busy',
     'Loaded',
     'Pressured',
-    'High',
-    'Intense',
     'Maxed',
   ],
   mood: [
     'Flat',
     'Low',
     'Off',
-    'Uneven',
     'Neutral',
     'Okay',
     'Good',
-    'Upbeat',
-    'Great',
     'Flying',
   ],
   readiness: [
     'No go',
-    'Very low',
     'Low',
-    'Below par',
     'Moderate',
-    'Getting there',
     'Good',
-    'Strong',
-    'Very ready',
     'Peak',
   ],
 };
@@ -93,15 +71,16 @@ const SCORE_BADGE_LABELS = {
   empty: 'Drag or tap',
 };
 
-/** Returns a Tailwind bg/text color class pair for a score 1–10, given the metric polarity. */
-function getScoreColor(score: number, highIsGood: boolean): string {
-  // Normalise so 1 is always the "bad" end and 10 the "good" end for color logic
-  const goodScore = highIsGood ? score : 11 - score;
+/** Returns a Tailwind bg/text color class pair for a score, given the metric polarity. */
+function getScoreColor(score: number, highIsGood: boolean, scaleMax: number): string {
+  const goodRatio = highIsGood
+    ? (score - 1) / (scaleMax - 1)
+    : (scaleMax - score) / (scaleMax - 1);
 
-  if (goodScore >= 8) return 'bg-green-500 text-white';
-  if (goodScore >= 6) return 'bg-green-400 text-white';
-  if (goodScore >= 5) return 'bg-yellow-400 text-gray-900';
-  if (goodScore >= 3) return 'bg-orange-400 text-white';
+  if (goodRatio >= 0.75) return 'bg-green-500 text-white';
+  if (goodRatio >= 0.58) return 'bg-green-400 text-white';
+  if (goodRatio >= 0.42) return 'bg-yellow-400 text-gray-900';
+  if (goodRatio >= 0.25) return 'bg-orange-400 text-white';
   return 'bg-red-500 text-white';
 }
 
@@ -112,12 +91,12 @@ function getDescriptor(key: WellnessMetricKey, score: number | undefined): strin
   return SCORE_DESCRIPTORS[key][score - 1] || SCORE_BADGE_LABELS.selected;
 }
 
-function getScoreFillPercent(score: number | undefined): number {
+function getScoreFillPercent(score: number | undefined, scaleMax: number): number {
   if (!score) return 0;
-  return ((score - 1) / 9) * 100;
+  return ((score - 1) / (scaleMax - 1)) * 100;
 }
 
-function buildTrackGradient(highIsGood: boolean, score: number | undefined): string {
+function buildTrackGradient(highIsGood: boolean, score: number | undefined, scaleMax: number): string {
   const direction = highIsGood ? '90deg' : '270deg';
   const baseGradient = `linear-gradient(${direction}, #ef4444 0%, #f59e0b 45%, #22c55e 100%)`;
 
@@ -125,7 +104,7 @@ function buildTrackGradient(highIsGood: boolean, score: number | undefined): str
     return `linear-gradient(90deg, rgba(148,163,184,0.24) 0%, rgba(148,163,184,0.24) 100%)`;
   }
 
-  const fillPercent = getScoreFillPercent(score);
+  const fillPercent = getScoreFillPercent(score, scaleMax);
   return `linear-gradient(90deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.12) ${fillPercent}%, rgba(255,255,255,0.03) ${fillPercent}%, rgba(255,255,255,0.03) 100%), ${baseGradient}`;
 }
 
@@ -133,6 +112,7 @@ interface WellnessSliderProps {
   label: string;
   description: string;
   highIsGood: boolean;
+  scaleMax: number;
   metricKey: WellnessMetricKey;
   value?: number;
   onChange: (value: number) => void;
@@ -143,14 +123,16 @@ const WellnessSlider: React.FC<WellnessSliderProps> = ({
   label,
   description,
   highIsGood,
+  scaleMax,
   metricKey,
   value,
   onChange,
   onClear,
 }) => {
-  const selectedColor = value ? getScoreColor(value, highIsGood) : 'bg-bg-tertiary text-text-secondary';
+  const scoreOptions = Array.from({ length: scaleMax }, (_, i) => i + 1);
+  const selectedColor = value ? getScoreColor(value, highIsGood, scaleMax) : 'bg-bg-tertiary text-text-secondary';
   const descriptor = getDescriptor(metricKey, value);
-  const thumbPosition = value ? `${getScoreFillPercent(value)}%` : '0%';
+  const thumbPosition = value ? `${getScoreFillPercent(value, scaleMax)}%` : '0%';
   const accentGlow = value
     ? highIsGood
       ? 'shadow-[0_0_0_1px_rgba(34,197,94,0.25),0_18px_40px_rgba(34,197,94,0.18)]'
@@ -198,13 +180,16 @@ const WellnessSlider: React.FC<WellnessSliderProps> = ({
       <div className="relative">
         <div
           className="relative rounded-[1.6rem] px-3 py-4 border border-white/10 overflow-hidden bg-slate-950/10"
-          style={{ background: buildTrackGradient(highIsGood, value) }}
+          style={{ background: buildTrackGradient(highIsGood, value, scaleMax) }}
         >
           <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.12),transparent_35%,transparent_65%,rgba(255,255,255,0.08))] pointer-events-none" />
           <div className="absolute inset-y-3 left-3 right-3 rounded-[1.2rem] border border-white/10 pointer-events-none" />
 
-          <div className="grid grid-cols-10 gap-1">
-            {SCORE_OPTIONS.map((score) => {
+          <div
+            className="grid gap-1"
+            style={{ gridTemplateColumns: `repeat(${scaleMax}, minmax(0, 1fr))` }}
+          >
+            {scoreOptions.map((score) => {
               const isActive = value === score;
               const isFilled = value !== undefined && score <= value;
 
@@ -245,7 +230,7 @@ const WellnessSlider: React.FC<WellnessSliderProps> = ({
         <input
           type="range"
           min={1}
-          max={10}
+          max={scaleMax}
           step={1}
           value={value ?? 1}
           onChange={(e) => onChange(Number(e.target.value))}
@@ -257,6 +242,15 @@ const WellnessSlider: React.FC<WellnessSliderProps> = ({
     </div>
   );
 };
+
+function convertLegacyReadinessForInput(value: number | undefined): number | undefined {
+  if (value === undefined || value <= 5) return value;
+  if (value <= 2) return 1;
+  if (value <= 4) return 2;
+  if (value <= 6) return 3;
+  if (value <= 8) return 4;
+  return 5;
+}
 
 const WellnessPage: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
@@ -288,7 +282,7 @@ const WellnessPage: React.FC = () => {
           muscleSoreness: entry.muscleSoreness,
           stress: entry.stress,
           mood: entry.mood,
-          readiness: entry.readiness,
+          readiness: convertLegacyReadinessForInput(entry.readiness),
         });
         setNotes(entry.notes ?? '');
       } else {
@@ -446,12 +440,13 @@ const WellnessPage: React.FC = () => {
           </div>
         ) : (
           <>
-            {WELLNESS_METRICS.map(({ key, label, description, highIsGood }) => (
+            {WELLNESS_METRICS.map(({ key, label, description, highIsGood, scaleMax }) => (
               <WellnessSlider
                 key={key}
                 label={label}
                 description={description}
                 highIsGood={highIsGood}
+                scaleMax={scaleMax}
                 metricKey={key}
                 value={scores[key]}
                 onChange={(value) => handleScoreSelect(key, value)}

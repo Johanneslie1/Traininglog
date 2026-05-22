@@ -14,7 +14,16 @@ import { getAuth } from 'firebase/auth';
 import { getCoachTeams, getTeamMembers, TeamMember, syncCoachAthleteAccess } from './teamService';
 import { startOfDay, endOfDay } from '@/utils/dateUtils';
 import { getUserWorkouts } from './firebase/workouts';
-import { downloadCSV, exportData, serializeSetForExport, SET_EXPORT_HEADERS } from './exportService';
+import {
+  COACH_WELLNESS_CSV_HEADERS,
+  dateToWellnessExportKey,
+  downloadCSV,
+  exportData,
+  getWellnessExportRows,
+  serializeSetForExport,
+  SET_EXPORT_HEADERS,
+  type WellnessExportRow,
+} from './exportService';
 import { ActivityType } from '@/types/activityTypes';
 import { normalizeActivityType } from '@/types/activityLog';
 
@@ -1346,6 +1355,103 @@ export const exportAllAthletesSessionsCsv = async (
     };
   } catch (error) {
     console.error('[coachService] Error exporting all athletes sessions CSV:', error);
+    throw error;
+  }
+};
+
+export const exportAthleteWellnessCsv = async (
+  athleteId: string,
+  startDate?: Date,
+  endDate?: Date
+): Promise<{ rowCount: number; athleteName: string }> => {
+  try {
+    await ensureAuth();
+    await ensureCoachAthleteExportAccess(athleteId);
+
+    const athlete = await getCoachAthleteIdentity(athleteId);
+    const start = dateToWellnessExportKey(startDate) || '1970-01-01';
+    const end = dateToWellnessExportKey(endDate) || getLocalDateKey(new Date());
+    const rows = await getWellnessExportRows(
+      {
+        athleteId: athlete.athleteId,
+        athleteName: athlete.athleteName,
+      },
+      start,
+      end
+    );
+
+    if (rows.length === 0) {
+      throw new Error('No wellness data found for this athlete in the selected range');
+    }
+
+    downloadCSV(rows, [...COACH_WELLNESS_CSV_HEADERS], 'athlete_wellness_logs.csv');
+    return { rowCount: rows.length, athleteName: athlete.athleteName };
+  } catch (error) {
+    console.error('[coachService] Error exporting athlete wellness CSV:', error);
+    throw error;
+  }
+};
+
+export const exportAllAthletesWellnessCsv = async (
+  startDate?: Date,
+  endDate?: Date
+): Promise<{ rowCount: number; athleteCount: number }> => {
+  try {
+    await ensureAuth();
+    const athletes = await getCoachAthleteIdentities();
+
+    if (athletes.length === 0) {
+      throw new Error('No athletes found for this coach');
+    }
+
+    const start = dateToWellnessExportKey(startDate) || '1970-01-01';
+    const end = dateToWellnessExportKey(endDate) || getLocalDateKey(new Date());
+    const allRows: WellnessExportRow[] = [];
+    const includedAthleteIds = new Set<string>();
+
+    for (const athlete of athletes) {
+      try {
+        await ensureCoachAthleteExportAccess(athlete.athleteId);
+        const rows = await getWellnessExportRows(
+          {
+            athleteId: athlete.athleteId,
+            athleteName: athlete.athleteName,
+          },
+          start,
+          end
+        );
+
+        if (rows.length > 0) {
+          rows.forEach((row) => allRows.push(row));
+          includedAthleteIds.add(athlete.athleteId);
+        }
+      } catch (error) {
+        if (isPermissionDenied(error)) {
+          continue;
+        }
+        throw error;
+      }
+    }
+
+    const sortedRows = allRows.sort((a, b) => {
+      const dateDiff = a.loggedDate.localeCompare(b.loggedDate);
+      if (dateDiff !== 0) return dateDiff;
+      return (a.athleteName || a.athleteId).localeCompare(b.athleteName || b.athleteId);
+    });
+
+    if (sortedRows.length === 0) {
+      throw new Error('No athlete wellness data found in the selected range');
+    }
+
+    const filename = `coach_wellness_all_athletes_${formatExportDateStamp()}.csv`;
+    downloadCSV(sortedRows, [...COACH_WELLNESS_CSV_HEADERS], filename);
+
+    return {
+      rowCount: sortedRows.length,
+      athleteCount: includedAthleteIds.size,
+    };
+  } catch (error) {
+    console.error('[coachService] Error exporting all athletes wellness CSV:', error);
     throw error;
   }
 };

@@ -19,6 +19,7 @@ import {
 } from '@heroicons/react/outline';
 import toast from 'react-hot-toast';
 import { useIsCoach } from '@/hooks/useUserRole';
+import CoachRatingsDashboard from '@/features/coach/CoachRatingsDashboard';
 
 const TeamDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -183,10 +184,10 @@ const TeamDetail: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-black text-white p-4">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <button
-          onClick={() => navigate('/teams')}
+          onClick={() => navigate(isCoach ? '/coach?tab=teams' : '/teams')}
           className="text-primary-500 hover:text-primary-400 mb-6 flex items-center"
         >
           <ArrowLeftIcon className="h-5 w-5 mr-2" />
@@ -298,6 +299,10 @@ const TeamDetail: React.FC = () => {
             </div>
           )}
         </div>
+
+        {isCoach && id ? (
+          <CoachRatingsDashboard teamId={id} teamName={team.name} />
+        ) : null}
 
         {/* Members List */}
         <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
