@@ -153,6 +153,42 @@ describe('coachRatingsService aggregation', () => {
     expect(data.summary.weeklySrpeTotalLoad).toBe(620);
   });
 
+  it('adds individual wellness trend signals from a 28-day baseline', () => {
+    const data = buildCoachRatingsDashboardData({
+      selectedDate: '2026-03-10',
+      teamsWithMembers: [{ team, members: [memberA, memberB] }],
+      wellnessLogsByAthleteId: new Map([
+        ['athlete-a', [
+          wellnessLog('athlete-a', '2026-03-06', { readiness: 5 }),
+          wellnessLog('athlete-a', '2026-03-07', { readiness: 4 }),
+          wellnessLog('athlete-a', '2026-03-08', { readiness: 5 }),
+          wellnessLog('athlete-a', '2026-03-09', { readiness: 5 }),
+          wellnessLog('athlete-a', '2026-03-10', { readiness: 4 }),
+        ]],
+        ['athlete-b', [
+          wellnessLog('athlete-b', '2026-03-10', { readiness: 5 }),
+        ]],
+      ]),
+      srpeLogsByAthleteId: new Map(),
+    });
+
+    const athleteA = data.rows.find((row) => row.athleteId === 'athlete-a');
+    const selectedTrendPoint = athleteA?.wellnessTrendPoints.find((point) => point.date === '2026-03-10');
+
+    expect(athleteA?.dailyWellness.score).toBe(5.5);
+    expect(athleteA?.wellnessTrend.changeFromPrevious).toBe(-1.5);
+    expect(athleteA?.wellnessTrend.category).toBe('clear_warning');
+    expect(athleteA?.wellnessTrend.label).toBe('Clear warning');
+    expect(athleteA?.wellnessTrend.severity).toBe('outlier');
+    expect(athleteA?.wellnessTrend.zScore).toBeLessThanOrEqual(-1.5);
+    expect(athleteA?.status).toBe('outlier');
+    expect(athleteA?.outlierReasons).toContain('Clear warning');
+    expect(athleteA?.weeklyWellness.submittedDays).toBe(2);
+    expect(athleteA?.weeklyWellness.average).toBe(6.3);
+    expect(athleteA?.wellnessTrendPoints).toHaveLength(28);
+    expect(selectedTrendPoint?.teamAverage).toBe(6.3);
+  });
+
   it('deduplicates athletes across teams while retaining team names', () => {
     const data = buildCoachRatingsDashboardData({
       selectedDate: '2026-03-10',

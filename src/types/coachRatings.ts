@@ -3,6 +3,33 @@ import { WellnessMetricKey } from '@/types/wellness';
 
 export type CoachRatingStatus = 'good' | 'watch' | 'outlier' | 'missing';
 
+export type CoachWellnessTrendCategory =
+  | 'better_than_normal'
+  | 'normal'
+  | 'below_normal'
+  | 'clear_warning'
+  | 'strong_concern'
+  | 'no_baseline';
+
+export interface CoachWellnessTrend {
+  changeFromPrevious: number | null;
+  previousScore: number | null;
+  previousDate: string | null;
+  baselineAverage: number | null;
+  baselineSd: number | null;
+  zScore: number | null;
+  category: CoachWellnessTrendCategory;
+  label: string;
+  severity: CoachRatingStatus;
+}
+
+export interface CoachWellnessTrendPoint {
+  date: string;
+  score: number | null;
+  rollingAverage: number | null;
+  teamAverage: number | null;
+}
+
 export interface CoachRatingsTeamOption {
   id: string;
   name: string;
@@ -52,6 +79,8 @@ export interface CoachRatingsRow {
   teamIds: string[];
   teamNames: string[];
   dailyWellness: CoachDailyWellnessSummary;
+  wellnessTrend: CoachWellnessTrend;
+  wellnessTrendPoints: CoachWellnessTrendPoint[];
   weeklyWellness: CoachWeeklyWellnessSummary;
   dailySrpe: CoachDailySrpeSummary;
   weeklySrpe: CoachWeeklySrpeSummary;

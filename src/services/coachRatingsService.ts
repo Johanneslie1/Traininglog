@@ -2,7 +2,7 @@ import { getAuth } from 'firebase/auth';
 import { getCoachTeams, getTeamMembers, syncCoachAthleteAccess } from '@/services/teamService';
 import { getWellnessByDateRange } from '@/services/wellnessService';
 import { getSrpeByDateRange } from '@/services/srpeService';
-import { getLocalWeekDateRange, dateKeyToLocalDate } from '@/utils/dateUtils';
+import { addDays, getLocalWeekDateRange, dateKeyToLocalDate, toLocalDateString } from '@/utils/dateUtils';
 import { SrpeLog } from '@/types/srpe';
 import { WellnessLog, WELLNESS_METRICS, WellnessMetricKey } from '@/types/wellness';
 import {
@@ -17,6 +17,8 @@ import {
   CoachRatingsTeamOption,
   CoachWeeklySrpeSummary,
   CoachWeeklyWellnessSummary,
+  CoachWellnessTrend,
+  CoachWellnessTrendPoint,
   CoachWellnessMetricValue,
 } from '@/types/coachRatings';
 
@@ -42,6 +44,10 @@ const EMPTY_SUMMARY: CoachRatingsSummary = {
   outlierCount: 0,
 };
 
+const WELLNESS_BASELINE_DAYS = 28;
+const WELLNESS_CHART_DAYS = 28;
+const MIN_BASELINE_SCORES = 3;
+
 function ensureCoachId(): string {
   const uid = getAuth().currentUser?.uid;
   if (!uid) {
@@ -57,6 +63,10 @@ function average(values: number[]): number | null {
 
 function roundOne(value: number): number {
   return Math.round(value * 10) / 10;
+}
+
+function roundTwo(value: number): number {
+  return Math.round(value * 100) / 100;
 }
 
 function isPermissionDenied(error: unknown): boolean {
@@ -196,6 +206,161 @@ function nullableRoundedAverage(values: Array<number | null>): number | null {
   return value === null ? null : roundOne(value);
 }
 
+function standardDeviation(values: number[]): number | null {
+  if (values.length === 0) return null;
+
+  const mean = average(values) as number;
+  const variance = average(values.map((value) => (value - mean) ** 2));
+  return variance === null ? null : Math.sqrt(variance);
+}
+
+function dateKeyDaysBefore(dateKey: string, days: number): string {
+  const date = dateKeyToLocalDate(dateKey);
+  if (!date) return dateKey;
+  return toLocalDateString(addDays(date, -days));
+}
+
+function buildDateKeys(startDateKey: string, days: number): string[] {
+  const startDate = dateKeyToLocalDate(startDateKey);
+  if (!startDate) return [];
+
+  return Array.from({ length: days }, (_, index) => toLocalDateString(addDays(startDate, index)));
+}
+
+function scoreLogsByDate(logs: WellnessLog[]): Map<string, number> {
+  const scores = new Map<string, number>();
+
+  logs
+    .slice()
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .forEach((log) => {
+      const score = calculateWellnessScore(log);
+      if (score !== null) {
+        scores.set(log.date, score);
+      }
+    });
+
+  return scores;
+}
+
+function buildWellnessTrend(logs: WellnessLog[], selectedDate: string): CoachWellnessTrend {
+  const scoresByDate = scoreLogsByDate(logs);
+  const todayScore = scoresByDate.get(selectedDate) ?? null;
+
+  if (todayScore === null) {
+    return {
+      changeFromPrevious: null,
+      previousScore: null,
+      previousDate: null,
+      baselineAverage: null,
+      baselineSd: null,
+      zScore: null,
+      category: 'no_baseline',
+      label: 'No wellness logged',
+      severity: 'missing',
+    };
+  }
+
+  const previousEntries = Array.from(scoresByDate.entries())
+    .filter(([date]) => date < selectedDate)
+    .sort(([a], [b]) => a.localeCompare(b));
+  const previousEntry = previousEntries[previousEntries.length - 1] ?? null;
+  const previousScore = previousEntry?.[1] ?? null;
+  const changeFromPrevious = previousScore === null ? null : roundOne(todayScore - previousScore);
+  const baselineStartDate = dateKeyDaysBefore(selectedDate, WELLNESS_BASELINE_DAYS);
+  const baselineScores = previousEntries
+    .filter(([date]) => date >= baselineStartDate)
+    .map(([, score]) => score);
+
+  if (baselineScores.length < MIN_BASELINE_SCORES) {
+    return {
+      changeFromPrevious,
+      previousScore,
+      previousDate: previousEntry?.[0] ?? null,
+      baselineAverage: null,
+      baselineSd: null,
+      zScore: null,
+      category: 'no_baseline',
+      label: 'No baseline yet',
+      severity: 'good',
+    };
+  }
+
+  const baselineAverage = average(baselineScores) as number;
+  const baselineSd = standardDeviation(baselineScores) || 0;
+  const zScore = baselineSd > 0 ? (todayScore - baselineAverage) / baselineSd : null;
+
+  let category: CoachWellnessTrend['category'] = 'normal';
+  let label = 'Normal';
+  let severity: CoachRatingStatus = 'good';
+
+  if (zScore !== null) {
+    if (zScore <= -2) {
+      category = 'strong_concern';
+      label = 'Strong concern';
+      severity = 'outlier';
+    } else if (zScore <= -1.5) {
+      category = 'clear_warning';
+      label = 'Clear warning';
+      severity = 'outlier';
+    } else if (zScore <= -1) {
+      category = 'below_normal';
+      label = 'Below normal';
+      severity = 'watch';
+    } else if (zScore >= 1) {
+      category = 'better_than_normal';
+      label = 'Better than normal';
+    }
+  } else if (todayScore < baselineAverage) {
+    category = 'below_normal';
+    label = 'Below normal';
+    severity = 'watch';
+  } else if (todayScore > baselineAverage) {
+    category = 'better_than_normal';
+    label = 'Better than normal';
+  }
+
+  if (category === 'normal' && changeFromPrevious !== null && changeFromPrevious <= -0.5) {
+    label = 'Slight drop';
+    severity = 'watch';
+  }
+
+  return {
+    changeFromPrevious,
+    previousScore,
+    previousDate: previousEntry?.[0] ?? null,
+    baselineAverage: roundOne(baselineAverage),
+    baselineSd: roundTwo(baselineSd),
+    zScore: zScore === null ? null : roundTwo(zScore),
+    category,
+    label,
+    severity,
+  };
+}
+
+function buildWellnessTrendPoints(
+  logs: WellnessLog[],
+  chartDateKeys: string[],
+  teamAverageByDate: Map<string, number>
+): CoachWellnessTrendPoint[] {
+  const scoresByDate = scoreLogsByDate(logs);
+
+  return chartDateKeys.map((date) => {
+    const rollingStartDate = dateKeyDaysBefore(date, WELLNESS_BASELINE_DAYS - 1);
+    const rollingScores = Array.from(scoresByDate.entries())
+      .filter(([scoreDate]) => scoreDate >= rollingStartDate && scoreDate <= date)
+      .map(([, score]) => score);
+    const rollingAverage = average(rollingScores);
+
+    return {
+      date,
+      score: scoresByDate.get(date) ?? null,
+      rollingAverage: rollingAverage === null ? null : roundOne(rollingAverage),
+      teamAverage: teamAverageByDate.get(date) ?? null,
+    };
+  });
+}
+
 function classifyRows(rows: CoachRatingsRow[]): CoachRatingsRow[] {
   const dailyWellnessAverage = nullableRoundedAverage(rows.map((row) => row.dailyWellness.score));
   const weeklyWellnessAverage = nullableRoundedAverage(rows.map((row) => row.weeklyWellness.average));
@@ -217,6 +382,12 @@ function classifyRows(rows: CoachRatingsRow[]): CoachRatingsRow[] {
       } else if (dailyWellnessAverage !== null && row.dailyWellness.score <= dailyWellnessAverage - 0.8) {
         watchReasons.push('Daily wellness below team average');
       }
+    }
+
+    if (row.wellnessTrend.severity === 'outlier') {
+      outlierReasons.push(row.wellnessTrend.label);
+    } else if (row.wellnessTrend.severity === 'watch') {
+      watchReasons.push(row.wellnessTrend.label);
     }
 
     if (row.weeklyWellness.average !== null) {
@@ -294,6 +465,8 @@ export function buildCoachRatingsDashboardData(params: {
 
   const weekRange = getLocalWeekDateRange(selectedLocalDate);
   const selectedTeamId = params.selectedTeamId || null;
+  const chartStartDateKey = toLocalDateString(addDays(selectedLocalDate, -(WELLNESS_CHART_DAYS - 1)));
+  const chartDateKeys = buildDateKeys(chartStartDateKey, WELLNESS_CHART_DAYS);
   const includedTeams = selectedTeamId
     ? params.teamsWithMembers.filter(({ team }) => team.id === selectedTeamId)
     : params.teamsWithMembers;
@@ -323,10 +496,27 @@ export function buildCoachRatingsDashboardData(params: {
       });
   });
 
+  const teamAverageByDate = new Map<string, number>();
+  chartDateKeys.forEach((date) => {
+    const scores = Array.from(athleteMap.values())
+      .map((athlete) => {
+        const wellnessLogs = params.wellnessLogsByAthleteId.get(athlete.athleteId) || [];
+        return scoreLogsByDate(wellnessLogs).get(date) ?? null;
+      })
+      .filter((score): score is number => score !== null);
+    const dateAverage = average(scores);
+    if (dateAverage !== null) {
+      teamAverageByDate.set(date, roundOne(dateAverage));
+    }
+  });
+
   const rows = Array.from(athleteMap.values())
     .map((athlete) => {
       const wellnessLogs = params.wellnessLogsByAthleteId.get(athlete.athleteId) || [];
       const srpeLogs = params.srpeLogsByAthleteId.get(athlete.athleteId) || [];
+      const weeklyWellnessLogs = wellnessLogs.filter(
+        (log) => log.date >= weekRange.startDateKey && log.date <= weekRange.endDateKey
+      );
       const dailyWellnessLog = wellnessLogs.find((log) => log.date === params.selectedDate) || null;
       const dailySrpeLog = srpeLogs.find((log) => log.date === params.selectedDate) || null;
       const dailyWellness = summarizeDailyWellness(dailyWellnessLog);
@@ -339,7 +529,9 @@ export function buildCoachRatingsDashboardData(params: {
         teamIds: Array.from(athlete.teamIds),
         teamNames: Array.from(athlete.teamNames),
         dailyWellness,
-        weeklyWellness: summarizeWeeklyWellness(wellnessLogs),
+        wellnessTrend: buildWellnessTrend(wellnessLogs, params.selectedDate),
+        wellnessTrendPoints: buildWellnessTrendPoints(wellnessLogs, chartDateKeys, teamAverageByDate),
+        weeklyWellness: summarizeWeeklyWellness(weeklyWellnessLogs),
         dailySrpe,
         weeklySrpe: summarizeWeeklySrpe(srpeLogs),
         status: 'good' as CoachRatingStatus,
@@ -379,6 +571,8 @@ export async function getCoachRatingsDashboard(
   }
 
   const weekRange = getLocalWeekDateRange(selectedLocalDate);
+  const wellnessStartDateKey = toLocalDateString(addDays(selectedLocalDate, -WELLNESS_BASELINE_DAYS));
+  const wellnessEndDateKey = weekRange.endDateKey;
   const teams = await getCoachTeams();
   const teamsWithMembers = await Promise.all(
     teams.map(async (team) => ({
@@ -414,7 +608,7 @@ export async function getCoachRatingsDashboard(
   const athleteLogPairs = await Promise.all(
     athleteIds.map(async (athleteId) => {
       const [wellnessResult, srpeResult] = await Promise.allSettled([
-        getWellnessByDateRange(athleteId, weekRange.startDateKey, weekRange.endDateKey),
+        getWellnessByDateRange(athleteId, wellnessStartDateKey, wellnessEndDateKey),
         getSrpeByDateRange(athleteId, weekRange.startDateKey, weekRange.endDateKey),
       ]);
 
