@@ -3,17 +3,23 @@ import { getFirestore, collection, doc, getDocs, getDoc, query, where, setDoc, w
 import { getAuth } from 'firebase/auth';
 import { getStorage } from 'firebase/storage';
 
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+const productionFirebaseConfig = {
+  apiKey: 'AIzaSyDgA76WHz1JzwEc1YeazhKTUxqxHzhcP2c',
+  authDomain: 'session-logger-3619e.firebaseapp.com',
+  projectId: 'session-logger-3619e',
+  storageBucket: 'session-logger-3619e.firebasestorage.app',
+  messagingSenderId: '936476651752',
+  appId: '1:936476651752:web:7048bd9fcc902dc816595d',
 };
 
-// TODO: REMOVE after debugging auth/configuration-not-found
-console.log('[Firebase Debug] API key prefix:', firebaseConfig.apiKey?.substring(0, 10), '| authDomain:', firebaseConfig.authDomain);
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || productionFirebaseConfig.apiKey,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || productionFirebaseConfig.authDomain,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || productionFirebaseConfig.projectId,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || productionFirebaseConfig.storageBucket,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || productionFirebaseConfig.messagingSenderId,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || productionFirebaseConfig.appId,
+};
 
 // Ensure Firebase is only initialized once (singleton pattern)
 export const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
