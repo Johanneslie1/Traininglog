@@ -65,7 +65,7 @@ const SrpePage: React.FC = () => {
         setDurationMinutes('');
       }
     } catch (err) {
-      console.error('Failed to load sRPE entry:', err);
+      console.error('Failed to load RPE entry:', err);
     } finally {
       setIsLoading(false);
     }
@@ -105,7 +105,7 @@ const SrpePage: React.FC = () => {
       setEntryExists(true);
       toast.success('Football load logged');
     } catch (err) {
-      console.error('Failed to save sRPE:', err);
+      console.error('Failed to save RPE:', err);
       toast.error('Failed to save - please try again');
     } finally {
       setIsSaving(false);
@@ -138,7 +138,7 @@ const SrpePage: React.FC = () => {
                   {formatDisplayDate(selectedDate)}
                 </h1>
                 <p className="text-[11px] text-text-tertiary mt-1">
-                  {isLoading ? 'Loading entry...' : entryExists ? 'Editing saved sRPE' : 'No sRPE saved yet'}
+                  {isLoading ? 'Loading entry...' : entryExists ? 'Editing saved RPE' : 'No RPE saved yet'}
                 </p>
               </div>
 
@@ -266,8 +266,8 @@ const SrpePage: React.FC = () => {
 
             <div className="rounded-2xl border border-border bg-bg-secondary p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs uppercase tracking-[0.18em] text-text-tertiary">Session Load</p>
-                <p className="text-sm text-text-secondary mt-1">RPE x duration minutes</p>
+                <p className="text-xs uppercase tracking-[0.18em] text-text-tertiary">sRPE / Session Load</p>
+                <p className="text-sm text-text-secondary mt-1">Calculated as RPE x duration minutes</p>
               </div>
               <div className="text-3xl font-semibold text-text-primary">
                 {canSave ? sessionLoad : '-'}

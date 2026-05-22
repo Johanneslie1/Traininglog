@@ -264,7 +264,7 @@ describe('coachRatingsService aggregation', () => {
     expect(athleteA?.status).toBe('good');
     expect(athleteB?.status).toBe('outlier');
     expect(athleteB?.outlierReasons).toEqual(
-      expect.arrayContaining(['Low daily wellness', 'Very high daily sRPE'])
+      expect.arrayContaining(['Low daily wellness', 'Very high daily RPE'])
     );
     expect(data.summary.outlierCount).toBe(1);
   });

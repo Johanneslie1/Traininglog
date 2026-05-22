@@ -91,7 +91,7 @@ describe('srpeService', () => {
     expect(calculateSessionLoad({ rpe: 7, durationMinutes: 90 })).toBe(630);
   });
 
-  it('saves sRPE logs under the selected date document id with computed load', async () => {
+  it('saves logged RPE with derived sRPE load under the selected date document id', async () => {
     await saveSrpeLog('2026-03-10', { rpe: 8, durationMinutes: 75 });
 
     expect(setDocMock).toHaveBeenCalledWith(
@@ -110,7 +110,7 @@ describe('srpeService', () => {
     );
   });
 
-  it('rejects invalid sRPE inputs before writing', async () => {
+  it('rejects invalid RPE/load inputs before writing', async () => {
     await expect(saveSrpeLog('2026-03-10', { rpe: 11, durationMinutes: 75 })).rejects.toThrow(
       'RPE must be an integer from 1 to 10'
     );
@@ -121,7 +121,7 @@ describe('srpeService', () => {
     expect(setDocMock).not.toHaveBeenCalled();
   });
 
-  it('loads an existing sRPE log by date', async () => {
+  it('loads an existing RPE/load log by date', async () => {
     getDocMock.mockResolvedValueOnce({
       exists: () => true,
       id: '2026-03-10',

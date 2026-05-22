@@ -412,9 +412,9 @@ function classifyRows(rows: CoachRatingsRow[]): CoachRatingsRow[] {
 
     if (row.dailySrpe.rpe !== null) {
       if (row.dailySrpe.rpe >= 9) {
-        outlierReasons.push('Very high daily sRPE');
+        outlierReasons.push('Very high daily RPE');
       } else if (row.dailySrpe.rpe >= 8) {
-        watchReasons.push('High daily sRPE');
+        watchReasons.push('High daily RPE');
       }
     }
 
@@ -431,7 +431,7 @@ function classifyRows(rows: CoachRatingsRow[]): CoachRatingsRow[] {
     }
 
     if (row.missingDailySrpe) {
-      watchReasons.push('Missing daily sRPE');
+      watchReasons.push('Missing daily RPE');
     }
 
     const status: CoachRatingStatus =
@@ -624,7 +624,7 @@ export async function getCoachRatingsDashboard(
       }
 
       if (srpeResult.status === 'rejected') {
-        console.warn('[coachRatings] Could not load athlete sRPE logs', {
+        console.warn('[coachRatings] Could not load athlete RPE/load logs', {
           athleteId,
           permissionDenied: isPermissionDenied(srpeResult.reason),
           error: srpeResult.reason,

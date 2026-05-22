@@ -44,9 +44,9 @@ const summaryHelp = {
   wellnessAvg: 'Daily score: the team average Wellness Readiness Score for the selected date only. Each athlete score combines logged wellness metrics into one 1-7 score where higher is better.',
   weeklyWellness: 'Weekly score: the team average Wellness Readiness Score across submitted days in the selected Monday-Sunday week. Missing days are not counted as zero.',
   missingWellness: 'Athletes without a wellness entry on the selected date.',
-  missingSrpe: 'Athletes without an sRPE entry on the selected date.',
-  srpeLoad: 'Total selected-day training load for the team. For each athlete: sRPE x duration minutes.',
-  weeklyLoad: 'Total team sRPE load across the selected week.',
+  missingSrpe: 'Athletes without an RPE/duration entry on the selected date.',
+  srpeLoad: 'Total selected-day sRPE session load for the team. For each athlete: RPE x duration minutes.',
+  weeklyLoad: 'Total team sRPE session load across the selected week.',
 };
 
 const statusStyles: Record<CoachRatingStatus, string> = {
@@ -352,7 +352,7 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
   const attentionParts = [
     summary?.outlierCount ? `${summary.outlierCount} risk ${summary.outlierCount === 1 ? 'flag' : 'flags'}` : null,
     summary?.missingDailyWellnessCount ? `${summary.missingDailyWellnessCount} missing wellness` : null,
-    summary?.missingDailySrpeCount ? `${summary.missingDailySrpeCount} missing sRPE` : null,
+    summary?.missingDailySrpeCount ? `${summary.missingDailySrpeCount} missing RPE` : null,
   ].filter(Boolean);
 
   return (
@@ -364,7 +364,7 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
             <p className="text-xs uppercase tracking-wide text-text-tertiary">Selected team</p>
             <h2 className="text-2xl font-bold text-text-primary">Health & Well-being</h2>
             <p className="text-sm text-text-tertiary mt-1">
-              {teamName}: daily wellness and sRPE with weekly team context.
+              {teamName}: daily wellness, logged RPE, and derived sRPE load with weekly team context.
             </p>
           </div>
 
@@ -490,7 +490,7 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
               />
               <SummaryItem
                 id="summary-missing-srpe"
-                label="Missing sRPE"
+                label="Missing RPE"
                 value={summary?.missingDailySrpeCount ?? 0}
                 help={summaryHelp.missingSrpe}
                 activeHelp={activeHelp}
@@ -525,7 +525,7 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
               <ExclamationIcon className="h-10 w-10 text-text-tertiary mx-auto mb-3" />
               <p className="text-text-primary font-medium">No athletes found</p>
               <p className="text-sm text-text-tertiary mt-1">
-                Add athletes to this team to see wellness and sRPE ratings.
+                Add athletes to this team to see wellness, RPE, and sRPE load ratings.
               </p>
             </div>
           ) : (
@@ -573,20 +573,20 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
                       ))}
                       <th className="px-3 py-2 text-center border-r border-border">Week Avg</th>
                       <th className="px-3 py-2 text-center">
-                        sRPE
-                        <HelpButton id="table-srpe" text="Session RPE from 1 to 10 for the selected day. Higher means the session felt harder." activeHelp={activeHelp} setActiveHelp={setActiveHelp} />
+                        RPE
+                        <HelpButton id="table-srpe" text="Logged session RPE from 1 to 10 for the selected day. Higher means the session felt harder." activeHelp={activeHelp} setActiveHelp={setActiveHelp} />
                       </th>
                       <th className="px-3 py-2 text-center">
                         Min
-                        <HelpButton id="table-min" text="Duration in minutes for the selected-day sRPE entry." activeHelp={activeHelp} setActiveHelp={setActiveHelp} />
+                        <HelpButton id="table-min" text="Duration in minutes for the selected-day RPE entry." activeHelp={activeHelp} setActiveHelp={setActiveHelp} />
                       </th>
                       <th className="px-3 py-2 text-center">
-                        Load
+                        sRPE Load
                         <HelpButton id="table-load" text={summaryHelp.srpeLoad} activeHelp={activeHelp} setActiveHelp={setActiveHelp} />
                       </th>
                       <th className="px-3 py-2 text-center">
                         Week RPE
-                        <HelpButton id="table-week-rpe" text="Average sRPE across submitted days in the selected week. Missing days are not counted." activeHelp={activeHelp} setActiveHelp={setActiveHelp} />
+                        <HelpButton id="table-week-rpe" text="Average logged RPE across submitted days in the selected week. Missing days are not counted." activeHelp={activeHelp} setActiveHelp={setActiveHelp} />
                       </th>
                       <th className="px-3 py-2 text-center border-r border-border">
                         Week Load

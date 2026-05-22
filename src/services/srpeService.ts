@@ -23,7 +23,7 @@ function ensureAuth(): string {
 function assertNotFutureDate(date: string): void {
   const todayKey = toLocalDateString(new Date());
   if (date > todayKey) {
-    throw new Error('Cannot log sRPE for a future date');
+    throw new Error('Cannot log RPE for a future date');
   }
 }
 
@@ -64,7 +64,7 @@ export async function saveSrpeLog(
   assertValidSrpeInput(input);
 
   const userId = ensureAuth();
-  const dateEpochDay = getDateEpochDay(date, 'sRPE date');
+  const dateEpochDay = getDateEpochDay(date, 'RPE date');
   const ref = doc(collection(db, 'users', userId, 'srpeLogs'), date);
   const sessionLoad = calculateSessionLoad(input);
 
