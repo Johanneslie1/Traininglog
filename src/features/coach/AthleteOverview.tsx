@@ -9,12 +9,15 @@ import {
   getAthleteSessionHistory,
   getAthleteAssignedPrograms,
   getAthleteAssignedSessions,
-  exportAllAthletesSessionsCsv,
+  getAllAthletes,
   AthleteExerciseLog, 
   AthleteSessionHistoryItem,
-  AthleteSummaryStats 
+  AthleteSummaryStats,
+  AthleteData,
 } from '@/services/coachService';
 import { downloadPowerBiZip } from '@/services/powerBiExportService';
+import { getCoachTeams, type Team } from '@/services/teamService';
+import type { PowerBiExportScope } from '@/types/powerBiExport';
 import { RootState } from '@/store/store';
 
 import { 
@@ -107,8 +110,13 @@ const AthleteOverview: React.FC = () => {
   const [showAssignDialog, setShowAssignDialog] = useState(false);
   const [visibleSessions, setVisibleSessions] = useState(SESSION_PAGE_SIZE);
   const [visibleExercises, setVisibleExercises] = useState(EXERCISE_PAGE_SIZE);
-  const [isExportingAthlete, setIsExportingAthlete] = useState(false);
-  const [isExportingAllAthletes, setIsExportingAllAthletes] = useState(false);
+  const [isExportingData, setIsExportingData] = useState(false);
+  const [isLoadingExportOptions, setIsLoadingExportOptions] = useState(false);
+  const [exportScope, setExportScope] = useState<PowerBiExportScope>('athlete');
+  const [exportAthletes, setExportAthletes] = useState<AthleteData[]>([]);
+  const [exportTeams, setExportTeams] = useState<Team[]>([]);
+  const [selectedExportAthleteIds, setSelectedExportAthleteIds] = useState<string[]>([]);
+  const [selectedExportTeamId, setSelectedExportTeamId] = useState('');
   const [exportDateRange, setExportDateRange] = useState<ExportDateRange>({
     startDate: null,
     endDate: null,
@@ -120,6 +128,10 @@ const AthleteOverview: React.FC = () => {
       loadAthleteData();
     }
   }, [athleteId, dateFilter]);
+
+  useEffect(() => {
+    loadExportOptions();
+  }, [athleteId]);
 
   const loadAthleteData = async () => {
     if (!athleteId) return;
@@ -156,6 +168,31 @@ const AthleteOverview: React.FC = () => {
       navigate('/coach');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadExportOptions = async () => {
+    try {
+      setIsLoadingExportOptions(true);
+      const [athletesData, teamsData] = await Promise.all([
+        getAllAthletes(),
+        getCoachTeams(),
+      ]);
+
+      setExportAthletes(athletesData);
+      setExportTeams(teamsData);
+
+      if (athleteId) {
+        setSelectedExportAthleteIds((current) => current.length > 0 ? current : [athleteId]);
+      }
+      if (teamsData.length > 0) {
+        setSelectedExportTeamId((current) => current || teamsData[0].id);
+      }
+    } catch (error) {
+      console.error('Failed to load export options:', error);
+      toast.error('Could not load export options');
+    } finally {
+      setIsLoadingExportOptions(false);
     }
   };
 
@@ -207,27 +244,55 @@ const AthleteOverview: React.FC = () => {
     return `${year}-${month}-${day}`;
   };
 
-  const handleExportAthlete = async () => {
-    if (!athleteId || isExportingAthlete || isExportingAllAthletes) {
-      return;
-    }
+  const dateToExportKey = (date: Date | null): string | undefined => {
+    if (!date) return undefined;
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  };
+
+  const getAthleteDisplayName = (athlete: AthleteData): string =>
+    [athlete.firstName, athlete.lastName].filter(Boolean).join(' ') || athlete.email || athlete.id;
+
+  const toggleSelectedExportAthlete = (id: string) => {
+    setSelectedExportAthleteIds((current) =>
+      current.includes(id)
+        ? current.filter((athleteId) => athleteId !== id)
+        : [...current, id]
+    );
+  };
+
+  const handleExportData = async () => {
+    if (isExportingData) return;
 
     if (!user?.id) {
-      toast.error('Please log in to export athlete data');
+      toast.error('Please log in to export data');
       return;
     }
 
-    setIsExportingAthlete(true);
-    try {
-      const fromDate = exportDateRange.startDate
-        ? `${exportDateRange.startDate.getFullYear()}-${String(exportDateRange.startDate.getMonth() + 1).padStart(2, '0')}-${String(exportDateRange.startDate.getDate()).padStart(2, '0')}`
-        : undefined;
+    if (exportScope === 'athlete' && !athleteId) {
+      toast.error('No athlete selected for export');
+      return;
+    }
 
+    if (exportScope === 'athletes' && selectedExportAthleteIds.length === 0) {
+      toast.error('Select at least one athlete to export');
+      return;
+    }
+
+    if (exportScope === 'team' && !selectedExportTeamId) {
+      toast.error('Select a team to export');
+      return;
+    }
+
+    setIsExportingData(true);
+    try {
       const result = await downloadPowerBiZip(
         {
-          scope: 'athlete',
-          targetAthleteId: athleteId,
-          fromDate,
+          scope: exportScope,
+          targetAthleteId: exportScope === 'athlete' ? athleteId : undefined,
+          targetAthleteIds: exportScope === 'athletes' ? selectedExportAthleteIds : undefined,
+          targetTeamId: exportScope === 'team' ? selectedExportTeamId : undefined,
+          fromDate: dateToExportKey(exportDateRange.startDate),
+          toDate: dateToExportKey(exportDateRange.endDate),
         },
         {
           id: user.id,
@@ -236,34 +301,15 @@ const AthleteOverview: React.FC = () => {
           role: user.role,
         }
       );
+
       toast.success(
-        `Export ready! ${result.gymSetCount} gym sets · ${result.activityCount} activity rows · ${result.athleteCount} athlete(s)`
+        `Export ready: ${result.athleteCount} athlete(s), ${result.sessionCount} sessions, ${result.gymSetCount + result.activityCount} set/activity rows, ${result.wellnessCount} wellness rows, ${result.footballLoadCount} football load rows`
       );
     } catch (error) {
-      console.error('Failed to export athlete Power BI file:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to export athlete Power BI file');
+      console.error('Failed to export data:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to export data');
     } finally {
-      setIsExportingAthlete(false);
-    }
-  };
-
-  const handleExportAllAthletes = async () => {
-    if (isExportingAllAthletes || isExportingAthlete) {
-      return;
-    }
-
-    setIsExportingAllAthletes(true);
-    try {
-      const result = await exportAllAthletesSessionsCsv(
-        exportDateRange.startDate || undefined,
-        exportDateRange.endDate || undefined
-      );
-      toast.success(`Exported ${result.rowCount} rows across ${result.athleteCount} athletes`);
-    } catch (error) {
-      console.error('Failed to export all athletes CSV:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to export all athletes CSV');
-    } finally {
-      setIsExportingAllAthletes(false);
+      setIsExportingData(false);
     }
   };
 
@@ -401,8 +447,34 @@ const AthleteOverview: React.FC = () => {
 
         <div className="bg-bg-secondary border border-border rounded-lg p-4 mb-8 space-y-4">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="text-base font-semibold">Coach Export</h2>
-            <div className="text-xs text-text-tertiary">Player export uses the same Power BI ZIP format as athlete self-export</div>
+            <h2 className="text-base font-semibold">Export Data</h2>
+            <div className="text-xs text-text-tertiary">CSV ZIP includes sessions, sets, activities, wellness, football load, and athlete fields</div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm text-text-secondary">Scope</label>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { key: 'self' as PowerBiExportScope, label: 'My own data' },
+                { key: 'athlete' as PowerBiExportScope, label: 'This athlete' },
+                { key: 'athletes' as PowerBiExportScope, label: 'Selected athletes' },
+                { key: 'team' as PowerBiExportScope, label: 'One team' },
+                { key: 'allCoachAthletes' as PowerBiExportScope, label: 'All athletes I coach' },
+              ].map(({ key, label }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setExportScope(key)}
+                  className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                    exportScope === key
+                      ? 'bg-accent-primary text-white'
+                      : 'bg-bg-tertiary text-text-secondary hover:bg-bg-primary'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -452,29 +524,89 @@ const AthleteOverview: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={handleExportAthlete}
-              disabled={!athleteId || isExportingAthlete || isExportingAllAthletes}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-accent-primary hover:bg-accent-hover text-text-inverse rounded-lg text-sm font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              <DownloadIcon className="h-4 w-4" />
-              {isExportingAthlete ? 'Exporting athlete...' : 'Export this athlete Power BI ZIP'}
-            </button>
-            <button
-              type="button"
-              onClick={handleExportAllAthletes}
-              disabled={isExportingAllAthletes || isExportingAthlete}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-bg-tertiary hover:bg-bg-primary text-text-primary rounded-lg text-sm font-medium border border-border transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              <DownloadIcon className="h-4 w-4" />
-              {isExportingAllAthletes ? 'Exporting all athletes...' : 'Export all athletes CSV'}
-            </button>
-          </div>
+          {exportScope === 'athletes' && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-sm text-text-secondary">Athletes</label>
+                <div className="flex gap-3 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedExportAthleteIds(exportAthletes.map((athlete) => athlete.id))}
+                    className="text-accent-primary hover:text-accent-hover"
+                  >
+                    Select all
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedExportAthleteIds([])}
+                    className="text-text-tertiary hover:text-text-primary"
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+              {isLoadingExportOptions ? (
+                <p className="text-sm text-text-tertiary">Loading athletes...</p>
+              ) : exportAthletes.length === 0 ? (
+                <p className="text-sm text-text-tertiary">No athletes found.</p>
+              ) : (
+                <div className="max-h-48 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-2 pr-1">
+                  {exportAthletes.map((athlete) => (
+                    <label key={athlete.id} className="flex items-center gap-2 text-sm text-text-secondary bg-bg-tertiary border border-border rounded-lg px-3 py-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedExportAthleteIds.includes(athlete.id)}
+                        onChange={() => toggleSelectedExportAthlete(athlete.id)}
+                        className="rounded border-border bg-bg-tertiary text-accent-primary focus:ring-accent-primary"
+                      />
+                      <span>{getAthleteDisplayName(athlete)}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {exportScope === 'team' && (
+            <div>
+              <label className="block text-sm text-text-secondary mb-1">Team</label>
+              {isLoadingExportOptions ? (
+                <p className="text-sm text-text-tertiary">Loading teams...</p>
+              ) : exportTeams.length === 0 ? (
+                <p className="text-sm text-text-tertiary">No teams found.</p>
+              ) : (
+                <select
+                  value={selectedExportTeamId}
+                  onChange={(event) => setSelectedExportTeamId(event.target.value)}
+                  className="w-full bg-bg-tertiary text-text-primary px-3 py-2 rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-accent-primary"
+                >
+                  {exportTeams.map((team) => (
+                    <option key={team.id} value={team.id}>{team.name}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={handleExportData}
+            disabled={
+              isExportingData ||
+              isLoadingExportOptions ||
+              !user?.id ||
+              (exportScope === 'athlete' && !athleteId) ||
+              (exportScope === 'athletes' && selectedExportAthleteIds.length === 0) ||
+              (exportScope === 'team' && !selectedExportTeamId)
+            }
+            className="inline-flex w-full items-center justify-center gap-2 px-4 py-3 bg-accent-primary hover:bg-accent-hover text-text-inverse rounded-lg text-sm font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            <DownloadIcon className="h-4 w-4" />
+            {isExportingData ? 'Exporting data...' : 'Export Data'}
+          </button>
 
           <p className="text-xs text-text-tertiary">
-            Note: rows with rowType=session indicate sessions without logged exercises.
+            Downloads one ZIP with analysis-ready CSV files for Excel or Power BI, including wellness and football load.
           </p>
         </div>
 

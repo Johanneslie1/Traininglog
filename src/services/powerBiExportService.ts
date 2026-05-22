@@ -9,15 +9,13 @@
  *   fact_activity.csv   – all other activity rows
  *   dim_exercise.csv    – unique exercise dimension
  *   dim_athlete.csv     – athlete dimension
+ *   fact_wellness.csv   – wellness check-ins
  *   export_meta.json    – export metadata
- *
- * // NOTE: fact_wellness.csv is intentionally omitted — the wellness/sleep module
- * // does not exist yet. Add it here once that feature is implemented.
  */
 
 import JSZip from 'jszip';
 import { getAuth } from 'firebase/auth';
-import { exportData } from '@/services/exportService';
+import { exportData, getWellnessExportRows } from '@/services/exportService';
 import { verifyCoachAthleteRelationship } from '@/services/coachService';
 import { getCoachTeams, getTeamMembers, syncCoachAthleteAccess } from '@/services/teamService';
 import { ActivityType } from '@/types/activityTypes';
@@ -27,12 +25,12 @@ import type {
   DimExerciseRow,
   ExportMeta,
   FactActivityRow,
+  FactFootballLoadRow,
   FactGymSetRow,
   FactSessionRow,
   FactWellnessRow,
   PowerBiExportOptions,
 } from '@/types/powerBiExport';
-import { getWellnessByDateRange } from '@/services/wellnessService';
 import { toLocalDateString, toLocalTimestamp } from '@/utils/dateUtils';
 import { rowsToCSVForPowerBi } from '@/utils/powerBiCsv';
 import { normalizeSessionType } from '@/types/sessionType';
@@ -57,6 +55,9 @@ export interface PowerBiExportResult {
   gymSetCount: number;
   activityCount: number;
   athleteCount: number;
+  sessionCount: number;
+  wellnessCount: number;
+  footballLoadCount: number;
 }
 
 export interface PowerBiFile {
@@ -66,7 +67,6 @@ export interface PowerBiFile {
 
 export interface PowerBiFilesResult extends PowerBiExportResult {
   files: PowerBiFile[];
-  sessionCount: number;
 }
 
 // Re-export so the UI can use without another import
@@ -428,11 +428,234 @@ const processRawSets = (
   });
 };
 
+const addWellnessRowsForAthlete = async (
+  athleteId: string,
+  athleteName: string,
+  startDate: string,
+  endDate: string,
+  wellnessRows: FactWellnessRow[]
+): Promise<void> => {
+  const rows = await getWellnessExportRows(
+    {
+      athleteId,
+      athleteName,
+    },
+    startDate,
+    endDate
+  );
+
+  rows.forEach((row) => {
+    wellnessRows.push({
+      athlete_id: row.athleteId,
+      athlete_name: row.athleteName || athleteName,
+      logged_date: row.loggedDate,
+      sleep_quality: row.sleepQuality,
+      fatigue: row.fatigue,
+      muscle_soreness: row.muscleSoreness,
+      stress: row.stress,
+      mood: row.mood,
+      readiness: row.readiness,
+      notes: row.notes,
+    });
+  });
+};
+
+const addFootballLoadRowsForAthlete = async (
+  athleteId: string,
+  athleteName: string,
+  startDate: string,
+  endDate: string,
+  footballLoadRows: FactFootballLoadRow[]
+): Promise<void> => {
+  const { getSrpeByDateRange } = await import('@/services/srpeService');
+  const rows = await getSrpeByDateRange(athleteId, startDate, endDate);
+
+  rows
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .forEach((row) => {
+      footballLoadRows.push({
+        athlete_id: row.userId || athleteId,
+        athlete_name: athleteName,
+        logged_date: row.date,
+        rpe: row.rpe ?? '',
+        duration_min: row.durationMinutes ?? '',
+        session_load: row.sessionLoad ?? '',
+      });
+    });
+};
+
 /** Gets the logged-in user's Firebase UID or throws. */
 const getCoachUid = (): string => {
   const uid = getAuth().currentUser?.uid;
   if (!uid) throw new Error('User must be logged in');
   return uid;
+};
+
+interface ExportAthleteTarget {
+  id: string;
+  athleteName: string;
+  teamName: string;
+  role: 'self' | 'athlete';
+  active: boolean;
+}
+
+interface CoachTargetContext {
+  teams: Awaited<ReturnType<typeof getCoachTeams>>;
+  membersPerTeam: Awaited<ReturnType<typeof getTeamMembers>>[];
+  targetsByAthleteId: Map<string, ExportAthleteTarget>;
+  targetsByTeamId: Map<string, ExportAthleteTarget[]>;
+}
+
+const getMemberName = (
+  member: Awaited<ReturnType<typeof getTeamMembers>>[number],
+  fallbackId: string
+): string =>
+  [member.firstName, member.lastName].filter(Boolean).join(' ') ||
+  member.email ||
+  fallbackId;
+
+const loadCoachTargetContext = async (): Promise<CoachTargetContext> => {
+  const teams = await getCoachTeams();
+  const membersPerTeam = await Promise.all(teams.map((t) => getTeamMembers(t.id)));
+  const targetsByAthleteId = new Map<string, ExportAthleteTarget>();
+  const targetsByTeamId = new Map<string, ExportAthleteTarget[]>();
+
+  teams.forEach((team, index) => {
+    const teamTargets: ExportAthleteTarget[] = [];
+    const members = membersPerTeam[index] || [];
+
+    members.forEach((member) => {
+      const target: ExportAthleteTarget = {
+        id: member.id,
+        athleteName: getMemberName(member, member.id),
+        teamName: team.name || team.id,
+        role: 'athlete',
+        active: member.status === 'active',
+      };
+
+      teamTargets.push(target);
+      if (!targetsByAthleteId.has(member.id)) {
+        targetsByAthleteId.set(member.id, target);
+      }
+    });
+
+    targetsByTeamId.set(team.id, teamTargets);
+  });
+
+  return { teams, membersPerTeam, targetsByAthleteId, targetsByTeamId };
+};
+
+const verifyCoachTargetAccess = async (
+  coachId: string,
+  target: ExportAthleteTarget,
+  throwOnDenied: boolean
+): Promise<boolean> => {
+  try {
+    const hasAccess = await verifyCoachAthleteRelationship(target.id);
+    if (!hasAccess) {
+      if (throwOnDenied) throw new Error(`No access to athlete ${target.athleteName}`);
+      return false;
+    }
+
+    await syncCoachAthleteAccess(coachId, target.id);
+    return true;
+  } catch (err) {
+    if (throwOnDenied) throw err;
+    console.warn(`[powerBiExport] Skipping athlete ${target.id}:`, err);
+    return false;
+  }
+};
+
+const resolveExportTargets = async (
+  options: PowerBiExportOptions,
+  currentUser: PowerBiExportCurrentUser,
+  coachId: string
+): Promise<ExportAthleteTarget[]> => {
+  const selfName =
+    [currentUser.firstName, currentUser.lastName].filter(Boolean).join(' ') || 'Me';
+
+  if (options.scope === 'self') {
+    return [{
+      id: currentUser.id,
+      athleteName: selfName,
+      teamName: 'Personal',
+      role: 'self',
+      active: true,
+    }];
+  }
+
+  if (currentUser.role !== 'coach') {
+    throw new Error('Coach export scopes require a coach account');
+  }
+
+  const context = await loadCoachTargetContext();
+  const resolveTarget = (athleteId: string): ExportAthleteTarget => (
+    context.targetsByAthleteId.get(athleteId) || {
+      id: athleteId,
+      athleteName: athleteId,
+      teamName: 'Unknown Team',
+      role: 'athlete',
+      active: true,
+    }
+  );
+
+  if (options.scope === 'athlete') {
+    if (!options.targetAthleteId) {
+      throw new Error('targetAthleteId is required for athlete scope');
+    }
+
+    const target = resolveTarget(options.targetAthleteId);
+    await verifyCoachTargetAccess(coachId, target, true);
+    return [target];
+  }
+
+  if (options.scope === 'athletes') {
+    const athleteIds = Array.from(new Set((options.targetAthleteIds || []).filter(Boolean)));
+    if (athleteIds.length === 0) {
+      throw new Error('Select at least one athlete to export');
+    }
+
+    const targets = athleteIds.map(resolveTarget);
+    const verified: ExportAthleteTarget[] = [];
+    for (const target of targets) {
+      if (await verifyCoachTargetAccess(coachId, target, true)) {
+        verified.push(target);
+      }
+    }
+    return verified;
+  }
+
+  if (options.scope === 'team') {
+    if (!options.targetTeamId) {
+      throw new Error('targetTeamId is required for team scope');
+    }
+
+    const targets = context.targetsByTeamId.get(options.targetTeamId) || [];
+    if (targets.length === 0) {
+      throw new Error('No athletes found for this team');
+    }
+
+    const verified: ExportAthleteTarget[] = [];
+    await runWithConcurrency(targets, 4, async (target) => {
+      if (await verifyCoachTargetAccess(coachId, target, false)) {
+        verified.push(target);
+      }
+    });
+    return verified;
+  }
+
+  const allTargets = Array.from(context.targetsByAthleteId.values());
+  if (allTargets.length === 0) {
+    throw new Error('No athletes found for this coach');
+  }
+
+  const verified: ExportAthleteTarget[] = [];
+  await runWithConcurrency(allTargets, 4, async (target) => {
+    if (await verifyCoachTargetAccess(coachId, target, false)) {
+      verified.push(target);
+    }
+  });
+  return verified;
 };
 
 const runWithConcurrency = async <T>(
@@ -463,161 +686,55 @@ const runWithConcurrency = async <T>(
  * Builds all Power BI CSV files and returns them as in-memory strings.
  * Use this when you want to upload to OneDrive rather than download a ZIP.
  *
- * - scope 'self'    → only the current user's data
- * - scope 'athlete' → one specific athlete (requires coach role + relationship)
- * - scope 'team'    → all athletes the coach manages + coach's own data
+ * - scope 'self'             → only the current user's data
+ * - scope 'athlete'          → one specific athlete
+ * - scope 'athletes'         → multiple selected athletes
+ * - scope 'team'             → one selected team
+ * - scope 'allCoachAthletes' → all athletes the coach can access
  */
 export const buildPowerBiFiles = async (
   options: PowerBiExportOptions,
   currentUser: PowerBiExportCurrentUser
 ): Promise<PowerBiFilesResult> => {
-  const { scope, targetAthleteId, fromDate } = options;
+  const { scope, fromDate, toDate } = options;
   const startDate = fromDate ? new Date(`${fromDate}T00:00:00`) : undefined;
-  const exportOptions = { startDate };
+  const endDate = toDate ? new Date(`${toDate}T23:59:59.999`) : undefined;
+  const exportOptions = { startDate, endDate };
+  const wellnessStart = fromDate ?? '1970-01-01';
+  const wellnessEnd = toDate ?? toIsoDate(new Date());
 
   const gymSets: FactGymSetRow[] = [];
   const activityRows: FactActivityRow[] = [];
   const wellnessRows: FactWellnessRow[] = [];
+  const footballLoadRows: FactFootballLoadRow[] = [];
   const allRawSets: Record<string, unknown>[] = [];
   const dimAthletes: DimAthleteRow[] = [];
 
   const coachId = getCoachUid();
-  const selfName =
-    [currentUser.firstName, currentUser.lastName].filter(Boolean).join(' ') || 'Me';
 
   // ---- Collect sets per scope ----
 
-  if (scope === 'self') {
-    const data = await exportData(currentUser.id, exportOptions);
-    processRawSets(data.sets, currentUser.id, selfName, gymSets, activityRows, allRawSets);
+  const targets = await resolveExportTargets(options, currentUser, coachId);
+  if (targets.length === 0) {
+    throw new Error('No athletes available to export for the selected scope');
+  }
 
-    const wellnessStart = fromDate ?? '1970-01-01';
-    const wellnessEnd = toIsoDate(new Date());
-    const selfWellness = await getWellnessByDateRange(currentUser.id, wellnessStart, wellnessEnd);
-    selfWellness.forEach((w) => {
-      wellnessRows.push({
-        athlete_id: currentUser.id,
-        logged_date: w.date,
-        sleep_quality: w.sleepQuality ?? '',
-        fatigue: w.fatigue ?? '',
-        muscle_soreness: w.muscleSoreness ?? '',
-        stress: w.stress ?? '',
-        mood: w.mood ?? '',
-        notes: w.notes ?? '',
-      });
-    });
+  await runWithConcurrency(targets, 4, async (target) => {
+    const data = await exportData(target.id, exportOptions);
+    processRawSets(data.sets, target.id, target.athleteName, gymSets, activityRows, allRawSets);
+    await addWellnessRowsForAthlete(target.id, target.athleteName, wellnessStart, wellnessEnd, wellnessRows);
+    await addFootballLoadRowsForAthlete(target.id, target.athleteName, wellnessStart, wellnessEnd, footballLoadRows);
 
     dimAthletes.push({
-      athlete_id: currentUser.id,
-      athlete_name: selfName,
-      role: 'self',
-      team: 'Personal',
+      athlete_id: target.id,
+      athlete_name: target.athleteName,
+      role: target.role,
+      team: target.teamName,
       position: '',
       date_of_birth: '',
-      active: true,
+      active: target.active,
     });
-  } else {
-    const teams = await getCoachTeams();
-    const membersPerTeam = await Promise.all(teams.map((t) => getTeamMembers(t.id)));
-    const teamNameById = new Map(teams.map((t) => [t.id, t.name]));
-
-    const resolveAthleteInfo = (
-      athleteId: string
-    ): { athleteName: string; teamName: string } => {
-      for (let i = 0; i < teams.length; i++) {
-        const member = membersPerTeam[i].find((m) => m.id === athleteId);
-        if (member) {
-          return {
-            athleteName:
-              [member.firstName, member.lastName].filter(Boolean).join(' ') ||
-              member.email ||
-              athleteId,
-            teamName: teamNameById.get(teams[i].id) || teams[i].id,
-          };
-        }
-      }
-      return { athleteName: athleteId, teamName: 'Unknown Team' };
-    };
-
-    if (scope === 'athlete') {
-      if (!targetAthleteId) throw new Error('targetAthleteId is required for athlete scope');
-      const hasAccess = await verifyCoachAthleteRelationship(targetAthleteId);
-      if (!hasAccess) throw new Error('No access to this athlete');
-      await syncCoachAthleteAccess(coachId, targetAthleteId);
-      const data = await exportData(targetAthleteId, exportOptions);
-      const { athleteName, teamName } = resolveAthleteInfo(targetAthleteId);
-      processRawSets(data.sets, targetAthleteId, athleteName, gymSets, activityRows, allRawSets);
-      dimAthletes.push({
-        athlete_id: targetAthleteId,
-        athlete_name: athleteName,
-        role: 'athlete',
-        team: teamName,
-        position: '',
-        date_of_birth: '',
-        active: true,
-      });
-    } else {
-      const athletesById = new Map<string, {
-        id: string;
-        athleteName: string;
-        teamName: string;
-        active: boolean;
-      }>();
-
-      for (let i = 0; i < teams.length; i++) {
-        const team = teams[i];
-        const members = membersPerTeam[i];
-        for (const member of members) {
-          if (athletesById.has(member.id)) continue;
-          athletesById.set(member.id, {
-            id: member.id,
-            athleteName:
-              [member.firstName, member.lastName].filter(Boolean).join(' ') ||
-              member.email ||
-              member.id,
-            teamName: teamNameById.get(team.id) || team.id,
-            active: member.status === 'active',
-          });
-        }
-      }
-
-      const athletes = Array.from(athletesById.values());
-      await runWithConcurrency(athletes, 4, async (athlete) => {
-        try {
-          const hasAccess = await verifyCoachAthleteRelationship(athlete.id);
-          if (!hasAccess) return;
-          await syncCoachAthleteAccess(coachId, athlete.id);
-          const data = await exportData(athlete.id, exportOptions);
-          processRawSets(data.sets, athlete.id, athlete.athleteName, gymSets, activityRows, allRawSets);
-          dimAthletes.push({
-            athlete_id: athlete.id,
-            athlete_name: athlete.athleteName,
-            role: 'athlete',
-            team: athlete.teamName,
-            position: '',
-            date_of_birth: '',
-            active: athlete.active,
-          });
-        } catch (err) {
-          console.warn(`[powerBiExport] Skipping athlete ${athlete.id}:`, err);
-        }
-      });
-
-      const selfData = await exportData(currentUser.id, exportOptions);
-      if (selfData.sets.length > 0) {
-        processRawSets(selfData.sets, currentUser.id, selfName, gymSets, activityRows, allRawSets);
-      }
-      dimAthletes.unshift({
-        athlete_id: currentUser.id,
-        athlete_name: selfName,
-        role: 'self',
-        team: 'Personal',
-        position: '',
-        date_of_birth: '',
-        active: true,
-      });
-    }
-  }
+  });
 
   // ---- Build dimension and session tables ----
   const dimExercise = buildDimExercise(allRawSets);
@@ -628,8 +745,9 @@ export const buildPowerBiFiles = async (
     exported_by: coachId,
     scope,
     from_date: fromDate ?? null,
+    to_date: toDate ?? null,
     athlete_count: dimAthletes.length,
-    row_count: gymSets.length + activityRows.length + sessionRows.length + wellnessRows.length,
+    row_count: gymSets.length + activityRows.length + sessionRows.length + wellnessRows.length + footballLoadRows.length,
   };
 
   // ---- Column headers ----
@@ -657,8 +775,12 @@ export const buildPowerBiFiles = async (
   ];
 
   const wellnessHeaders: (keyof FactWellnessRow)[] = [
-    'athlete_id', 'logged_date', 'sleep_quality', 'fatigue', 'muscle_soreness',
-    'stress', 'mood', 'notes',
+    'athlete_id', 'athlete_name', 'logged_date', 'sleep_quality', 'fatigue', 'muscle_soreness',
+    'stress', 'mood', 'readiness', 'notes',
+  ];
+
+  const footballLoadHeaders: (keyof FactFootballLoadRow)[] = [
+    'athlete_id', 'athlete_name', 'logged_date', 'rpe', 'duration_min', 'session_load',
   ];
 
   const dimExerciseHeaders: (keyof DimExerciseRow)[] = [
@@ -674,6 +796,7 @@ export const buildPowerBiFiles = async (
     { name: 'fact_activity.csv',   content: rowsToCSVForPowerBi(activityRows, activityHeaders) },
     { name: 'fact_sessions.csv',   content: rowsToCSVForPowerBi(sessionRows, sessionHeaders) },
     { name: 'fact_wellness.csv',   content: rowsToCSVForPowerBi(wellnessRows, wellnessHeaders) },
+    { name: 'fact_football_load.csv', content: rowsToCSVForPowerBi(footballLoadRows, footballLoadHeaders) },
     { name: 'dim_exercise.csv',    content: rowsToCSVForPowerBi(dimExercise, dimExerciseHeaders) },
     { name: 'dim_athlete.csv',     content: rowsToCSVForPowerBi(dimAthletes, dimAthleteHeaders) },
     { name: 'export_meta.json',    content: JSON.stringify(meta, null, 2) },
@@ -685,6 +808,8 @@ export const buildPowerBiFiles = async (
     activityCount: activityRows.length,
     athleteCount: dimAthletes.length,
     sessionCount: sessionRows.length,
+    wellnessCount: wellnessRows.length,
+    footballLoadCount: footballLoadRows.length,
   };
 };
 
@@ -721,5 +846,8 @@ export const downloadPowerBiZip = async (
     gymSetCount: result.gymSetCount,
     activityCount: result.activityCount,
     athleteCount: result.athleteCount,
+    sessionCount: result.sessionCount,
+    wellnessCount: result.wellnessCount,
+    footballLoadCount: result.footballLoadCount,
   };
 };

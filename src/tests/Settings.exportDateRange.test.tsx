@@ -25,6 +25,19 @@ jest.mock('@/services/backupService', () => ({
   downloadBackupJson: jest.fn(),
 }));
 
+jest.mock('@/services/powerBiExportService', () => ({
+  downloadPowerBiZip: jest.fn(),
+  buildPowerBiFiles: jest.fn(),
+}));
+
+jest.mock('@/services/teamService', () => ({
+  getCoachTeams: jest.fn(async () => []),
+}));
+
+jest.mock('@/services/coachService', () => ({
+  getAllAthletes: jest.fn(async () => []),
+}));
+
 jest.mock('@/services/firebase/auth', () => ({
   updateUserRole: jest.fn(),
 }));

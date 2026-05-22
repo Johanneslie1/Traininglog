@@ -1,9 +1,10 @@
 ﻿import React, { useState, useEffect, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store/store';
-import { getExportPreview, ExportPreview, downloadWellnessCSV } from '@/services/exportService';
+import { getExportPreview, ExportPreview } from '@/services/exportService';
 import { downloadPowerBiZip, buildPowerBiFiles } from '@/services/powerBiExportService';
 import { getAllAthletes } from '@/services/coachService';
+import { getCoachTeams, type Team } from '@/services/teamService';
 import { useIsCoach } from '@/hooks/useUserRole';
 import type { PowerBiExportScope } from '@/types/powerBiExport';
 import { exportFullBackup, downloadBackupJson } from '@/services/backupService';
@@ -84,7 +85,6 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
   const { user } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
   const [isExportingJson, setIsExportingJson] = useState(false);
-  const [isExportingWellness, setIsExportingWellness] = useState(false);
   const [isUpdatingRole, setIsUpdatingRole] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange>({
     startDate: null,
@@ -95,6 +95,9 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [exportScope, setExportScope] = useState<PowerBiExportScope>('self');
   const [selectedAthleteId, setSelectedAthleteId] = useState('');
+  const [selectedAthleteIds, setSelectedAthleteIds] = useState<string[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [selectedTeamId, setSelectedTeamId] = useState('');
   const [athletes, setAthletes] = useState<{ id: string; name: string }[]>([]);
   const [isLoadingAthletes, setIsLoadingAthletes] = useState(false);
   const [isPowerBiExporting, setIsPowerBiExporting] = useState(false);
@@ -162,12 +165,34 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
     return `${year}-${month}-${day}`;
   };
 
-  // Load athletes for the athlete-scope dropdown (coaches only)
+  const dateToExportKey = (date: Date | null): string | undefined => {
+    if (!date) return undefined;
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  };
+
+  const buildUnifiedExportOptions = () => ({
+    scope: exportScope,
+    targetAthleteId: exportScope === 'athlete' ? selectedAthleteId : undefined,
+    targetAthleteIds: exportScope === 'athletes' ? selectedAthleteIds : undefined,
+    targetTeamId: exportScope === 'team' ? selectedTeamId : undefined,
+    fromDate: dateToExportKey(dateRange.startDate),
+    toDate: dateToExportKey(dateRange.endDate),
+  });
+
+  const toggleSelectedAthlete = (athleteId: string) => {
+    setSelectedAthleteIds((current) =>
+      current.includes(athleteId)
+        ? current.filter((id) => id !== athleteId)
+        : [...current, athleteId]
+    );
+  };
+
+  // Load teams and athletes for coach export scopes.
   useEffect(() => {
-    if (!isCoach || exportScope !== 'athlete') return;
+    if (!isCoach || !['athlete', 'athletes', 'team', 'allCoachAthletes'].includes(exportScope)) return;
     setIsLoadingAthletes(true);
-    getAllAthletes()
-      .then((data) => {
+    Promise.all([getAllAthletes(), getCoachTeams()])
+      .then(([data, coachTeams]) => {
         const mapped = data.map((a) => ({
           id: a.id,
           name:
@@ -177,10 +202,17 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
         if (mapped.length > 0 && !selectedAthleteId) {
           setSelectedAthleteId(mapped[0].id);
         }
+        if (mapped.length > 0 && selectedAthleteIds.length === 0) {
+          setSelectedAthleteIds([mapped[0].id]);
+        }
+        setTeams(coachTeams);
+        if (coachTeams.length > 0 && !selectedTeamId) {
+          setSelectedTeamId(coachTeams[0].id);
+        }
       })
       .catch((err) => {
-        console.error('Failed to load athletes:', err);
-        toast.error('Could not load athlete list');
+        console.error('Failed to load export options:', err);
+        toast.error('Could not load export options');
       })
       .finally(() => setIsLoadingAthletes(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -195,19 +227,18 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
       toast.error('Please select an athlete to export.');
       return;
     }
+    if (exportScope === 'athletes' && selectedAthleteIds.length === 0) {
+      toast.error('Please select at least one athlete to export.');
+      return;
+    }
+    if (exportScope === 'team' && !selectedTeamId) {
+      toast.error('Please select a team to export.');
+      return;
+    }
     setIsPowerBiExporting(true);
     try {
-      const d = dateRange.startDate;
-      const fromDate = d
-        ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-        : undefined;
-
       const result = await downloadPowerBiZip(
-        {
-          scope: exportScope,
-          targetAthleteId: exportScope === 'athlete' ? selectedAthleteId : undefined,
-          fromDate,
-        },
+        buildUnifiedExportOptions(),
         {
           id: user.id,
           firstName: user.firstName || '',
@@ -216,7 +247,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
         }
       );
       toast.success(
-        `Export ready! ${result.gymSetCount} gym sets · ${result.activityCount} activity rows · ${result.athleteCount} athlete(s)`
+        `Export ready! ${result.athleteCount} athlete(s) · ${result.sessionCount} sessions · ${result.gymSetCount + result.activityCount} set/activity rows · ${result.wellnessCount} wellness rows · ${result.footballLoadCount} football load rows`
       );
     } catch (error) {
       console.error('Power BI export failed:', error);
@@ -250,19 +281,22 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
       toast('Enter your Azure Application (client) ID to continue.', { icon: 'ðŸ”‘' });
       return;
     }
+    if (exportScope === 'athlete' && !selectedAthleteId) {
+      toast.error('Please select an athlete to upload.');
+      return;
+    }
+    if (exportScope === 'athletes' && selectedAthleteIds.length === 0) {
+      toast.error('Please select at least one athlete to upload.');
+      return;
+    }
+    if (exportScope === 'team' && !selectedTeamId) {
+      toast.error('Please select a team to upload.');
+      return;
+    }
     setIsUploadingToOneDrive(true);
     try {
-      const d = dateRange.startDate;
-      const fromDate = d
-        ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-        : undefined;
-
       const { files, gymSetCount, activityCount, sessionCount } = await buildPowerBiFiles(
-        {
-          scope: exportScope,
-          targetAthleteId: exportScope === 'athlete' ? selectedAthleteId : undefined,
-          fromDate,
-        },
+        buildUnifiedExportOptions(),
         {
           id: user.id,
           firstName: user.firstName || '',
@@ -282,31 +316,6 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
       toast.error(`OneDrive upload failed: ${msg}`);
     } finally {
       setIsUploadingToOneDrive(false);
-      }
-    };
-
-    const handleExportWellness = async () => {
-      if (!user?.id) {
-        toast.error('Please log in to export your data.');
-        return;
-      }
-      setIsExportingWellness(true);
-      try {
-        const count = await downloadWellnessCSV(
-          user.id,
-          dateRange.startDate ?? undefined,
-          dateRange.endDate ?? undefined
-        );
-        if (count === 0) {
-          toast('No wellness data found for the selected range.');
-        } else {
-          toast.success(`Exported ${count} wellness entries to CSV.`);
-        }
-      } catch (error) {
-        console.error('Wellness export failed:', error);
-        toast.error('Wellness export failed.');
-      } finally {
-        setIsExportingWellness(false);
       }
     };
 
@@ -515,9 +524,11 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                     <label className="text-sm text-text-secondary">Export scope</label>
                     <div className="flex flex-wrap gap-2">
                       {([
-                        { key: 'self' as PowerBiExportScope, label: 'My data only' },
-                        { key: 'athlete' as PowerBiExportScope, label: 'Specific athlete' },
-                        { key: 'team' as PowerBiExportScope, label: 'Full team' },
+                        { key: 'self' as PowerBiExportScope, label: 'My own data' },
+                        { key: 'athlete' as PowerBiExportScope, label: 'One athlete' },
+                        { key: 'athletes' as PowerBiExportScope, label: 'Selected athletes' },
+                        { key: 'team' as PowerBiExportScope, label: 'One team' },
+                        { key: 'allCoachAthletes' as PowerBiExportScope, label: 'All athletes I coach' },
                       ] as const).map(({ key, label }) => (
                         <button
                           key={key}
@@ -552,6 +563,72 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                         {athletes.map((a) => (
                           <option key={a.id} value={a.id}>
                             {a.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                )}
+
+                {isCoach && exportScope === 'athletes' && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm text-text-secondary">Select athletes</label>
+                      <div className="flex gap-3 text-xs">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedAthleteIds(athletes.map((athlete) => athlete.id))}
+                          className="text-accent-primary hover:text-accent-hover"
+                        >
+                          Select all
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedAthleteIds([])}
+                          className="text-text-tertiary hover:text-text-primary"
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    </div>
+                    {isLoadingAthletes ? (
+                      <p className="text-sm text-text-secondary">Loading athletes...</p>
+                    ) : athletes.length === 0 ? (
+                      <p className="text-sm text-text-secondary">No athletes found. Make sure athletes have joined your team.</p>
+                    ) : (
+                      <div className="max-h-48 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-2 pr-1">
+                        {athletes.map((athlete) => (
+                          <label key={athlete.id} className="flex items-center gap-2 text-sm text-text-secondary bg-bg-tertiary border border-border rounded-lg px-3 py-2">
+                            <input
+                              type="checkbox"
+                              checked={selectedAthleteIds.includes(athlete.id)}
+                              onChange={() => toggleSelectedAthlete(athlete.id)}
+                              className="rounded border-border bg-bg-tertiary text-accent-primary focus:ring-accent-primary"
+                            />
+                            <span>{athlete.name}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {isCoach && exportScope === 'team' && (
+                  <div>
+                    <label className="block text-sm text-text-secondary mb-1">Select team</label>
+                    {isLoadingAthletes ? (
+                      <p className="text-sm text-text-secondary">Loading teams...</p>
+                    ) : teams.length === 0 ? (
+                      <p className="text-sm text-text-secondary">No teams found. Create a team before exporting by team.</p>
+                    ) : (
+                      <select
+                        value={selectedTeamId}
+                        onChange={(e) => setSelectedTeamId(e.target.value)}
+                        className="w-full bg-bg-tertiary text-text-primary px-3 py-2 rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-accent-primary"
+                      >
+                        {teams.map((team) => (
+                          <option key={team.id} value={team.id}>
+                            {team.name}
                           </option>
                         ))}
                       </select>
@@ -637,7 +714,9 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                   disabled={
                     isPowerBiExporting ||
                     !user?.id ||
-                    (exportScope === 'athlete' && !selectedAthleteId)
+                    (exportScope === 'athlete' && !selectedAthleteId) ||
+                    (exportScope === 'athletes' && selectedAthleteIds.length === 0) ||
+                    (exportScope === 'team' && !selectedTeamId)
                   }
                   className="w-full bg-accent-primary text-white py-3 px-4 rounded-md hover:bg-accent-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
                 >
@@ -645,10 +724,10 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                     ? 'Exportingâ€¦'
                     : !user?.id
                       ? 'Login Required'
-                      : 'Export for Power BI (Recommended)'}
+                      : 'Export Data'}
                 </button>
                 <p className="text-sm text-text-secondary">
-                  Downloads a ZIP with fact_gym_sets.csv, fact_activity.csv, <strong>fact_sessions.csv</strong>, fact_wellness.csv, dim_exercise.csv, dim_athlete.csv and export_meta.json, ready for Power BI modeling.
+                  Downloads a ZIP with fact_gym_sets.csv, fact_activity.csv, <strong>fact_sessions.csv</strong>, fact_wellness.csv, fact_football_load.csv, dim_exercise.csv, dim_athlete.csv and export_meta.json, ready for Power BI modeling.
                 </p>
 
                 {/* OneDrive Upload */}
@@ -717,7 +796,9 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                     disabled={
                       isUploadingToOneDrive ||
                       !user?.id ||
-                      (exportScope === 'athlete' && !selectedAthleteId)
+                      (exportScope === 'athlete' && !selectedAthleteId) ||
+                      (exportScope === 'athletes' && selectedAthleteIds.length === 0) ||
+                      (exportScope === 'team' && !selectedTeamId)
                     }
                     className="w-full bg-blue-700 text-white py-3 px-4 rounded-md hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
                   >
@@ -726,23 +807,6 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                       : !user?.id
                         ? 'Login Required'
                         : 'Upload to OneDrive (Power BI Auto-Refresh)'}
-                  </button>
-                </div>
-
-                {/* JSON Backup Export */}
-                <div className="pt-4 border-t border-border space-y-3">
-                  <div>
-                    <h4 className="text-sm font-medium text-text-primary mb-1">Wellness Log (CSV)</h4>
-                    <p className="text-xs text-text-secondary">
-                      Export your daily wellness check-ins (sleep quality, fatigue, muscle soreness, stress, mood) as a CSV for the selected date range.
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleExportWellness}
-                    disabled={isExportingWellness || !user?.id}
-                    className="w-full bg-emerald-600 text-white py-3 px-4 rounded-md hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {isExportingWellness ? 'Exportingâ€¦' : !user?.id ? 'Login Required' : 'Export Wellness (CSV)'}
                   </button>
                 </div>
 

@@ -7,15 +7,21 @@
 // Export scope
 // ---------------------------------------------------------------------------
 
-export type PowerBiExportScope = 'self' | 'athlete' | 'team';
+export type PowerBiExportScope = 'self' | 'athlete' | 'athletes' | 'team' | 'allCoachAthletes';
 
 export interface PowerBiExportOptions {
   /** Which dataset to export */
   scope: PowerBiExportScope;
   /** athleteId to export when scope === 'athlete' */
   targetAthleteId?: string;
+  /** athleteIds to export when scope === 'athletes' */
+  targetAthleteIds?: string[];
+  /** teamId to export when scope === 'team' */
+  targetTeamId?: string;
   /** Only include rows where logged_date >= fromDate (ISO YYYY-MM-DD) */
   fromDate?: string;
+  /** Only include rows where logged_date <= toDate (ISO YYYY-MM-DD) */
+  toDate?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -148,13 +154,28 @@ export interface FactSessionRow {
 
 export interface FactWellnessRow {
   athlete_id: string;
+  athlete_name: string;
   logged_date: string;      // YYYY-MM-DD
   sleep_quality: number | '';
   fatigue: number | '';
   muscle_soreness: number | '';
   stress: number | '';
   mood: number | '';
+  readiness: number | '';
   notes: string;
+}
+
+// ---------------------------------------------------------------------------
+// fact_football_load.csv
+// ---------------------------------------------------------------------------
+
+export interface FactFootballLoadRow {
+  athlete_id: string;
+  athlete_name: string;
+  logged_date: string;      // YYYY-MM-DD
+  rpe: number | '';
+  duration_min: number | '';
+  session_load: number | '';
 }
 
 // ---------------------------------------------------------------------------
@@ -166,6 +187,7 @@ export interface ExportMeta {
   exported_by: string;        // userId of the exporting user
   scope: PowerBiExportScope;
   from_date: string | null;   // YYYY-MM-DD or null
+  to_date: string | null;     // YYYY-MM-DD or null
   athlete_count: number;
   row_count: number;          // total rows across all fact files
 }
