@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { getWellnessByDate, saveWellnessLog } from '@/services/wellnessService';
@@ -24,6 +24,12 @@ function addDays(date: Date, days: number): Date {
   const d = new Date(date);
   d.setDate(d.getDate() + days);
   return d;
+}
+
+function dateKeyToLocalDate(dateKey: string): Date | null {
+  const [year, month, day] = dateKey.split('-').map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day, 0, 0, 0, 0);
 }
 
 const SCORE_OPTIONS = Array.from({ length: 10 }, (_, i) => i + 1);
@@ -275,6 +281,7 @@ const WellnessSlider: React.FC<WellnessSliderProps> = ({
 
 const WellnessPage: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
+  const dateInputRef = useRef<HTMLInputElement>(null);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -284,8 +291,10 @@ const WellnessPage: React.FC = () => {
   const [notes, setNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [entryExists, setEntryExists] = useState(false);
 
   const dateKey = toDateKey(selectedDate);
+  const todayKey = toDateKey(today);
 
   const loadEntry = useCallback(async () => {
     if (!user?.id) return;
@@ -293,6 +302,7 @@ const WellnessPage: React.FC = () => {
     try {
       const entry = await getWellnessByDate(user.id, dateKey);
       if (entry) {
+        setEntryExists(true);
         setScores({
           sleepQuality: entry.sleepQuality,
           fatigue: entry.fatigue,
@@ -303,6 +313,7 @@ const WellnessPage: React.FC = () => {
         });
         setNotes(entry.notes ?? '');
       } else {
+        setEntryExists(false);
         setScores({});
         setNotes('');
       }
@@ -331,6 +342,24 @@ const WellnessPage: React.FC = () => {
     }));
   };
 
+  const handleDateInputChange = (value: string) => {
+    const nextDate = dateKeyToLocalDate(value);
+    if (!nextDate) return;
+    setSelectedDate(nextDate);
+  };
+
+  const openDatePicker = () => {
+    const input = dateInputRef.current;
+    if (!input) return;
+
+    if (typeof input.showPicker === 'function') {
+      input.showPicker();
+      return;
+    }
+
+    input.click();
+  };
+
   const hasAnyScore = Object.values(scores).some((v) => v !== undefined);
 
   const handleSave = async () => {
@@ -338,6 +367,7 @@ const WellnessPage: React.FC = () => {
     setIsSaving(true);
     try {
       await saveWellnessLog(dateKey, scores, notes.trim() || undefined);
+      setEntryExists(true);
       toast.success('Wellness logged');
     } catch (err) {
       console.error('Failed to save wellness:', err);
@@ -347,39 +377,70 @@ const WellnessPage: React.FC = () => {
     }
   };
 
-  const isToday = toDateKey(selectedDate) === toDateKey(today);
-  const isFuture = selectedDate > today;
+  const isToday = dateKey === todayKey;
+  const isFuture = dateKey > todayKey;
 
   return (
     <div className="min-h-screen bg-bg-primary text-text-primary pb-24">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-bg-secondary border-b border-border">
-        <div className="max-w-xl mx-auto px-4 py-3 flex items-center justify-between">
-          <button
-            onClick={() => setSelectedDate((d) => addDays(d, -1))}
-            className="p-2 rounded-lg hover:bg-bg-tertiary transition-colors text-text-secondary hover:text-text-primary"
-            aria-label="Previous day"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
+        <div className="max-w-xl mx-auto px-4 py-4">
+          <div className="rounded-3xl border border-border bg-bg-tertiary/80 p-3 shadow-[0_18px_45px_rgba(0,0,0,0.18)]">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setSelectedDate((d) => addDays(d, -1))}
+                className="h-12 w-12 shrink-0 rounded-2xl border border-border bg-bg-secondary text-text-primary hover:border-accent-primary hover:text-accent-primary transition-colors flex items-center justify-center"
+                aria-label="Previous day"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
 
-          <div className="text-center">
-            <h1 className="text-base font-semibold text-text-primary">Wellness Check-in</h1>
-            <p className="text-sm text-text-secondary">{formatDisplayDate(selectedDate)}</p>
+              <div className="min-w-0 flex-1 text-center">
+                <p className="text-[11px] uppercase tracking-[0.2em] text-text-tertiary">Wellness Check-in</p>
+                <h1 className="mt-1 text-lg font-semibold text-text-primary leading-tight">
+                  {formatDisplayDate(selectedDate)}
+                </h1>
+                <p className="text-[11px] text-text-tertiary mt-1">
+                  {isLoading ? 'Loading entry...' : entryExists ? 'Editing saved entry' : 'No entry saved yet'}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSelectedDate((d) => addDays(d, 1))}
+                disabled={dateKey >= todayKey}
+                className="h-12 w-12 shrink-0 rounded-2xl border border-border bg-bg-secondary text-text-primary hover:border-accent-primary hover:text-accent-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center"
+                aria-label="Next day"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={openDatePicker}
+              className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-bg-secondary px-4 py-2.5 text-sm font-medium text-text-primary hover:border-accent-primary hover:text-accent-primary transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3M5 11h14M5 5h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z" />
+              </svg>
+              Open calendar
+            </button>
+            <input
+              ref={dateInputRef}
+              type="date"
+              value={dateKey}
+              max={todayKey}
+              onChange={(event) => handleDateInputChange(event.target.value)}
+              className="sr-only"
+              tabIndex={-1}
+            />
           </div>
-
-          <button
-            onClick={() => setSelectedDate((d) => addDays(d, 1))}
-            disabled={isToday}
-            className="p-2 rounded-lg hover:bg-bg-tertiary transition-colors text-text-secondary hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed"
-            aria-label="Next day"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
         </div>
 
         {!isToday && (
@@ -437,7 +498,7 @@ const WellnessPage: React.FC = () => {
               disabled={isSaving || !hasAnyScore}
               className="w-full bg-accent-primary text-white py-3 rounded-xl font-medium text-sm transition-colors hover:bg-accent-primary/90 disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {isSaving ? 'Saving…' : 'Save Wellness Log'}
+              {isSaving ? 'Saving…' : entryExists ? 'Update Wellness Log' : 'Save Wellness Log'}
             </button>
 
             {!hasAnyScore && (

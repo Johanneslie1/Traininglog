@@ -943,7 +943,7 @@ export const downloadWellnessCSV = async (
     : '1970-01-01';
   const end = endDate
     ? `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`
-    : new Date().toISOString().slice(0, 10);
+    : toLocalDateString(new Date());
 
   const logs = await getWellnessByDateRange(userId, start, end);
 

@@ -3,7 +3,7 @@ import {
   query,
   where,
   getDocs,
-  addDoc,
+  setDoc,
   updateDoc,
   serverTimestamp,
   doc,
@@ -12,6 +12,7 @@ import {
 import { getAuth } from 'firebase/auth';
 import { db } from '@/services/firebase/config';
 import { WellnessLog, WellnessMetricKey } from '@/types/wellness';
+import { toLocalDateString } from '@/utils/dateUtils';
 
 const WELLNESS_KEYS: WellnessMetricKey[] = [
   'sleepQuality',
@@ -38,7 +39,7 @@ function getDateEpochDay(dateKey: string): number {
 }
 
 function assertNotFutureDate(date: string): void {
-  const todayKey = new Date().toISOString().slice(0, 10);
+  const todayKey = toLocalDateString(new Date());
   if (date > todayKey) {
     throw new Error('Cannot log wellness for a future date');
   }
@@ -77,7 +78,8 @@ export async function getWellnessByDate(
  * Save (upsert) a wellness log for a specific date.
  * Only the provided metrics are written — undefined values are omitted, which
  * allows partial saves without overwriting previously stored fields when using
- * updateDoc.  For a brand-new document (addDoc) all keys are persisted.
+ * updateDoc. For a brand-new document, the local date key is used as the doc id
+ * to prevent duplicate entries for the same day.
  */
 export async function saveWellnessLog(
   date: string,
@@ -107,7 +109,7 @@ export async function saveWellnessLog(
   });
 
   if (snap.empty) {
-    await addDoc(ref, { ...basePayload, timestamp: serverTimestamp() });
+    await setDoc(doc(ref, date), { ...basePayload, timestamp: serverTimestamp() });
   } else {
     const existingDoc = snap.docs[0];
     const updatePayload: Record<string, any> = {
