@@ -3,33 +3,12 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { getWellnessByDate, saveWellnessLog } from '@/services/wellnessService';
 import { WELLNESS_METRICS, WellnessMetricKey } from '@/types/wellness';
-import { toLocalDateString } from '@/utils/dateUtils';
+import { addDays, dateKeyToLocalDate, formatDisplayDate, toLocalDateString } from '@/utils/dateUtils';
 import toast from 'react-hot-toast';
 
 /** Returns a YYYY-MM-DD string for any Date in local timezone. */
 function toDateKey(date: Date): string {
   return toLocalDateString(date);
-}
-
-function formatDisplayDate(date: Date): string {
-  return date.toLocaleDateString(undefined, {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-}
-
-function addDays(date: Date, days: number): Date {
-  const d = new Date(date);
-  d.setDate(d.getDate() + days);
-  return d;
-}
-
-function dateKeyToLocalDate(dateKey: string): Date | null {
-  const [year, month, day] = dateKey.split('-').map(Number);
-  if (!year || !month || !day) return null;
-  return new Date(year, month - 1, day, 0, 0, 0, 0);
 }
 
 const SCORE_OPTIONS = Array.from({ length: 10 }, (_, i) => i + 1);

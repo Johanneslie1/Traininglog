@@ -12,7 +12,7 @@ import {
 import { getAuth } from 'firebase/auth';
 import { db } from '@/services/firebase/config';
 import { WellnessLog, WellnessMetricKey } from '@/types/wellness';
-import { toLocalDateString } from '@/utils/dateUtils';
+import { getDateEpochDay, toLocalDateString } from '@/utils/dateUtils';
 
 const WELLNESS_KEYS: WellnessMetricKey[] = [
   'sleepQuality',
@@ -22,21 +22,6 @@ const WELLNESS_KEYS: WellnessMetricKey[] = [
   'mood',
   'readiness',
 ];
-
-const MS_PER_DAY = 86400000;
-
-function getDateEpochDay(dateKey: string): number {
-  const [yearStr, monthStr, dayStr] = dateKey.split('-');
-  const year = Number(yearStr);
-  const month = Number(monthStr);
-  const day = Number(dayStr);
-
-  if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) {
-    throw new Error('Invalid wellness date format. Expected YYYY-MM-DD');
-  }
-
-  return Math.floor(Date.UTC(year, month - 1, day) / MS_PER_DAY);
-}
 
 function assertNotFutureDate(date: string): void {
   const todayKey = toLocalDateString(new Date());
@@ -89,7 +74,7 @@ export async function saveWellnessLog(
   assertNotFutureDate(date);
   const userId = ensureAuth();
   const ref = collection(db, 'users', userId, 'wellnessLogs');
-  const dateEpochDay = getDateEpochDay(date);
+  const dateEpochDay = getDateEpochDay(date, 'wellness date');
 
   // Check for an existing entry for this date
   const q = query(ref, where('date', '==', date));

@@ -96,6 +96,19 @@ const SideMenu: React.FC<SideMenuProps> = ({
               </svg>
               Wellness
             </button>
+            <button
+              onClick={() => {
+                onClose();
+                navigate('/srpe');
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3 text-text-primary hover:bg-bg-tertiary rounded-lg transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2l2.5 5.5L20 10l-5.5 2.5L12 18l-2.5-5.5L4 10l5.5-2.5L12 2z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 21h14" />
+              </svg>
+              sRPE / Football Load
+            </button>
           </div>
 
           {/* Athlete Section - Only show for athletes */}

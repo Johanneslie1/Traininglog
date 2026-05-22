@@ -22,6 +22,42 @@ export function toLocalDateString(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
+export function addDays(date: Date, days: number): Date {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+export function dateKeyToLocalDate(dateKey: string): Date | null {
+  const [year, month, day] = dateKey.split('-').map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day, 0, 0, 0, 0);
+}
+
+export function formatDisplayDate(date: Date): string {
+  return date.toLocaleDateString(undefined, {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+
+const MS_PER_DAY = 86400000;
+
+export function getDateEpochDay(dateKey: string, label = 'date'): number {
+  const [yearStr, monthStr, dayStr] = dateKey.split('-');
+  const year = Number(yearStr);
+  const month = Number(monthStr);
+  const day = Number(dayStr);
+
+  if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) {
+    throw new Error(`Invalid ${label} format. Expected YYYY-MM-DD`);
+  }
+
+  return Math.floor(Date.UTC(year, month - 1, day) / MS_PER_DAY);
+}
+
 /**
  * Returns a local ISO-like timestamp string: YYYY-MM-DDTHH:mm:ss (no Z suffix).
  * Preserves the local date so the day is never shifted by timezone offset.
