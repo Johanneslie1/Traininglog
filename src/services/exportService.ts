@@ -8,6 +8,7 @@ import { buildSupersetLabels, SupersetLabelMetadata } from '@/utils/supersetUtil
 import { normalizeDistanceMeters, normalizeDurationSeconds } from '@/utils/activityFieldContract';
 import { toLocalDateString, toLocalTimestamp } from '@/utils/dateUtils';
 import { normalizeSessionType } from '@/types/sessionType';
+import type { WellnessLog } from '@/types/wellness';
 
 export interface ExportOptions {
   includeSessions?: boolean;
@@ -927,6 +928,71 @@ export const WELLNESS_CSV_HEADERS = [
   'notes',
 ] as const;
 
+export const COACH_WELLNESS_CSV_HEADERS = [
+  'athleteId',
+  'athleteName',
+  'loggedDate',
+  'sleepQuality',
+  'fatigue',
+  'muscleSoreness',
+  'stress',
+  'mood',
+  'readiness',
+  'notes',
+] as const;
+
+export interface WellnessExportIdentity {
+  athleteId: string;
+  athleteName?: string;
+}
+
+export interface WellnessExportRow {
+  athleteId: string;
+  athleteName?: string;
+  loggedDate: string;
+  sleepQuality: number | '';
+  fatigue: number | '';
+  muscleSoreness: number | '';
+  stress: number | '';
+  mood: number | '';
+  readiness: number | '';
+  notes: string;
+}
+
+export const buildWellnessExportRows = (
+  logs: WellnessLog[],
+  identity: WellnessExportIdentity
+): WellnessExportRow[] =>
+  [...logs]
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .map((log) => removeUndefinedFields({
+      athleteId: identity.athleteId,
+      athleteName: identity.athleteName,
+      loggedDate: log.date,
+      sleepQuality: log.sleepQuality ?? '',
+      fatigue: log.fatigue ?? '',
+      muscleSoreness: log.muscleSoreness ?? '',
+      stress: log.stress ?? '',
+      mood: log.mood ?? '',
+      readiness: log.readiness ?? '',
+      notes: log.notes ?? '',
+    }));
+
+export const getWellnessExportRows = async (
+  identity: WellnessExportIdentity,
+  startDate: string,
+  endDate: string
+): Promise<WellnessExportRow[]> => {
+  const { getWellnessByDateRange } = await import('@/services/wellnessService');
+  const logs = await getWellnessByDateRange(identity.athleteId, startDate, endDate);
+  return buildWellnessExportRows(logs, identity);
+};
+
+export const dateToWellnessExportKey = (date?: Date): string =>
+  date
+    ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+    : '';
+
 /**
  * Download wellness logs as a CSV file for a given date range.
  * Imports are deferred to avoid circular dependencies with wellnessService.
@@ -936,33 +1002,12 @@ export const downloadWellnessCSV = async (
   startDate?: Date,
   endDate?: Date
 ): Promise<number> => {
-  const { getWellnessByDateRange } = await import('@/services/wellnessService');
+  const start = dateToWellnessExportKey(startDate) || '1970-01-01';
+  const end = dateToWellnessExportKey(endDate) || toLocalDateString(new Date());
+  const rows = await getWellnessExportRows({ athleteId: userId }, start, end);
 
-  const start = startDate
-    ? `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`
-    : '1970-01-01';
-  const end = endDate
-    ? `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`
-    : toLocalDateString(new Date());
-
-  const logs = await getWellnessByDateRange(userId, start, end);
-
-  if (logs.length === 0) return 0;
-
-  const rows = logs
-    .sort((a, b) => a.date.localeCompare(b.date))
-    .map((l) => ({
-      athleteId: userId,
-      loggedDate: l.date,
-      sleepQuality: l.sleepQuality ?? '',
-      fatigue: l.fatigue ?? '',
-      muscleSoreness: l.muscleSoreness ?? '',
-      stress: l.stress ?? '',
-      mood: l.mood ?? '',
-      readiness: l.readiness ?? '',
-      notes: l.notes ?? '',
-    }));
+  if (rows.length === 0) return 0;
 
   downloadCSV(rows, [...WELLNESS_CSV_HEADERS], 'wellness_logs.csv');
-  return logs.length;
+  return rows.length;
 };
