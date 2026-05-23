@@ -28,7 +28,7 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
         fixed ${positionStyles[position]} z-50
         w-14 h-14 md:w-16 md:h-16
         bg-accent-primary hover:bg-accent-secondary
-        text-white
+        text-text-inverse
         rounded-full
         shadow-2xl shadow-accent-primary/50
         hover:shadow-glow-lg

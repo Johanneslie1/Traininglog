@@ -213,22 +213,24 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
     : null;
 
   // Check if exercise has prescription from program
-  const hasPrescription = prescription && instructionMode === 'structured';
+  const effectivePrescription = prescription || exercise.prescription;
+  const effectiveInstructionMode = instructionMode || exercise.instructionMode;
+  const hasPrescription = effectivePrescription && effectiveInstructionMode === 'structured';
 
   const prescriptionTargetSets = useMemo(() => {
-    if (!hasPrescription || !prescription) {
+    if (!hasPrescription || !effectivePrescription) {
       return [] as ExerciseSet[];
     }
 
     try {
       return prescriptionToSets(
-        prescription,
+        effectivePrescription,
         normalizeActivityType(exercise.activityType)
       );
     } catch {
       return [] as ExerciseSet[];
     }
-  }, [hasPrescription, prescription, exercise.activityType]);
+  }, [hasPrescription, effectivePrescription, exercise.activityType]);
 
   useEffect(() => {
     if (prescriptionAssistant || exercise.prescriptionAssistant) {
@@ -934,8 +936,8 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
             <div id="universal-prescription-guide-section">
               <PrescriptionGuideCard
                 activityType={normalizeActivityType(exercise.activityType)}
-                prescription={prescription}
-                instructionMode={instructionMode}
+                prescription={effectivePrescription}
+                instructionMode={effectiveInstructionMode}
                 instructionsText={instructionsText}
                 isEditing={isEditing}
                 followPrescription={followPrescription}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { useCollection } from '@/hooks/useCollection';
 import { db } from '@/services/firebase/config';
@@ -16,6 +16,23 @@ interface FilterState {
   category: string[];
   type: 'all' | 'default' | 'custom';
 }
+
+const formatRecentLogDate = (timestamp: unknown): string => {
+  if (!timestamp) {
+    return '';
+  }
+
+  const maybeTimestamp = timestamp as { toDate?: () => Date; seconds?: number };
+  const date = typeof maybeTimestamp.toDate === 'function'
+    ? maybeTimestamp.toDate()
+    : timestamp instanceof Date
+      ? timestamp
+      : typeof maybeTimestamp.seconds === 'number'
+        ? new Date(maybeTimestamp.seconds * 1000)
+        : new Date(timestamp as string | number);
+
+  return Number.isNaN(date.getTime()) ? '' : format(date, 'MMM d');
+};
 
 const ExerciseOverview: React.FC = () => {
   const { user } = useAuth();
@@ -40,28 +57,32 @@ const ExerciseOverview: React.FC = () => {
   }, [searchParams]);
 
   // Fetch exercises
-  const queryConstraints: QueryConstraint[] = [];
+  const exercisesQuery = useMemo(() => {
+    const queryConstraints: QueryConstraint[] = [];
 
-  if (filters.type === 'custom' && user) {
-    queryConstraints.push(where('userId', '==', user.id));
-  } else if (filters.type === 'default') {
-    queryConstraints.push(where('userId', '==', null));
-  }
-  queryConstraints.push(orderBy('name'));
+    if (filters.type === 'custom' && user?.id) {
+      queryConstraints.push(where('userId', '==', user.id));
+    } else if (filters.type === 'default') {
+      queryConstraints.push(where('userId', '==', null));
+    }
+    queryConstraints.push(orderBy('name'));
 
-  const exercisesQuery = query(
-    collection(db, 'exercises'),
-    ...queryConstraints
-  );
+    return query(
+      collection(db, 'exercises'),
+      ...queryConstraints
+    );
+  }, [filters.type, user?.id]);
 
   const { documents: exercises, loading, error } = useCollection<Exercise>(exercisesQuery);
 
   // Fetch recent exercise history for quick-add panel
-  const recentLogsQuery = query(
-    collection(db, 'users', user?.id ?? '__none__', 'exercises'),
-    orderBy('timestamp', 'desc'),
-    limit(8)
-  );
+  const recentLogsQuery = useMemo(() => (
+    query(
+      collection(db, 'users', user?.id ?? '__none__', 'exercises'),
+      orderBy('timestamp', 'desc'),
+      limit(8)
+    )
+  ), [user?.id]);
   const { documents: recentLogs } = useCollection<ExerciseLog>(recentLogsQuery);
 
   // Filter exercises based on search and category
@@ -150,9 +171,7 @@ const ExerciseOverview: React.FC = () => {
                 const summary = setCount > 0
                   ? (firstSet?.weight ? `${setCount} × ${String(firstSet.reps ?? '')} @ ${String(firstSet.weight)}kg` : `${setCount} set${setCount !== 1 ? 's' : ''}`)
                   : 'No sets logged';
-                const dateStr = log.timestamp
-                  ? format(new Date(log.timestamp), 'MMM d')
-                  : '';
+                const dateStr = formatRecentLogDate(log.timestamp);
                 return (
                   <div
                     key={log.id}

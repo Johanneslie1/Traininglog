@@ -106,7 +106,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
       const hasActivityFields = firstSet.duration || firstSet.distance || firstSet.calories ||
         firstSet.averageHeartRate || firstSet.holdTime || firstSet.pace;
 
-      if (!hasResistanceFields && hasActivityFields) {
+      if ((!hasResistanceFields || !exercise.activityType) && hasActivityFields) {
         return true;
       }
     }
@@ -183,12 +183,14 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
 
     if (isNonResistance) {
       const metricsRegionId = `exercise-metrics-${exercise.id || exercise.exerciseName.replace(/\s+/g, '-').toLowerCase()}`;
+      const typeInfo = getActivityTypeInfo(exercise.activityType || ActivityType.OTHER);
+      const activityLabel = exercise.activityType ? `${typeInfo.label} Activity` : 'Unknown Activity';
 
       return (
         <div className="text-sm text-text-secondary">
           <div className="flex flex-wrap items-center gap-2 mb-2">
-            <span className={`px-2 py-1 ${getActivityTypeInfo(exercise.activityType).color} ${getActivityTypeInfo(exercise.activityType).textColor} text-xs rounded-full`}>
-              {getActivityTypeInfo(exercise.activityType).icon} {getActivityTypeInfo(exercise.activityType).label}
+            <span className={`px-2 py-1 ${typeInfo.color} ${typeInfo.textColor} text-xs rounded-full`}>
+              {typeInfo.icon} {activityLabel}
             </span>
             <span className="text-xs text-text-tertiary">
               {exercise.sets?.length || 0} set{(exercise.sets?.length || 0) !== 1 ? 's' : ''}
@@ -209,7 +211,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
           <button
             onClick={() => setShowSetDetails((current) => !current)}
             className="mb-2 text-xs text-text-tertiary hover:text-text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary rounded"
-            aria-label="Toggle set details"
+            aria-label={showSetDetails ? 'Hide metrics' : 'Show metrics'}
             aria-expanded={showSetDetails}
             aria-controls={metricsRegionId}
           >
@@ -223,8 +225,6 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
             {showSetDetails && exercise.sets && exercise.sets.length > 0 && (
               <div className="space-y-3 pt-1">
               {exercise.sets.map((set, setIndex) => {
-                const typeInfo = getActivityTypeInfo(exercise.activityType);
-                
                 return (
                   <div key={setIndex} className={`bg-bg-tertiary rounded-lg p-3 border-l-2 ${typeInfo.borderColor}`}>
                     <div className={`text-xs ${typeInfo.textColor} mb-2 font-medium`}>

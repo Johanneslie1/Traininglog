@@ -13,6 +13,16 @@ interface LayoutProps {
   children: React.ReactNode;
 }
 
+const WeeklyCalendarHeaderComponent = (
+  (WeeklyCalendarHeader as unknown as { default?: typeof WeeklyCalendarHeader }).default || WeeklyCalendarHeader
+);
+const CalendarComponent = (
+  (Calendar as unknown as { default?: typeof Calendar }).default || Calendar
+);
+const AppOverlayComponent = (
+  (AppOverlay as unknown as { default?: typeof AppOverlay }).default || AppOverlay
+);
+
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [showMenu, setShowMenu] = useState(false);
   const { selectedDate, setSelectedDate } = useDate();
@@ -24,12 +34,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   
   const isDarkBackground = ['/'].includes(location.pathname);
   
-  // Hide Layout's fixed elements on program routes (they have their own headers)
-  const isProgramRoute = location.pathname.startsWith('/programs') || location.pathname === '/program-selection';
-  
   // Only show calendar controls on Exercise Log route
   const showWeeklyCalendar = isAuthenticated && 
-    !isProgramRoute && 
     location.pathname === '/' &&
     isExerciseLogMainView;
 
@@ -54,7 +60,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     }`}>
       {/* Weekly Calendar Header - Only show on specific routes */}
       {showWeeklyCalendar && (
-        <WeeklyCalendarHeader
+        <WeeklyCalendarHeaderComponent
           selectedDate={selectedDate}
           onDateSelect={setSelectedDate}
           onCalendarIconClick={() => setShowMonthlyCalendar(true)}
@@ -66,7 +72,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       {showFallbackMenuButton && (
         <button
           onClick={() => setShowMenu(true)}
-          className="fixed top-4 left-4 z-40 p-2 bg-bg-secondary border border-border hover:bg-bg-tertiary rounded-lg transition-colors"
+          className="fixed top-4 left-4 z-40 p-2 bg-bg-secondary/95 border border-border hover:bg-bg-tertiary rounded-lg shadow-lg backdrop-blur transition-colors"
           aria-label="Open menu"
         >
           <svg className="w-6 h-6 text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -77,19 +83,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {/* Main Content */}
       <main className="flex-1 relative pb-app-content">
-        {isProgramRoute ? (
-          // Program routes handle their own layout (full-screen)
-          children
-        ) : (
-          // Regular routes use container
-          <div className="container mx-auto px-4 py-6">
-            {children}
-          </div>
-        )}
+        <div className={`mx-auto w-full max-w-7xl px-4 py-6 ${showFallbackMenuButton ? 'pt-20 sm:pt-6' : ''}`}>
+          {children}
+        </div>
       </main>
 
       {/* Side Menu - Only render when authenticated */}
-      {isAuthenticated && (
+      {isAuthenticated && showMenu && (
         <SideMenu
           isOpen={showMenu}
           onClose={() => setShowMenu(false)}
@@ -100,7 +100,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {/* Monthly Calendar Modal */}
       {showWeeklyCalendar && showMonthlyCalendar && (
-        <AppOverlay
+        <AppOverlayComponent
           isOpen={showMonthlyCalendar}
           onClose={() => setShowMonthlyCalendar(false)}
           className="z-[70] flex items-center justify-center p-4"
@@ -116,7 +116,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
-            <Calendar
+            <CalendarComponent
               selectedDate={selectedDate}
               onDayClick={(date) => {
                 setSelectedDate(date);
@@ -124,7 +124,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               }}
             />
           </div>
-        </AppOverlay>
+        </AppOverlayComponent>
       )}
     </div>
   );

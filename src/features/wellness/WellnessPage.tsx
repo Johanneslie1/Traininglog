@@ -354,10 +354,10 @@ const WellnessPage: React.FC = () => {
   const isFuture = dateKey > todayKey;
 
   return (
-    <div className="min-h-screen bg-bg-primary text-text-primary pb-24">
+    <div className="text-text-primary pb-24">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-bg-secondary border-b border-border">
-        <div className="max-w-xl mx-auto px-4 py-4">
+      <div>
+        <div className="max-w-xl mx-auto">
           <div className="rounded-3xl border border-border bg-bg-tertiary/80 p-3 shadow-[0_18px_45px_rgba(0,0,0,0.18)]">
             <div className="flex items-center gap-3">
               <button
@@ -429,7 +429,7 @@ const WellnessPage: React.FC = () => {
       </div>
 
       {/* Body */}
-      <div className="max-w-xl mx-auto px-4 py-6 space-y-4">
+      <div className="max-w-xl mx-auto py-6 space-y-4">
         {isLoading ? (
           <div className="flex justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-accent-primary" />
@@ -470,7 +470,7 @@ const WellnessPage: React.FC = () => {
             <button
               onClick={handleSave}
               disabled={isSaving || !hasAnyScore}
-              className="w-full bg-accent-primary text-white py-3 rounded-xl font-medium text-sm transition-colors hover:bg-accent-primary/90 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full bg-accent-primary text-text-inverse py-3 rounded-xl font-medium text-sm transition-colors hover:bg-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {isSaving ? 'Saving…' : entryExists ? 'Update Wellness Log' : 'Save Wellness Log'}
             </button>

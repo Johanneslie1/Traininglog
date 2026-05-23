@@ -2,8 +2,14 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { useAuth } from '@/hooks/useAuth';
 import AnalyticsService from '@/services/analyticsService';
+import { allExercises } from '@/data/exercises';
+import { getSrpeByDateRange } from '@/services/srpeService';
+import { getWellnessByDateRange } from '@/services/wellnessService';
 import { UnifiedExerciseData } from '@/utils/unifiedExerciseUtils';
-import { PRType, VolumeDataPoint } from '@/types/analytics';
+import { ActivityAnalytics, MuscleGroupAnalytics, PRType, VolumeDataPoint } from '@/types/analytics';
+import { Exercise } from '@/types/exercise';
+import { SrpeLog } from '@/types/srpe';
+import { WellnessLog } from '@/types/wellness';
 
 type Timeframe = 'day' | 'week' | 'month' | 'year';
 
@@ -75,9 +81,52 @@ const formatChange = (value: number): string => {
 };
 
 const getChangeClass = (value: number): string => {
-  if (value > 0) return 'text-green-400';
-  if (value < 0) return 'text-red-400';
+  if (value > 0) return 'text-success-text';
+  if (value < 0) return 'text-error-text';
   return 'text-text-secondary';
+};
+
+const formatMetric = (value: number): string => {
+  if (value >= 1000) return value.toLocaleString();
+  return String(value);
+};
+
+const formatMuscleName = (value: string): string =>
+  value
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+
+const getStatusLabel = (status: MuscleGroupAnalytics['status']): string => {
+  switch (status) {
+    case 'fatigue_risk':
+      return 'Fatigue risk';
+    case 'high_spike':
+      return 'High spike';
+    case 'undertrained':
+      return 'Undertrained';
+    case 'productive':
+      return 'Productive';
+    case 'stable':
+    default:
+      return 'Stable';
+  }
+};
+
+const getStatusClass = (status: MuscleGroupAnalytics['status']): string => {
+  switch (status) {
+    case 'fatigue_risk':
+      return 'border-error-border bg-error-bg text-error-text';
+    case 'high_spike':
+      return 'border-warning-border bg-warning-bg text-warning-text';
+    case 'undertrained':
+      return 'border-border bg-bg-tertiary text-text-secondary';
+    case 'productive':
+      return 'border-success-border bg-success-bg text-success-text';
+    case 'stable':
+    default:
+      return 'border-border bg-bg-tertiary text-text-secondary';
+  }
 };
 
 // ── SVG area chart for daily training volume ──────────────────────────────────
@@ -121,10 +170,10 @@ const VolumeAreaChart: React.FC<AreaChartProps> = ({ dataPoints }) => {
   const gradientId = 'vol-gradient';
 
   return (
-    <div className="mt-4 overflow-hidden">
+    <div className="mt-4 overflow-x-auto pb-1">
       <svg
         viewBox={`0 0 ${W} ${H}`}
-        className="w-full"
+        className="min-w-[520px] w-full"
         role="img"
         aria-label="Daily volume area chart"
       >
@@ -154,8 +203,8 @@ const VolumeAreaChart: React.FC<AreaChartProps> = ({ dataPoints }) => {
               textAnchor="end"
               fontSize={9}
               fill="currentColor"
-              className="text-text-tertiary"
-              fillOpacity={0.6}
+              className="text-text-secondary"
+              fillOpacity={0.9}
             >
               {v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}
             </text>
@@ -195,8 +244,8 @@ const VolumeAreaChart: React.FC<AreaChartProps> = ({ dataPoints }) => {
             textAnchor="middle"
             fontSize={9}
             fill="currentColor"
-            className="text-text-tertiary"
-            fillOpacity={0.6}
+            className="text-text-secondary"
+            fillOpacity={0.9}
           >
             {format(new Date(dataPoints[i].date), 'MMM d')}
           </text>
@@ -213,8 +262,15 @@ const AnalyticsDashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [currentExercises, setCurrentExercises] = useState<UnifiedExerciseData[]>([]);
   const [previousExercises, setPreviousExercises] = useState<UnifiedExerciseData[]>([]);
+  const [currentSrpeLogs, setCurrentSrpeLogs] = useState<SrpeLog[]>([]);
+  const [previousSrpeLogs, setPreviousSrpeLogs] = useState<SrpeLog[]>([]);
+  const [currentWellnessLogs, setCurrentWellnessLogs] = useState<WellnessLog[]>([]);
 
   const range = useMemo(() => getRangeFromTimeframe(timeframe), [timeframe]);
+  const exerciseDatabase = useMemo<Exercise[]>(
+    () => allExercises.map((exercise) => ({ ...exercise, id: exercise.name })),
+    []
+  );
 
   useEffect(() => {
     const loadAnalytics = async () => {
@@ -228,14 +284,24 @@ const AnalyticsDashboard: React.FC = () => {
 
       try {
         const previousRange = getPreviousRange(range);
+        const currentStart = format(range.startDate, 'yyyy-MM-dd');
+        const currentEnd = format(range.endDate, 'yyyy-MM-dd');
+        const previousStart = format(previousRange.startDate, 'yyyy-MM-dd');
+        const previousEnd = format(previousRange.endDate, 'yyyy-MM-dd');
 
-        const [current, previous] = await Promise.all([
+        const [current, previous, currentSrpe, previousSrpe, currentWellness] = await Promise.all([
           AnalyticsService.getExercisesByDateRange(user.id, range.startDate, range.endDate),
           AnalyticsService.getExercisesByDateRange(user.id, previousRange.startDate, previousRange.endDate),
+          getSrpeByDateRange(user.id, currentStart, currentEnd),
+          getSrpeByDateRange(user.id, previousStart, previousEnd),
+          getWellnessByDateRange(user.id, currentStart, currentEnd),
         ]);
 
         setCurrentExercises(current);
         setPreviousExercises(previous);
+        setCurrentSrpeLogs(currentSrpe);
+        setPreviousSrpeLogs(previousSrpe);
+        setCurrentWellnessLogs(currentWellness);
       } catch (loadError) {
         console.error('Failed to load analytics:', loadError);
         setError('Could not load analytics right now. Please try again.');
@@ -259,9 +325,9 @@ const AnalyticsDashboard: React.FC = () => {
       range.startDate,
       range.endDate,
       user.id,
-      []
+      exerciseDatabase
     );
-  }, [currentExercises, range.endDate, range.startDate, user?.id]);
+  }, [currentExercises, exerciseDatabase, range.endDate, range.startDate, user?.id]);
 
   const periodComparison = useMemo(
     () => AnalyticsService.comparePeriods(currentExercises, previousExercises),
@@ -273,18 +339,37 @@ const AnalyticsDashboard: React.FC = () => {
     [currentExercises, user?.id]
   );
 
-  const activityBreakdown = useMemo(() => {
-    const buckets = new Map<string, number>();
+  const activityAnalytics = useMemo<ActivityAnalytics[]>(
+    () => AnalyticsService.calculateActivityAnalytics(
+      currentExercises,
+      previousExercises,
+      currentSrpeLogs,
+      previousSrpeLogs
+    ),
+    [currentExercises, currentSrpeLogs, previousExercises, previousSrpeLogs]
+  );
 
-    currentExercises.forEach((exercise) => {
-      const key = exercise.activityType || 'UNKNOWN';
-      buckets.set(key, (buckets.get(key) || 0) + 1);
-    });
+  const muscleGroupAnalytics = useMemo<MuscleGroupAnalytics[]>(
+    () => AnalyticsService.calculateMuscleGroupAnalytics(
+      currentExercises,
+      previousExercises,
+      exerciseDatabase
+    ),
+    [currentExercises, exerciseDatabase, previousExercises]
+  );
 
-    return Array.from(buckets.entries())
-      .map(([activityType, count]) => ({ activityType, count }))
-      .sort((a, b) => b.count - a.count);
-  }, [currentExercises]);
+  const latestWellness = useMemo(
+    () => [...currentWellnessLogs].sort((a, b) => b.date.localeCompare(a.date))[0],
+    [currentWellnessLogs]
+  );
+
+  const footballLoad = useMemo(
+    () => currentSrpeLogs.reduce((sum, log) => sum + (log.sessionLoad || 0), 0),
+    [currentSrpeLogs]
+  );
+
+  const hasAnalyticsData =
+    currentExercises.length > 0 || currentSrpeLogs.length > 0 || currentWellnessLogs.length > 0;
 
   return (
     <div className="space-y-6">
@@ -296,14 +381,14 @@ const AnalyticsDashboard: React.FC = () => {
           </p>
         </div>
 
-        <div className="inline-flex rounded-lg border border-border bg-bg-secondary p-1">
+        <div className="inline-flex rounded-xl border border-border bg-bg-secondary p-1">
           {timeframeOptions.map((option) => (
             <button
               key={option.value}
               onClick={() => setTimeframe(option.value)}
               className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
                 timeframe === option.value
-                  ? 'bg-accent-primary text-white'
+                  ? 'bg-accent-primary text-text-inverse'
                   : 'text-text-secondary hover:text-text-primary'
               }`}
             >
@@ -321,7 +406,7 @@ const AnalyticsDashboard: React.FC = () => {
       )}
 
       {error && !isLoading && (
-        <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-4 text-red-300">{error}</div>
+        <div className="rounded-xl border border-error-border bg-error-bg p-4 text-error-text">{error}</div>
       )}
 
       {!isLoading && !error && !user?.id && (
@@ -330,7 +415,7 @@ const AnalyticsDashboard: React.FC = () => {
         </div>
       )}
 
-      {!isLoading && !error && user?.id && currentExercises.length === 0 && (
+      {!isLoading && !error && user?.id && !hasAnalyticsData && (
         <div className="rounded-xl border border-border bg-bg-secondary p-6 text-center">
           <h2 className="text-lg font-semibold text-text-primary">No training data yet</h2>
           <p className="mt-2 text-text-secondary">
@@ -339,9 +424,9 @@ const AnalyticsDashboard: React.FC = () => {
         </div>
       )}
 
-      {!isLoading && !error && user?.id && currentExercises.length > 0 && summary && (
+      {!isLoading && !error && user?.id && hasAnalyticsData && summary && (
         <>
-          <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
             <div className="rounded-xl border border-border bg-bg-secondary p-4">
               <p className="text-xs text-text-tertiary uppercase tracking-wide">Workouts</p>
               <p className="mt-1 text-2xl font-bold text-text-primary">{summary.totalWorkouts}</p>
@@ -358,6 +443,19 @@ const AnalyticsDashboard: React.FC = () => {
               <p className="text-xs text-text-tertiary uppercase tracking-wide">Current Streak</p>
               <p className="mt-1 text-2xl font-bold text-text-primary">{summary.currentStreak}</p>
             </div>
+            <div className="rounded-xl border border-border bg-bg-secondary p-4">
+              <p className="text-xs text-text-tertiary uppercase tracking-wide">Football Load</p>
+              <p className="mt-1 text-2xl font-bold text-text-primary">{footballLoad.toLocaleString()}</p>
+            </div>
+            <div className="rounded-xl border border-border bg-bg-secondary p-4">
+              <p className="text-xs text-text-tertiary uppercase tracking-wide">Readiness</p>
+              <p className="mt-1 text-2xl font-bold text-text-primary">
+                {latestWellness?.readiness ?? '-'}
+              </p>
+              <p className="mt-1 text-xs text-text-secondary">
+                {latestWellness?.fatigue ? `Fatigue ${latestWellness.fatigue}/7` : 'No wellness log'}
+              </p>
+            </div>
           </section>
 
           <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -372,22 +470,22 @@ const AnalyticsDashboard: React.FC = () => {
 
             <div className="rounded-xl border border-border bg-bg-secondary p-4">
               <h2 className="text-sm font-semibold text-text-primary uppercase tracking-wide">Vs Previous Period</h2>
-              <div className="mt-4 space-y-4 text-sm">
-                <div>
+              <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3 lg:grid-cols-1">
+                <div className="rounded-lg bg-bg-tertiary px-3 py-2">
                   <p className="text-text-tertiary">Volume</p>
-                  <p className={`font-semibold ${getChangeClass(periodComparison.changes.volumeChange)}`}>
+                  <p className={`mt-1 text-lg font-semibold ${getChangeClass(periodComparison.changes.volumeChange)}`}>
                     {formatChange(periodComparison.changes.volumeChange)}
                   </p>
                 </div>
-                <div>
+                <div className="rounded-lg bg-bg-tertiary px-3 py-2">
                   <p className="text-text-tertiary">Workouts</p>
-                  <p className={`font-semibold ${getChangeClass(periodComparison.changes.workoutsChange)}`}>
+                  <p className={`mt-1 text-lg font-semibold ${getChangeClass(periodComparison.changes.workoutsChange)}`}>
                     {formatChange(periodComparison.changes.workoutsChange)}
                   </p>
                 </div>
-                <div>
+                <div className="rounded-lg bg-bg-tertiary px-3 py-2">
                   <p className="text-text-tertiary">Unique Exercises</p>
-                  <p className={`font-semibold ${getChangeClass(periodComparison.changes.exercisesChange)}`}>
+                  <p className={`mt-1 text-lg font-semibold ${getChangeClass(periodComparison.changes.exercisesChange)}`}>
                     {formatChange(periodComparison.changes.exercisesChange)}
                   </p>
                 </div>
@@ -415,16 +513,80 @@ const AnalyticsDashboard: React.FC = () => {
             </div>
 
             <div className="rounded-xl border border-border bg-bg-secondary p-4">
-              <h2 className="text-sm font-semibold text-text-primary uppercase tracking-wide">Activity Mix</h2>
-              <div className="mt-3 space-y-2">
-                {activityBreakdown.map((row) => (
-                  <div key={row.activityType} className="flex items-center justify-between rounded-lg bg-bg-tertiary px-3 py-2 text-sm">
-                    <span className="text-text-secondary">{row.activityType}</span>
-                    <span className="font-semibold text-text-primary">{row.count}</span>
-                  </div>
-                ))}
+              <h2 className="text-sm font-semibold text-text-primary uppercase tracking-wide">Activity Load</h2>
+              {activityAnalytics.length === 0 ? (
+                <p className="mt-3 text-sm text-text-secondary">No activity load data for this period.</p>
+              ) : (
+                <div className="mt-3 space-y-2">
+                  {activityAnalytics.slice(0, 5).map((row) => (
+                    <div key={row.activityKey} className="rounded-lg bg-bg-tertiary px-3 py-2 text-sm">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="font-medium text-text-primary">{row.label}</span>
+                        <span className={`font-semibold ${getChangeClass(row.loadChange)}`}>
+                          {formatChange(row.loadChange)}
+                        </span>
+                      </div>
+                      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-text-secondary">
+                        <span>{row.sessionCount} sessions</span>
+                        <span>Load {formatMetric(row.totalLoad)}</span>
+                        {row.totalSets > 0 && <span>{row.totalSets} sets</span>}
+                        {row.totalDurationMinutes > 0 && <span>{row.totalDurationMinutes} min</span>}
+                        {row.averageRpe > 0 && <span>RPE {row.averageRpe}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section className="rounded-xl border border-border bg-bg-secondary p-4">
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <h2 className="text-sm font-semibold text-text-primary uppercase tracking-wide">Muscle Group Analytics</h2>
+                <p className="mt-1 text-xs text-text-secondary">
+                  Resistance volume is mapped to primary and secondary muscles, then compared with the previous period.
+                </p>
               </div>
             </div>
+
+            {muscleGroupAnalytics.length === 0 ? (
+              <p className="mt-4 text-sm text-text-secondary">No muscle-group data for this period.</p>
+            ) : (
+              <div className="mt-4 overflow-x-auto">
+                <div className="min-w-[720px] space-y-2">
+                  <div className="grid grid-cols-[1.4fr_0.7fr_0.8fr_0.8fr_0.8fr_1.2fr] gap-3 px-3 text-xs uppercase tracking-wide text-text-tertiary">
+                    <span>Muscle group</span>
+                    <span>Sets</span>
+                    <span>Volume</span>
+                    <span>Change</span>
+                    <span>RPE</span>
+                    <span>Status</span>
+                  </div>
+
+                  {muscleGroupAnalytics.slice(0, 10).map((row) => (
+                    <div
+                      key={row.muscleGroup}
+                      className="grid grid-cols-[1.4fr_0.7fr_0.8fr_0.8fr_0.8fr_1.2fr] items-center gap-3 rounded-lg bg-bg-tertiary px-3 py-3 text-sm"
+                    >
+                      <div>
+                        <p className="font-medium text-text-primary">{formatMuscleName(row.muscleGroup)}</p>
+                        <p className="mt-0.5 truncate text-xs text-text-secondary">
+                          {row.topExercises.length > 0 ? row.topExercises.join(', ') : 'No contributors'}
+                        </p>
+                      </div>
+                      <span className="font-semibold text-text-primary">{row.totalSets}</span>
+                      <span className="text-text-secondary">{formatMetric(row.totalVolume)}</span>
+                      <span className={getChangeClass(row.volumeChange)}>{formatChange(row.volumeChange)}</span>
+                      <span className="text-text-secondary">{row.averageRpe || '-'}</span>
+                      <span className={`inline-flex w-fit rounded-full border px-2 py-1 text-xs font-medium ${getStatusClass(row.status)}`}>
+                        {getStatusLabel(row.status)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </section>
         </>
       )}

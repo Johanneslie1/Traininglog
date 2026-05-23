@@ -65,6 +65,39 @@ export interface MuscleVolumeData {
   color: string; // Color for chart visualization
 }
 
+export type MuscleGroupTrainingStatus =
+  | 'productive'
+  | 'stable'
+  | 'undertrained'
+  | 'high_spike'
+  | 'fatigue_risk';
+
+export interface MuscleGroupAnalytics extends MuscleVolumeData {
+  volumeChange: number; // Percentage change from previous period
+  setsChange: number; // Percentage change from previous period
+  activityTypes: ActivityType[]; // Activities contributing to this muscle group
+  topExercises: string[]; // Largest contributors by volume
+  averageRpe: number; // Average logged RPE for matching sets
+  status: MuscleGroupTrainingStatus;
+}
+
+export interface ActivityAnalytics {
+  activityKey: string;
+  activityType?: ActivityType;
+  label: string;
+  sessionCount: number;
+  exerciseCount: number;
+  totalLoad: number; // Best available activity-specific load score
+  totalVolume: number; // Resistance volume/tonnage where applicable
+  totalSets: number;
+  totalReps: number;
+  totalDurationMinutes: number;
+  totalDistanceMeters: number;
+  averageRpe: number;
+  loadChange: number; // Percentage change from previous period
+  topExercises: string[];
+}
+
 /**
  * Training intensity levels for heatmap visualization
  */

@@ -116,9 +116,9 @@ const SrpePage: React.FC = () => {
   const isFuture = dateKey > todayKey;
 
   return (
-    <div className="min-h-screen bg-bg-primary text-text-primary pb-24">
-      <div className="sticky top-0 z-10 bg-bg-secondary border-b border-border">
-        <div className="max-w-xl mx-auto px-4 py-4">
+    <div className="text-text-primary pb-24">
+      <div>
+        <div className="max-w-xl mx-auto">
           <div className="rounded-3xl border border-border bg-bg-tertiary/80 p-3 shadow-[0_18px_45px_rgba(0,0,0,0.18)]">
             <div className="flex items-center gap-3">
               <button
@@ -190,7 +190,7 @@ const SrpePage: React.FC = () => {
         )}
       </div>
 
-      <div className="max-w-xl mx-auto px-4 py-6 space-y-4">
+      <div className="max-w-xl mx-auto py-6 space-y-4">
         {isLoading ? (
           <div className="flex justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-accent-primary" />
@@ -228,7 +228,7 @@ const SrpePage: React.FC = () => {
                       className={[
                         'h-12 rounded-xl text-sm font-semibold transition-all duration-200 border',
                         isActive
-                          ? 'border-accent-primary bg-accent-primary text-white scale-[1.06] -translate-y-0.5 shadow-lg'
+                          ? 'border-accent-primary bg-accent-primary text-text-inverse scale-[1.06] -translate-y-0.5 shadow-lg'
                           : 'border-border bg-bg-secondary text-text-secondary hover:bg-bg-tertiary hover:text-text-primary',
                       ].join(' ')}
                       aria-label={`RPE ${score}`}
@@ -278,7 +278,7 @@ const SrpePage: React.FC = () => {
               type="button"
               onClick={handleSave}
               disabled={isSaving || !canSave}
-              className="w-full bg-accent-primary text-white py-3 rounded-xl font-medium text-sm transition-colors hover:bg-accent-primary/90 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full bg-accent-primary text-text-inverse py-3 rounded-xl font-medium text-sm transition-colors hover:bg-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {isSaving ? 'Saving...' : entryExists ? 'Update Football Load' : 'Save Football Load'}
             </button>

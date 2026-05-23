@@ -8,6 +8,7 @@ export default {
     '/src/tests/SideMenu.test.tsx',
   ],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'json', 'node'],
+  setupFilesAfterEnv: ['<rootDir>/src/tests/jest.setup.ts'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@/services/firebase/config$': '<rootDir>/src/tests/mocks/firebase.ts',

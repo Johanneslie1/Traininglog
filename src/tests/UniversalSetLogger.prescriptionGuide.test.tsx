@@ -2,6 +2,7 @@ import { describe, it, expect, jest } from '@jest/globals';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { UniversalSetLogger } from '@/components/UniversalSetLogger';
 import { ActivityType } from '@/types/activityTypes';
+import { SettingsProvider } from '@/context/SettingsContext';
 import { DifficultyCategory } from '@/types/difficulty';
 import type { Exercise } from '@/types/exercise';
 
@@ -49,18 +50,20 @@ const createExercise = (): Exercise => ({
 describe('UniversalSetLogger prescription guide toggle', () => {
   it('shows prescription card content immediately when toggled open for legacy data', () => {
     render(
-      <UniversalSetLogger
-        exercise={createExercise()}
-        initialSets={[
-          {
-            weight: 0,
-            reps: 8,
-            difficulty: DifficultyCategory.NORMAL,
-          },
-        ]}
-        onCancel={jest.fn()}
-        onSave={jest.fn()}
-      />
+      <SettingsProvider>
+        <UniversalSetLogger
+          exercise={createExercise()}
+          initialSets={[
+            {
+              weight: 0,
+              reps: 8,
+              difficulty: DifficultyCategory.NORMAL,
+            },
+          ]}
+          onCancel={jest.fn()}
+          onSave={jest.fn()}
+        />
+      </SettingsProvider>
     );
 
     const toggleButton = document.querySelector('[aria-controls="universal-prescription-guide-section"]') as HTMLButtonElement;

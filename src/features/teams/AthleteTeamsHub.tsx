@@ -50,8 +50,8 @@ const AthleteTeamsHub: React.FC = () => {
       {/* Header */}
       <header className="bg-bg-secondary border-b border-border p-4 sticky top-0 z-10">
         <div className="max-w-6xl mx-auto">
-          <h1 className="text-2xl font-bold text-white mb-1">Teams</h1>
-          <p className="text-gray-400 text-sm">
+          <h1 className="text-2xl font-bold text-text-primary mb-1">Teams</h1>
+          <p className="text-text-secondary text-sm">
             Your teams, assigned programs, and training sessions
           </p>
         </div>
@@ -73,8 +73,8 @@ const AthleteTeamsHub: React.FC = () => {
                     border-b-2 transition-colors
                     ${
                       isActive
-                        ? 'border-primary-500 text-primary-400'
-                        : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-600'
+                        ? 'border-accent-primary text-accent-primary'
+                        : 'border-transparent text-text-tertiary hover:text-text-secondary hover:border-border-hover'
                     }
                   `}
                 >

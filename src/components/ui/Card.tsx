@@ -31,6 +31,13 @@ const Card: React.FC<CardProps> = ({
     <div
       className={`${baseStyles} ${variantStyles[variant]} ${interactiveStyles} ${className}`}
       onClick={onClick}
+      onKeyDown={(event) => {
+        if (!onClick) return;
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onClick();
+        }
+      }}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
     >

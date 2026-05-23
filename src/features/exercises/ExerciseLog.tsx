@@ -22,7 +22,6 @@ import {
   backfillExerciseLogSupersetMetadata,
   repairExerciseLogActivityTypes
 } from '@/services/firebase/exerciseLogs';
-import SideMenu from '../../components/SideMenu';
 import DraggableExerciseDisplay from '../../components/DraggableExerciseDisplay';
 import FloatingSupersetControls from '../../components/FloatingSupersetControls';
 import { getAllExercisesByDate, UnifiedExerciseData, deleteExercise } from '../../utils/unifiedExerciseUtils';
@@ -66,7 +65,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   const location = useLocation();
   const { user } = useSelector((state: RootState) => state.auth);
   const { state, removeExerciseFromSuperset, loadSupersetsForDate, saveSupersetsForDate, updateExerciseOrder } = useSupersets();
-  const { selectedDate, setSelectedDate, normalizeDate } = useDate();
+  const { selectedDate, normalizeDate } = useDate();
   const { setIsExerciseLogMainView } = useExerciseLogCalendar();
   
   // Date utility functions
@@ -80,7 +79,6 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     showLogOptions: boolean;
     showSetLogger: boolean;
     showWorkoutSummary: boolean;
-    showMenu: boolean;
     showProgramModal: boolean;
   };
 
@@ -89,7 +87,6 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     showLogOptions: false,
     showSetLogger: false,
     showWorkoutSummary: false,
-    showMenu: false,
     showProgramModal: false,
   });
 
@@ -974,32 +971,35 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
       <main className="px-4 pt-4 pb-app-content">
         <div className="relative flex flex-col h-full">
           <div className="flex-grow">
-            <section className="mb-3 rounded-xl border border-border bg-bg-secondary px-3 py-2">
-              <div className="flex items-center justify-between gap-2 mb-1.5">
-                <p className="text-xs uppercase tracking-wide text-text-tertiary">Session</p>
-                <div className="flex items-center gap-1">
+            <section className="mb-4 rounded-2xl border border-border bg-bg-secondary p-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-text-tertiary">Session</p>
+                  <p className="text-sm text-text-secondary">Organize today into main work and warm-up blocks.</p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={() => { void handleCreateNewSession('main'); }}
                     disabled={sessionsLoading || creatingSessionType !== null}
-                    className="rounded-md border border-border px-2 py-1 text-[11px] font-medium text-text-primary hover:bg-bg-tertiary"
+                    className="inline-flex min-h-10 items-center justify-center rounded-xl border border-border bg-bg-tertiary px-3 py-2 text-xs font-medium text-text-primary transition-colors hover:border-accent-primary hover:text-accent-primary disabled:opacity-50"
                     aria-label="Add session"
                   >
-                    +S
+                    Add Session
                   </button>
                   <button
                     type="button"
                     onClick={() => { void handleCreateNewSession('warmup'); }}
                     disabled={sessionsLoading || creatingSessionType !== null}
-                    className="rounded-md border border-border px-2 py-1 text-[11px] font-medium text-text-primary hover:bg-bg-tertiary"
+                    className="inline-flex min-h-10 items-center justify-center rounded-xl border border-border bg-bg-tertiary px-3 py-2 text-xs font-medium text-text-primary transition-colors hover:border-accent-primary hover:text-accent-primary disabled:opacity-50"
                     aria-label="Add warm-up"
                   >
-                    +W
+                    Add Warm-up
                   </button>
                 </div>
               </div>
               {availableSessions.length > 0 ? (
-                <div className="flex gap-2 flex-wrap">
+                <div className="mt-3 flex gap-2 flex-wrap">
                   {availableSessions.map((session) => {
                     const label = session.name || `${getSessionTypeLabel(session.sessionType)} ${session.sessionNumberInDay}`;
                     const isSelected = selectedSessionId === session.sessionId;
@@ -1008,7 +1008,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
                       <div
                         key={session.sessionId}
                         className={`flex items-center rounded-lg text-xs font-medium transition-colors overflow-hidden ${
-                          isSelected ? 'bg-accent text-white' : 'border border-border text-text-primary'
+                          isSelected ? 'bg-accent text-text-inverse' : 'border border-border text-text-primary'
                         }`}
                       >
                         {isRenaming ? (
@@ -1050,7 +1050,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
                   })}
                 </div>
               ) : (
-                <p className="text-sm text-text-secondary">
+                <p className="mt-3 rounded-xl border border-dashed border-border bg-bg-primary px-3 py-2 text-sm text-text-secondary">
                   No sessions yet
                 </p>
               )}
@@ -1100,16 +1100,8 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
         />
       )}
 
-      {/* Side Menu */}
       {/* Floating Superset Controls */}
       <FloatingSupersetControls />
-
-      <SideMenu
-        isOpen={uiState.showMenu}
-        onClose={() => updateUiState('showMenu', false)}
-        onNavigateToday={() => setSelectedDate(new Date())}
-        onOpenProfile={() => navigate('/profile')}
-      />
 
       {/* Log Options Modal */}
       {uiState.showLogOptions && (

@@ -55,9 +55,9 @@ describe('ExerciseCard', () => {
     fireEvent.click(screen.getByRole('button', { name: /Show metrics/i }));
 
     // Verify that speed & agility specific fields are displayed
-    expect(screen.getByText('Reps')).toBeTruthy();
-    expect(screen.getByText(/15 sec/)).toBeTruthy(); // duration
-    expect(screen.getByText(/50 m/)).toBeTruthy(); // distance
+    expect(screen.getAllByText('Reps').length).toBeGreaterThan(0);
+    expect(screen.getByText(/15s/)).toBeTruthy(); // duration
+    expect(screen.getAllByText(/50 m/).length).toBeGreaterThan(0); // distance
   });
 
   it('should display resistance exercises in traditional format', () => {
@@ -129,7 +129,7 @@ describe('ExerciseCard', () => {
     expect(screen.getByRole('button', { name: /Hide metrics/i }).getAttribute('aria-expanded')).toBe('true');
 
     // Should show activity-specific fields instead of weight/reps
-    expect(screen.getByText(/30 sec/)).toBeTruthy(); // duration (shown as seconds for non-endurance)
+    expect(screen.getByText(/30m/)).toBeTruthy(); // duration
   });
 
   it('does not show 1RM metrics in resistance exercise details', () => {

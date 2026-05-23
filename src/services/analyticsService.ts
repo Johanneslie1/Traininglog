@@ -2,9 +2,12 @@ import { getAllExercisesByDate } from '@/utils/unifiedExerciseUtils';
 import { UnifiedExerciseData } from '@/utils/unifiedExerciseUtils';
 import { Exercise, MuscleGroup } from '@/types/exercise';
 import {
+  ActivityAnalytics,
   VolumeDataPoint,
   PersonalRecord,
   MuscleVolumeData,
+  MuscleGroupAnalytics,
+  MuscleGroupTrainingStatus,
   TrainingFrequencyData,
   IntensityLevel,
   AnalyticsFilters,
@@ -12,6 +15,8 @@ import {
   TrainingStreak,
   PeriodComparison
 } from '@/types/analytics';
+import { ActivityType } from '@/types/activityTypes';
+import { SrpeLog } from '@/types/srpe';
 import {
   calculateTotalVolume,
   calculateAverageWeight,
@@ -45,6 +50,36 @@ export class AnalyticsService {
     );
 
     return sessionIdSet.size + legacyDateSet.size;
+  }
+
+  private static calculatePercentageChange(current: number, previous: number): number {
+    if (previous <= 0) return 0;
+    return Math.round(((current - previous) / previous) * 100 * 10) / 10;
+  }
+
+  private static formatActivityLabel(activityType?: ActivityType): string {
+    switch (activityType) {
+      case ActivityType.RESISTANCE:
+        return 'Resistance';
+      case ActivityType.SPORT:
+        return 'Sport';
+      case ActivityType.ENDURANCE:
+        return 'Endurance';
+      case ActivityType.SPEED_AGILITY:
+        return 'Speed & agility';
+      case ActivityType.STRETCHING:
+        return 'Mobility';
+      case ActivityType.OTHER:
+        return 'Other';
+      default:
+        return 'Uncategorised';
+    }
+  }
+
+  private static normaliseDurationMinutes(value?: number): number {
+    if (!value || value <= 0) return 0;
+    // Activity logs are mostly minutes, but some migrated rows store seconds.
+    return value > 240 ? Math.round((value / 60) * 10) / 10 : value;
   }
 
   /**
@@ -213,6 +248,143 @@ export class AnalyticsService {
     }
   }
 
+  static calculateActivityAnalytics(
+    currentExercises: UnifiedExerciseData[],
+    previousExercises: UnifiedExerciseData[] = [],
+    currentSrpeLogs: SrpeLog[] = [],
+    previousSrpeLogs: SrpeLog[] = []
+  ): ActivityAnalytics[] {
+    type Accumulator = Omit<ActivityAnalytics, 'loadChange' | 'topExercises'> & {
+      rpeTotal: number;
+      rpeCount: number;
+      exerciseLoads: Map<string, number>;
+    };
+
+    const build = (exercises: UnifiedExerciseData[], srpeLogs: SrpeLog[]): Map<string, Accumulator> => {
+      const map = new Map<string, Accumulator>();
+
+      const getOrCreate = (
+        activityKey: string,
+        label: string,
+        activityType?: ActivityType
+      ): Accumulator => {
+        if (!map.has(activityKey)) {
+          map.set(activityKey, {
+            activityKey,
+            activityType,
+            label,
+            sessionCount: 0,
+            exerciseCount: 0,
+            totalLoad: 0,
+            totalVolume: 0,
+            totalSets: 0,
+            totalReps: 0,
+            totalDurationMinutes: 0,
+            totalDistanceMeters: 0,
+            averageRpe: 0,
+            rpeTotal: 0,
+            rpeCount: 0,
+            exerciseLoads: new Map<string, number>(),
+          });
+        }
+        return map.get(activityKey)!;
+      };
+
+      const filteredExercises = this.excludeWarmups(exercises);
+      const sessionKeysByActivity = new Map<string, Set<string>>();
+
+      filteredExercises.forEach((exercise) => {
+        const activityType = exercise.activityType || ActivityType.RESISTANCE;
+        const activityKey = activityType;
+        const acc = getOrCreate(activityKey, this.formatActivityLabel(activityType), activityType);
+        const sets = exercise.sets || [];
+        const volume = this.calculateExerciseVolume(exercise);
+        const sessionKey = exercise.sessionId || `${exercise.timestamp.toISOString().split('T')[0]}:${exercise.exerciseName}`;
+        const sessionKeys = sessionKeysByActivity.get(activityKey) || new Set<string>();
+        sessionKeys.add(sessionKey);
+        sessionKeysByActivity.set(activityKey, sessionKeys);
+
+        acc.exerciseCount += 1;
+        acc.totalVolume += volume;
+        acc.totalSets += sets.length;
+
+        sets.forEach((set) => {
+          acc.totalReps += set.reps || 0;
+          acc.totalDurationMinutes += this.normaliseDurationMinutes(set.duration);
+          acc.totalDistanceMeters += set.distance || 0;
+
+          const effort = set.rpe || set.intensity || 0;
+          if (effort > 0) {
+            acc.rpeTotal += effort;
+            acc.rpeCount += 1;
+          }
+        });
+
+        const averageEffort = acc.rpeCount > 0 ? acc.rpeTotal / acc.rpeCount : 0;
+        const durationLoad = acc.totalDurationMinutes > 0 && averageEffort > 0
+          ? acc.totalDurationMinutes * averageEffort
+          : 0;
+        const repLoad = acc.totalReps > 0 && averageEffort > 0 ? acc.totalReps * averageEffort : 0;
+
+        acc.totalLoad = activityType === ActivityType.RESISTANCE
+          ? acc.totalVolume
+          : Math.round(Math.max(durationLoad, repLoad, acc.totalVolume) * 10) / 10;
+        acc.exerciseLoads.set(
+          exercise.exerciseName,
+          (acc.exerciseLoads.get(exercise.exerciseName) || 0) + Math.max(volume, sets.length)
+        );
+      });
+
+      srpeLogs.forEach((log) => {
+        const acc = getOrCreate('footballLoad', 'Football load', ActivityType.SPORT);
+        acc.sessionCount += 1;
+        acc.exerciseCount += 1;
+        acc.totalDurationMinutes += log.durationMinutes || 0;
+        acc.totalLoad += log.sessionLoad || 0;
+        acc.rpeTotal += log.rpe || 0;
+        acc.rpeCount += log.rpe ? 1 : 0;
+        acc.exerciseLoads.set('Football load', (acc.exerciseLoads.get('Football load') || 0) + (log.sessionLoad || 0));
+      });
+
+      sessionKeysByActivity.forEach((keys, activityKey) => {
+        const acc = map.get(activityKey);
+        if (acc) acc.sessionCount = keys.size;
+      });
+
+      return map;
+    };
+
+    const current = build(currentExercises, currentSrpeLogs);
+    const previous = build(previousExercises, previousSrpeLogs);
+
+    return Array.from(current.values())
+      .map((acc) => {
+        const previousLoad = previous.get(acc.activityKey)?.totalLoad || 0;
+        const topExercises = Array.from(acc.exerciseLoads.entries())
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 3)
+          .map(([name]) => name);
+
+        return {
+          activityKey: acc.activityKey,
+          activityType: acc.activityType,
+          label: acc.label,
+          sessionCount: acc.sessionCount,
+          exerciseCount: acc.exerciseCount,
+          totalLoad: Math.round(acc.totalLoad),
+          totalVolume: Math.round(acc.totalVolume),
+          totalSets: acc.totalSets,
+          totalReps: acc.totalReps,
+          totalDurationMinutes: Math.round(acc.totalDurationMinutes),
+          totalDistanceMeters: Math.round(acc.totalDistanceMeters),
+          averageRpe: acc.rpeCount > 0 ? Math.round((acc.rpeTotal / acc.rpeCount) * 10) / 10 : 0,
+          loadChange: this.calculatePercentageChange(acc.totalLoad, previousLoad),
+          topExercises,
+        };
+      })
+      .sort((a, b) => b.totalLoad - a.totalLoad || b.sessionCount - a.sessionCount);
+  }
+
   /**
    * Detect personal records from exercise history
    * @param exercises - Array of exercises
@@ -312,6 +484,124 @@ export class AnalyticsService {
     });
     
     return muscleData.sort((a, b) => b.totalVolume - a.totalVolume);
+  }
+
+  static calculateMuscleGroupAnalytics(
+    currentExercises: UnifiedExerciseData[],
+    previousExercises: UnifiedExerciseData[],
+    exerciseDatabase: Exercise[]
+  ): MuscleGroupAnalytics[] {
+    type MuscleAccumulator = {
+      volume: number;
+      sets: number;
+      exercises: Set<string>;
+      exerciseLoads: Map<string, number>;
+      activityTypes: Set<ActivityType>;
+      rpeTotal: number;
+      rpeCount: number;
+    };
+
+    const createAccumulator = (): MuscleAccumulator => ({
+      volume: 0,
+      sets: 0,
+      exercises: new Set<string>(),
+      exerciseLoads: new Map<string, number>(),
+      activityTypes: new Set<ActivityType>(),
+      rpeTotal: 0,
+      rpeCount: 0,
+    });
+
+    const build = (exercises: UnifiedExerciseData[]): Map<MuscleGroup, MuscleAccumulator> => {
+      const map = new Map<MuscleGroup, MuscleAccumulator>();
+      const filteredExercises = this.excludeWarmups(exercises);
+
+      filteredExercises.forEach((loggedEx) => {
+        const dbExercise = exerciseDatabase.find(
+          db => db.name.toLowerCase() === loggedEx.exerciseName.toLowerCase()
+        );
+
+        if (!dbExercise?.primaryMuscles?.length) return;
+
+        const volume = this.calculateExerciseVolume(loggedEx);
+        const sets = loggedEx.sets?.length || 0;
+        const activityType = loggedEx.activityType || ActivityType.RESISTANCE;
+        const rpeValues = (loggedEx.sets || [])
+          .map(set => set.rpe)
+          .filter((rpe): rpe is number => typeof rpe === 'number' && rpe > 0);
+        const rpeTotal = rpeValues.reduce((sum, rpe) => sum + rpe, 0);
+
+        const addContribution = (muscle: MuscleGroup, multiplier: number) => {
+          const acc = map.get(muscle) || createAccumulator();
+          const muscleVolume = volume * multiplier;
+          const muscleSets = sets * multiplier;
+
+          acc.volume += muscleVolume;
+          acc.sets += muscleSets;
+          acc.exercises.add(loggedEx.exerciseName);
+          acc.activityTypes.add(activityType);
+          acc.rpeTotal += rpeTotal;
+          acc.rpeCount += rpeValues.length;
+          acc.exerciseLoads.set(
+            loggedEx.exerciseName,
+            (acc.exerciseLoads.get(loggedEx.exerciseName) || 0) + Math.max(muscleVolume, muscleSets)
+          );
+
+          map.set(muscle, acc);
+        };
+
+        dbExercise.primaryMuscles.forEach(muscle => addContribution(muscle, 1));
+        dbExercise.secondaryMuscles?.forEach(muscle => addContribution(muscle, 0.5));
+      });
+
+      return map;
+    };
+
+    const current = build(currentExercises);
+    const previous = build(previousExercises);
+    const totalVolume = Array.from(current.values()).reduce((sum, acc) => sum + acc.volume, 0);
+
+    const getStatus = (
+      totalSets: number,
+      volumeChange: number,
+      setsChange: number,
+      averageRpe: number
+    ): MuscleGroupTrainingStatus => {
+      if (averageRpe >= 8.5 && (volumeChange >= 20 || setsChange >= 20)) return 'fatigue_risk';
+      if (volumeChange >= 40 || setsChange >= 40) return 'high_spike';
+      if (totalSets > 0 && totalSets < 4) return 'undertrained';
+      if (Math.abs(volumeChange) <= 10 && Math.abs(setsChange) <= 10) return 'stable';
+      return 'productive';
+    };
+
+    return Array.from(current.entries())
+      .map(([muscleGroup, acc]) => {
+        const prev = previous.get(muscleGroup);
+        const totalVolumeForMuscle = Math.round(acc.volume);
+        const totalSetsForMuscle = Math.round(acc.sets);
+        const volumeChange = this.calculatePercentageChange(acc.volume, prev?.volume || 0);
+        const setsChange = this.calculatePercentageChange(acc.sets, prev?.sets || 0);
+        const averageRpe = acc.rpeCount > 0 ? Math.round((acc.rpeTotal / acc.rpeCount) * 10) / 10 : 0;
+        const topExercises = Array.from(acc.exerciseLoads.entries())
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 3)
+          .map(([name]) => name);
+
+        return {
+          muscleGroup,
+          totalVolume: totalVolumeForMuscle,
+          totalSets: totalSetsForMuscle,
+          exerciseCount: acc.exercises.size,
+          percentage: totalVolume > 0 ? Math.round((acc.volume / totalVolume) * 100) : 0,
+          color: this.getMuscleColor(muscleGroup),
+          volumeChange,
+          setsChange,
+          activityTypes: Array.from(acc.activityTypes).sort(),
+          topExercises,
+          averageRpe,
+          status: getStatus(totalSetsForMuscle, volumeChange, setsChange, averageRpe),
+        };
+      })
+      .sort((a, b) => b.totalSets - a.totalSets || b.totalVolume - a.totalVolume);
   }
 
   /**
