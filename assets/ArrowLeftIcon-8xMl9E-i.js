@@ -1,0 +1,2 @@
+import{r}from"./react-vendor-D23RjkZa.js";function o(e,t){return r.createElement("svg",Object.assign({xmlns:"http://www.w3.org/2000/svg",fill:"none",viewBox:"0 0 24 24",strokeWidth:2,stroke:"currentColor","aria-hidden":"true",ref:t},e),r.createElement("path",{strokeLinecap:"round",strokeLinejoin:"round",d:"M10 19l-7-7m0 0l7-7m-7 7h18"}))}const s=r.forwardRef(o);export{s as F};
+//# sourceMappingURL=ArrowLeftIcon-8xMl9E-i.js.map

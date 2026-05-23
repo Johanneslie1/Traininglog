@@ -1,0 +1,2 @@
+import{r}from"./react-vendor-D23RjkZa.js";function t(e,o){return r.createElement("svg",Object.assign({xmlns:"http://www.w3.org/2000/svg",fill:"none",viewBox:"0 0 24 24",strokeWidth:2,stroke:"currentColor","aria-hidden":"true",ref:o},e),r.createElement("path",{strokeLinecap:"round",strokeLinejoin:"round",d:"M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"}))}const a=r.forwardRef(t);export{a as F};
+//# sourceMappingURL=ClockIcon-y0W9CoUr.js.map
