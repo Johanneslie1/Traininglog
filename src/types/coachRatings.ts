@@ -2,6 +2,7 @@ import { Team } from '@/services/teamService';
 import { WellnessMetricKey } from '@/types/wellness';
 
 export type CoachRatingStatus = 'good' | 'watch' | 'outlier' | 'missing';
+export type CoachRatingsViewMode = 'day' | 'week';
 
 export type CoachWellnessTrendCategory =
   | 'better_than_normal'
@@ -53,6 +54,13 @@ export interface CoachDailyWellnessSummary {
   submitted: boolean;
 }
 
+export interface CoachWellnessSnapshotSummary extends CoachDailyWellnessSummary {
+  date: string | null;
+  isSelectedDate: boolean;
+  submittedDays: number;
+  totalDays: number;
+}
+
 export interface CoachWeeklyWellnessSummary {
   average: number | null;
   total: number;
@@ -72,6 +80,16 @@ export interface CoachWeeklySrpeSummary {
   submittedDays: number;
 }
 
+export interface CoachAcwrSummary {
+  acuteLoad: number | null;
+  acuteReportedDays: number;
+  chronicDailyAverageLoad: number | null;
+  chronicReportedDays: number;
+  ratio: number | null;
+  label: string;
+  status: CoachRatingStatus;
+}
+
 export interface CoachRatingsRow {
   athleteId: string;
   athleteName: string;
@@ -79,11 +97,13 @@ export interface CoachRatingsRow {
   teamIds: string[];
   teamNames: string[];
   dailyWellness: CoachDailyWellnessSummary;
+  wellnessSnapshot: CoachWellnessSnapshotSummary;
   wellnessTrend: CoachWellnessTrend;
   wellnessTrendPoints: CoachWellnessTrendPoint[];
   weeklyWellness: CoachWeeklyWellnessSummary;
   dailySrpe: CoachDailySrpeSummary;
   weeklySrpe: CoachWeeklySrpeSummary;
+  acwr: CoachAcwrSummary;
   status: CoachRatingStatus;
   outlierReasons: string[];
   missingDailyWellness: boolean;
@@ -105,7 +125,10 @@ export interface CoachRatingsSummary {
 }
 
 export interface CoachRatingsDashboardData {
+  viewMode: CoachRatingsViewMode;
   selectedDate: string;
+  periodStartDate: string;
+  periodEndDate: string;
   weekStartDate: string;
   weekEndDate: string;
   selectedTeamId: string | null;
@@ -117,6 +140,9 @@ export interface CoachRatingsDashboardData {
 export interface CoachRatingsRequest {
   selectedDate: string;
   selectedTeamId?: string | null;
+  viewMode?: CoachRatingsViewMode;
+  periodStartDate?: string | null;
+  periodEndDate?: string | null;
 }
 
 export interface CoachRatingsTeamInput {

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   CalendarIcon,
@@ -14,6 +14,7 @@ import {
   CoachRatingStatus,
   CoachRatingsDashboardData,
   CoachRatingsRow,
+  CoachRatingsViewMode,
   CoachWellnessTrend,
   CoachWellnessTrendPoint,
 } from '@/types/coachRatings';
@@ -63,6 +64,11 @@ const statusLabels: Record<CoachRatingStatus, string> = {
   missing: 'Missing',
 };
 
+const viewModeLabels: Record<CoachRatingsViewMode, string> = {
+  day: 'Day',
+  week: 'Week',
+};
+
 function formatNumber(value: number | null): string {
   if (value === null) return '-';
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
@@ -71,6 +77,11 @@ function formatNumber(value: number | null): string {
 function formatLoad(value: number | null): string {
   if (value === null) return '-';
   return value.toLocaleString();
+}
+
+function formatRatio(value: number | null): string {
+  if (value === null) return '-';
+  return value.toFixed(2);
 }
 
 function getInitials(name: string): string {
@@ -83,7 +94,7 @@ function getInitials(name: string): string {
 }
 
 function getMetricStatus(row: CoachRatingsRow, key: WellnessMetricKey): CoachRatingStatus {
-  const metric = row.dailyWellness.metrics.find((item) => item.key === key);
+  const metric = row.wellnessSnapshot.metrics.find((item) => item.key === key);
   return metric?.status || 'missing';
 }
 
@@ -117,6 +128,14 @@ function getSrpeClass(row: CoachRatingsRow, warningsEnabled: boolean): string {
   if (row.dailySrpe.rpe !== null && row.dailySrpe.rpe >= 9) return 'text-error-text font-semibold';
   if (row.dailySrpe.rpe !== null && row.dailySrpe.rpe >= 8) return 'text-warning-text font-semibold';
   return 'text-text-primary';
+}
+
+function getAcwrClass(row: CoachRatingsRow, warningsEnabled: boolean): string {
+  if (!warningsEnabled) return 'text-text-primary';
+  if (row.acwr.status === 'outlier') return 'text-error-text font-semibold';
+  if (row.acwr.status === 'watch') return 'text-warning-text font-semibold';
+  if (row.acwr.status === 'missing') return 'text-text-tertiary';
+  return 'text-success-text font-semibold';
 }
 
 interface HelpButtonProps {
@@ -308,17 +327,16 @@ const WellnessTrendChart: React.FC<WellnessTrendChartProps> = ({ points, selecte
 
 const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, teamName }) => {
   const navigate = useNavigate();
-  const [selectedDate, setSelectedDate] = useState(() => toLocalDateString(new Date()));
+  const todayDate = new Date();
+  const [selectedDate, setSelectedDate] = useState(() => toLocalDateString(todayDate));
+  const [periodStartDate, setPeriodStartDate] = useState(() => getLocalWeekDateRange(todayDate).startDateKey);
+  const [periodEndDate, setPeriodEndDate] = useState(() => getLocalWeekDateRange(todayDate).endDateKey);
   const [dashboard, setDashboard] = useState<CoachRatingsDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [warningsEnabled, setWarningsEnabled] = useState(true);
   const [activeHelp, setActiveHelp] = useState<string | null>(null);
   const [expandedAthleteId, setExpandedAthleteId] = useState<string | null>(null);
-
-  const weekRange = useMemo(() => {
-    const date = dateKeyToLocalDate(selectedDate) || new Date();
-    return getLocalWeekDateRange(date);
-  }, [selectedDate]);
+  const [viewMode, setViewMode] = useState<CoachRatingsViewMode>('day');
 
   const loadDashboard = async () => {
     try {
@@ -326,6 +344,9 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
       const data = await getCoachRatingsDashboard({
         selectedDate,
         selectedTeamId: teamId,
+        viewMode,
+        periodStartDate,
+        periodEndDate,
       });
       setDashboard(data);
     } catch (error) {
@@ -338,21 +359,56 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
 
   useEffect(() => {
     loadDashboard();
-  }, [selectedDate, teamId]);
+  }, [selectedDate, teamId, viewMode, periodStartDate, periodEndDate]);
 
-  const moveWeek = (days: number) => {
-    const current = dateKeyToLocalDate(selectedDate);
-    if (!current) return;
-    setSelectedDate(toLocalDateString(addDays(current, days)));
+  const selectDay = (dateKey: string) => {
+    const date = dateKeyToLocalDate(dateKey);
+    if (!date) return;
+    const nextWeek = getLocalWeekDateRange(date);
+    setSelectedDate(dateKey);
+    setPeriodStartDate(nextWeek.startDateKey);
+    setPeriodEndDate(nextWeek.endDateKey);
+  };
+
+  const selectWeekStart = (dateKey: string) => {
+    const date = dateKeyToLocalDate(dateKey);
+    if (!date) return;
+    const nextWeek = getLocalWeekDateRange(date);
+    setSelectedDate(nextWeek.startDateKey);
+    setPeriodStartDate(nextWeek.startDateKey);
+    setPeriodEndDate(nextWeek.endDateKey);
+  };
+
+  const movePeriod = (direction: -1 | 1) => {
+    if (viewMode === 'day') {
+      const current = dateKeyToLocalDate(selectedDate);
+      if (!current) return;
+      selectDay(toLocalDateString(addDays(current, direction)));
+      return;
+    }
+
+    const start = dateKeyToLocalDate(periodStartDate);
+    const end = dateKeyToLocalDate(periodEndDate);
+    if (!start || !end) return;
+    const nextStart = toLocalDateString(addDays(start, direction * 7));
+    const nextEnd = toLocalDateString(addDays(end, direction * 7));
+    setPeriodStartDate(nextStart);
+    setPeriodEndDate(nextEnd);
+    setSelectedDate(nextStart);
   };
 
   const summary = dashboard?.summary;
   const selectedDateLabel = formatCompactDate(selectedDate);
-  const weekRangeLabel = formatWeekRange(weekRange.startDateKey, weekRange.endDateKey);
+  const periodRangeLabel = formatWeekRange(periodStartDate, periodEndDate);
+  const isDayMode = viewMode === 'day';
+  const wellnessSummaryLabel = isDayMode ? 'Daily wellness' : 'Weekly wellness avg';
+  const missingWellnessLabel = isDayMode ? 'Missing wellness' : 'No wellness this week';
+  const missingSrpeLabel = isDayMode ? 'Missing RPE' : 'No RPE this week';
+  const loadSummaryLabel = isDayMode ? 'sRPE load' : 'Weekly load';
   const attentionParts = [
     summary?.outlierCount ? `${summary.outlierCount} risk ${summary.outlierCount === 1 ? 'flag' : 'flags'}` : null,
-    summary?.missingDailyWellnessCount ? `${summary.missingDailyWellnessCount} missing wellness` : null,
-    summary?.missingDailySrpeCount ? `${summary.missingDailySrpeCount} missing RPE` : null,
+    summary?.missingDailyWellnessCount ? `${summary.missingDailyWellnessCount} ${missingWellnessLabel.toLowerCase()}` : null,
+    summary?.missingDailySrpeCount ? `${summary.missingDailySrpeCount} ${missingSrpeLabel.toLowerCase()}` : null,
   ].filter(Boolean);
 
   return (
@@ -364,7 +420,7 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
             <p className="text-xs uppercase tracking-wide text-text-tertiary">Selected team</p>
             <h2 className="text-2xl font-bold text-text-primary">Health & Well-being</h2>
             <p className="text-sm text-text-tertiary mt-1">
-              {teamName}: daily wellness, logged RPE, and derived sRPE load with weekly team context.
+              {teamName}: {viewModeLabels[viewMode].toLowerCase()} view with empty days excluded from calculations. ACWR is color-coded in the table.
             </p>
           </div>
 
@@ -377,36 +433,96 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
           <div className="rounded-2xl border border-border bg-bg-tertiary/70 px-3 py-3">
             <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
               <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-                <label className="group relative flex h-11 min-w-44 items-center gap-2 rounded-full border border-border bg-bg-secondary px-4 text-sm text-text-primary transition-colors hover:border-accent-primary">
-                  <CalendarIcon className="h-4 w-4 text-text-tertiary group-hover:text-accent-primary" />
-                  <span className="font-medium">{selectedDateLabel}</span>
-                  <input
-                    type="date"
-                    value={selectedDate}
-                    onChange={(event) => setSelectedDate(event.target.value)}
-                    className="absolute inset-0 cursor-pointer opacity-0"
-                    aria-label="Daily date"
-                  />
-                </label>
+                <div className="flex h-11 items-center overflow-hidden rounded-full border border-border bg-bg-secondary p-1">
+                  {(Object.keys(viewModeLabels) as CoachRatingsViewMode[]).map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => {
+                        setViewMode(mode);
+                        if (mode === 'day') {
+                          selectDay(selectedDate);
+                        } else {
+                          selectWeekStart(selectedDate);
+                        }
+                      }}
+                      className={`h-full rounded-full px-3 text-sm font-medium transition-colors ${
+                        viewMode === mode
+                          ? 'bg-accent-primary text-text-inverse'
+                          : 'text-text-secondary hover:text-accent-primary'
+                      }`}
+                      aria-pressed={viewMode === mode}
+                    >
+                      {viewModeLabels[mode]}
+                    </button>
+                  ))}
+                </div>
+
+                {isDayMode ? (
+                  <label className="group relative flex h-11 min-w-44 items-center gap-2 rounded-full border border-border bg-bg-secondary px-4 text-sm text-text-primary transition-colors hover:border-accent-primary">
+                    <CalendarIcon className="h-4 w-4 text-text-tertiary group-hover:text-accent-primary" />
+                    <span className="font-medium">{selectedDateLabel}</span>
+                    <input
+                      type="date"
+                      value={selectedDate}
+                      onChange={(event) => selectDay(event.target.value)}
+                      className="absolute inset-0 cursor-pointer opacity-0"
+                      aria-label="Daily date"
+                    />
+                  </label>
+                ) : (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label className="group relative flex h-11 min-w-36 items-center gap-2 rounded-full border border-border bg-bg-secondary px-4 text-sm text-text-primary transition-colors hover:border-accent-primary">
+                      <CalendarIcon className="h-4 w-4 text-text-tertiary group-hover:text-accent-primary" />
+                      <span className="font-medium">{periodStartDate}</span>
+                      <input
+                        type="date"
+                        value={periodStartDate}
+                        onChange={(event) => {
+                          setPeriodStartDate(event.target.value);
+                          setSelectedDate(event.target.value);
+                        }}
+                        className="absolute inset-0 cursor-pointer opacity-0"
+                        aria-label="Period start date"
+                      />
+                    </label>
+                    <span className="text-xs text-text-tertiary">to</span>
+                    <label className="group relative flex h-11 min-w-36 items-center gap-2 rounded-full border border-border bg-bg-secondary px-4 text-sm text-text-primary transition-colors hover:border-accent-primary">
+                      <CalendarIcon className="h-4 w-4 text-text-tertiary group-hover:text-accent-primary" />
+                      <span className="font-medium">{periodEndDate}</span>
+                      <input
+                        type="date"
+                        value={periodEndDate}
+                        onChange={(event) => setPeriodEndDate(event.target.value)}
+                        className="absolute inset-0 cursor-pointer opacity-0"
+                        aria-label="Period end date"
+                      />
+                    </label>
+                  </div>
+                )}
 
                 <div className="flex h-11 items-center overflow-hidden rounded-full border border-border bg-bg-secondary">
                   <button
                     type="button"
-                    onClick={() => moveWeek(-7)}
+                    onClick={() => movePeriod(-1)}
                     className="flex h-full w-10 items-center justify-center text-text-tertiary transition-colors hover:bg-bg-tertiary hover:text-accent-primary"
-                    aria-label="Previous week"
+                    aria-label={isDayMode ? 'Previous day' : 'Previous week'}
                   >
                     <ChevronLeftIcon className="h-4 w-4" />
                   </button>
                   <div className="border-x border-border px-4 text-center">
-                    <div className="text-[10px] uppercase tracking-[0.18em] text-text-tertiary">Week</div>
-                    <div className="text-sm font-semibold leading-tight text-text-primary">{weekRangeLabel}</div>
+                    <div className="text-[10px] uppercase tracking-[0.18em] text-text-tertiary">
+                      {isDayMode ? 'Day' : 'Period'}
+                    </div>
+                    <div className="text-sm font-semibold leading-tight text-text-primary">
+                      {isDayMode ? selectedDateLabel : periodRangeLabel}
+                    </div>
                   </div>
                   <button
                     type="button"
-                    onClick={() => moveWeek(7)}
+                    onClick={() => movePeriod(1)}
                     className="flex h-full w-10 items-center justify-center text-text-tertiary transition-colors hover:bg-bg-tertiary hover:text-accent-primary"
-                    aria-label="Next week"
+                    aria-label={isDayMode ? 'Next day' : 'Next week'}
                   >
                     <ChevronRightIcon className="h-4 w-4" />
                   </button>
@@ -466,23 +582,25 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
               />
               <SummaryItem
                 id="summary-wellness"
-                label="Daily wellness"
+                label={wellnessSummaryLabel}
                 value={formatNumber(summary?.dailyWellnessAverage ?? null)}
                 help={summaryHelp.wellnessAvg}
                 activeHelp={activeHelp}
                 setActiveHelp={setActiveHelp}
               />
-              <SummaryItem
-                id="summary-weekly-wellness"
-                label="Weekly wellness avg"
-                value={formatNumber(summary?.weeklyWellnessAverage ?? null)}
-                help={summaryHelp.weeklyWellness}
-                activeHelp={activeHelp}
-                setActiveHelp={setActiveHelp}
-              />
+              {isDayMode ? (
+                <SummaryItem
+                  id="summary-weekly-wellness"
+                  label="Weekly wellness avg"
+                  value={formatNumber(summary?.weeklyWellnessAverage ?? null)}
+                  help={summaryHelp.weeklyWellness}
+                  activeHelp={activeHelp}
+                  setActiveHelp={setActiveHelp}
+                />
+              ) : null}
               <SummaryItem
                 id="summary-missing-wellness"
-                label="Missing wellness"
+                label={missingWellnessLabel}
                 value={summary?.missingDailyWellnessCount ?? 0}
                 help={summaryHelp.missingWellness}
                 activeHelp={activeHelp}
@@ -490,7 +608,7 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
               />
               <SummaryItem
                 id="summary-missing-srpe"
-                label="Missing RPE"
+                label={missingSrpeLabel}
                 value={summary?.missingDailySrpeCount ?? 0}
                 help={summaryHelp.missingSrpe}
                 activeHelp={activeHelp}
@@ -498,20 +616,22 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
               />
               <SummaryItem
                 id="summary-srpe-load"
-                label="sRPE load"
+                label={loadSummaryLabel}
                 value={formatLoad(summary?.dailySrpeTotalLoad ?? 0)}
-                help={summaryHelp.srpeLoad}
+                help={isDayMode ? summaryHelp.srpeLoad : summaryHelp.weeklyLoad}
                 activeHelp={activeHelp}
                 setActiveHelp={setActiveHelp}
               />
-              <SummaryItem
-                id="summary-weekly-load"
-                label="Weekly load"
-                value={formatLoad(summary?.weeklySrpeTotalLoad ?? 0)}
-                help={summaryHelp.weeklyLoad}
-                activeHelp={activeHelp}
-                setActiveHelp={setActiveHelp}
-              />
+              {isDayMode ? (
+                <SummaryItem
+                  id="summary-weekly-load"
+                  label="Weekly load"
+                  value={formatLoad(summary?.weeklySrpeTotalLoad ?? 0)}
+                  help={summaryHelp.weeklyLoad}
+                  activeHelp={activeHelp}
+                  setActiveHelp={setActiveHelp}
+                />
+              ) : null}
             </div>
             {attentionParts.length > 0 ? (
               <div className="mt-2 rounded-md border border-warning-border bg-warning-bg px-3 py-2 text-xs text-warning-text">
@@ -531,19 +651,19 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
           ) : (
             <div className="border border-border rounded-lg overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="min-w-[1280px] w-full text-sm">
+                <table className="min-w-[1180px] w-full text-sm">
                   <thead>
                     <tr className="bg-bg-primary text-xs uppercase tracking-wide text-text-tertiary">
                       <th className="px-3 py-2 text-left border-r border-border" rowSpan={2}>Athlete</th>
                       <th className="px-3 py-2 text-center border-r border-border" colSpan={3}>Health</th>
-                      <th className="px-3 py-2 text-center border-r border-border" colSpan={7}>Well-being</th>
+                      <th className="px-3 py-2 text-center border-r border-border" colSpan={6}>Well-being</th>
                       <th className="px-3 py-2 text-center border-r border-border" colSpan={5}>Training</th>
                       <th className="px-3 py-2 text-left" rowSpan={2}>Warnings</th>
                     </tr>
                     <tr className="bg-bg-tertiary text-xs text-text-tertiary">
                       <th className="px-3 py-2 text-center">Notes</th>
                       <th className="px-3 py-2 text-center border-r border-border">
-                        Total
+                        {isDayMode ? 'Total' : 'Week Avg'}
                         <HelpButton
                           id="table-total"
                           text={summaryHelp.wellnessAvg}
@@ -552,10 +672,12 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
                         />
                       </th>
                       <th className="px-3 py-2 text-center border-r border-border">
-                        Trend
+                        {isDayMode ? 'Trend' : 'Reported'}
                         <HelpButton
                           id="table-trend"
-                          text="Change from the athlete's previous logged wellness day plus a simple status from their own 28-day baseline. Z-scores are used behind the scenes."
+                          text={isDayMode
+                            ? "Change from the athlete's previous logged wellness day plus a simple status from their own 28-day baseline. Z-scores are used behind the scenes."
+                            : 'Number of reported well-being days included in this weekly average. Empty days are not included.'}
                           activeHelp={activeHelp}
                           setActiveHelp={setActiveHelp}
                         />
@@ -571,26 +693,25 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
                           />
                         </th>
                       ))}
-                      <th className="px-3 py-2 text-center border-r border-border">Week Avg</th>
                       <th className="px-3 py-2 text-center">
-                        RPE
-                        <HelpButton id="table-srpe" text="Logged session RPE from 1 to 10 for the selected day. Higher means the session felt harder." activeHelp={activeHelp} setActiveHelp={setActiveHelp} />
+                        {isDayMode ? 'RPE' : 'Avg RPE'}
+                        <HelpButton id="table-srpe" text="Logged session RPE from 1 to 10. Weekly view averages only reported days." activeHelp={activeHelp} setActiveHelp={setActiveHelp} />
                       </th>
                       <th className="px-3 py-2 text-center">
-                        Min
-                        <HelpButton id="table-min" text="Duration in minutes for the selected-day RPE entry." activeHelp={activeHelp} setActiveHelp={setActiveHelp} />
+                        {isDayMode ? 'Min' : 'RPE Days'}
+                        <HelpButton id="table-min" text="Duration for day view, or number of reported RPE days in week view." activeHelp={activeHelp} setActiveHelp={setActiveHelp} />
                       </th>
                       <th className="px-3 py-2 text-center">
                         sRPE Load
                         <HelpButton id="table-load" text={summaryHelp.srpeLoad} activeHelp={activeHelp} setActiveHelp={setActiveHelp} />
                       </th>
                       <th className="px-3 py-2 text-center">
-                        Week RPE
-                        <HelpButton id="table-week-rpe" text="Average logged RPE across submitted days in the selected week. Missing days are not counted." activeHelp={activeHelp} setActiveHelp={setActiveHelp} />
+                        {isDayMode ? 'Week Load' : 'Chronic Avg'}
+                        <HelpButton id="table-week-load" text={isDayMode ? summaryHelp.weeklyLoad : 'Chronic average sRPE load per reported day over the last 28 days. Empty days are excluded.'} activeHelp={activeHelp} setActiveHelp={setActiveHelp} />
                       </th>
                       <th className="px-3 py-2 text-center border-r border-border">
-                        Week Load
-                        <HelpButton id="table-week-load" text={summaryHelp.weeklyLoad} activeHelp={activeHelp} setActiveHelp={setActiveHelp} />
+                        ACWR
+                        <HelpButton id="table-acwr" text="ACWR = acute average daily load divided by chronic average daily load, using reported days only. Amber starts around 1.3; red starts at 1.5." activeHelp={activeHelp} setActiveHelp={setActiveHelp} />
                       </th>
                     </tr>
                   </thead>
@@ -620,21 +741,33 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
                         </td>
                         <td className="px-3 py-3 text-center">
                           <span
-                            className={row.dailyWellness.hasNotes ? 'text-success-text font-semibold' : 'text-text-tertiary'}
-                            title={row.dailyWellness.notes || undefined}
+                            className={row.wellnessSnapshot.hasNotes ? 'text-success-text font-semibold' : 'text-text-tertiary'}
+                            title={row.wellnessSnapshot.notes || undefined}
                           >
-                            {row.dailyWellness.hasNotes ? 'Yes' : 'No'}
+                            {row.wellnessSnapshot.hasNotes ? 'Yes' : 'No'}
                           </span>
                         </td>
                         <td className={`px-3 py-3 text-center border-r border-border ${getMetricClass(row.status, warningsEnabled)}`}>
-                          {formatNumber(row.dailyWellness.score)}
+                          <div>{formatNumber(row.wellnessSnapshot.score)}</div>
+                          {!isDayMode ? null : !row.wellnessSnapshot.isSelectedDate && row.wellnessSnapshot.date ? (
+                            <div className="text-[11px] text-text-tertiary">{row.wellnessSnapshot.date}</div>
+                          ) : null}
                         </td>
                         <td className={`px-3 py-3 text-center border-r border-border ${getTrendClass(row.wellnessTrend, warningsEnabled)}`}>
-                          <div>{formatTrendChange(row.wellnessTrend.changeFromPrevious)}</div>
-                          <div className="text-[11px] text-current opacity-80">{row.wellnessTrend.label}</div>
+                          {isDayMode ? (
+                            <>
+                              <div>{formatTrendChange(row.wellnessTrend.changeFromPrevious)}</div>
+                              <div className="text-[11px] text-current opacity-80">{row.wellnessTrend.label}</div>
+                            </>
+                          ) : (
+                            <>
+                              <div>{row.wellnessSnapshot.submittedDays}/{row.wellnessSnapshot.totalDays}</div>
+                              <div className="text-[11px] text-current opacity-80">reported days</div>
+                            </>
+                          )}
                         </td>
                         {wellnessColumns.map((column) => {
-                          const value = row.dailyWellness.metricValues[column.key];
+                          const value = row.wellnessSnapshot.metricValues[column.key];
                           const status = getMetricStatus(row, column.key);
 
                           return (
@@ -646,25 +779,30 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
                             </td>
                           );
                         })}
-                        <td className="px-3 py-3 text-center border-r border-border text-text-primary">
-                          <div>{formatNumber(row.weeklyWellness.average)}</div>
-                          <div className="text-[11px] text-text-tertiary">{row.weeklyWellness.submittedDays}/7</div>
-                        </td>
                         <td className={`px-3 py-3 text-center ${getSrpeClass(row, warningsEnabled)}`}>
-                          {formatNumber(row.dailySrpe.rpe)}
+                          {isDayMode ? formatNumber(row.dailySrpe.rpe) : formatNumber(row.weeklySrpe.averageRpe)}
                         </td>
                         <td className="px-3 py-3 text-center text-text-primary">
-                          {row.dailySrpe.submitted ? row.dailySrpe.durationMinutes : '-'}
+                          {isDayMode
+                            ? row.dailySrpe.submitted ? row.dailySrpe.durationMinutes : '-'
+                            : `${row.weeklySrpe.submittedDays}/${row.wellnessSnapshot.totalDays}`}
                         </td>
                         <td className="px-3 py-3 text-center text-text-primary">
-                          {formatLoad(row.dailySrpe.sessionLoad)}
+                          {isDayMode ? formatLoad(row.dailySrpe.sessionLoad) : formatLoad(row.weeklySrpe.totalLoad)}
                         </td>
                         <td className="px-3 py-3 text-center text-text-primary">
-                          <div>{formatNumber(row.weeklySrpe.averageRpe)}</div>
-                          <div className="text-[11px] text-text-tertiary">{row.weeklySrpe.submittedDays}/7</div>
+                          {isDayMode ? (
+                            formatLoad(row.weeklySrpe.totalLoad)
+                          ) : (
+                            <>
+                              <div>{formatLoad(row.acwr.chronicDailyAverageLoad)}</div>
+                              <div className="text-[11px] text-text-tertiary">{row.acwr.chronicReportedDays} days</div>
+                            </>
+                          )}
                         </td>
-                        <td className="px-3 py-3 text-center border-r border-border text-text-primary">
-                          {formatLoad(row.weeklySrpe.totalLoad)}
+                        <td className={`px-3 py-3 text-center border-r border-border ${getAcwrClass(row, warningsEnabled)}`}>
+                          <div>{formatRatio(row.acwr.ratio)}</div>
+                          <div className="text-[11px] text-current opacity-80">{row.acwr.label}</div>
                         </td>
                         <td className="px-3 py-3">
                           <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-medium ${statusStyles[row.status]}`}>
@@ -679,7 +817,7 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
                       </tr>
                       {expandedAthleteId === row.athleteId ? (
                         <tr className="bg-bg-tertiary/40">
-                          <td colSpan={17} className="border-t border-border px-4 py-4">
+                          <td colSpan={16} className="border-t border-border px-4 py-4">
                             <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
                               <WellnessTrendChart points={row.wellnessTrendPoints} selectedDate={selectedDate} />
                               <div className="rounded-xl border border-border bg-bg-secondary p-4 text-sm">
@@ -689,8 +827,16 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
                                 </div>
                                 <div className="space-y-2 text-text-secondary">
                                   <div className="flex justify-between gap-3">
-                                    <span>Today</span>
+                                    <span>Selected day</span>
                                     <span className="font-semibold text-text-primary">{formatNumber(row.dailyWellness.score)}</span>
+                                  </div>
+                                  <div className="flex justify-between gap-3">
+                                    <span>Table snapshot</span>
+                                    <span className="font-semibold text-text-primary">
+                                      {row.wellnessSnapshot.date
+                                        ? `${formatNumber(row.wellnessSnapshot.score)} (${row.wellnessSnapshot.date})`
+                                        : '-'}
+                                    </span>
                                   </div>
                                   <div className="flex justify-between gap-3">
                                     <span>Previous logged day</span>

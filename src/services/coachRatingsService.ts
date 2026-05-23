@@ -6,6 +6,7 @@ import { addDays, getLocalWeekDateRange, dateKeyToLocalDate, toLocalDateString }
 import { SrpeLog } from '@/types/srpe';
 import { WellnessLog, WELLNESS_METRICS, WellnessMetricKey } from '@/types/wellness';
 import {
+  CoachAcwrSummary,
   CoachDailySrpeSummary,
   CoachDailyWellnessSummary,
   CoachRatingStatus,
@@ -15,8 +16,10 @@ import {
   CoachRatingsSummary,
   CoachRatingsTeamInput,
   CoachRatingsTeamOption,
+  CoachRatingsViewMode,
   CoachWeeklySrpeSummary,
   CoachWeeklyWellnessSummary,
+  CoachWellnessSnapshotSummary,
   CoachWellnessTrend,
   CoachWellnessTrendPoint,
   CoachWellnessMetricValue,
@@ -46,6 +49,7 @@ const EMPTY_SUMMARY: CoachRatingsSummary = {
 
 const WELLNESS_BASELINE_DAYS = 28;
 const WELLNESS_CHART_DAYS = 28;
+const ACWR_CHRONIC_DAYS = 28;
 const MIN_BASELINE_SCORES = 3;
 
 function ensureCoachId(): string {
@@ -142,6 +146,59 @@ function summarizeDailyWellness(log: WellnessLog | null | undefined): CoachDaily
   };
 }
 
+function summarizeWellnessSnapshot(
+  log: WellnessLog | null | undefined,
+  selectedDate: string
+): CoachWellnessSnapshotSummary {
+  const summary = summarizeDailyWellness(log);
+
+  return {
+    ...summary,
+    date: log?.date ?? null,
+    isSelectedDate: log?.date === selectedDate,
+    submittedDays: summary.submitted ? 1 : 0,
+    totalDays: 1,
+  };
+}
+
+function summarizeWellnessPeriod(logs: WellnessLog[], totalDays: number): CoachWellnessSnapshotSummary {
+  const logsWithScores = logs
+    .map((log) => ({ log, score: calculateWellnessScore(log) }))
+    .filter((entry): entry is { log: WellnessLog; score: number } => entry.score !== null);
+  const metricValues: Partial<Record<WellnessMetricKey, number>> = {};
+  const metrics: CoachWellnessMetricValue[] = WELLNESS_METRICS.flatMap((metric) => {
+    const values = logs
+      .map((log) => log[metric.key])
+      .filter((value): value is number => typeof value === 'number');
+    const metricAverage = average(values);
+    if (metricAverage === null) return [];
+
+    const roundedValue = roundOne(metricAverage);
+    metricValues[metric.key] = roundedValue;
+
+    return [{
+      key: metric.key,
+      label: metric.label,
+      value: roundedValue,
+      highIsGood: metric.highIsGood,
+      status: scoreMetric(roundedValue, metric.highIsGood, metric.scaleMax),
+    }];
+  });
+  const scoreAverage = average(logsWithScores.map((entry) => entry.score));
+
+  return {
+    score: scoreAverage === null ? null : roundOne(scoreAverage),
+    metrics,
+    metricValues,
+    hasNotes: logs.some((log) => Boolean(log.notes?.trim())),
+    submitted: logsWithScores.length > 0,
+    date: null,
+    isSelectedDate: false,
+    submittedDays: logsWithScores.length,
+    totalDays,
+  };
+}
+
 function summarizeWeeklyWellness(logs: WellnessLog[]): CoachWeeklyWellnessSummary {
   const dailyScores = logs
     .map(calculateWellnessScore)
@@ -182,20 +239,91 @@ function summarizeWeeklySrpe(logs: SrpeLog[]): CoachWeeklySrpeSummary {
   };
 }
 
-function buildSummary(rows: CoachRatingsRow[]): CoachRatingsSummary {
+function summarizeAcwr(acuteLogs: SrpeLog[], chronicLogs: SrpeLog[]): CoachAcwrSummary {
+  const acuteLoads = acuteLogs.map((log) => log.sessionLoad);
+  const chronicLoads = chronicLogs.map((log) => log.sessionLoad);
+  const acuteLoad = acuteLoads.length > 0
+    ? roundOne(acuteLoads.reduce((sum, load) => sum + load, 0))
+    : null;
+  const chronicDailyAverageLoad = chronicLoads.length > 0
+    ? roundOne(chronicLoads.reduce((sum, load) => sum + load, 0) / chronicLoads.length)
+    : null;
+  const acuteDailyAverageLoad = acuteLoads.length > 0
+    ? acuteLoads.reduce((sum, load) => sum + load, 0) / acuteLoads.length
+    : null;
+  const ratio = acuteDailyAverageLoad !== null && chronicDailyAverageLoad !== null && chronicDailyAverageLoad > 0
+    ? roundTwo(acuteDailyAverageLoad / chronicDailyAverageLoad)
+    : null;
+
+  if (ratio === null) {
+    return {
+      acuteLoad,
+      acuteReportedDays: acuteLoads.length,
+      chronicDailyAverageLoad,
+      chronicReportedDays: chronicLoads.length,
+      ratio: null,
+      label: 'No ACWR',
+      status: 'missing',
+    };
+  }
+
+  if (ratio >= 1.5) {
+    return {
+      acuteLoad,
+      acuteReportedDays: acuteLoads.length,
+      chronicDailyAverageLoad,
+      chronicReportedDays: chronicLoads.length,
+      ratio,
+      label: 'High ACWR',
+      status: 'outlier',
+    };
+  }
+
+  if (ratio >= 1.3 || ratio < 0.8) {
+    return {
+      acuteLoad,
+      acuteReportedDays: acuteLoads.length,
+      chronicDailyAverageLoad,
+      chronicReportedDays: chronicLoads.length,
+      ratio,
+      label: ratio < 0.8 ? 'Low ACWR' : 'Elevated ACWR',
+      status: 'watch',
+    };
+  }
+
+  return {
+    acuteLoad,
+    acuteReportedDays: acuteLoads.length,
+    chronicDailyAverageLoad,
+    chronicReportedDays: chronicLoads.length,
+    ratio,
+    label: 'Normal ACWR',
+    status: 'good',
+  };
+}
+
+function buildSummary(rows: CoachRatingsRow[], viewMode: CoachRatingsViewMode): CoachRatingsSummary {
   if (rows.length === 0) return EMPTY_SUMMARY;
 
   return {
     athleteCount: rows.length,
-    dailyWellnessAverage: nullableRoundedAverage(rows.map((row) => row.dailyWellness.score)),
+    dailyWellnessAverage: nullableRoundedAverage(rows.map((row) => row.wellnessSnapshot.score)),
     weeklyWellnessAverage: nullableRoundedAverage(rows.map((row) => row.weeklyWellness.average)),
     weeklyWellnessTotal: roundOne(rows.reduce((sum, row) => sum + row.weeklyWellness.total, 0)),
-    dailySrpeAverage: nullableRoundedAverage(rows.map((row) => row.dailySrpe.rpe)),
-    dailySrpeTotalLoad: rows.reduce((sum, row) => sum + (row.dailySrpe.sessionLoad || 0), 0),
+    dailySrpeAverage: viewMode === 'day'
+      ? nullableRoundedAverage(rows.map((row) => row.dailySrpe.rpe))
+      : nullableRoundedAverage(rows.map((row) => row.weeklySrpe.averageRpe)),
+    dailySrpeTotalLoad: viewMode === 'day'
+      ? rows.reduce((sum, row) => sum + (row.dailySrpe.sessionLoad || 0), 0)
+      : rows.reduce((sum, row) => sum + row.weeklySrpe.totalLoad, 0),
     weeklySrpeAverage: nullableRoundedAverage(rows.map((row) => row.weeklySrpe.averageRpe)),
     weeklySrpeTotalLoad: rows.reduce((sum, row) => sum + row.weeklySrpe.totalLoad, 0),
-    missingDailyWellnessCount: rows.filter((row) => row.missingDailyWellness).length,
-    missingDailySrpeCount: rows.filter((row) => row.missingDailySrpe).length,
+    missingDailyWellnessCount: viewMode === 'day'
+      ? rows.filter((row) => row.missingDailyWellness).length
+      : rows.filter((row) => row.weeklyWellness.submittedDays === 0).length,
+    missingDailySrpeCount: viewMode === 'day'
+      ? rows.filter((row) => row.missingDailySrpe).length
+      : rows.filter((row) => row.weeklySrpe.submittedDays === 0).length,
     outlierCount: rows.filter((row) => row.status === 'outlier').length,
   };
 }
@@ -225,6 +353,18 @@ function buildDateKeys(startDateKey: string, days: number): string[] {
   if (!startDate) return [];
 
   return Array.from({ length: days }, (_, index) => toLocalDateString(addDays(startDate, index)));
+}
+
+function buildDateRangeKeys(startDateKey: string, endDateKey: string): string[] {
+  const startDate = dateKeyToLocalDate(startDateKey);
+  const endDate = dateKeyToLocalDate(endDateKey);
+  if (!startDate || !endDate || startDate > endDate) return [];
+
+  const keys: string[] = [];
+  for (let date = startDate; date <= endDate; date = addDays(date, 1)) {
+    keys.push(toLocalDateString(date));
+  }
+  return keys;
 }
 
 function scoreLogsByDate(logs: WellnessLog[]): Map<string, number> {
@@ -302,11 +442,10 @@ function buildWellnessTrend(logs: WellnessLog[], selectedDate: string): CoachWel
     } else if (zScore <= -1.5) {
       category = 'clear_warning';
       label = 'Clear warning';
-      severity = 'outlier';
+      severity = 'watch';
     } else if (zScore <= -1) {
       category = 'below_normal';
       label = 'Below normal';
-      severity = 'watch';
     } else if (zScore >= 1) {
       category = 'better_than_normal';
       label = 'Better than normal';
@@ -361,8 +500,8 @@ function buildWellnessTrendPoints(
   });
 }
 
-function classifyRows(rows: CoachRatingsRow[]): CoachRatingsRow[] {
-  const dailyWellnessAverage = nullableRoundedAverage(rows.map((row) => row.dailyWellness.score));
+function classifyRows(rows: CoachRatingsRow[], viewMode: CoachRatingsViewMode): CoachRatingsRow[] {
+  const dailyWellnessAverage = nullableRoundedAverage(rows.map((row) => row.wellnessSnapshot.score));
   const weeklyWellnessAverage = nullableRoundedAverage(rows.map((row) => row.weeklyWellness.average));
   const weeklyLoadAverage = nullableRoundedAverage(rows.map((row) => row.weeklySrpe.totalLoad));
 
@@ -370,27 +509,27 @@ function classifyRows(rows: CoachRatingsRow[]): CoachRatingsRow[] {
     const outlierReasons: string[] = [];
     const watchReasons: string[] = [];
 
-    if (row.dailyWellness.score !== null) {
-      if (row.dailyWellness.score < 4) {
-        outlierReasons.push('Low daily wellness');
-      } else if (row.dailyWellness.score < 5) {
-        watchReasons.push('Daily wellness needs attention');
+    if (row.wellnessSnapshot.score !== null) {
+      if (row.wellnessSnapshot.score < 4) {
+        outlierReasons.push(viewMode === 'day' ? 'Low daily wellness' : 'Low weekly wellness');
+      } else if (row.wellnessSnapshot.score < 5) {
+        watchReasons.push(viewMode === 'day' ? 'Daily wellness needs attention' : 'Weekly wellness needs attention');
       }
 
-      if (dailyWellnessAverage !== null && row.dailyWellness.score <= dailyWellnessAverage - 1.5) {
-        outlierReasons.push('Daily wellness below team average');
-      } else if (dailyWellnessAverage !== null && row.dailyWellness.score <= dailyWellnessAverage - 0.8) {
-        watchReasons.push('Daily wellness below team average');
+      if (dailyWellnessAverage !== null && row.wellnessSnapshot.score <= dailyWellnessAverage - 1.5) {
+        outlierReasons.push('Wellness below team average');
+      } else if (dailyWellnessAverage !== null && row.wellnessSnapshot.score <= dailyWellnessAverage - 0.8) {
+        watchReasons.push('Wellness below team average');
       }
     }
 
-    if (row.wellnessTrend.severity === 'outlier') {
+    if (viewMode === 'day' && row.wellnessTrend.severity === 'outlier') {
       outlierReasons.push(row.wellnessTrend.label);
-    } else if (row.wellnessTrend.severity === 'watch') {
+    } else if (viewMode === 'day' && row.wellnessTrend.severity === 'watch') {
       watchReasons.push(row.wellnessTrend.label);
     }
 
-    if (row.weeklyWellness.average !== null) {
+    if (viewMode === 'day' && row.weeklyWellness.average !== null) {
       if (row.weeklyWellness.average < 4) {
         outlierReasons.push('Low weekly wellness');
       } else if (row.weeklyWellness.average < 5) {
@@ -402,7 +541,7 @@ function classifyRows(rows: CoachRatingsRow[]): CoachRatingsRow[] {
       }
     }
 
-    row.dailyWellness.metrics.forEach((metric) => {
+    row.wellnessSnapshot.metrics.forEach((metric) => {
       if (metric.status === 'outlier') {
         outlierReasons.push(`${metric.label} red flag`);
       } else if (metric.status === 'watch') {
@@ -410,7 +549,7 @@ function classifyRows(rows: CoachRatingsRow[]): CoachRatingsRow[] {
       }
     });
 
-    if (row.dailySrpe.rpe !== null) {
+    if (viewMode === 'day' && row.dailySrpe.rpe !== null) {
       if (row.dailySrpe.rpe >= 9) {
         outlierReasons.push('Very high daily RPE');
       } else if (row.dailySrpe.rpe >= 8) {
@@ -418,7 +557,7 @@ function classifyRows(rows: CoachRatingsRow[]): CoachRatingsRow[] {
       }
     }
 
-    if (weeklyLoadAverage !== null && weeklyLoadAverage > 0 && row.weeklySrpe.totalLoad > 0) {
+    if (viewMode !== 'day' && weeklyLoadAverage !== null && weeklyLoadAverage > 0 && row.weeklySrpe.totalLoad > 0) {
       if (row.weeklySrpe.totalLoad >= weeklyLoadAverage * 1.5) {
         outlierReasons.push('Weekly sRPE load above team average');
       } else if (row.weeklySrpe.totalLoad >= weeklyLoadAverage * 1.25) {
@@ -426,12 +565,26 @@ function classifyRows(rows: CoachRatingsRow[]): CoachRatingsRow[] {
       }
     }
 
-    if (row.missingDailyWellness) {
+    if (viewMode === 'day' && row.missingDailyWellness) {
       watchReasons.push('Missing daily wellness');
     }
 
-    if (row.missingDailySrpe) {
+    if (viewMode === 'day' && row.missingDailySrpe) {
       watchReasons.push('Missing daily RPE');
+    }
+
+    if (viewMode !== 'day' && row.weeklyWellness.submittedDays === 0) {
+      watchReasons.push('No wellness this week');
+    }
+
+    if (viewMode !== 'day' && row.weeklySrpe.submittedDays === 0) {
+      watchReasons.push('No RPE this week');
+    }
+
+    if (row.acwr.status === 'outlier') {
+      outlierReasons.push(row.acwr.label);
+    } else if (row.acwr.status === 'watch') {
+      watchReasons.push(row.acwr.label);
     }
 
     const status: CoachRatingStatus =
@@ -453,6 +606,9 @@ function classifyRows(rows: CoachRatingsRow[]): CoachRatingsRow[] {
 
 export function buildCoachRatingsDashboardData(params: {
   selectedDate: string;
+  viewMode?: CoachRatingsViewMode;
+  periodStartDate?: string | null;
+  periodEndDate?: string | null;
   selectedTeamId?: string | null;
   teamsWithMembers: CoachRatingsTeamInput[];
   wellnessLogsByAthleteId: Map<string, WellnessLog[]>;
@@ -464,7 +620,15 @@ export function buildCoachRatingsDashboardData(params: {
   }
 
   const weekRange = getLocalWeekDateRange(selectedLocalDate);
+  const viewMode = params.viewMode || 'day';
+  const requestedPeriodStart = params.periodStartDate || weekRange.startDateKey;
+  const requestedPeriodEnd = params.periodEndDate || weekRange.endDateKey;
+  const periodStartDate = requestedPeriodStart <= requestedPeriodEnd ? requestedPeriodStart : requestedPeriodEnd;
+  const periodEndDate = requestedPeriodStart <= requestedPeriodEnd ? requestedPeriodEnd : requestedPeriodStart;
+  const periodDateKeys = buildDateRangeKeys(periodStartDate, periodEndDate);
   const selectedTeamId = params.selectedTeamId || null;
+  const periodEndLocalDate = dateKeyToLocalDate(periodEndDate) || weekRange.endDate;
+  const chronicStartDateKey = toLocalDateString(addDays(periodEndLocalDate, -(ACWR_CHRONIC_DAYS - 1)));
   const chartStartDateKey = toLocalDateString(addDays(selectedLocalDate, -(WELLNESS_CHART_DAYS - 1)));
   const chartDateKeys = buildDateKeys(chartStartDateKey, WELLNESS_CHART_DAYS);
   const includedTeams = selectedTeamId
@@ -515,12 +679,21 @@ export function buildCoachRatingsDashboardData(params: {
       const wellnessLogs = params.wellnessLogsByAthleteId.get(athlete.athleteId) || [];
       const srpeLogs = params.srpeLogsByAthleteId.get(athlete.athleteId) || [];
       const weeklyWellnessLogs = wellnessLogs.filter(
-        (log) => log.date >= weekRange.startDateKey && log.date <= weekRange.endDateKey
+        (log) => log.date >= periodStartDate && log.date <= periodEndDate
+      );
+      const acuteSrpeLogs = srpeLogs.filter(
+        (log) => log.date >= periodStartDate && log.date <= periodEndDate
+      );
+      const chronicSrpeLogs = srpeLogs.filter(
+        (log) => log.date >= chronicStartDateKey && log.date <= weekRange.endDateKey
       );
       const dailyWellnessLog = wellnessLogs.find((log) => log.date === params.selectedDate) || null;
       const dailySrpeLog = srpeLogs.find((log) => log.date === params.selectedDate) || null;
       const dailyWellness = summarizeDailyWellness(dailyWellnessLog);
       const dailySrpe = summarizeDailySrpe(dailySrpeLog);
+      const wellnessSnapshot = viewMode === 'day'
+        ? summarizeWellnessSnapshot(dailyWellnessLog, params.selectedDate)
+        : summarizeWellnessPeriod(weeklyWellnessLogs, periodDateKeys.length);
 
       return {
         athleteId: athlete.athleteId,
@@ -529,11 +702,13 @@ export function buildCoachRatingsDashboardData(params: {
         teamIds: Array.from(athlete.teamIds),
         teamNames: Array.from(athlete.teamNames),
         dailyWellness,
-        wellnessTrend: buildWellnessTrend(wellnessLogs, params.selectedDate),
+        wellnessSnapshot,
+        wellnessTrend: buildWellnessTrend(wellnessLogs, wellnessSnapshot.date || params.selectedDate),
         wellnessTrendPoints: buildWellnessTrendPoints(wellnessLogs, chartDateKeys, teamAverageByDate),
         weeklyWellness: summarizeWeeklyWellness(weeklyWellnessLogs),
         dailySrpe,
-        weeklySrpe: summarizeWeeklySrpe(srpeLogs),
+        weeklySrpe: summarizeWeeklySrpe(acuteSrpeLogs),
+        acwr: summarizeAcwr(acuteSrpeLogs, chronicSrpeLogs),
         status: 'good' as CoachRatingStatus,
         outlierReasons: [],
         missingDailyWellness: !dailyWellness.submitted,
@@ -542,8 +717,8 @@ export function buildCoachRatingsDashboardData(params: {
     })
     .sort((a, b) => a.athleteName.localeCompare(b.athleteName));
 
-  const classifiedRows = classifyRows(rows);
-  const summary = buildSummary(classifiedRows);
+  const classifiedRows = classifyRows(rows, viewMode);
+  const summary = buildSummary(classifiedRows, viewMode);
   const teamOptions: CoachRatingsTeamOption[] = params.teamsWithMembers.map(({ team, members }) => ({
     id: team.id,
     name: team.name,
@@ -551,7 +726,10 @@ export function buildCoachRatingsDashboardData(params: {
   }));
 
   return {
+    viewMode,
     selectedDate: params.selectedDate,
+    periodStartDate,
+    periodEndDate,
     weekStartDate: weekRange.startDateKey,
     weekEndDate: weekRange.endDateKey,
     selectedTeamId,
@@ -571,8 +749,15 @@ export async function getCoachRatingsDashboard(
   }
 
   const weekRange = getLocalWeekDateRange(selectedLocalDate);
+  const viewMode = request.viewMode || 'day';
+  const requestedPeriodStart = request.periodStartDate || weekRange.startDateKey;
+  const requestedPeriodEnd = request.periodEndDate || weekRange.endDateKey;
+  const periodStartDate = requestedPeriodStart <= requestedPeriodEnd ? requestedPeriodStart : requestedPeriodEnd;
+  const periodEndDate = requestedPeriodStart <= requestedPeriodEnd ? requestedPeriodEnd : requestedPeriodStart;
+  const periodEndLocalDate = dateKeyToLocalDate(periodEndDate) || weekRange.endDate;
   const wellnessStartDateKey = toLocalDateString(addDays(selectedLocalDate, -WELLNESS_BASELINE_DAYS));
-  const wellnessEndDateKey = weekRange.endDateKey;
+  const wellnessEndDateKey = periodEndDate > weekRange.endDateKey ? periodEndDate : weekRange.endDateKey;
+  const srpeStartDateKey = toLocalDateString(addDays(periodEndLocalDate, -(ACWR_CHRONIC_DAYS - 1)));
   const teams = await getCoachTeams();
   const teamsWithMembers = await Promise.all(
     teams.map(async (team) => ({
@@ -609,7 +794,7 @@ export async function getCoachRatingsDashboard(
     athleteIds.map(async (athleteId) => {
       const [wellnessResult, srpeResult] = await Promise.allSettled([
         getWellnessByDateRange(athleteId, wellnessStartDateKey, wellnessEndDateKey),
-        getSrpeByDateRange(athleteId, weekRange.startDateKey, weekRange.endDateKey),
+        getSrpeByDateRange(athleteId, srpeStartDateKey, weekRange.endDateKey),
       ]);
 
       const wellnessLogs = wellnessResult.status === 'fulfilled' ? wellnessResult.value : [];
@@ -637,6 +822,9 @@ export async function getCoachRatingsDashboard(
 
   return buildCoachRatingsDashboardData({
     selectedDate: request.selectedDate,
+    viewMode,
+    periodStartDate,
+    periodEndDate,
     selectedTeamId,
     teamsWithMembers,
     wellnessLogsByAthleteId: new Map(
