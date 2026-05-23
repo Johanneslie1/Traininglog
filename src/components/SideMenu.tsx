@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { RootState } from '@/store/store';
 import { useIsCoach, useIsAthlete } from '@/hooks/useUserRole';
+import { AppLogo } from '@/components/brand';
 
 interface SideMenuProps {
   isOpen: boolean;
@@ -36,7 +37,13 @@ const SideMenu: React.FC<SideMenuProps> = ({
       <div className="fixed left-0 top-0 bottom-0 w-72 bg-bg-secondary z-50 shadow-xl flex flex-col translate-x-0 transition-transform duration-300 ease-in-out">
         <div className="p-4 border-b border-border">
           <div className="flex items-center justify-between">
-            <h2 className="text-text-primary text-xl font-medium">GYM KEEPER</h2>
+            <div className="flex items-center gap-3">
+              <AppLogo className="h-11 w-11" />
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-text-tertiary">Navigation</p>
+                <h2 className="text-text-primary text-xl font-semibold">Gym Keeper</h2>
+              </div>
+            </div>
             <button
               onClick={onClose}
               className="p-2 hover:bg-bg-tertiary rounded-full transition-colors"

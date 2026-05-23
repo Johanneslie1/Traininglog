@@ -74,16 +74,34 @@ export default defineConfig(({ mode }) => {
           scope: basePath,
           icons: [
             {
-              src: `${basePath}icons/android-chrome-192x192.png`,
+              src: `${basePath}logo/app-logo-16.png`,
+              sizes: "16x16",
+              type: "image/png",
+              purpose: "any"
+            },
+            {
+              src: `${basePath}logo/app-logo-32.png`,
+              sizes: "32x32",
+              type: "image/png",
+              purpose: "any"
+            },
+            {
+              src: `${basePath}logo/app-logo-192.png`,
               sizes: "192x192",
               type: "image/png",
               purpose: "any maskable"
             },
             {
-              src: `${basePath}icons/android-chrome-512x512.png`,
+              src: `${basePath}logo/app-logo-512.png`,
               sizes: "512x512",
               type: "image/png",
               purpose: "any maskable"
+            },
+            {
+              src: `${basePath}logo/app-logo-180.png`,
+              sizes: "180x180",
+              type: "image/png",
+              purpose: "any"
             }
           ]
         },
