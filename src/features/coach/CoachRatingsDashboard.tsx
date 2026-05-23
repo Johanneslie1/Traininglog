@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   CalendarIcon,
@@ -62,6 +62,13 @@ const statusLabels: Record<CoachRatingStatus, string> = {
   watch: 'Watch',
   outlier: 'Risk',
   missing: 'Missing',
+};
+
+const statusPriority: Record<CoachRatingStatus, number> = {
+  outlier: 0,
+  watch: 1,
+  missing: 2,
+  good: 3,
 };
 
 const viewModeLabels: Record<CoachRatingsViewMode, string> = {
@@ -163,7 +170,7 @@ const HelpButton: React.FC<HelpButtonProps> = ({ id, text, activeHelp, setActive
         ?
       </button>
       {isActive ? (
-        <span className="absolute left-1/2 top-6 z-50 w-72 -translate-x-1/2 rounded-lg border border-border bg-[#050505] p-3 text-left text-xs normal-case leading-relaxed text-white shadow-2xl ring-1 ring-white/15">
+        <span className="absolute left-1/2 top-6 z-50 w-72 -translate-x-1/2 rounded-lg border border-border bg-bg-primary p-3 text-left text-xs normal-case leading-relaxed text-text-primary shadow-2xl ring-1 ring-border">
           {text}
         </span>
       ) : null}
@@ -333,14 +340,20 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
   const [periodEndDate, setPeriodEndDate] = useState(() => getLocalWeekDateRange(todayDate).endDateKey);
   const [dashboard, setDashboard] = useState<CoachRatingsDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [warningsEnabled, setWarningsEnabled] = useState(true);
   const [activeHelp, setActiveHelp] = useState<string | null>(null);
   const [expandedAthleteId, setExpandedAthleteId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<CoachRatingsViewMode>('day');
+  const requestIdRef = useRef(0);
 
   const loadDashboard = async () => {
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
+
     try {
       setLoading(true);
+      setLoadError(null);
       const data = await getCoachRatingsDashboard({
         selectedDate,
         selectedTeamId: teamId,
@@ -348,11 +361,16 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
         periodStartDate,
         periodEndDate,
       });
+
+      if (requestId !== requestIdRef.current) return;
       setDashboard(data);
     } catch (error) {
+      if (requestId !== requestIdRef.current) return;
       console.error('Error loading team ratings dashboard:', error);
+      setLoadError('Could not load team ratings. Check your connection and try again.');
       toast.error('Failed to load team ratings');
     } finally {
+      if (requestId !== requestIdRef.current) return;
       setLoading(false);
     }
   };
@@ -405,6 +423,11 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
   const missingWellnessLabel = isDayMode ? 'Missing wellness' : 'No wellness this week';
   const missingSrpeLabel = isDayMode ? 'Missing RPE' : 'No RPE this week';
   const loadSummaryLabel = isDayMode ? 'sRPE load' : 'Weekly load';
+  const prioritizedRows = [...(dashboard?.rows ?? [])].sort((a, b) => {
+    const statusDiff = statusPriority[a.status] - statusPriority[b.status];
+    if (statusDiff !== 0) return statusDiff;
+    return a.athleteName.localeCompare(b.athleteName);
+  });
   const attentionParts = [
     summary?.outlierCount ? `${summary.outlierCount} risk ${summary.outlierCount === 1 ? 'flag' : 'flags'}` : null,
     summary?.missingDailyWellnessCount ? `${summary.missingDailyWellnessCount} ${missingWellnessLabel.toLowerCase()}` : null,
@@ -420,13 +443,13 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
             <p className="text-xs uppercase tracking-wide text-text-tertiary">Selected team</p>
             <h2 className="text-2xl font-bold text-text-primary">Health & Well-being</h2>
             <p className="text-sm text-text-tertiary mt-1">
-              {teamName}: {viewModeLabels[viewMode].toLowerCase()} view with empty days excluded from calculations. ACWR is color-coded in the table.
+              {teamName}: {viewModeLabels[viewMode].toLowerCase()} view, sorted by athletes who need attention first.
             </p>
           </div>
 
             <div className="inline-flex w-fit items-center gap-2 rounded-full border border-border bg-bg-tertiary px-3 py-2 text-xs text-text-secondary">
               <span className={`h-2 w-2 rounded-full ${warningsEnabled ? 'bg-accent-primary' : 'bg-text-tertiary'}`} />
-              {warningsEnabled ? 'Warnings on' : 'Warnings off'}
+              {loading && dashboard ? 'Updating...' : warningsEnabled ? 'Warnings on' : 'Warnings off'}
             </div>
           </div>
 
@@ -472,30 +495,15 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
                   </label>
                 ) : (
                   <div className="flex flex-wrap items-center gap-2">
-                    <label className="group relative flex h-11 min-w-36 items-center gap-2 rounded-full border border-border bg-bg-secondary px-4 text-sm text-text-primary transition-colors hover:border-accent-primary">
+                    <label className="group relative flex h-11 min-w-56 items-center gap-2 rounded-full border border-border bg-bg-secondary px-4 text-sm text-text-primary transition-colors hover:border-accent-primary">
                       <CalendarIcon className="h-4 w-4 text-text-tertiary group-hover:text-accent-primary" />
-                      <span className="font-medium">{periodStartDate}</span>
+                      <span className="font-medium">Week of {periodRangeLabel}</span>
                       <input
                         type="date"
                         value={periodStartDate}
-                        onChange={(event) => {
-                          setPeriodStartDate(event.target.value);
-                          setSelectedDate(event.target.value);
-                        }}
+                        onChange={(event) => selectWeekStart(event.target.value)}
                         className="absolute inset-0 cursor-pointer opacity-0"
-                        aria-label="Period start date"
-                      />
-                    </label>
-                    <span className="text-xs text-text-tertiary">to</span>
-                    <label className="group relative flex h-11 min-w-36 items-center gap-2 rounded-full border border-border bg-bg-secondary px-4 text-sm text-text-primary transition-colors hover:border-accent-primary">
-                      <CalendarIcon className="h-4 w-4 text-text-tertiary group-hover:text-accent-primary" />
-                      <span className="font-medium">{periodEndDate}</span>
-                      <input
-                        type="date"
-                        value={periodEndDate}
-                        onChange={(event) => setPeriodEndDate(event.target.value)}
-                        className="absolute inset-0 cursor-pointer opacity-0"
-                        aria-label="Period end date"
+                        aria-label="Select week"
                       />
                     </label>
                   </div>
@@ -550,6 +558,7 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
                     warningsEnabled ? 'bg-accent-primary' : 'bg-bg-primary ring-1 ring-border'
                 }`}
                 aria-pressed={warningsEnabled}
+                aria-label={warningsEnabled ? 'Turn warnings off' : 'Turn warnings on'}
               >
                 <span
                     className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${
@@ -563,13 +572,46 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
         </div>
       </div>
 
-      {loading && !dashboard ? (
+      {loadError && !dashboard ? (
+        <div className="m-4 rounded-xl border border-error-border bg-error-bg p-4 text-error-text">
+          <p className="font-medium">Ratings unavailable</p>
+          <p className="mt-1 text-sm">Could not load the dashboard right now.</p>
+          <button
+            type="button"
+            onClick={loadDashboard}
+            className="mt-3 inline-flex rounded-full border border-error-border px-3 py-1.5 text-sm font-medium hover:opacity-90"
+          >
+            Try again
+          </button>
+        </div>
+      ) : loading && !dashboard ? (
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
           <span className="ml-3 text-text-tertiary">Loading team ratings...</span>
         </div>
       ) : (
         <div className="p-4">
+          {loadError ? (
+            <div className="mb-3 rounded-lg border border-error-border bg-error-bg px-3 py-2 text-sm text-error-text">
+              {loadError}
+            </div>
+          ) : null}
+
+          <div className="mb-3 grid gap-3 md:grid-cols-3">
+            <div className="rounded-xl border border-border bg-bg-tertiary px-4 py-3">
+              <p className="text-xs uppercase tracking-wide text-text-tertiary">Risk flags</p>
+              <p className="mt-1 text-2xl font-bold text-error-text">{summary?.outlierCount ?? 0}</p>
+            </div>
+            <div className="rounded-xl border border-border bg-bg-tertiary px-4 py-3">
+              <p className="text-xs uppercase tracking-wide text-text-tertiary">{missingWellnessLabel}</p>
+              <p className="mt-1 text-2xl font-bold text-warning-text">{summary?.missingDailyWellnessCount ?? 0}</p>
+            </div>
+            <div className="rounded-xl border border-border bg-bg-tertiary px-4 py-3">
+              <p className="text-xs uppercase tracking-wide text-text-tertiary">{missingSrpeLabel}</p>
+              <p className="mt-1 text-2xl font-bold text-warning-text">{summary?.missingDailySrpeCount ?? 0}</p>
+            </div>
+          </div>
+
           <div className="mb-3 rounded-lg border border-border bg-bg-tertiary px-3 py-3">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
               <SummaryItem
@@ -584,7 +626,7 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
                 id="summary-wellness"
                 label={wellnessSummaryLabel}
                 value={formatNumber(summary?.dailyWellnessAverage ?? null)}
-                help={summaryHelp.wellnessAvg}
+                help={isDayMode ? summaryHelp.wellnessAvg : summaryHelp.weeklyWellness}
                 activeHelp={activeHelp}
                 setActiveHelp={setActiveHelp}
               />
@@ -640,7 +682,11 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
             ) : null}
           </div>
 
-          {!dashboard || dashboard.rows.length === 0 ? (
+          <div className="mb-3 rounded-lg border border-info-border bg-info-bg px-3 py-2 text-xs leading-relaxed text-info-text">
+            Wellness scores combine submitted well-being metrics; weekly averages exclude empty days. ACWR compares recent load to the athlete's 28-day baseline.
+          </div>
+
+          {!dashboard || prioritizedRows.length === 0 ? (
             <div className="bg-bg-tertiary border border-border rounded-lg p-8 text-center">
               <ExclamationIcon className="h-10 w-10 text-text-tertiary mx-auto mb-3" />
               <p className="text-text-primary font-medium">No athletes found</p>
@@ -649,29 +695,34 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
               </p>
             </div>
           ) : (
-            <div className="border border-border rounded-lg overflow-hidden">
-              <div className="overflow-x-auto">
+            <>
+            <p className="mb-2 text-xs text-text-tertiary">
+              Team table view. Scroll sideways to compare wellness, trend, sRPE load, and ACWR for every athlete in one place.
+            </p>
+
+            <div className="overflow-hidden rounded-lg border border-border">
+              <div className="max-h-[72vh] overflow-auto">
                 <table className="min-w-[1180px] w-full text-sm">
                   <thead>
                     <tr className="bg-bg-primary text-xs uppercase tracking-wide text-text-tertiary">
-                      <th className="px-3 py-2 text-left border-r border-border" rowSpan={2}>Athlete</th>
-                      <th className="px-3 py-2 text-center border-r border-border" colSpan={3}>Health</th>
-                      <th className="px-3 py-2 text-center border-r border-border" colSpan={6}>Well-being</th>
-                      <th className="px-3 py-2 text-center border-r border-border" colSpan={5}>Training</th>
-                      <th className="px-3 py-2 text-left" rowSpan={2}>Warnings</th>
+                      <th className="sticky left-0 top-0 z-50 bg-bg-primary px-3 py-2 text-left border-r border-border" rowSpan={2}>Athlete</th>
+                      <th className="sticky top-0 z-30 bg-bg-primary px-3 py-2 text-center border-r border-border" colSpan={3}>Health</th>
+                      <th className="sticky top-0 z-30 bg-bg-primary px-3 py-2 text-center border-r border-border" colSpan={6}>Well-being</th>
+                      <th className="sticky top-0 z-30 bg-bg-primary px-3 py-2 text-center border-r border-border" colSpan={5}>Training Load</th>
+                      <th className="sticky top-0 z-30 bg-bg-primary px-3 py-2 text-left" rowSpan={2}>Status & Warnings</th>
                     </tr>
                     <tr className="bg-bg-tertiary text-xs text-text-tertiary">
-                      <th className="px-3 py-2 text-center">Notes</th>
-                      <th className="px-3 py-2 text-center border-r border-border">
+                      <th className="sticky top-[33px] z-30 bg-bg-tertiary px-3 py-2 text-center">Notes</th>
+                      <th className="sticky top-[33px] z-30 bg-bg-tertiary px-3 py-2 text-center border-r border-border">
                         {isDayMode ? 'Total' : 'Week Avg'}
                         <HelpButton
                           id="table-total"
-                          text={summaryHelp.wellnessAvg}
+                          text={isDayMode ? summaryHelp.wellnessAvg : summaryHelp.weeklyWellness}
                           activeHelp={activeHelp}
                           setActiveHelp={setActiveHelp}
                         />
                       </th>
-                      <th className="px-3 py-2 text-center border-r border-border">
+                      <th className="sticky top-[33px] z-30 bg-bg-tertiary px-3 py-2 text-center border-r border-border">
                         {isDayMode ? 'Trend' : 'Reported'}
                         <HelpButton
                           id="table-trend"
@@ -683,7 +734,7 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
                         />
                       </th>
                       {wellnessColumns.map((column) => (
-                        <th key={column.key} className="px-3 py-2 text-center">
+                        <th key={column.key} className="sticky top-[33px] z-30 bg-bg-tertiary px-3 py-2 text-center">
                           {column.label}
                           <HelpButton
                             id={`table-${column.key}`}
@@ -693,33 +744,33 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
                           />
                         </th>
                       ))}
-                      <th className="px-3 py-2 text-center">
+                      <th className="sticky top-[33px] z-30 bg-bg-tertiary px-3 py-2 text-center">
                         {isDayMode ? 'RPE' : 'Avg RPE'}
                         <HelpButton id="table-srpe" text="Logged session RPE from 1 to 10. Weekly view averages only reported days." activeHelp={activeHelp} setActiveHelp={setActiveHelp} />
                       </th>
-                      <th className="px-3 py-2 text-center">
+                      <th className="sticky top-[33px] z-30 bg-bg-tertiary px-3 py-2 text-center">
                         {isDayMode ? 'Min' : 'RPE Days'}
                         <HelpButton id="table-min" text="Duration for day view, or number of reported RPE days in week view." activeHelp={activeHelp} setActiveHelp={setActiveHelp} />
                       </th>
-                      <th className="px-3 py-2 text-center">
+                      <th className="sticky top-[33px] z-30 bg-bg-tertiary px-3 py-2 text-center">
                         sRPE Load
-                        <HelpButton id="table-load" text={summaryHelp.srpeLoad} activeHelp={activeHelp} setActiveHelp={setActiveHelp} />
+                        <HelpButton id="table-load" text={isDayMode ? summaryHelp.srpeLoad : summaryHelp.weeklyLoad} activeHelp={activeHelp} setActiveHelp={setActiveHelp} />
                       </th>
-                      <th className="px-3 py-2 text-center">
+                      <th className="sticky top-[33px] z-30 bg-bg-tertiary px-3 py-2 text-center">
                         {isDayMode ? 'Week Load' : 'Chronic Avg'}
                         <HelpButton id="table-week-load" text={isDayMode ? summaryHelp.weeklyLoad : 'Chronic average sRPE load per reported day over the last 28 days. Empty days are excluded.'} activeHelp={activeHelp} setActiveHelp={setActiveHelp} />
                       </th>
-                      <th className="px-3 py-2 text-center border-r border-border">
+                      <th className="sticky top-[33px] z-30 bg-bg-tertiary px-3 py-2 text-center border-r border-border">
                         ACWR
                         <HelpButton id="table-acwr" text="ACWR = acute average daily load divided by chronic average daily load, using reported days only. Amber starts around 1.3; red starts at 1.5." activeHelp={activeHelp} setActiveHelp={setActiveHelp} />
                       </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {dashboard.rows.map((row) => (
+                    {prioritizedRows.map((row) => (
                       <React.Fragment key={row.athleteId}>
                       <tr className="hover:bg-bg-tertiary/60 transition-colors">
-                        <td className="px-3 py-3 border-r border-border">
+                        <td className="sticky left-0 z-10 bg-bg-secondary px-3 py-3 border-r border-border">
                           <button
                             type="button"
                             onClick={() => setExpandedAthleteId((current) => (
@@ -827,7 +878,7 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
                                 </div>
                                 <div className="space-y-2 text-text-secondary">
                                   <div className="flex justify-between gap-3">
-                                    <span>Selected day</span>
+                                    <span>{isDayMode ? 'Selected day' : 'Week start score'}</span>
                                     <span className="font-semibold text-text-primary">{formatNumber(row.dailyWellness.score)}</span>
                                   </div>
                                   <div className="flex justify-between gap-3">
@@ -839,7 +890,7 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
                                     </span>
                                   </div>
                                   <div className="flex justify-between gap-3">
-                                    <span>Previous logged day</span>
+                                    <span>{isDayMode ? 'Previous logged day' : 'Previous logged entry'}</span>
                                     <span className="font-semibold text-text-primary">
                                       {row.wellnessTrend.previousDate
                                         ? `${formatNumber(row.wellnessTrend.previousScore)} (${row.wellnessTrend.previousDate})`
@@ -880,6 +931,7 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
                 </table>
               </div>
             </div>
+            </>
           )}
         </div>
       )}
