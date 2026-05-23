@@ -64,7 +64,7 @@ export default defineConfig(({ mode }) => {
       VitePWA({
         registerType: 'autoUpdate',
         manifest: {
-          name: "Training Log App",
+          name: "TrainingLog",
           short_name: "TrainingLog",
           description: "A professional strength training logging application",
           theme_color: "#23272F",

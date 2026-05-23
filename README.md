@@ -1,4 +1,4 @@
-# TrainingLog App
+# TrainingLog
 
 A professional strength training logging application built with React, TypeScript, and Firebase.
 
