@@ -2,7 +2,7 @@ import React from 'react';
 import { useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { RootState } from '@/store/store';
-import { useIsCoach, useIsAthlete } from '@/hooks/useUserRole';
+import { useCanUseAthleteFeatures, useIsCoach } from '@/hooks/useUserRole';
 import { AppLogo } from '@/components/brand';
 import AppOverlay from '@/components/ui/AppOverlay';
 
@@ -23,7 +23,7 @@ const SideMenu: React.FC<SideMenuProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
   const isCoach = useIsCoach();
-  const isAthlete = useIsAthlete();
+  const canUseAthleteFeatures = useCanUseAthleteFeatures();
 
   const isActivePath = (path: string) => (
     path === '/' ? location.pathname === '/' : location.pathname.startsWith(path)
@@ -102,17 +102,6 @@ const SideMenu: React.FC<SideMenuProps> = ({
               Programs
             </button>
             <button
-              onClick={() => navigateAndClose('/analytics')}
-              className={navButtonClass('/analytics')}
-              aria-current={isActivePath('/analytics') ? 'page' : undefined}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-5" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 19h14" />
-              </svg>
-              Analytics
-            </button>
-            <button
               onClick={() => navigateAndClose('/wellness')}
               className={navButtonClass('/wellness')}
               aria-current={isActivePath('/wellness') ? 'page' : undefined}
@@ -135,12 +124,35 @@ const SideMenu: React.FC<SideMenuProps> = ({
             </button>
           </div>
 
-          {/* Athlete Section - Only show for athletes */}
-          {isAthlete && (
+          {/* Athlete Section - Coaches keep access to the regular athlete workspace. */}
+          {canUseAthleteFeatures && (
             <div className="pt-4 border-t border-border space-y-1">
               <div className="px-4 py-2 text-xs font-semibold text-text-tertiary uppercase tracking-wider">
                 Athlete
               </div>
+              <button
+                onClick={() => navigateAndClose('/stats')}
+                className={navButtonClass('/stats')}
+                aria-current={isActivePath('/stats') ? 'page' : undefined}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-6a2 2 0 012-2h2a2 2 0 012 2v6" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 17V7a2 2 0 012-2h10a2 2 0 012 2v10" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 19h16" />
+                </svg>
+                Stats
+              </button>
+              <button
+                onClick={() => navigateAndClose('/analytics')}
+                className={navButtonClass('/analytics')}
+                aria-current={isActivePath('/analytics') ? 'page' : undefined}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-5" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 19h14" />
+                </svg>
+                Analytics
+              </button>
               <button 
                 onClick={() => navigateAndClose('/teams')} 
                 className={navButtonClass('/teams')}

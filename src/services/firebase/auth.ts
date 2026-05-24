@@ -27,7 +27,6 @@ export interface RegisterData {
   password: string;
   firstName: string;
   lastName: string;
-  role: 'athlete' | 'coach';
 }
 
 // Add a function to wait for auth to be ready
@@ -60,7 +59,7 @@ const convertTimestamps = (data: any): User => {
 };
 
 export const registerUser = async (data: RegisterData): Promise<User> => {
-  const { email, password, firstName, lastName, role } = data;
+  const { email, password, firstName, lastName } = data;
   
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -72,7 +71,7 @@ export const registerUser = async (data: RegisterData): Promise<User> => {
       email,
       firstName,
       lastName,
-      role,
+      role: 'athlete' as const,
       createdAt: now,
       updatedAt: now
     };

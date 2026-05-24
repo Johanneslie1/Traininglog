@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { configureStore } from '@reduxjs/toolkit';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router-dom';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import SideMenu from '@/components/SideMenu';
 import { User } from '@/services/firebase/auth';
 
@@ -60,18 +60,24 @@ describe('SideMenu role visibility', () => {
     expect(screen.queryByText(/Assigned Programs/i)).not.toBeInTheDocument();
   });
 
-  it('shows athlete hub entry only for athletes', () => {
+  it('shows athlete hub entry for athletes', () => {
     renderSideMenu('athlete');
 
-    expect(screen.getByText('Teams')).toBeInTheDocument();
+    const athleteSection = screen.getByText('Athlete').parentElement as HTMLElement;
+    expect(within(athleteSection).getByText('Stats')).toBeInTheDocument();
+    expect(within(athleteSection).getByText('Analytics')).toBeInTheDocument();
+    expect(within(athleteSection).getByText('Teams')).toBeInTheDocument();
     expect(screen.queryByText('Coach Hub')).not.toBeInTheDocument();
   });
 
-  it('shows coach hub entry only for coaches', () => {
+  it('shows regular athlete navigation plus coach hub for coaches', () => {
     renderSideMenu('coach');
 
+    const athleteSection = screen.getByText('Athlete').parentElement as HTMLElement;
+    expect(within(athleteSection).getByText('Stats')).toBeInTheDocument();
+    expect(within(athleteSection).getByText('Analytics')).toBeInTheDocument();
+    expect(within(athleteSection).getByText('Teams')).toBeInTheDocument();
     expect(screen.getByText('Coach Hub')).toBeInTheDocument();
-    expect(screen.queryByText('Teams')).not.toBeInTheDocument();
   });
 
 });

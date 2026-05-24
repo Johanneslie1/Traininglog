@@ -20,6 +20,7 @@ const TeamDetail = lazy(() => import('@/features/teams/TeamDetail'));
 const JoinTeam = lazy(() => import('@/features/teams/JoinTeam'));
 const CoachDashboard = lazy(() => import('@/features/coach/CoachDashboard'));
 const AthleteOverview = lazy(() => import('@/features/coach/AthleteOverview'));
+const AthleteStatsPage = lazy(() => import('@/features/stats/AthleteStatsPage'));
 const Debug = lazy(() => import('@/features/debug/Debug'));
 const ExerciseOverview = lazy(() => import('@/pages/ExerciseOverview'));
 const SpeedAgilityPlyoPage = lazy(() => import('@/pages/SpeedAgilityPlyoPage'));
@@ -176,6 +177,14 @@ const AppRoutes: React.FC = () => {
           }
         />
         <Route
+          path="/stats"
+          element={
+            <ProtectedRoute>
+              <AthleteStatsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/analytics"
           element={
             <ProtectedRoute>
@@ -235,9 +244,7 @@ const AppRoutes: React.FC = () => {
           path="/teams"
           element={
             <ProtectedRoute>
-              <RoleRoute allowedRole="athlete" redirectTo="/coach?tab=teams">
-                <AthleteTeamsHub />
-              </RoleRoute>
+              <AthleteTeamsHub />
             </ProtectedRoute>
           }
         />

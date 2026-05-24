@@ -6,23 +6,14 @@ import SharedSessionsList from '@/features/sessions/SharedSessionsList';
 import AthleteTeamWorkspace from './AthleteTeamWorkspace';
 import AthleteAnnouncements from './AthleteAnnouncements';
 import AthleteActivityFeed from './AthleteActivityFeed';
-import { useIsAthlete, useIsCoach } from '@/hooks/useUserRole';
+import { useCanUseAthleteFeatures } from '@/hooks/useUserRole';
 
 type TabType = 'teams' | 'programs' | 'sessions' | 'announcements' | 'activity';
 
 const AthleteTeamsHub: React.FC = () => {
-  const isAthlete = useIsAthlete();
-  const isCoach = useIsCoach();
+  const canUseAthleteFeatures = useCanUseAthleteFeatures();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabType>('teams');
-
-  if (!isAthlete) {
-    if (isCoach) {
-      return <Navigate to="/coach?tab=teams" replace />;
-    }
-
-    return <Navigate to="/" replace />;
-  }
 
   // Read tab from URL on mount
   useEffect(() => {
@@ -31,6 +22,10 @@ const AthleteTeamsHub: React.FC = () => {
       setActiveTab(tabParam);
     }
   }, [searchParams]);
+
+  if (!canUseAthleteFeatures) {
+    return <Navigate to="/" replace />;
+  }
 
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);

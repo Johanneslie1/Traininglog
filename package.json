@@ -26,6 +26,7 @@
     "migrate:rir-rpe:dry": "tsx scripts/migrateRirToRpe.ts",
     "migrate:rir-rpe:apply": "tsx scripts/migrateRirToRpe.ts --apply",
     "fix-exercises": "node scripts/fixExerciseTypes.js",
+    "user-role:set": "tsx scripts/setUserRole.ts",
     "coach-access:rebuild:dry": "tsx scripts/rebuildCoachAthleteAccess.ts --dry-run",
     "coach-access:rebuild": "tsx scripts/rebuildCoachAthleteAccess.ts --apply",
     "test": "npm run test:jest",

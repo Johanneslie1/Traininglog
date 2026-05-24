@@ -29,3 +29,12 @@ export const useIsAthlete = (): boolean => {
   const role = useUserRole();
   return role === 'athlete';
 };
+
+/**
+ * Coach accounts are upgraded athlete accounts, so they keep access to shared
+ * athlete-facing features while also receiving coach-only tools.
+ */
+export const useCanUseAthleteFeatures = (): boolean => {
+  const role = useUserRole();
+  return role === 'athlete' || role === 'coach';
+};

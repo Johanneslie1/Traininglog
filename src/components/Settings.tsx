@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect, useCallback } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { getExportPreview, ExportPreview } from '@/services/exportService';
 import { downloadPowerBiZip, buildPowerBiFiles } from '@/services/powerBiExportService';
@@ -10,8 +10,6 @@ import type { PowerBiExportScope } from '@/types/powerBiExport';
 import { exportFullBackup, downloadBackupJson } from '@/services/backupService';
 import { useTheme, Theme } from '@/context/ThemeContext';
 import { useSettings } from '@/context/SettingsContext';
-import { updateUserRole } from '@/services/firebase/auth';
-import { setUser } from '@/features/auth/authSlice';
 import { uploadToOneDrive, signOutOneDrive, isOneDriveSignedIn } from '@/services/onedriveService';
 import toast from 'react-hot-toast';
 
@@ -83,9 +81,7 @@ interface Setting {
 
 const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
   const { user } = useSelector((state: RootState) => state.auth);
-  const dispatch = useDispatch();
   const [isExportingJson, setIsExportingJson] = useState(false);
-  const [isUpdatingRole, setIsUpdatingRole] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange>({
     startDate: null,
     endDate: null,
@@ -379,31 +375,6 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
     setTheme(newTheme);
   };
 
-  const handleRoleChange = async (newRole: 'athlete' | 'coach') => {
-    if (!user?.id || isUpdatingRole) return;
-    
-    if (user.role === newRole) return; // No change needed
-
-    setIsUpdatingRole(true);
-    try {
-      await updateUserRole(user.id, newRole);
-      
-      // Update Redux state
-      dispatch(setUser({
-        ...user,
-        role: newRole,
-        updatedAt: new Date()
-      }));
-      
-      toast.success(`Role updated to ${newRole}`);
-    } catch (error) {
-      console.error('Failed to update role:', error);
-      toast.error('Failed to update role');
-    } finally {
-      setIsUpdatingRole(false);
-    }
-  };
-
   if (!isOpen) return null;
 
   return (
@@ -446,18 +417,12 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                 <div className="flex-1">
                   <div className="text-text-primary font-medium">Role</div>
                   <p className="text-text-tertiary text-sm mt-1">
-                    Choose your role to access relevant features
+                    Coach access is managed by the app owner
                   </p>
                 </div>
-                <select
-                  value={user?.role || 'athlete'}
-                  onChange={(e) => handleRoleChange(e.target.value as 'athlete' | 'coach')}
-                  disabled={isUpdatingRole}
-                  className="bg-bg-tertiary text-text-primary px-3 py-2 rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-accent-primary cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <option value="athlete">Athlete</option>
-                  <option value="coach">Coach</option>
-                </select>
+                <span className="bg-bg-tertiary text-text-primary px-3 py-2 rounded-md border border-border capitalize">
+                  {user?.role || 'athlete'}
+                </span>
               </div>
 
               {/* Progressive Overload Auto-fill Toggle */}

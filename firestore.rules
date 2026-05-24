@@ -14,6 +14,12 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == 'Bnz8b5dGcsaWXFYwo9a48NqL19y2';
     }
 
+    function isCoach() {
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'coach';
+    }
+
     function hasCoachAthleteAccess(athleteId) {
       return isAuthenticated() &&
         exists(/databases/$(database)/documents/coachAthleteAccess/$(request.auth.uid + '_' + athleteId)) &&
@@ -22,7 +28,8 @@ service cloud.firestore {
         exists(/databases/$(database)/documents/teams/$(get(/databases/$(database)/documents/coachAthleteAccess/$(request.auth.uid + '_' + athleteId)).data.teamId)) &&
         get(/databases/$(database)/documents/teams/$(get(/databases/$(database)/documents/coachAthleteAccess/$(request.auth.uid + '_' + athleteId)).data.teamId)).data.coachId == request.auth.uid &&
         get(/databases/$(database)/documents/teams/$(get(/databases/$(database)/documents/coachAthleteAccess/$(request.auth.uid + '_' + athleteId)).data.teamId)).data.isActive == true &&
-        exists(/databases/$(database)/documents/teams/$(get(/databases/$(database)/documents/coachAthleteAccess/$(request.auth.uid + '_' + athleteId)).data.teamId)/members/$(athleteId));
+        exists(/databases/$(database)/documents/teams/$(get(/databases/$(database)/documents/coachAthleteAccess/$(request.auth.uid + '_' + athleteId)).data.teamId)/members/$(athleteId)) &&
+        get(/databases/$(database)/documents/teams/$(get(/databases/$(database)/documents/coachAthleteAccess/$(request.auth.uid + '_' + athleteId)).data.teamId)/members/$(athleteId)).data.status == 'active';
     }
 
     // Global exercises collection
@@ -39,9 +46,15 @@ service cloud.firestore {
 
     match /users/{userId} {
       // User profiles are readable to authenticated users (used by team/coach flows).
-      // Mutations remain owner-only.
+      // Mutations remain owner-only, but role changes are admin-only via server scripts.
       allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && isOwner(userId);
+      allow create: if isAuthenticated() &&
+        isOwner(userId) &&
+        request.resource.data.role == 'athlete';
+      allow update: if isAuthenticated() &&
+        isOwner(userId) &&
+        request.resource.data.role == resource.data.role;
+      allow delete: if isAuthenticated() && isOwner(userId);
       
       // Nested exercises collection under users - CRUD permissions
       // NOTE: Coach access is enforced by application-level relationship checks in coachService.
@@ -193,13 +206,14 @@ service cloud.firestore {
       allow create, update: if isAuthenticated() &&
         accessId == request.resource.data.coachId + '_' + request.resource.data.athleteId &&
         (
-          request.auth.uid == request.resource.data.coachId ||
+          (request.auth.uid == request.resource.data.coachId && isCoach()) ||
           request.auth.uid == request.resource.data.athleteId
         ) &&
         exists(/databases/$(database)/documents/teams/$(request.resource.data.teamId)) &&
         get(/databases/$(database)/documents/teams/$(request.resource.data.teamId)).data.isActive == true &&
         get(/databases/$(database)/documents/teams/$(request.resource.data.teamId)).data.coachId == request.resource.data.coachId &&
-        exists(/databases/$(database)/documents/teams/$(request.resource.data.teamId)/members/$(request.resource.data.athleteId));
+        exists(/databases/$(database)/documents/teams/$(request.resource.data.teamId)/members/$(request.resource.data.athleteId)) &&
+        get(/databases/$(database)/documents/teams/$(request.resource.data.teamId)/members/$(request.resource.data.athleteId)).data.status == 'active';
 
       allow delete: if isAuthenticated() && (
         resource.data.coachId == request.auth.uid ||
@@ -276,16 +290,19 @@ service cloud.firestore {
         request.auth.uid in resource.data.sharedWith
       );
       
-      // Allow create if user is authenticated and is the sharedBy user
+      // Only coaches can share programs with athletes.
       allow create: if isAuthenticated() && 
+        isCoach() &&
         request.resource.data.sharedBy == request.auth.uid;
       
       // Allow update only by the owner (sharedBy user)
       allow update: if isAuthenticated() && 
+        isCoach() &&
         resource.data.sharedBy == request.auth.uid;
       
       // Allow delete only by the owner
       allow delete: if isAuthenticated() && 
+        isCoach() &&
         resource.data.sharedBy == request.auth.uid;
     }
 
@@ -299,16 +316,18 @@ service cloud.firestore {
       
       // Allow create by the coach who is sharing (sharedBy field must match authenticated user)
       allow create: if isAuthenticated() && 
+        isCoach() &&
         request.resource.data.sharedBy == request.auth.uid;
       
       // Allow update by assigned user (to change status) or by coach
       allow update: if isAuthenticated() && (
         resource.data.userId == request.auth.uid ||
-        resource.data.sharedBy == request.auth.uid
+        (resource.data.sharedBy == request.auth.uid && isCoach())
       );
       
       // Allow delete by coach only
       allow delete: if isAuthenticated() && 
+        isCoach() &&
         resource.data.sharedBy == request.auth.uid;
     }
 
@@ -320,16 +339,19 @@ service cloud.firestore {
         request.auth.uid in resource.data.sharedWith
       );
       
-      // Allow create if user is authenticated and is the sharedBy user
+      // Only coaches can share sessions with athletes.
       allow create: if isAuthenticated() && 
+        isCoach() &&
         request.resource.data.sharedBy == request.auth.uid;
       
       // Allow update only by the owner (sharedBy user)
       allow update: if isAuthenticated() && 
+        isCoach() &&
         resource.data.sharedBy == request.auth.uid;
       
       // Allow delete only by the owner
       allow delete: if isAuthenticated() && 
+        isCoach() &&
         resource.data.sharedBy == request.auth.uid;
     }
 
@@ -343,25 +365,23 @@ service cloud.firestore {
       
       // Allow create by the coach who is sharing (sharedBy field must match authenticated user)
       allow create: if isAuthenticated() && 
+        isCoach() &&
         request.resource.data.sharedBy == request.auth.uid;
       
       // Allow update by assigned user (to change status) or by coach
       allow update: if isAuthenticated() && (
         resource.data.userId == request.auth.uid ||
-        resource.data.sharedBy == request.auth.uid
+        (resource.data.sharedBy == request.auth.uid && isCoach())
       );
       
       // Allow delete by coach only
       allow delete: if isAuthenticated() && 
+        isCoach() &&
         resource.data.sharedBy == request.auth.uid;
     }
 
     // Coach announcements collection
     match /coachAnnouncements/{announcementId} {
-      function isCoach() {
-        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'coach';
-      }
-
       // Coaches can read announcements they created.
       // Athletes can read announcements where they are recipients.
       allow read: if isAuthenticated() && (
@@ -400,14 +420,17 @@ allow list: if isAuthenticated();
       
       // Allow create if authenticated and is setting self as coach
       allow create: if isAuthenticated() && 
+        isCoach() &&
         request.resource.data.coachId == request.auth.uid;
       
       // Allow update only by the coach
       allow update: if isAuthenticated() && 
+        isCoach() &&
         resource.data.coachId == request.auth.uid;
       
       // Allow delete only by the coach
       allow delete: if isAuthenticated() && 
+        isCoach() &&
         resource.data.coachId == request.auth.uid;
 
       // Team members subcollection
@@ -421,17 +444,18 @@ allow list: if isAuthenticated();
         
         // Allow create by the coach or by the user themselves (when joining)
         allow create: if isAuthenticated() && (
-          get(/databases/$(database)/documents/teams/$(teamId)).data.coachId == request.auth.uid ||
+          (get(/databases/$(database)/documents/teams/$(teamId)).data.coachId == request.auth.uid && isCoach()) ||
           memberId == request.auth.uid
         );
         
         // Allow update by the coach
         allow update: if isAuthenticated() && 
+          isCoach() &&
           get(/databases/$(database)/documents/teams/$(teamId)).data.coachId == request.auth.uid;
         
         // Allow delete by the coach or by the member themselves (when leaving)
         allow delete: if isAuthenticated() && (
-          get(/databases/$(database)/documents/teams/$(teamId)).data.coachId == request.auth.uid ||
+          (get(/databases/$(database)/documents/teams/$(teamId)).data.coachId == request.auth.uid && isCoach()) ||
           memberId == request.auth.uid
         );
       }
