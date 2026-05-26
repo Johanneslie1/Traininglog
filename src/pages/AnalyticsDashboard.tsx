@@ -444,7 +444,7 @@ const AnalyticsDashboard: React.FC = () => {
               <p className="mt-1 text-2xl font-bold text-text-primary">{summary.currentStreak}</p>
             </div>
             <div className="rounded-xl border border-border bg-bg-secondary p-4">
-              <p className="text-xs text-text-tertiary uppercase tracking-wide">Football Load</p>
+              <p className="text-xs text-text-tertiary uppercase tracking-wide">Sports Load</p>
               <p className="mt-1 text-2xl font-bold text-text-primary">{footballLoad.toLocaleString()}</p>
             </div>
             <div className="rounded-xl border border-border bg-bg-secondary p-4">

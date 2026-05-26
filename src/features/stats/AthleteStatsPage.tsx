@@ -173,7 +173,7 @@ const AthleteStatsPage: React.FC = () => {
   const selectedDateLabel = formatCompactDate(selectedDate);
   const periodRangeLabel = formatWeekRange(periodStartDate, periodEndDate);
   const wellnessLabel = isDayMode ? 'Wellness score' : 'Weekly wellness avg';
-  const srpeLabel = isDayMode ? 'sRPE load' : 'Weekly sRPE load';
+  const srpeLabel = isDayMode ? 'Sports load' : 'Weekly sports load';
 
   return (
     <div className="min-h-screen bg-bg-primary text-text-primary">
@@ -246,23 +246,15 @@ const AthleteStatsPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => movePeriod(-1)}
-                  className="flex h-full w-10 items-center justify-center text-text-tertiary transition-colors hover:bg-bg-tertiary hover:text-accent-primary"
+                  className="flex h-full w-11 items-center justify-center text-text-tertiary transition-colors hover:bg-bg-tertiary hover:text-accent-primary"
                   aria-label={isDayMode ? 'Previous day' : 'Previous week'}
                 >
                   <ChevronLeftIcon className="h-4 w-4" />
                 </button>
-                <div className="border-x border-border px-4 text-center">
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-text-tertiary">
-                    {isDayMode ? 'Day' : 'Period'}
-                  </div>
-                  <div className="text-sm font-semibold leading-tight text-text-primary">
-                    {isDayMode ? selectedDateLabel : periodRangeLabel}
-                  </div>
-                </div>
                 <button
                   type="button"
                   onClick={() => movePeriod(1)}
-                  className="flex h-full w-10 items-center justify-center text-text-tertiary transition-colors hover:bg-bg-tertiary hover:text-accent-primary"
+                  className="flex h-full w-11 items-center justify-center border-l border-border text-text-tertiary transition-colors hover:bg-bg-tertiary hover:text-accent-primary"
                   aria-label={isDayMode ? 'Next day' : 'Next week'}
                 >
                   <ChevronRightIcon className="h-4 w-4" />
@@ -338,7 +330,7 @@ const AthleteStatsPage: React.FC = () => {
             </div>
 
             <div className="rounded-lg border border-info-border bg-info-bg px-3 py-2 text-xs leading-relaxed text-info-text">
-              This view reads only your own wellness and sRPE logs. Coach Hub remains the place for team and athlete-wide stats.
+              This view reads only your own wellness and sports load logs. Coach Hub remains the place for team and athlete-wide stats.
             </div>
 
             {!dashboard || !row ? (
@@ -346,7 +338,7 @@ const AthleteStatsPage: React.FC = () => {
                 <ExclamationIcon className="mx-auto mb-3 h-10 w-10 text-text-tertiary" />
                 <p className="font-medium text-text-primary">No stats found</p>
                 <p className="mt-1 text-sm text-text-tertiary">
-                  Log wellness or sRPE entries to populate this overview.
+                  Log wellness or sports load entries to populate this overview.
                 </p>
               </div>
             ) : (
@@ -428,7 +420,7 @@ const AthleteStatsPage: React.FC = () => {
 
             {summary ? (
               <p className="text-xs text-text-tertiary">
-                Weekly wellness average: {formatNumber(summary.weeklyWellnessAverage)} · Weekly sRPE load: {formatLoad(summary.weeklySrpeTotalLoad)}
+                Weekly wellness average: {formatNumber(summary.weeklyWellnessAverage)} · Weekly sports load: {formatLoad(summary.weeklySrpeTotalLoad)}
               </p>
             ) : null}
           </section>

@@ -155,7 +155,7 @@ describe('AthleteStatsPage', () => {
 
     expect(screen.getByRole('heading', { name: 'Stats' })).toBeInTheDocument();
     await waitFor(() => expect(getAthleteStatsDashboardMock).toHaveBeenCalled());
-    expect(await screen.findByText('This view reads only your own wellness and sRPE logs. Coach Hub remains the place for team and athlete-wide stats.')).toBeInTheDocument();
+    expect(await screen.findByText('This view reads only your own wellness and sports load logs. Coach Hub remains the place for team and athlete-wide stats.')).toBeInTheDocument();
   });
 
   it('allows coaches to view the same personal athlete-style stats page', async () => {

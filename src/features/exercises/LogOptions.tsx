@@ -12,7 +12,6 @@ import ProgramExercisePicker from '@/features/programs/ProgramExercisePicker';
 import { ProgramExerciseSelection } from '@/features/programs/ProgramExercisePicker';
 import { UniversalSetLogger } from '@/components/UniversalSetLogger';
 import { addExerciseLog } from '@/services/firebase/exerciseLogs';
-import SportActivityPicker from '@/components/activities/SportActivityPicker';
 import SpeedAgilityActivityPicker from '@/components/activities/SpeedAgilityActivityPicker';
 import StretchingActivityPicker from '@/components/activities/StretchingActivityPicker';
 import EnduranceActivityPicker from '@/components/activities/EnduranceActivityPicker';
@@ -43,7 +42,7 @@ interface LogOptionsProps {
   selectedSessionType?: SessionType;
 }
 
-type ViewState = 'main' | 'setEditor' | 'programPicker' | 'copyPrevious' | 'sport' | 'stretching' | 'endurance' | 'other' | 'speedAgility' | 'resistance' | 'editExercise' | 'selectType';
+type ViewState = 'main' | 'setEditor' | 'programPicker' | 'copyPrevious' | 'stretching' | 'endurance' | 'other' | 'speedAgility' | 'resistance' | 'editExercise' | 'selectType';
 
 const helperCategories: Category[] = [
   { id: 'programs', name: 'Add from Program', icon: '📋', bgColor: 'bg-bg-tertiary', iconBgColor: 'bg-purple-600', textColor: 'text-text-primary' },
@@ -60,15 +59,6 @@ const activityTypes = [
     bgColor: 'bg-blue-600 dark:bg-blue-600',
     textColor: 'text-white',
     examples: 'Squats, Deadlifts, Bench Press'
-  },
-  {
-    id: 'sport',
-    name: 'Sports',
-    description: 'Team sports, individual competitions',
-    icon: '⚽',
-    bgColor: 'bg-green-600 dark:bg-green-600',
-    textColor: 'text-white',
-    examples: 'Football, Basketball, Tennis'
   },
   {
     id: 'stretching',
@@ -169,7 +159,8 @@ export const LogOptions = ({
         setView('speedAgility');
         break;
       case TrainingType.TEAM_SPORTS:
-        setView('sport');
+        toast('Use Sports Load from the sidemenu to log sport duration and RPE.', { icon: 'ℹ️' });
+        setView('main');
         break;
       case TrainingType.OTHER:
         setView('other');
@@ -397,24 +388,6 @@ export const LogOptions = ({
           <TrainingTypeSelector onSelect={handleTrainingTypeSelected} />
         </div>
       </div>
-    );
-  }
-
-  if (view === 'sport') {
-    return (
-      <SportActivityPicker
-        onClose={onClose}
-        onBack={() => setView('main')}
-        onActivityLogged={() => {
-          onExerciseAdded?.();
-          setView('main');
-        }}
-        selectedDate={selectedDate}
-        editingExercise={editingExercise} // Pass editing exercise
-        isWarmupMode={isWarmupMode}
-        selectedSessionId={selectedSessionId}
-        selectedSessionType={effectiveSessionType}
-      />
     );
   }
 
@@ -752,8 +725,6 @@ export const LogOptions = ({
                     if (activityType.id === 'resistance') {
                       // For resistance training, show the resistance training menu
                       setView('resistance');
-                    } else if (activityType.id === 'sport') {
-                      setView('sport');
                     } else if (activityType.id === 'stretching') {
                       setView('stretching');
                     } else if (activityType.id === 'endurance') {

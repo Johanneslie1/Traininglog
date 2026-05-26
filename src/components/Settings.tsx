@@ -211,7 +211,6 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
         toast.error('Could not load export options');
       })
       .finally(() => setIsLoadingAthletes(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isCoach, exportScope]);
 
   const handleExportPowerBi = async () => {

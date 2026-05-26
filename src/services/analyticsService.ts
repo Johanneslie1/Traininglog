@@ -336,14 +336,14 @@ export class AnalyticsService {
       });
 
       srpeLogs.forEach((log) => {
-        const acc = getOrCreate('footballLoad', 'Football load', ActivityType.SPORT);
+        const acc = getOrCreate('sportsLoad', 'Sports load', ActivityType.SPORT);
         acc.sessionCount += 1;
         acc.exerciseCount += 1;
         acc.totalDurationMinutes += log.durationMinutes || 0;
         acc.totalLoad += log.sessionLoad || 0;
         acc.rpeTotal += log.rpe || 0;
         acc.rpeCount += log.rpe ? 1 : 0;
-        acc.exerciseLoads.set('Football load', (acc.exerciseLoads.get('Football load') || 0) + (log.sessionLoad || 0));
+        acc.exerciseLoads.set(log.sportName || 'Sports load', (acc.exerciseLoads.get(log.sportName || 'Sports load') || 0) + (log.sessionLoad || 0));
       });
 
       sessionKeysByActivity.forEach((keys, activityKey) => {

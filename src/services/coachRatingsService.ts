@@ -559,9 +559,9 @@ function classifyRows(rows: CoachRatingsRow[], viewMode: CoachRatingsViewMode): 
 
     if (viewMode !== 'day' && weeklyLoadAverage !== null && weeklyLoadAverage > 0 && row.weeklySrpe.totalLoad > 0) {
       if (row.weeklySrpe.totalLoad >= weeklyLoadAverage * 1.5) {
-        outlierReasons.push('Weekly sRPE load above team average');
+        outlierReasons.push('Weekly sports load above team average');
       } else if (row.weeklySrpe.totalLoad >= weeklyLoadAverage * 1.25) {
-        watchReasons.push('Weekly sRPE load above team average');
+        watchReasons.push('Weekly sports load above team average');
       }
     }
 

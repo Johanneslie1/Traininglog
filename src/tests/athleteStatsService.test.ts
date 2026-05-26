@@ -76,7 +76,7 @@ describe('athleteStatsService', () => {
     ]);
   });
 
-  it('fetches wellness and sRPE stats only for the signed-in user', async () => {
+  it('fetches wellness and sports load stats only for the signed-in user', async () => {
     const data = await getAthleteStatsDashboard({
       selectedDate: '2026-03-10',
       viewMode: 'day',

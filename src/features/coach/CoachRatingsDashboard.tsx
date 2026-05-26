@@ -46,8 +46,8 @@ const summaryHelp = {
   weeklyWellness: 'Weekly score: the team average Wellness Readiness Score across submitted days in the selected Monday-Sunday week. Missing days are not counted as zero.',
   missingWellness: 'Athletes without a wellness entry on the selected date.',
   missingSrpe: 'Athletes without an RPE/duration entry on the selected date.',
-  srpeLoad: 'Total selected-day sRPE session load for the team. For each athlete: RPE x duration minutes.',
-  weeklyLoad: 'Total team sRPE session load across the selected week.',
+  srpeLoad: 'Total selected-day sports load for the team. For each athlete: RPE x duration minutes.',
+  weeklyLoad: 'Total team sports load across the selected week.',
 };
 
 const statusStyles: Record<CoachRatingStatus, string> = {
@@ -422,7 +422,7 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
   const wellnessSummaryLabel = isDayMode ? 'Daily wellness' : 'Weekly wellness avg';
   const missingWellnessLabel = isDayMode ? 'Missing wellness' : 'No wellness this week';
   const missingSrpeLabel = isDayMode ? 'Missing RPE' : 'No RPE this week';
-  const loadSummaryLabel = isDayMode ? 'sRPE load' : 'Weekly load';
+  const loadSummaryLabel = isDayMode ? 'Sports load' : 'Weekly sports load';
   const prioritizedRows = [...(dashboard?.rows ?? [])].sort((a, b) => {
     const statusDiff = statusPriority[a.status] - statusPriority[b.status];
     if (statusDiff !== 0) return statusDiff;
@@ -513,23 +513,15 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
                   <button
                     type="button"
                     onClick={() => movePeriod(-1)}
-                    className="flex h-full w-10 items-center justify-center text-text-tertiary transition-colors hover:bg-bg-tertiary hover:text-accent-primary"
+                    className="flex h-full w-11 items-center justify-center text-text-tertiary transition-colors hover:bg-bg-tertiary hover:text-accent-primary"
                     aria-label={isDayMode ? 'Previous day' : 'Previous week'}
                   >
                     <ChevronLeftIcon className="h-4 w-4" />
                   </button>
-                  <div className="border-x border-border px-4 text-center">
-                    <div className="text-[10px] uppercase tracking-[0.18em] text-text-tertiary">
-                      {isDayMode ? 'Day' : 'Period'}
-                    </div>
-                    <div className="text-sm font-semibold leading-tight text-text-primary">
-                      {isDayMode ? selectedDateLabel : periodRangeLabel}
-                    </div>
-                  </div>
                   <button
                     type="button"
                     onClick={() => movePeriod(1)}
-                    className="flex h-full w-10 items-center justify-center text-text-tertiary transition-colors hover:bg-bg-tertiary hover:text-accent-primary"
+                    className="flex h-full w-11 items-center justify-center border-l border-border text-text-tertiary transition-colors hover:bg-bg-tertiary hover:text-accent-primary"
                     aria-label={isDayMode ? 'Next day' : 'Next week'}
                   >
                     <ChevronRightIcon className="h-4 w-4" />
@@ -691,13 +683,13 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
               <ExclamationIcon className="h-10 w-10 text-text-tertiary mx-auto mb-3" />
               <p className="text-text-primary font-medium">No athletes found</p>
               <p className="text-sm text-text-tertiary mt-1">
-                Add athletes to this team to see wellness, RPE, and sRPE load ratings.
+                Add athletes to this team to see wellness, RPE, and sports load ratings.
               </p>
             </div>
           ) : (
             <>
             <p className="mb-2 text-xs text-text-tertiary">
-              Team table view. Scroll sideways to compare wellness, trend, sRPE load, and ACWR for every athlete in one place.
+              Team table view. Scroll sideways to compare wellness, trend, sports load, and ACWR for every athlete in one place.
             </p>
 
             <div className="overflow-hidden rounded-lg border border-border">
@@ -753,12 +745,12 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
                         <HelpButton id="table-min" text="Duration for day view, or number of reported RPE days in week view." activeHelp={activeHelp} setActiveHelp={setActiveHelp} />
                       </th>
                       <th className="sticky top-[33px] z-30 bg-bg-tertiary px-3 py-2 text-center">
-                        sRPE Load
+                        Sports Load
                         <HelpButton id="table-load" text={isDayMode ? summaryHelp.srpeLoad : summaryHelp.weeklyLoad} activeHelp={activeHelp} setActiveHelp={setActiveHelp} />
                       </th>
                       <th className="sticky top-[33px] z-30 bg-bg-tertiary px-3 py-2 text-center">
                         {isDayMode ? 'Week Load' : 'Chronic Avg'}
-                        <HelpButton id="table-week-load" text={isDayMode ? summaryHelp.weeklyLoad : 'Chronic average sRPE load per reported day over the last 28 days. Empty days are excluded.'} activeHelp={activeHelp} setActiveHelp={setActiveHelp} />
+                        <HelpButton id="table-week-load" text={isDayMode ? summaryHelp.weeklyLoad : 'Chronic average sports load per reported day over the last 28 days. Empty days are excluded.'} activeHelp={activeHelp} setActiveHelp={setActiveHelp} />
                       </th>
                       <th className="sticky top-[33px] z-30 bg-bg-tertiary px-3 py-2 text-center border-r border-border">
                         ACWR

@@ -105,7 +105,6 @@ const MultiActivityLogger: React.FC<MultiActivityLoggerProps> = ({
       void loadAll();
     }, 0);
     return () => { isCancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleActivityTypeSelect = (activityType: ActivityType) => {

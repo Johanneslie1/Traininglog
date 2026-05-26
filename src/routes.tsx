@@ -26,7 +26,7 @@ const ExerciseOverview = lazy(() => import('@/pages/ExerciseOverview'));
 const SpeedAgilityPlyoPage = lazy(() => import('@/pages/SpeedAgilityPlyoPage'));
 const AnalyticsDashboard = lazy(() => import('@/pages/AnalyticsDashboard'));
 const WellnessPage = lazy(() => import('@/features/wellness/WellnessPage'));
-const SrpePage = lazy(() => import('@/features/srpe/SrpePage'));
+const SportsLoadPage = lazy(() => import('@/features/srpe/SportsLoadPage'));
 
 // Wrapper to fetch program by id and render ProgramDetail
 const ProgramDetailWrapper: React.FC = () => {
@@ -202,9 +202,13 @@ const AppRoutes: React.FC = () => {
         />
         <Route
           path="/srpe"
+          element={<Navigate to="/sports" replace />}
+        />
+        <Route
+          path="/sports"
           element={
             <ProtectedRoute>
-              <SrpePage />
+              <SportsLoadPage />
             </ProtectedRoute>
           }
         />

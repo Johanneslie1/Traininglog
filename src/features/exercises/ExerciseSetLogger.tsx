@@ -75,32 +75,7 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
   useExerciseId = false
 }) => {
   // Check if we should use the universal logger for non-resistance exercises
-  if (shouldUseUniversalLogger(exercise)) {
-    const handleUniversalSave = (sets: ExerciseSet[]) => {
-      if (useExerciseId) {
-        (onSave as (sets: ExerciseSet[], exerciseId: string, metadata?: { prescriptionAssistant?: ExercisePrescriptionAssistantData }) => void)(sets, exercise.id, {
-          prescriptionAssistant: exercise.prescriptionAssistant
-        });
-      } else {
-        (onSave as (sets: ExerciseSet[], metadata?: { prescriptionAssistant?: ExercisePrescriptionAssistantData }) => void)(sets, {
-          prescriptionAssistant: exercise.prescriptionAssistant
-        });
-      }
-    };
-
-    return (
-      <UniversalSetLogger
-        exercise={exercise as Exercise}
-        onSave={handleUniversalSave}
-        onCancel={onCancel}
-        initialSets={exercise.sets || []}
-        isEditing={isEditing}
-        prescription={exercise.prescription}
-        instructionMode={exercise.instructionMode}
-        prescriptionAssistant={exercise.prescriptionAssistant}
-      />
-    );
-  }
+  const useUniversalLogger = shouldUseUniversalLogger(exercise);
 
   // Use traditional resistance training logger for strength exercises
   const [followPrescription, setFollowPrescription] = useState<boolean>(true);
@@ -149,10 +124,11 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
 
   // Keep a single editable first set; do not auto-prefill multiple sets
   useEffect(() => {
+    if (useUniversalLogger) return;
     if (!isEditing && sets.length === 0) {
       setSets([{ weight: 0, reps: 5, difficulty: DifficultyCategory.EASY }]);
     }
-  }, [isEditing, sets.length]);
+  }, [isEditing, sets.length, useUniversalLogger]);
 
   // Toggle prescription pre-filling
   const handleTogglePrescription = () => {
@@ -200,6 +176,7 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
 
   // Debug logging for development
   useEffect(() => {
+    if (useUniversalLogger) return;
     if (process.env.NODE_ENV === 'development') {
       console.log('ExerciseSetLogger state:', {
         sets,
@@ -209,7 +186,34 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
         showPreviousSets
       });
     }
-  }, [sets, isEditing, editingSetIndex, externalPreviousSet, showPreviousSets]);
+  }, [sets, isEditing, editingSetIndex, externalPreviousSet, showPreviousSets, useUniversalLogger]);
+
+  if (useUniversalLogger) {
+    const handleUniversalSave = (sets: ExerciseSet[]) => {
+      if (useExerciseId) {
+        (onSave as (sets: ExerciseSet[], exerciseId: string, metadata?: { prescriptionAssistant?: ExercisePrescriptionAssistantData }) => void)(sets, exercise.id, {
+          prescriptionAssistant: exercise.prescriptionAssistant
+        });
+      } else {
+        (onSave as (sets: ExerciseSet[], metadata?: { prescriptionAssistant?: ExercisePrescriptionAssistantData }) => void)(sets, {
+          prescriptionAssistant: exercise.prescriptionAssistant
+        });
+      }
+    };
+
+    return (
+      <UniversalSetLogger
+        exercise={exercise as Exercise}
+        onSave={handleUniversalSave}
+        onCancel={onCancel}
+        initialSets={exercise.sets || []}
+        isEditing={isEditing}
+        prescription={exercise.prescription}
+        instructionMode={exercise.instructionMode}
+        prescriptionAssistant={exercise.prescriptionAssistant}
+      />
+    );
+  }
 
   const handleSetSave = (editedSet: ExerciseSet, index?: number) => {
     if (typeof index === 'number') {
