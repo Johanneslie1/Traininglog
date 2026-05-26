@@ -1,0 +1,19 @@
+---
+description: Core architecture and project conventions for TrainingLog
+alwaysApply: true
+---
+
+# Project Overview
+
+- This is a React 18 + TypeScript + Vite app with Firebase, Redux Toolkit auth state, React Router, Tailwind, and PWA support.
+- Prefer `@/` imports for source files. Keep relative imports for files in the same small module only when it improves readability.
+- Use the existing folders by responsibility:
+  - `src/features/<domain>` for routed pages and domain-specific UI.
+  - `src/components` for shared UI, layout, brand, activity, exercise, and template components.
+  - `src/services` for Firebase/API persistence and cross-feature data loading.
+  - `src/hooks`, `src/context`, `src/utils`, `src/types`, and `src/config` for reusable logic and contracts.
+- Keep domain rules in services/utilities when they are reused or testable; keep components focused on rendering, local UI state, and user interactions.
+- Preserve auth and role behavior: coach accounts can also use athlete-facing features, while coach-only routes stay protected.
+- Do not introduce new app-wide state libraries. Use existing Redux auth state, contexts, hooks, or local state based on the nearby pattern.
+- Be careful with shipped data shapes and Firestore paths. Maintain compatibility for persisted logs, sessions, teams, wellness, sRPE, programs, and legacy exercise data unless a migration is intentional.
+- For new dependencies, prefer the existing stack first. Add packages only when they remove real complexity, then update `package.json` through npm.

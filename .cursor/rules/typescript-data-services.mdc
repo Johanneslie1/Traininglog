@@ -1,0 +1,18 @@
+---
+description: TypeScript, utility, and Firebase service conventions
+globs: **/*.ts
+alwaysApply: false
+---
+
+# TypeScript And Data Services
+
+- Keep TypeScript strict: avoid `any`, preserve discriminated unions/enums, and prefer explicit return types for exported utilities and services.
+- Model shared data in `src/types` and import those types rather than duplicating shapes in components or tests.
+- Put Firebase reads/writes in `src/services`, not components. Components should call service functions or hooks and handle UI state.
+- Validate required auth and user identifiers before writes. Prefer the authenticated Firebase uid over caller-provided user ids for persisted user data.
+- Preserve Firestore collection conventions, including user subcollections and documented legacy fallback reads where they still protect existing data.
+- Remove `undefined` fields before writing nested objects to Firestore. Keep `null` only when it is an intentional stored value.
+- Use local-date helpers from `src/utils/dateUtils` for day keys and week ranges. Do not use `toISOString()` for user-facing `YYYY-MM-DD` keys.
+- For exercise/activity logic, use existing resolvers and helpers such as activity type resolution, session tracking, superset utilities, and volume/date utilities.
+- Keep pure calculations separate from async service calls when possible so they can be unit tested without Firebase.
+- Handle permission-denied and missing-index Firebase errors deliberately. Return safe empty results only where the surrounding feature already expects that behavior.

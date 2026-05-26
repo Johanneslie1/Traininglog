@@ -1,0 +1,21 @@
+---
+description: Testing, linting, and quality expectations
+globs: src/tests/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Testing And Quality
+
+- Tests live primarily in `src/tests` and use Jest by default. The `npm test` script runs `npm run test:jest`.
+- Use React Testing Library for UI behavior. Prefer queries by role, label, text, and visible user outcomes over implementation details.
+- Mock Firebase and auth through the existing Jest setup and `src/tests/mocks/firebase.ts` patterns instead of reaching real services.
+- For service logic, test exported pure builders/calculators directly when available, then mock async dependencies around service entry points.
+- Cover date boundaries, role-based access, Firestore fallback behavior, activity type differences, session tracking, and persistence contracts when touching those areas.
+- Keep fixtures small but realistic. Include required ids, user ids, timestamps/date keys, activity types, and session metadata when the code depends on them.
+- Avoid snapshot-only tests for complex UI. Assert the behavior or data the user depends on.
+- Run focused tests for changed behavior first, then broader checks based on risk:
+  - `npm test -- <test-file-or-pattern>`
+  - `npm run lint`
+  - `npm run build`
+- Use `npm run test:vitest` only for Vitest-specific tests/configuration; Jest is the main test path.
+- Do not weaken TypeScript, lint, or test expectations to land a change. Fix the underlying issue or explain the blocker.

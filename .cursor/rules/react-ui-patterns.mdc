@@ -1,0 +1,18 @@
+---
+description: React, routing, and UI conventions
+globs: **/*.tsx
+alwaysApply: false
+---
+
+# React UI Patterns
+
+- Use functional components with typed props. `React.FC<Props>` is common in this codebase and is fine to follow.
+- Put routed screens under `src/features/<domain>` or `src/pages`; register routes in `src/routes.tsx` using lazy imports and existing `ProtectedRoute`/`RoleRoute` wrappers.
+- Reuse shared components from `src/components/ui`, `src/components/common`, layout, brand, exercise, and template folders before creating one-off UI.
+- Keep component state local unless it must be shared. Use existing contexts for programs, settings, dates, and exercise log calendar behavior.
+- Style with Tailwind classes and the project theme tokens such as `bg-bg-primary`, `text-text-primary`, `border-border`, `accent-primary`, and activity/status colors.
+- Prefer responsive, mobile-friendly layouts and safe viewport units already used in the app, such as `min-h-[100dvh]`.
+- Include accessible affordances for interactive non-button elements: `role`, `tabIndex`, keyboard handlers, `aria-label`, and visible focus rings.
+- Keep loading, empty, and error states explicit. Reuse shared patterns like `EmptyState`, skeletons, toast notifications, and route suspense fallbacks.
+- Avoid verbose render logging in components. Log only actionable diagnostics, preferably at service boundaries or exceptional paths.
+- Keep comments rare and useful. Explain non-obvious domain behavior, compatibility needs, or browser/mobile workarounds.

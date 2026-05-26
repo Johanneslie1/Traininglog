@@ -1,0 +1,17 @@
+---
+description: When to use plugin-backed workflows for design, animation, deployment, and backend work
+alwaysApply: true
+---
+
+# Plugin Workflows
+
+- Use Figma workflows when creating, inspecting, syncing, or implementing UI designs, screens, components, design tokens, diagrams, or design-system work.
+- For Figma-to-code, adapt generated reference output to this app's React, Tailwind theme tokens, and existing components instead of pasting raw generated code.
+- Use GSAP guidance for non-trivial React animation, sequencing, scroll-linked motion, draggable/FLIP effects, or performance-sensitive animation.
+- When adding GSAP animation, respect reduced-motion preferences, scope selectors with refs/context, and clean up animations on unmount.
+- Use Vercel guidance for preview/production deployment, environment variables, build failures, domains, CI/CD, logs, performance, and bundle-size questions.
+- For this Vite app, verify Vercel advice against existing scripts such as `npm run build`, `npm run lint`, bundle budget checks, and Firebase env requirements.
+- Use Firebase guidance whenever changing Auth, Firestore reads/writes, security-rule assumptions, local emulation, hosting/deployment, or persisted data shapes.
+- Use React best-practice review after broad TSX edits, especially when changes affect hooks, accessibility, component boundaries, or rendering performance.
+- Use plugin workflows as support, not replacement: first inspect nearby project code and preserve local architecture, types, theme tokens, and test patterns.
+- If a plugin requires authentication, a browser session, or access to an external file, ask for the missing link or permission instead of guessing.
