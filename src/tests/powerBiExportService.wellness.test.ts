@@ -25,6 +25,7 @@ jest.mock('@/services/wellnessService', () => ({
 
 jest.mock('@/services/srpeService', () => ({
   getSrpeByDateRange: jest.fn(async () => []),
+  getSportsLoadSessionsByDateRange: jest.fn(async () => []),
 }));
 
 import { buildPowerBiFiles } from '@/services/powerBiExportService';
@@ -42,7 +43,20 @@ const mockedCoachService = jest.requireMock('@/services/coachService') as {
 };
 const mockedSrpeService = jest.requireMock('@/services/srpeService') as {
   getSrpeByDateRange: any;
+  getSportsLoadSessionsByDateRange: any;
 };
+
+const currentAthlete = {
+  id: 'user-42',
+  firstName: 'Test',
+  lastName: 'Athlete',
+  role: 'athlete' as const,
+};
+
+const getFileContent = (
+  result: Awaited<ReturnType<typeof buildPowerBiFiles>>,
+  fileName: string
+): string => result.files.find((file) => file.name === fileName)?.content.replace(/^\uFEFF/, '') ?? '';
 
 describe('powerBiExportService wellness export', () => {
   beforeEach(() => {
@@ -52,6 +66,7 @@ describe('powerBiExportService wellness export', () => {
     mockedTeamService.getTeamMembers.mockResolvedValue([]);
     mockedCoachService.verifyCoachAthleteRelationship.mockResolvedValue(true);
     mockedSrpeService.getSrpeByDateRange.mockResolvedValue([]);
+    mockedSrpeService.getSportsLoadSessionsByDateRange.mockResolvedValue([]);
   });
 
   it('includes readiness in fact_wellness.csv for self exports', async () => {
@@ -117,17 +132,162 @@ describe('powerBiExportService wellness export', () => {
       '2026-03-01',
       '2026-03-15'
     );
+    expect(mockedSrpeService.getSportsLoadSessionsByDateRange).toHaveBeenCalledWith(
+      'user-42',
+      '2026-03-01',
+      '2026-03-15'
+    );
   });
 
-  it('includes football load rows from sRPE logs next to wellness data', async () => {
-    mockedSrpeService.getSrpeByDateRange.mockResolvedValue([
+  it('assigns deterministic fallback session ids to gym sets and includes gym sessions', async () => {
+    mockedExportService.exportData.mockResolvedValue({
+      sessions: [],
+      exerciseLogs: [],
+      sets: [
+        {
+          sessionId: '',
+          sessionType: 'main',
+          exerciseLogId: 'bench-log',
+          exerciseName: 'Bench Press',
+          exerciseType: 'strength',
+          activityType: 'resistance',
+          loggedDate: '2026-03-10',
+          exerciseNumber: 1,
+          setNumber: 1,
+          reps: 5,
+          weight: 100,
+          rpe: 8,
+        },
+        {
+          sessionId: '',
+          sessionType: 'main',
+          exerciseLogId: 'bench-log',
+          exerciseName: 'Bench Press',
+          exerciseType: 'strength',
+          activityType: 'resistance',
+          loggedDate: '2026-03-10',
+          exerciseNumber: 1,
+          setNumber: 2,
+          reps: 5,
+          weight: 105,
+          rpe: 8,
+        },
+      ],
+    });
+
+    const result = await buildPowerBiFiles({ scope: 'self' }, currentAthlete);
+    const gymCsv = getFileContent(result, 'fact_gym_sets.csv');
+    const sessionCsv = getFileContent(result, 'fact_sessions.csv');
+
+    expect(gymCsv).toContain('default-user-42-2026-03-10-main');
+    expect(result.gymSetCount).toBe(2);
+    expect(result.sessionCount).toBe(1);
+    expect(sessionCsv).toContain(
+      'user-42,Test Athlete,default-user-42-2026-03-10-main,main,2026-03-10,2026-W11,resistance,false,,2,10,1025'
+    );
+  });
+
+  it('populates activity session duration and computed session load when available', async () => {
+    mockedExportService.exportData.mockResolvedValue({
+      sessions: [],
+      exerciseLogs: [],
+      sets: [
+        {
+          sessionId: 'activity-session-1',
+          sessionType: 'main',
+          exerciseLogId: 'run-log',
+          exerciseName: 'Easy Run',
+          exerciseType: 'endurance',
+          activityType: 'endurance',
+          loggedDate: '2026-03-10',
+          setNumber: 1,
+          durationSec: 1800,
+          distanceMeters: 5000,
+          rpe: 7,
+        },
+      ],
+    });
+
+    const result = await buildPowerBiFiles({ scope: 'self' }, currentAthlete);
+    const sessionLines = getFileContent(result, 'fact_sessions.csv').split('\n');
+
+    expect(sessionLines).toContain(
+      'user-42,Test Athlete,activity-session-1,main,2026-03-10,2026-W11,endurance,false,30,1,,,5000,,,,,,,,,7,,210'
+    );
+  });
+
+  it('exports each sports load session and every supported session metric', async () => {
+    mockedSrpeService.getSportsLoadSessionsByDateRange.mockResolvedValue([
       {
-        id: '2026-03-10',
+        id: 'session-1',
         userId: 'user-42',
         date: '2026-03-10',
+        sportType: 'basketball',
+        sportName: 'Basketball',
         rpe: 8,
         durationMinutes: 75,
         sessionLoad: 600,
+        distanceMeters: 9200,
+        calories: 710,
+        averageHeartRate: 151,
+        maxHeartRate: 184,
+        notes: 'High tempo small-sided game',
+      },
+      {
+        id: 'session-2',
+        userId: 'user-42',
+        date: '2026-03-10',
+        sportType: 'football',
+        sportName: 'Football',
+        rpe: 6,
+        durationMinutes: 30,
+        sessionLoad: 180,
+      },
+    ]);
+
+    const result = await buildPowerBiFiles(
+      { scope: 'self', fromDate: '2026-03-01', toDate: '2026-03-15' },
+      {
+        id: 'user-42',
+        firstName: 'Test',
+        lastName: 'Athlete',
+        role: 'athlete',
+      }
+    );
+
+    const footballLoadFile = result.files.find((file) => file.name === 'fact_football_load.csv');
+    const csv = footballLoadFile?.content.replace(/^\uFEFF/, '');
+    const lines = csv?.split('\n') ?? [];
+
+    const sportsLoadFile = result.files.find((file) => file.name === 'fact_sports_load.csv');
+    const sportsCsv = sportsLoadFile?.content.replace(/^\uFEFF/, '');
+
+    expect(result.sportsLoadCount).toBe(2);
+    expect(result.footballLoadCount).toBe(2);
+    expect(sportsCsv).toBe(csv);
+    expect(lines).toHaveLength(3);
+    expect(lines[0]).toBe('athlete_id,athlete_name,session_id,logged_date,sport_type,sport_name,rpe,duration_min,session_load,distance_meters,calories,avg_hr,max_hr,notes');
+    expect(lines.filter((line) => line.includes(',2026-03-10,'))).toHaveLength(2);
+    expect(lines).toContain('user-42,Test Athlete,session-1,2026-03-10,basketball,Basketball,8,75,600,9200,710,151,184,High tempo small-sided game');
+    expect(lines).toContain('user-42,Test Athlete,session-2,2026-03-10,football,Football,6,30,180,,,,,');
+  });
+
+  it('exports legacy daily sRPE rows when no per-session sports load exists for that date', async () => {
+    mockedSrpeService.getSrpeByDateRange.mockResolvedValue([
+      {
+        id: '2026-03-12',
+        userId: 'user-42',
+        date: '2026-03-12',
+        sportType: 'football',
+        sportName: 'Football',
+        rpe: 7,
+        durationMinutes: 60,
+        sessionLoad: 420,
+        distanceMeters: 7800,
+        calories: 640,
+        averageHeartRate: 146,
+        maxHeartRate: 181,
+        notes: 'Legacy daily entry',
       },
     ]);
 
@@ -145,8 +305,111 @@ describe('powerBiExportService wellness export', () => {
     const csv = footballLoadFile?.content.replace(/^\uFEFF/, '');
 
     expect(result.footballLoadCount).toBe(1);
-    expect(csv).toContain('athlete_id,athlete_name,logged_date,rpe,duration_min,session_load');
-    expect(csv).toContain('user-42,Test Athlete,2026-03-10,8,75,600');
+    expect(csv).toContain('user-42,Test Athlete,legacy-2026-03-12,2026-03-12,football,Football,7,60,420,7800,640,146,181,Legacy daily entry');
+  });
+
+  it('keeps sports-load metadata counts logical while emitting the compatibility alias', async () => {
+    mockedExportService.exportData.mockResolvedValue({
+      sessions: [],
+      exerciseLogs: [],
+      sets: [
+        {
+          sessionId: '',
+          sessionType: 'main',
+          exerciseLogId: 'mobility-log',
+          exerciseName: 'Meditation',
+          exerciseType: 'other',
+          activityType: 'resistance',
+          loggedDate: '2026-03-12',
+          durationSec: 600,
+        },
+      ],
+    });
+    mockedSrpeService.getSportsLoadSessionsByDateRange.mockResolvedValue([
+      {
+        id: 'sports-1',
+        userId: 'user-42',
+        date: '2026-03-12',
+        sportType: 'basketball',
+        sportName: 'Basketball',
+        rpe: 6,
+        durationMinutes: 45,
+        sessionLoad: 270,
+      },
+    ]);
+
+    const result = await buildPowerBiFiles({ scope: 'self' }, currentAthlete);
+    const meta = JSON.parse(getFileContent(result, 'export_meta.json')) as { row_count: number };
+
+    expect(result.files.some((file) => file.name === 'fact_sports_load.csv')).toBe(true);
+    expect(result.files.some((file) => file.name === 'fact_football_load.csv')).toBe(true);
+    expect(result.activityCount).toBe(1);
+    expect(result.gymSetCount).toBe(0);
+    expect(result.sportsLoadCount).toBe(1);
+    expect(meta.row_count).toBe(
+      result.gymSetCount +
+        result.activityCount +
+        result.sessionCount +
+        result.wellnessCount +
+        result.sportsLoadCount
+    );
+  });
+
+  it('normalizes obvious activity classifications and exercise dimension keys at export time', async () => {
+    mockedExportService.exportData.mockResolvedValue({
+      sessions: [],
+      exerciseLogs: [],
+      sets: [
+        {
+          exerciseLogId: 'basketball-log',
+          exerciseName: 'Basketball',
+          exerciseType: 'strength',
+          activityType: 'resistance',
+          loggedDate: '2026-03-10',
+          durationSec: 3600,
+          rpe: 6,
+        },
+        {
+          exerciseLogId: 'jump-log',
+          exerciseName: 'High Plyometric Box Jump',
+          exerciseType: 'strength',
+          activityType: 'resistance',
+          loggedDate: '2026-03-11',
+          reps: 5,
+          height: 60,
+          rpe: 8,
+        },
+        {
+          exerciseLogId: 'row-log',
+          exerciseName: 'Uprigth Row',
+          exerciseType: 'strength',
+          activityType: 'resistance',
+          loggedDate: '2026-03-12',
+          reps: 10,
+          weight: 20,
+        },
+        {
+          exerciseLogId: 'soccer-log-a',
+          exerciseName: 'Soccer',
+          exerciseType: 'endurance',
+          activityType: 'endurance',
+          loggedDate: '2026-03-13',
+          durationSec: 3600,
+        },
+      ],
+    });
+
+    const result = await buildPowerBiFiles({ scope: 'self' }, currentAthlete);
+    const activityCsv = getFileContent(result, 'fact_activity.csv');
+    const gymCsv = getFileContent(result, 'fact_gym_sets.csv');
+    const dimExerciseCsv = getFileContent(result, 'dim_exercise.csv');
+
+    expect(activityCsv).toContain('Basketball,sport');
+    expect(activityCsv).toContain('High Plyometric Box Jump,speedAgility');
+    expect(activityCsv).toContain('Soccer,sport');
+    expect(gymCsv).toContain('upright_row__resistance,Upright Row');
+    expect(dimExerciseCsv).toContain('basketball__sport,Basketball,strength,sport');
+    expect(dimExerciseCsv).toContain('soccer__sport,Soccer,endurance,sport');
   });
 
   it('includes wellness rows for a selected coach athlete', async () => {

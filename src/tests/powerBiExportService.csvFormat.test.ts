@@ -10,18 +10,18 @@ describe('rowsToCSVForPowerBi', () => {
 
     expect(csv.startsWith('\uFEFF')).toBe(false);
     expect(csv).toContain('athlete_id,weight,reps');
-    expect(csv).toContain('a1,"27,5",10');
+    expect(csv).toContain('a1,27.5,10');
   });
 
-  it('formats decimals with comma for numeric fields', () => {
+  it('formats decimals with invariant dot notation for numeric fields', () => {
     const csv = rowsToCSVForPowerBi(
       [{ weight: 157.5, rpe: 8.25 }],
       ['weight', 'rpe']
     );
 
-    expect(csv).toContain('"157,5","8,25"');
-    expect(csv).not.toContain('157.5');
-    expect(csv).not.toContain('8.25');
+    expect(csv).toContain('157.5,8.25');
+    expect(csv).not.toContain('"157,5"');
+    expect(csv).not.toContain('"8,25"');
   });
 
   it('escapes delimiters in string values', () => {

@@ -127,7 +127,7 @@ export interface FactSessionRow {
   /** Pipe-separated distinct activity types in the session, e.g. "resistance|endurance" */
   activity_types: string;
   has_warmup: boolean;
-  /** Minutes from session startedAt to endedAt (empty until Phase 2 end-time tracking) */
+  /** Minutes from activity duration or sports-load RPE report; empty for gym-only sessions without reliable duration. */
   duration_min: number | '';
   total_sets: number;
   total_reps: number | '';
@@ -144,7 +144,7 @@ export interface FactSessionRow {
   /** Average RPE across all sets. Proxy for session RPE (1–10). */
   session_rpe: number | '';
   session_normalised_load?: number | '';
-  /** sRPE load = session_rpe × duration_min. Empty until duration is available. */
+  /** Sports load = reported load, or session_rpe × duration_min when duration is available. */
   session_load: number | '';
 }
 
@@ -166,17 +166,65 @@ export interface FactWellnessRow {
 }
 
 // ---------------------------------------------------------------------------
-// fact_football_load.csv
+// fact_sports_load.csv / fact_football_load.csv
 // ---------------------------------------------------------------------------
 
-export interface FactFootballLoadRow {
+/**
+ * Sports-load export row.
+ *
+ * `fact_sports_load.csv` is the canonical file. The historical
+ * `fact_football_load.csv` file is still emitted with the same schema/content
+ * for existing Power BI reports that reference it.
+ */
+export interface FactSportsLoadRow {
   athlete_id: string;
   athlete_name: string;
+  session_id: string;       // SportsLoadSession.id or legacy-{YYYY-MM-DD}
   logged_date: string;      // YYYY-MM-DD
+  sport_type: string;
+  sport_name: string;
   rpe: number | '';
   duration_min: number | '';
   session_load: number | '';
+  distance_meters: number | '';
+  calories: number | '';
+  avg_hr: number | '';
+  max_hr: number | '';
+  notes: string;
 }
+
+export type FactFootballLoadRow = FactSportsLoadRow;
+
+export const FACT_SPORTS_LOAD_HEADERS = [
+  'athlete_id',
+  'athlete_name',
+  'session_id',
+  'logged_date',
+  'sport_type',
+  'sport_name',
+  'rpe',
+  'duration_min',
+  'session_load',
+  'distance_meters',
+  'calories',
+  'avg_hr',
+  'max_hr',
+  'notes',
+] as const satisfies readonly (keyof FactSportsLoadRow)[];
+
+export const FACT_FOOTBALL_LOAD_HEADERS = FACT_SPORTS_LOAD_HEADERS;
+
+type MissingFactSportsLoadHeader = Exclude<
+  keyof FactSportsLoadRow,
+  typeof FACT_SPORTS_LOAD_HEADERS[number]
+>;
+
+export type FactSportsLoadHeaderCoverage =
+  MissingFactSportsLoadHeader extends never ? true : never;
+export type FactFootballLoadHeaderCoverage = FactSportsLoadHeaderCoverage;
+
+export const FACT_SPORTS_LOAD_HEADER_COVERAGE: FactSportsLoadHeaderCoverage = true;
+export const FACT_FOOTBALL_LOAD_HEADER_COVERAGE: FactFootballLoadHeaderCoverage = true;
 
 // ---------------------------------------------------------------------------
 // export_meta.json
@@ -189,5 +237,5 @@ export interface ExportMeta {
   from_date: string | null;   // YYYY-MM-DD or null
   to_date: string | null;     // YYYY-MM-DD or null
   athlete_count: number;
-  row_count: number;          // total rows across all fact files
+  row_count: number;          // logical fact rows; compatibility aliases are counted once
 }

@@ -1,10 +1,9 @@
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const rowsToCSVForPowerBi = (rows: Record<string, any>[], headers: string[]): string => {
+export const rowsToCSVForPowerBi = (rows: object[], headers: string[]): string => {
   const delimiter = ',';
 
   const formatNumberForPowerBi = (val: number): string => {
     if (!Number.isFinite(val)) return '';
-    return Number.isInteger(val) ? String(val) : String(val).replace('.', ',');
+    return String(val);
   };
 
   const escape = (val: unknown): string => {
@@ -20,9 +19,12 @@ export const rowsToCSVForPowerBi = (rows: Record<string, any>[], headers: string
     return str;
   };
 
+  const getValue = (row: object, header: string): unknown =>
+    (row as Record<string, unknown>)[header];
+
   const lines = [
     headers.join(delimiter),
-    ...rows.map((row) => headers.map((h) => escape(row[h])).join(delimiter)),
+    ...rows.map((row) => headers.map((h) => escape(getValue(row, h))).join(delimiter)),
   ];
 
   return lines.join('\n');
