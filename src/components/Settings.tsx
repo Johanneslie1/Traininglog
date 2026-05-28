@@ -273,7 +273,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
     }
     if (!oneDriveClientId.trim()) {
       setShowClientIdInput(true);
-      toast('Enter your Azure Application (client) ID to continue.', { icon: 'ðŸ”‘' });
+      toast('Enter your Azure Application (client) ID to continue.');
       return;
     }
     if (exportScope === 'athlete' && !selectedAthleteId) {
@@ -482,7 +482,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
               <div className="pt-4 border-t border-border space-y-4">
                 <h3 className="text-lg font-medium text-text-primary">Export Data</h3>
 
-                {/* Export scope selector â€” visible to coaches only */}
+                {/* Export scope selector - visible to coaches only */}
                 {isCoach && (
                   <div className="space-y-2">
                     <label className="text-sm text-text-secondary">Export scope</label>
@@ -510,7 +510,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                   </div>
                 )}
 
-                {/* Athlete selector â€” only when scope === 'athlete' */}
+                {/* Athlete selector - only when scope === 'athlete' */}
                 {isCoach && exportScope === 'athlete' && (
                   <div>
                     <label className="block text-sm text-text-secondary mb-1">Select athlete</label>
@@ -600,9 +600,9 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                   </div>
                 )}
 
-                {/* Date Range â€” "Export since" for incremental Power BI refreshes */}
+                {/* Date Range - "Export since" for incremental Power BI refreshes */}
                 <div className="space-y-2">
-                  <label className="text-sm text-text-secondary">Date range (optional â€” leave blank for all data)</label>
+                  <label className="text-sm text-text-secondary">Date range (optional - leave blank for all data)</label>
                   <div className="flex flex-wrap gap-2">
                     {[
                       { key: 'last7days' as DateRangePreset, label: 'Last 7 days' },
@@ -685,7 +685,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                   className="w-full bg-accent-primary text-white py-3 px-4 rounded-md hover:bg-accent-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
                 >
                   {isPowerBiExporting
-                    ? 'Exportingâ€¦'
+                    ? 'Exporting...'
                     : !user?.id
                       ? 'Login Required'
                       : 'Export Data'}
@@ -700,11 +700,11 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                     <h4 className="text-sm font-medium text-text-primary mb-1">
                       Upload to OneDrive
                       {oneDriveSignedIn && (
-                        <span className="ml-2 text-xs text-emerald-500 font-normal">â— Connected</span>
+                        <span className="ml-2 text-xs text-emerald-500 font-normal">Connected</span>
                       )}
                     </h4>
                     <p className="text-xs text-text-secondary">
-                      Uploads all CSVs directly to <code>/TrainingLog/</code> in your OneDrive so Power BI can auto-refresh. Requires a free Azure app registration â€” see instructions below.
+                      Uploads the Power BI CSV model to <code>/TrainingLog/</code> in OneDrive. Connect Power BI to those files once, then use scheduled refresh in Power BI Service.
                     </p>
                   </div>
 
@@ -726,18 +726,18 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                           How to get a client ID (one-time setup)
                         </summary>
                         <ol className="mt-2 space-y-1 pl-4 list-decimal">
-                          <li>Go to <strong>portal.azure.com</strong> â†’ Azure Active Directory â†’ App registrations â†’ New registration</li>
+                          <li>Go to <strong>portal.azure.com</strong> - Azure Active Directory - App registrations - New registration</li>
                           <li>Name: "TrainingLog Export", Supported account types: <em>Personal Microsoft accounts</em></li>
-                          <li>Redirect URI: Single-page application (SPA) â†’ paste your app URL</li>
+                          <li>Redirect URI: Single-page application (SPA) - paste your app URL plus <code>/auth-redirect.html</code></li>
                           <li>After creation, copy the <strong>Application (client) ID</strong></li>
-                          <li>Under API permissions â†’ Add â†’ Microsoft Graph â†’ Files.ReadWrite (delegated)</li>
+                          <li>Under API permissions - Add - Microsoft Graph - Files.ReadWrite (delegated)</li>
                           <li>Paste the client ID above and save</li>
                         </ol>
                       </details>
                     </div>
                   ) : (
                     <div className="flex items-center gap-2 text-xs text-text-secondary">
-                      <span>Client ID: <code className="font-mono">{oneDriveClientId.slice(0, 8)}â€¦</code></span>
+                      <span>Client ID: <code className="font-mono">{oneDriveClientId.slice(0, 8)}...</code></span>
                       <button
                         onClick={() => setShowClientIdInput(true)}
                         className="text-accent-primary hover:underline"
@@ -767,7 +767,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                     className="w-full bg-blue-700 text-white py-3 px-4 rounded-md hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
                   >
                     {isUploadingToOneDrive
-                      ? 'Uploading to OneDriveâ€¦'
+                      ? 'Uploading to OneDrive...'
                       : !user?.id
                         ? 'Login Required'
                         : 'Upload to OneDrive (Power BI Auto-Refresh)'}

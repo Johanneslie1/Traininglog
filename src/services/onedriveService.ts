@@ -29,6 +29,9 @@ const GRAPH_BASE = 'https://graph.microsoft.com/v1.0';
 const ONEDRIVE_FOLDER = 'TrainingLog';
 const SCOPES = ['Files.ReadWrite'];
 
+const getAuthRedirectUri = (): string =>
+  new URL('auth-redirect.html', `${window.location.origin}${import.meta.env.BASE_URL}`).href;
+
 // ---------------------------------------------------------------------------
 // Module-level MSAL instance (lazy-initialised per clientId)
 // ---------------------------------------------------------------------------
@@ -39,14 +42,11 @@ let currentClientId: string | null = null;
 const getMsalInstance = async (clientId: string): Promise<PublicClientApplication> => {
   if (msalInstance && currentClientId === clientId) return msalInstance;
 
- const redirectUri = window.location.origin + '/auth-redirect.html';
-
-
   const instance = new PublicClientApplication({
     auth: {
       clientId,
       authority: 'https://login.microsoftonline.com/common',
-      redirectUri,
+      redirectUri: getAuthRedirectUri(),
     },
     cache: {
       cacheLocation: 'localStorage',
@@ -96,7 +96,7 @@ const acquireToken = async (
   // load the full React app inside the popup window (which would cause a loop).
   const result: AuthenticationResult = await msal.acquireTokenPopup({
     ...request,
-    redirectUri: window.location.origin + '/auth-redirect.html',
+    redirectUri: getAuthRedirectUri(),
   });
   return result.accessToken;
 };

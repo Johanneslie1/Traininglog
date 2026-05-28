@@ -13,6 +13,7 @@ Visit the live application: [TrainingLog on GitHub Pages](https://johanneslie1.g
 - Exercise database with filtering and search
 - Mobile-friendly design with PWA support
 - Firebase authentication and data storage
+- Power BI-ready CSV export with OneDrive upload for scheduled refresh
 
 ## Technologies Used
 
@@ -23,6 +24,12 @@ Visit the live application: [TrainingLog on GitHub Pages](https://johanneslie1.g
 - React Router
 - Tailwind CSS
 - Vite
+
+## Power BI Reporting
+
+The app can export Power BI-ready fact and dimension CSV files, then upload them to OneDrive so Power BI Service can refresh the report on a schedule.
+
+See [Power BI Scheduled Refresh](Docs/power-bi-refresh.md) for setup steps.
 
 ## Getting Started
 
