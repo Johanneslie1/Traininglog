@@ -343,7 +343,7 @@ const AthleteStatsPage: React.FC = () => {
               </div>
             ) : (
               <div className="overflow-hidden rounded-lg border border-border bg-bg-secondary">
-                <div className="overflow-auto">
+                <div className="mobile-scroll-area overflow-x-auto overflow-y-auto pb-2">
                   <table className="min-w-[1040px] w-full text-sm">
                     <thead>
                       <tr className="bg-bg-primary text-xs uppercase tracking-wide text-text-tertiary">

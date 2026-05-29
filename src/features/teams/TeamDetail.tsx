@@ -183,7 +183,7 @@ const TeamDetail: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white p-4">
+    <div className="min-h-screen bg-black text-white p-2 sm:p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <button
@@ -195,7 +195,7 @@ const TeamDetail: React.FC = () => {
         </button>
 
         {/* Team Info */}
-        <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 mb-6">
+        <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 mb-6 sm:p-6">
           {!isCoach && (
             <div className="mb-4 rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-sm text-gray-300">
               Read-only view. Coach actions are only available in Coach Hub.
@@ -305,7 +305,7 @@ const TeamDetail: React.FC = () => {
         ) : null}
 
         {/* Members List */}
-        <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
+        <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 sm:p-6">
           <h2 className="text-xl font-bold mb-4">
             Members ({members.length})
           </h2>

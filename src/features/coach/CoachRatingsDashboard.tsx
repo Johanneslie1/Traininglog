@@ -332,6 +332,148 @@ const WellnessTrendChart: React.FC<WellnessTrendChartProps> = ({ points, selecte
   );
 };
 
+interface AthleteWellbeingCardProps {
+  row: CoachRatingsRow;
+  isDayMode: boolean;
+  warningsEnabled: boolean;
+  expanded: boolean;
+  selectedDate: string;
+  onToggle: () => void;
+  onOpenAthlete: () => void;
+}
+
+const AthleteWellbeingCard: React.FC<AthleteWellbeingCardProps> = ({
+  row,
+  isDayMode,
+  warningsEnabled,
+  expanded,
+  selectedDate,
+  onToggle,
+  onOpenAthlete,
+}) => {
+  const srpeValue = isDayMode ? formatNumber(row.dailySrpe.rpe) : formatNumber(row.weeklySrpe.averageRpe);
+  const loadValue = isDayMode ? formatLoad(row.dailySrpe.sessionLoad) : formatLoad(row.weeklySrpe.totalLoad);
+  const durationValue = isDayMode
+    ? row.dailySrpe.submitted ? `${row.dailySrpe.durationMinutes} min` : '-'
+    : `${row.weeklySrpe.submittedDays}/${row.wellnessSnapshot.totalDays} days`;
+
+  return (
+    <article className="rounded-xl border border-border bg-bg-secondary p-3 shadow-sm">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-start gap-3 text-left"
+        aria-expanded={expanded}
+      >
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border bg-bg-tertiary text-sm font-bold text-accent-primary">
+          {getInitials(row.athleteName)}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate font-semibold text-text-primary">{row.athleteName}</span>
+          <span className="block truncate text-xs text-text-tertiary">{row.email}</span>
+          {warningsEnabled && row.outlierReasons.length > 0 ? (
+            <span className="mt-2 block rounded-lg border border-warning-border bg-warning-bg px-2.5 py-2 text-xs leading-relaxed text-warning-text">
+              {row.outlierReasons.slice(0, 2).join(', ')}
+            </span>
+          ) : null}
+        </span>
+        <span className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium ${statusStyles[row.status]}`}>
+          {statusLabels[row.status]}
+        </span>
+      </button>
+
+      <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+        <div className="rounded-lg border border-border bg-bg-tertiary px-3 py-2">
+          <p className="text-xs text-text-tertiary">{isDayMode ? 'Wellness' : 'Week avg'}</p>
+          <p className={`mt-1 font-semibold ${getMetricClass(row.status, warningsEnabled)}`}>
+            {formatNumber(row.wellnessSnapshot.score)}
+          </p>
+          {!isDayMode ? null : !row.wellnessSnapshot.isSelectedDate && row.wellnessSnapshot.date ? (
+            <p className="text-[11px] text-text-tertiary">{row.wellnessSnapshot.date}</p>
+          ) : null}
+        </div>
+        <div className="rounded-lg border border-border bg-bg-tertiary px-3 py-2">
+          <p className="text-xs text-text-tertiary">{isDayMode ? 'Trend' : 'Reported'}</p>
+          <p className={`mt-1 font-semibold ${getTrendClass(row.wellnessTrend, warningsEnabled)}`}>
+            {isDayMode
+              ? formatTrendChange(row.wellnessTrend.changeFromPrevious)
+              : `${row.wellnessSnapshot.submittedDays}/${row.wellnessSnapshot.totalDays}`}
+          </p>
+          <p className="text-[11px] text-text-tertiary">
+            {isDayMode ? row.wellnessTrend.label : 'wellbeing days'}
+          </p>
+        </div>
+        <div className="rounded-lg border border-border bg-bg-tertiary px-3 py-2">
+          <p className="text-xs text-text-tertiary">{isDayMode ? 'RPE / duration' : 'Avg RPE / days'}</p>
+          <p className={`mt-1 font-semibold ${getSrpeClass(row, warningsEnabled)}`}>
+            {srpeValue} <span className="text-xs font-normal text-text-tertiary">/ {durationValue}</span>
+          </p>
+        </div>
+        <div className="rounded-lg border border-border bg-bg-tertiary px-3 py-2">
+          <p className="text-xs text-text-tertiary">{isDayMode ? 'Load / ACWR' : 'Load / chronic'}</p>
+          <p className="mt-1 font-semibold text-text-primary">{loadValue}</p>
+          <p className={`text-[11px] ${getAcwrClass(row, warningsEnabled)}`}>
+            ACWR {formatRatio(row.acwr.ratio)} · {row.acwr.label}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+        {wellnessColumns.slice(0, 6).map((column) => {
+          const value = row.wellnessSnapshot.metricValues[column.key];
+          const status = getMetricStatus(row, column.key);
+
+          return (
+            <div key={column.key} className="rounded-lg bg-bg-tertiary px-2 py-2 text-center">
+              <p className="truncate text-text-tertiary">{column.label}</p>
+              <p className={`mt-0.5 font-semibold ${getMetricClass(status, warningsEnabled)}`}>
+                {typeof value === 'number' ? formatNumber(value) : '-'}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+
+      {expanded ? (
+        <div className="mt-4 space-y-4 border-t border-border pt-4">
+          <WellnessTrendChart points={row.wellnessTrendPoints} selectedDate={selectedDate} />
+          <div className="rounded-xl border border-border bg-bg-tertiary p-4 text-sm">
+            <div className="mb-3">
+              <p className="text-xs uppercase tracking-wide text-text-tertiary">Individual baseline</p>
+              <h3 className="font-semibold text-text-primary">{row.athleteName}</h3>
+            </div>
+            <div className="space-y-2 text-text-secondary">
+              <div className="flex justify-between gap-3">
+                <span>{isDayMode ? 'Selected day' : 'Week start score'}</span>
+                <span className="font-semibold text-text-primary">{formatNumber(row.dailyWellness.score)}</span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span>28-day average</span>
+                <span className="font-semibold text-text-primary">{formatNumber(row.wellnessTrend.baselineAverage)}</span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span>Previous entry</span>
+                <span className="font-semibold text-text-primary">
+                  {row.wellnessTrend.previousDate
+                    ? `${formatNumber(row.wellnessTrend.previousScore)} (${row.wellnessTrend.previousDate})`
+                    : '-'}
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={onOpenAthlete}
+              className="mt-3 inline-flex rounded-full border border-border px-3 py-1.5 text-xs font-medium text-text-primary transition-colors hover:border-accent-primary hover:text-accent-primary"
+            >
+              Open athlete profile
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </article>
+  );
+};
+
 const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, teamName }) => {
   const navigate = useNavigate();
   const todayDate = new Date();
@@ -436,7 +578,7 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
 
   return (
     <section className="bg-bg-secondary border border-border rounded-lg overflow-hidden mb-6">
-      <div className="border-b border-border p-4">
+      <div className="border-b border-border p-3 sm:p-4">
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div>
@@ -582,7 +724,7 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
           <span className="ml-3 text-text-tertiary">Loading team ratings...</span>
         </div>
       ) : (
-        <div className="p-4">
+        <div className="p-3 sm:p-4">
           {loadError ? (
             <div className="mb-3 rounded-lg border border-error-border bg-error-bg px-3 py-2 text-sm text-error-text">
               {loadError}
@@ -689,15 +831,32 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
           ) : (
             <>
             <p className="mb-2 text-xs text-text-tertiary">
-              Team table view. Scroll sideways to compare wellness, trend, sports load, and ACWR for every athlete in one place.
+              On narrow screens, each athlete is shown as a card. Rotate your phone or use a wider screen for the full comparison table.
             </p>
 
-            <div className="overflow-hidden rounded-lg border border-border">
-              <div className="max-h-[72vh] overflow-auto">
-                <table className="min-w-[1180px] w-full text-sm">
+            <div className="coach-ratings-mobile-cards space-y-3">
+              {prioritizedRows.map((row) => (
+                <AthleteWellbeingCard
+                  key={row.athleteId}
+                  row={row}
+                  isDayMode={isDayMode}
+                  warningsEnabled={warningsEnabled}
+                  expanded={expandedAthleteId === row.athleteId}
+                  selectedDate={selectedDate}
+                  onToggle={() => setExpandedAthleteId((current) => (
+                    current === row.athleteId ? null : row.athleteId
+                  ))}
+                  onOpenAthlete={() => navigate(`/coach/athlete/${row.athleteId}`)}
+                />
+              ))}
+            </div>
+
+            <div className="coach-ratings-table-view rounded-lg border border-border">
+              <div className="mobile-scroll-area max-h-[72vh] overflow-x-auto overflow-y-auto pb-2">
+                <table className="min-w-[1080px] w-full text-xs lg:min-w-[1180px] lg:text-sm">
                   <thead>
                     <tr className="bg-bg-primary text-xs uppercase tracking-wide text-text-tertiary">
-                      <th className="sticky left-0 top-0 z-50 bg-bg-primary px-3 py-2 text-left border-r border-border" rowSpan={2}>Athlete</th>
+                      <th className="sticky left-0 top-0 z-50 w-40 min-w-40 bg-bg-primary px-2 py-2 text-left shadow-[4px_0_12px_rgba(0,0,0,0.25)] border-r border-border lg:w-52 lg:min-w-52 lg:px-3" rowSpan={2}>Athlete</th>
                       <th className="sticky top-0 z-30 bg-bg-primary px-3 py-2 text-center border-r border-border" colSpan={3}>Health</th>
                       <th className="sticky top-0 z-30 bg-bg-primary px-3 py-2 text-center border-r border-border" colSpan={6}>Well-being</th>
                       <th className="sticky top-0 z-30 bg-bg-primary px-3 py-2 text-center border-r border-border" colSpan={5}>Training Load</th>
@@ -762,23 +921,23 @@ const CoachRatingsDashboard: React.FC<CoachRatingsDashboardProps> = ({ teamId, t
                     {prioritizedRows.map((row) => (
                       <React.Fragment key={row.athleteId}>
                       <tr className="hover:bg-bg-tertiary/60 transition-colors">
-                        <td className="sticky left-0 z-10 bg-bg-secondary px-3 py-3 border-r border-border">
+                        <td className="sticky left-0 z-10 w-40 min-w-40 max-w-40 bg-bg-secondary px-2 py-3 shadow-[4px_0_12px_rgba(0,0,0,0.18)] border-r border-border lg:w-52 lg:min-w-52 lg:max-w-52 lg:px-3">
                           <button
                             type="button"
                             onClick={() => setExpandedAthleteId((current) => (
                               current === row.athleteId ? null : row.athleteId
                             ))}
-                            className="flex items-center gap-3 text-left group"
+                            className="flex w-full min-w-0 items-center gap-2 text-left group lg:gap-3"
                             aria-expanded={expandedAthleteId === row.athleteId}
                           >
-                            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-bg-tertiary border border-border text-accent-primary text-xs font-bold">
+                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-bg-tertiary border border-border text-accent-primary text-xs font-bold lg:h-9 lg:w-9">
                               {getInitials(row.athleteName)}
                             </span>
-                            <span>
-                              <span className="block font-semibold text-text-primary group-hover:text-accent-primary">
+                            <span className="min-w-0">
+                              <span className="block truncate font-semibold text-text-primary group-hover:text-accent-primary">
                                 {row.athleteName}
                               </span>
-                              <span className="block text-xs text-text-tertiary">{row.email}</span>
+                              <span className="hidden truncate text-xs text-text-tertiary lg:block">{row.email}</span>
                             </span>
                           </button>
                         </td>

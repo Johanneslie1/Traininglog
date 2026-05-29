@@ -219,4 +219,29 @@ body {
   .bottom-app-floating {
     bottom: var(--app-floating-offset);
   }
+
+  .mobile-scroll-area {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    scrollbar-gutter: stable;
+    touch-action: pan-x pan-y;
+  }
+
+  .coach-ratings-table-view {
+    display: none;
+  }
+
+  .coach-ratings-mobile-cards {
+    display: block;
+  }
+
+  @media (min-width: 640px), (orientation: landscape) and (min-width: 520px) {
+    .coach-ratings-table-view {
+      display: block;
+    }
+
+    .coach-ratings-mobile-cards {
+      display: none;
+    }
+  }
 }

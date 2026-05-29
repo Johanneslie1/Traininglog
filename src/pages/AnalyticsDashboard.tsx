@@ -170,7 +170,7 @@ const VolumeAreaChart: React.FC<AreaChartProps> = ({ dataPoints }) => {
   const gradientId = 'vol-gradient';
 
   return (
-    <div className="mt-4 overflow-x-auto pb-1">
+    <div className="mobile-scroll-area mt-4 overflow-x-auto pb-2">
       <svg
         viewBox={`0 0 ${W} ${H}`}
         className="min-w-[520px] w-full"
@@ -553,7 +553,7 @@ const AnalyticsDashboard: React.FC = () => {
             {muscleGroupAnalytics.length === 0 ? (
               <p className="mt-4 text-sm text-text-secondary">No muscle-group data for this period.</p>
             ) : (
-              <div className="mt-4 overflow-x-auto">
+              <div className="mobile-scroll-area mt-4 overflow-x-auto pb-2">
                 <div className="min-w-[720px] space-y-2">
                   <div className="grid grid-cols-[1.4fr_0.7fr_0.8fr_0.8fr_0.8fr_1.2fr] gap-3 px-3 text-xs uppercase tracking-wide text-text-tertiary">
                     <span>Muscle group</span>
