@@ -10,6 +10,7 @@ import { Program } from '@/types/program';
 // Lazy load components
 const Login = lazy(() => import('@/features/auth/Login'));
 const Register = lazy(() => import('@/features/auth/Register'));
+const ForgotPassword = lazy(() => import('@/features/auth/ForgotPassword'));
 const ExerciseLog = lazy(() => import('@/features/exercises/ExerciseLog'));
 const ProfilePage = lazy(() => import('@/features/profile/ProfilePage'));
 const SettingsPage = lazy(() => import('@/features/settings/SettingsPage'));
@@ -152,6 +153,7 @@ const AppRoutes: React.FC = () => {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route
           path="/"
           element={

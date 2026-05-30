@@ -1,5 +1,6 @@
 import { 
   createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged} from 'firebase/auth';
@@ -42,6 +43,10 @@ export const waitForAuth = (): Promise<void> => {
 export interface LoginData {
   email: string;
   password: string;
+}
+
+export interface PasswordResetData {
+  email: string;
 }
 
 export interface UpdateProfileData {
@@ -105,6 +110,20 @@ export const loginUser = async (data: LoginData): Promise<User> => {
     return convertTimestamps(userDoc.data() as User);
   } catch (error: any) {
     logger.error('Login error:', error);
+    throw new Error(error.message);
+  }
+};
+
+export const requestPasswordReset = async (data: PasswordResetData): Promise<void> => {
+  try {
+    await sendPasswordResetEmail(auth, data.email);
+  } catch (error: any) {
+    logger.error('Password reset error:', error);
+
+    if (error?.code === 'auth/user-not-found') {
+      return;
+    }
+
     throw new Error(error.message);
   }
 };
