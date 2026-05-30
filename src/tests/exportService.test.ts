@@ -16,6 +16,7 @@ import {
   exportData,
   getExportPreview,
   serializeSetForExport,
+  downloadActivityCSVs,
   downloadCSV,
   downloadWellnessCSV,
 } from '@/services/exportService';
@@ -501,6 +502,105 @@ describe('exportService serialization', () => {
 
     if (originalDocument === undefined) {
       delete (globalThis as { document?: unknown }).document;
+    }
+  });
+
+  it('exports activity CSV rows without appended text summary rows', async () => {
+    mockedWorkouts.getUserWorkouts.mockResolvedValue([]);
+    mockedLogAggregationService.getAggregatedExportLogs.mockResolvedValue([
+      {
+        id: 'bench-log',
+        exerciseName: 'Bench Press',
+        collectionType: 'exercise',
+        activityType: ActivityType.RESISTANCE,
+        timestamp: new Date('2026-03-01T10:00:00.000Z'),
+        userId: 'user-1',
+        sets: [
+          { reps: 8, weight: 80, rpe: 7 },
+          { reps: 6, weight: 90, rpe: 8 },
+        ],
+      },
+    ]);
+
+    const originalDocument = (globalThis as { document?: unknown }).document;
+    const originalURL = globalThis.URL;
+    const originalBlob = globalThis.Blob;
+    let csvPayload = '';
+
+    const mockBlob = function(parts: BlobPart[]) {
+      csvPayload = String(parts[0] ?? '');
+      return { parts } as unknown as Blob;
+    } as unknown as typeof Blob;
+
+    Object.defineProperty(globalThis, 'Blob', {
+      value: mockBlob,
+      configurable: true,
+    });
+
+    const linkMock = {
+      setAttribute: jest.fn(),
+      style: {},
+      click: jest.fn(),
+    } as unknown as HTMLAnchorElement;
+    let createElementSpy: RestorableSpy | undefined;
+    let appendChildSpy: RestorableSpy | undefined;
+    let removeChildSpy: RestorableSpy | undefined;
+
+    if (typeof document === 'undefined') {
+      Object.defineProperty(globalThis, 'document', {
+        value: {
+          createElement: jest.fn(() => linkMock),
+          body: {
+            appendChild: jest.fn(() => linkMock),
+            removeChild: jest.fn(() => linkMock),
+          },
+        },
+        configurable: true,
+      });
+    } else {
+      createElementSpy = jest
+        .spyOn(document, 'createElement')
+        .mockReturnValue(linkMock as unknown as HTMLElement);
+      appendChildSpy = jest
+        .spyOn(document.body, 'appendChild')
+        .mockImplementation(() => linkMock as unknown as Node);
+      removeChildSpy = jest
+        .spyOn(document.body, 'removeChild')
+        .mockImplementation(() => linkMock as unknown as Node);
+    }
+
+    Object.defineProperty(globalThis, 'URL', {
+      value: {
+        createObjectURL: jest.fn(() => 'blob:mock-url'),
+      },
+      configurable: true,
+    });
+
+    try {
+      await downloadActivityCSVs('user-1');
+
+      expect(csvPayload).toContain('Bench Press');
+      expect(csvPayload).not.toContain('SUMMARY');
+      expect(csvPayload).not.toContain('Total Sets:');
+      expect(csvPayload.split('\n')).toHaveLength(3);
+    } finally {
+      createElementSpy?.mockRestore();
+      appendChildSpy?.mockRestore();
+      removeChildSpy?.mockRestore();
+
+      Object.defineProperty(globalThis, 'Blob', {
+        value: originalBlob,
+        configurable: true,
+      });
+
+      Object.defineProperty(globalThis, 'URL', {
+        value: originalURL,
+        configurable: true,
+      });
+
+      if (originalDocument === undefined) {
+        delete (globalThis as { document?: unknown }).document;
+      }
     }
   });
 

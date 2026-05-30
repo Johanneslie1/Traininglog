@@ -11,3 +11,5 @@ export { default as Skeleton, ExerciseCardSkeleton, ExerciseListSkeleton } from 
 export { default as EmptyState } from './EmptyState';
 
 export { default as Card, CardHeader, CardBody, CardFooter } from './Card';
+
+export { default as DashboardSection } from './DashboardSection';

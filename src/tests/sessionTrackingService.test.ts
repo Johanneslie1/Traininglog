@@ -136,6 +136,21 @@ describe('sessionTrackingService baseline defaults', () => {
     expect(sessionRef.id).toBe('default-2026-03-31-main');
   });
 
+  it('can name a baseline session when creating it', async () => {
+    const result = await ensureDefaultSessionForDate(
+      'user-1',
+      new Date('2026-03-31T00:00:00.000Z'),
+      'main',
+      'Morning lift'
+    );
+
+    expect(result.name).toBe('Morning lift');
+    expect(transactionSetMock).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'default-2026-03-31-main' }),
+      expect.objectContaining({ name: 'Morning lift' })
+    );
+  });
+
   it('reuses existing deterministic baseline without creating duplicate', async () => {
     transactionGetMock.mockImplementation(async (target: any) => {
       if (target.kind === 'doc' && target.id === 'default-2026-03-31-warmup') {

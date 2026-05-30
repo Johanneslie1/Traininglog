@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { useAuth } from '@/hooks/useAuth';
 import AnalyticsService from '@/services/analyticsService';
+import { buildSingleAthleteHealthDashboardData } from '@/services/athleteStatsService';
 import { allExercises } from '@/data/exercises';
 import { getSrpeByDateRange } from '@/services/srpeService';
 import { getWellnessByDateRange } from '@/services/wellnessService';
@@ -10,6 +11,9 @@ import { ActivityAnalytics, MuscleGroupAnalytics, PRType, VolumeDataPoint } from
 import { Exercise } from '@/types/exercise';
 import { SrpeLog } from '@/types/srpe';
 import { WellnessLog } from '@/types/wellness';
+import { addDays, toLocalDateString } from '@/utils/dateUtils';
+import type { CoachRatingsDashboardData } from '@/types/coachRatings';
+import { DashboardSection } from '@/components/ui';
 
 type Timeframe = 'day' | 'week' | 'month' | 'year';
 
@@ -265,6 +269,7 @@ const AnalyticsDashboard: React.FC = () => {
   const [currentSrpeLogs, setCurrentSrpeLogs] = useState<SrpeLog[]>([]);
   const [previousSrpeLogs, setPreviousSrpeLogs] = useState<SrpeLog[]>([]);
   const [currentWellnessLogs, setCurrentWellnessLogs] = useState<WellnessLog[]>([]);
+  const [healthDashboard, setHealthDashboard] = useState<CoachRatingsDashboardData | null>(null);
 
   const range = useMemo(() => getRangeFromTimeframe(timeframe), [timeframe]);
   const exerciseDatabase = useMemo<Exercise[]>(
@@ -284,24 +289,42 @@ const AnalyticsDashboard: React.FC = () => {
 
       try {
         const previousRange = getPreviousRange(range);
-        const currentStart = format(range.startDate, 'yyyy-MM-dd');
-        const currentEnd = format(range.endDate, 'yyyy-MM-dd');
-        const previousStart = format(previousRange.startDate, 'yyyy-MM-dd');
-        const previousEnd = format(previousRange.endDate, 'yyyy-MM-dd');
+        const currentStart = toLocalDateString(range.startDate);
+        const currentEnd = toLocalDateString(range.endDate);
+        const previousStart = toLocalDateString(previousRange.startDate);
+        const previousEnd = toLocalDateString(previousRange.endDate);
+        const wellnessBaselineStart = toLocalDateString(addDays(range.endDate, -28));
+        const srpeBaselineStart = toLocalDateString(addDays(range.endDate, -27));
+        const healthWellnessStart = currentStart < wellnessBaselineStart ? currentStart : wellnessBaselineStart;
+        const healthSrpeStart = currentStart < srpeBaselineStart ? currentStart : srpeBaselineStart;
 
-        const [current, previous, currentSrpe, previousSrpe, currentWellness] = await Promise.all([
+        const [current, previous, previousSrpe, healthWellness, healthSrpe] = await Promise.all([
           AnalyticsService.getExercisesByDateRange(user.id, range.startDate, range.endDate),
           AnalyticsService.getExercisesByDateRange(user.id, previousRange.startDate, previousRange.endDate),
-          getSrpeByDateRange(user.id, currentStart, currentEnd),
           getSrpeByDateRange(user.id, previousStart, previousEnd),
-          getWellnessByDateRange(user.id, currentStart, currentEnd),
+          getWellnessByDateRange(user.id, healthWellnessStart, currentEnd),
+          getSrpeByDateRange(user.id, healthSrpeStart, currentEnd),
         ]);
+        const currentSrpe = healthSrpe.filter((log) => log.date >= currentStart && log.date <= currentEnd);
+        const currentWellness = healthWellness.filter((log) => log.date >= currentStart && log.date <= currentEnd);
+        const nextHealthDashboard = buildSingleAthleteHealthDashboardData({
+          athleteId: user.id,
+          email: user.email,
+          displayName: `${user.firstName} ${user.lastName}`.trim(),
+          selectedDate: currentEnd,
+          viewMode: 'week',
+          periodStartDate: currentStart,
+          periodEndDate: currentEnd,
+          wellnessLogs: healthWellness,
+          srpeLogs: healthSrpe,
+        });
 
         setCurrentExercises(current);
         setPreviousExercises(previous);
         setCurrentSrpeLogs(currentSrpe);
         setPreviousSrpeLogs(previousSrpe);
         setCurrentWellnessLogs(currentWellness);
+        setHealthDashboard(nextHealthDashboard);
       } catch (loadError) {
         console.error('Failed to load analytics:', loadError);
         setError('Could not load analytics right now. Please try again.');
@@ -358,15 +381,7 @@ const AnalyticsDashboard: React.FC = () => {
     [currentExercises, exerciseDatabase, previousExercises]
   );
 
-  const latestWellness = useMemo(
-    () => [...currentWellnessLogs].sort((a, b) => b.date.localeCompare(a.date))[0],
-    [currentWellnessLogs]
-  );
-
-  const footballLoad = useMemo(
-    () => currentSrpeLogs.reduce((sum, log) => sum + (log.sessionLoad || 0), 0),
-    [currentSrpeLogs]
-  );
+  const healthRow = healthDashboard?.rows[0] ?? null;
 
   const hasAnalyticsData =
     currentExercises.length > 0 || currentSrpeLogs.length > 0 || currentWellnessLogs.length > 0;
@@ -445,31 +460,36 @@ const AnalyticsDashboard: React.FC = () => {
             </div>
             <div className="rounded-xl border border-border bg-bg-secondary p-4">
               <p className="text-xs text-text-tertiary uppercase tracking-wide">Sports Load</p>
-              <p className="mt-1 text-2xl font-bold text-text-primary">{footballLoad.toLocaleString()}</p>
+              <p className="mt-1 text-2xl font-bold text-text-primary">
+                {(healthRow?.weeklySrpe.totalLoad ?? 0).toLocaleString()}
+              </p>
+              <p className="mt-1 text-xs text-text-secondary">
+                ACWR {healthRow?.acwr.ratio?.toFixed(2) ?? '-'} · {healthRow?.acwr.label ?? 'No load baseline'}
+              </p>
             </div>
             <div className="rounded-xl border border-border bg-bg-secondary p-4">
               <p className="text-xs text-text-tertiary uppercase tracking-wide">Readiness</p>
               <p className="mt-1 text-2xl font-bold text-text-primary">
-                {latestWellness?.readiness ?? '-'}
+                {healthRow?.wellnessSnapshot.metricValues.readiness ?? '-'}
               </p>
               <p className="mt-1 text-xs text-text-secondary">
-                {latestWellness?.fatigue ? `Fatigue ${latestWellness.fatigue}/7` : 'No wellness log'}
+                {healthRow?.wellnessSnapshot.metricValues.fatigue
+                  ? `Fatigue ${healthRow.wellnessSnapshot.metricValues.fatigue}/7 · ${healthRow.status}`
+                  : 'No wellness log'}
               </p>
             </div>
           </section>
 
           <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            <div className="rounded-xl border border-border bg-bg-secondary p-4 lg:col-span-2">
-              <h2 className="text-sm font-semibold text-text-primary uppercase tracking-wide">Daily Volume</h2>
+            <DashboardSection title="Daily Volume" className="lg:col-span-2">
               {dailyVolume.length === 0 ? (
                 <p className="mt-4 text-sm text-text-secondary">No volume data for this period.</p>
               ) : (
                 <VolumeAreaChart dataPoints={dailyVolume} />
               )}
-            </div>
+            </DashboardSection>
 
-            <div className="rounded-xl border border-border bg-bg-secondary p-4">
-              <h2 className="text-sm font-semibold text-text-primary uppercase tracking-wide">Vs Previous Period</h2>
+            <DashboardSection title="Vs Previous Period">
               <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3 lg:grid-cols-1">
                 <div className="rounded-lg bg-bg-tertiary px-3 py-2">
                   <p className="text-text-tertiary">Volume</p>
@@ -490,12 +510,11 @@ const AnalyticsDashboard: React.FC = () => {
                   </p>
                 </div>
               </div>
-            </div>
+            </DashboardSection>
           </section>
 
           <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <div className="rounded-xl border border-border bg-bg-secondary p-4">
-              <h2 className="text-sm font-semibold text-text-primary uppercase tracking-wide">Recent PRs</h2>
+            <DashboardSection title="Recent PRs">
               {recentPRs.length === 0 ? (
                 <p className="mt-3 text-sm text-text-secondary">No PRs in this period yet.</p>
               ) : (
@@ -510,10 +529,9 @@ const AnalyticsDashboard: React.FC = () => {
                   ))}
                 </div>
               )}
-            </div>
+            </DashboardSection>
 
-            <div className="rounded-xl border border-border bg-bg-secondary p-4">
-              <h2 className="text-sm font-semibold text-text-primary uppercase tracking-wide">Activity Load</h2>
+            <DashboardSection title="Activity Load">
               {activityAnalytics.length === 0 ? (
                 <p className="mt-3 text-sm text-text-secondary">No activity load data for this period.</p>
               ) : (
@@ -537,19 +555,13 @@ const AnalyticsDashboard: React.FC = () => {
                   ))}
                 </div>
               )}
-            </div>
+            </DashboardSection>
           </section>
 
-          <section className="rounded-xl border border-border bg-bg-secondary p-4">
-            <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <h2 className="text-sm font-semibold text-text-primary uppercase tracking-wide">Muscle Group Analytics</h2>
-                <p className="mt-1 text-xs text-text-secondary">
-                  Resistance volume is mapped to primary and secondary muscles, then compared with the previous period.
-                </p>
-              </div>
-            </div>
-
+          <DashboardSection
+            title="Muscle Group Analytics"
+            subtitle="Resistance volume is mapped to primary and secondary muscles, then compared with the previous period."
+          >
             {muscleGroupAnalytics.length === 0 ? (
               <p className="mt-4 text-sm text-text-secondary">No muscle-group data for this period.</p>
             ) : (
@@ -587,7 +599,7 @@ const AnalyticsDashboard: React.FC = () => {
                 </div>
               </div>
             )}
-          </section>
+          </DashboardSection>
         </>
       )}
     </div>

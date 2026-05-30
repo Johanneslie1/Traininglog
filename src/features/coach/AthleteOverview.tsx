@@ -17,8 +17,16 @@ import {
 } from '@/services/coachService';
 import { downloadPowerBiZip } from '@/services/powerBiExportService';
 import { getCoachTeams, type Team } from '@/services/teamService';
+import { getWellnessByDateRange } from '@/services/wellnessService';
+import { getSrpeByDateRange } from '@/services/srpeService';
+import { buildSingleAthleteHealthDashboardData } from '@/services/athleteStatsService';
 import type { PowerBiExportScope } from '@/types/powerBiExport';
+import type { CoachRatingsDashboardData } from '@/types/coachRatings';
 import { RootState } from '@/store/store';
+import { addDays, toLocalDateString } from '@/utils/dateUtils';
+import { HealthStatusBadge } from '@/features/health-dashboard/HealthStatusBadge';
+import { HealthSummaryCards } from '@/features/health-dashboard/HealthSummaryCards';
+import { formatLoad, formatNumber } from '@/features/health-dashboard/healthDashboardFormatters';
 
 import { 
   ArrowLeftIcon, 
@@ -105,6 +113,7 @@ const AthleteOverview: React.FC = () => {
   const [sessions, setSessions] = useState<AthleteSessionHistoryItem[]>([]);
   const [assignedPrograms, setAssignedPrograms] = useState<any[]>([]);
   const [assignedSessions, setAssignedSessions] = useState<any[]>([]);
+  const [healthDashboard, setHealthDashboard] = useState<CoachRatingsDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [dateFilter, setDateFilter] = useState<DateFilter>('30days');
   const [showAssignDialog, setShowAssignDialog] = useState(false);
@@ -140,25 +149,52 @@ const AthleteOverview: React.FC = () => {
       setLoading(true);
 
       const { startDate, endDate } = getDateRange(dateFilter);
+      const healthEndDate = endDate || new Date();
+      const periodStartDate = startDate || addDays(healthEndDate, -29);
+      const periodStartDateKey = toLocalDateString(periodStartDate);
+      const periodEndDateKey = toLocalDateString(healthEndDate);
+      const wellnessBaselineStart = toLocalDateString(addDays(healthEndDate, -28));
+      const srpeBaselineStart = toLocalDateString(addDays(healthEndDate, -27));
+      const healthWellnessStart = periodStartDateKey < wellnessBaselineStart ? periodStartDateKey : wellnessBaselineStart;
+      const healthSrpeStart = periodStartDateKey < srpeBaselineStart ? periodStartDateKey : srpeBaselineStart;
       const [
         statsData,
         exerciseLogs,
         sessionHistory,
         programs,
-        sessionsData
+        sessionsData,
+        athleteDirectory,
+        wellnessLogs,
+        srpeLogs,
       ] = await Promise.all([
         getAthleteSummaryStats(athleteId),
         getAthleteExerciseLogs(athleteId, startDate, endDate, { maxResults: HISTORY_FETCH_LIMIT }),
         getAthleteSessionHistory(athleteId, startDate, endDate, { maxResults: HISTORY_FETCH_LIMIT }),
         getAthleteAssignedPrograms(athleteId),
-        getAthleteAssignedSessions(athleteId)
+        getAthleteAssignedSessions(athleteId),
+        getAllAthletes(),
+        getWellnessByDateRange(athleteId, healthWellnessStart, periodEndDateKey),
+        getSrpeByDateRange(athleteId, healthSrpeStart, periodEndDateKey),
       ]);
+      const athleteProfile = athleteDirectory.find((athlete) => athlete.id === athleteId);
+      const healthData = buildSingleAthleteHealthDashboardData({
+        athleteId,
+        email: athleteProfile?.email || athleteId,
+        displayName: athleteProfile ? `${athleteProfile.firstName} ${athleteProfile.lastName}`.trim() : athleteId,
+        selectedDate: periodEndDateKey,
+        viewMode: 'week',
+        periodStartDate: periodStartDateKey,
+        periodEndDate: periodEndDateKey,
+        wellnessLogs,
+        srpeLogs,
+      });
 
       setStats(statsData);
       setExercises(exerciseLogs);
       setSessions(sessionHistory);
       setAssignedPrograms(programs);
       setAssignedSessions(sessionsData);
+      setHealthDashboard(healthData);
       setVisibleSessions(SESSION_PAGE_SIZE);
       setVisibleExercises(EXERCISE_PAGE_SIZE);
 
@@ -350,6 +386,8 @@ const AthleteOverview: React.FC = () => {
     }
   };
 
+  const healthRow = healthDashboard?.rows[0] ?? null;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[100dvh] bg-bg-primary">
@@ -434,6 +472,40 @@ const AthleteOverview: React.FC = () => {
           <StatTile label="Sessions" value={stats.sessionsLast7Days} helper="last 7 days" />
           <StatTile label="Exercises" value={stats.exercisesLast7Days} helper="last 7 days" />
           <StatTile label="Total Volume" value={`${(stats.totalVolume / 1000).toFixed(1)}k`} helper="kg lifted" />
+        </div>
+
+        <div className="bg-bg-secondary border border-border rounded-lg p-4 mb-8 space-y-3">
+          <div>
+            <h2 className="text-base font-semibold">Health & Load Snapshot</h2>
+            <p className="mt-1 text-xs text-text-tertiary">
+              Uses the same wellness, sports load, and ACWR calculations as athlete stats and team health.
+            </p>
+          </div>
+          <HealthSummaryCards
+            columnsClassName="grid grid-cols-1 gap-3 sm:grid-cols-4"
+            items={[
+              {
+                id: 'wellness-score',
+                label: 'Wellness score',
+                value: formatNumber(healthRow?.wellnessSnapshot.score),
+              },
+              {
+                id: 'sports-load',
+                label: 'Sports load',
+                value: formatLoad(healthRow?.weeklySrpe.totalLoad),
+              },
+              {
+                id: 'acwr',
+                label: 'ACWR',
+                value: formatNumber(healthRow?.acwr.ratio),
+              },
+              {
+                id: 'health-status',
+                label: 'Status',
+                value: <HealthStatusBadge status={healthRow?.status || 'missing'} />,
+              },
+            ]}
+          />
         </div>
 
         <div className="bg-bg-secondary border border-border rounded-lg p-4 mb-8">

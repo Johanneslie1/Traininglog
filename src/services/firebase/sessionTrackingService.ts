@@ -23,6 +23,7 @@ export interface SessionContext {
   sessionWeekKey: string;
   sessionNumberInDay: number;
   sessionNumberInWeek: number;
+  name?: string;
 }
 
 interface SessionDoc extends SessionContext {
@@ -40,6 +41,7 @@ interface EnsureSessionOptions {
   requestedSessionId?: string;
   requestedSessionType?: SessionType;
   forceNewSession?: boolean;
+  sessionName?: string;
 }
 
 const toIsoWeekKey = (date: Date): string => {
@@ -58,6 +60,7 @@ const toSessionContext = (docId: string, data: Partial<SessionDoc>): SessionCont
   sessionWeekKey: String(data.sessionWeekKey || ''),
   sessionNumberInDay: Number(data.sessionNumberInDay || 1),
   sessionNumberInWeek: Number(data.sessionNumberInWeek || 1),
+  name: data.name,
 });
 
 const parseTimestamp = (value: unknown): number => {
@@ -103,6 +106,7 @@ export const ensureSessionContextForLog = async (
   const sessionDateKey = toLocalDateString(selectedDate);
   const sessionWeekKey = toIsoWeekKey(selectedDate);
   const requestedSessionType = normalizeSessionType(options.requestedSessionType || DEFAULT_SESSION_TYPE);
+  const sessionName = options.sessionName?.trim();
 
   if (options.requestedSessionId) {
     const requestedRef = doc(db, 'users', userId, 'sessions', options.requestedSessionId);
@@ -174,6 +178,7 @@ export const ensureSessionContextForLog = async (
         startedAt: now,
         createdAt: now,
         updatedAt: now,
+        ...(sessionName ? { name: sessionName } : {}),
       };
 
       transaction.set(deterministicSessionRef, sessionDoc);
@@ -185,6 +190,7 @@ export const ensureSessionContextForLog = async (
         sessionWeekKey,
         sessionNumberInDay: 1,
         sessionNumberInWeek: weekSnapshot.size + 1,
+        ...(sessionName ? { name: sessionName } : {}),
       };
     });
   }
@@ -219,6 +225,7 @@ export const ensureSessionContextForLog = async (
     startedAt: now,
     createdAt: now,
     updatedAt: now,
+    ...(sessionName ? { name: sessionName } : {}),
   };
 
   await setDoc(sessionRef, sessionDoc);
@@ -230,6 +237,7 @@ export const ensureSessionContextForLog = async (
     sessionWeekKey,
     sessionNumberInDay,
     sessionNumberInWeek,
+    ...(sessionName ? { name: sessionName } : {}),
   };
 };
 
@@ -301,14 +309,16 @@ export const completeSession = async (userId: string, sessionId: string): Promis
 export const ensureDefaultSessionForDate = (
   userId: string,
   date: Date,
-  sessionType: SessionType = DEFAULT_SESSION_TYPE
+  sessionType: SessionType = DEFAULT_SESSION_TYPE,
+  sessionName?: string
 ): Promise<SessionContext> =>
-  ensureSessionContextForLog(userId, date, { requestedSessionType: sessionType });
+  ensureSessionContextForLog(userId, date, { requestedSessionType: sessionType, sessionName });
 
 export const createNewSessionForDate = async (
   userId: string,
   selectedDate: Date,
-  sessionType: SessionType = DEFAULT_SESSION_TYPE
+  sessionType: SessionType = DEFAULT_SESSION_TYPE,
+  sessionName?: string
 ): Promise<SessionContext> => {
   const normalizedType = normalizeSessionType(sessionType);
   const sessionDateKey = toLocalDateString(selectedDate);
@@ -346,6 +356,7 @@ export const createNewSessionForDate = async (
   return ensureSessionContextForLog(userId, selectedDate, {
     forceNewSession: true,
     requestedSessionType: normalizedType,
+    sessionName,
   });
 };
 

@@ -15,9 +15,11 @@
 
 import JSZip from 'jszip';
 import { getAuth } from 'firebase/auth';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { exportData, getWellnessExportRows } from '@/services/exportService';
 import { verifyCoachAthleteRelationship } from '@/services/coachService';
 import { getCoachTeams, getTeamMembers, syncCoachAthleteAccess } from '@/services/teamService';
+import { db } from '@/services/firebase/config';
 import { ActivityType } from '@/types/activityTypes';
 import { normalizeActivityType } from '@/types/activityLog';
 import type {
@@ -209,6 +211,54 @@ const getStableSessionId = (
   return `default-${toIdToken(athleteId)}-${dateToken}-${sessionTypeToken}${sessionNumber}`;
 };
 
+const getSessionDisplayName = (
+  sessionType: string,
+  sessionNumberInDay: unknown,
+  fallback = ''
+): string => {
+  if (fallback.trim()) return fallback.trim();
+  const number =
+    typeof sessionNumberInDay === 'number' && sessionNumberInDay > 0
+      ? sessionNumberInDay
+      : 1;
+  return normalizeSessionType(sessionType) === 'warmup'
+    ? `Warm-up ${number}`
+    : `Session ${number}`;
+};
+
+const loadSessionNamesById = async (
+  athleteId: string,
+  startDate: string,
+  endDate: string
+): Promise<Map<string, string>> => {
+  const names = new Map<string, string>();
+
+  try {
+    const sessionsRef = collection(db, 'users', athleteId, 'sessions');
+    const sessionsQuery = query(
+      sessionsRef,
+      where('sessionDateKey', '>=', startDate),
+      where('sessionDateKey', '<=', endDate)
+    );
+    const snapshot = await getDocs(sessionsQuery);
+
+    snapshot.docs.forEach((docSnap) => {
+      const data = docSnap.data() as Record<string, unknown>;
+      const sessionType = normalizeSessionType(data.sessionType);
+      const sessionName = getSessionDisplayName(
+        sessionType,
+        data.sessionNumberInDay,
+        typeof data.name === 'string' ? data.name : ''
+      );
+      names.set(docSnap.id, sessionName);
+    });
+  } catch (error) {
+    console.warn(`[powerBiExport] Could not load session names for ${athleteId}:`, error);
+  }
+
+  return names;
+};
+
 // ---------------------------------------------------------------------------
 // Row builders  (camelCase set → snake_case Power BI row)
 // ---------------------------------------------------------------------------
@@ -216,15 +266,16 @@ const getStableSessionId = (
 const buildGymSetRow = (
   athleteId: string,
   athleteName: string,
-  s: Record<string, unknown>
+  s: Record<string, unknown>,
+  sessionNamesById: Map<string, string>
 ): FactGymSetRow => {
   const reps = typeof s.reps === 'number' && s.reps > 0 ? s.reps : null;
   const weight = typeof s.weight === 'number' && s.weight > 0 ? s.weight : null;
   const rawRpe = typeof s.rpe === 'number' && isFinite(s.rpe) ? s.rpe : null;
-  const effectiveRpe = rawRpe !== null && rawRpe > 0 ? rawRpe : 7;
   const exerciseName = normalizeExerciseDisplayName(String(s.exerciseName ?? ''));
   const loggedDate = getRowDate(s);
   const sessionType = normalizeSessionType(s.sessionType);
+  const sessionId = getStableSessionId(athleteId, loggedDate, sessionType, s);
   const overrideCategory =
     typeof s.exerciseFactorCategory === 'string'
       ? (s.exerciseFactorCategory as ExerciseFactorCategory)
@@ -239,15 +290,16 @@ const buildGymSetRow = (
   const factorCategory = overrideCategory ?? inferredFactorCategory;
   const factor = getExerciseFactor(exerciseName, factorCategory, sourceCategory, sourceType);
   const normalisedLoad =
-    reps !== null && weight !== null
-      ? Math.round(reps * weight * effectiveRpe * factor * 10) / 10
+    reps !== null && weight !== null && rawRpe !== null && rawRpe > 0
+      ? Math.round(reps * weight * rawRpe * factor * 10) / 10
       : '';
 
   return {
     athlete_id: athleteId,
     athlete_name: athleteName,
-    session_id: getStableSessionId(athleteId, loggedDate, sessionType, s),
+    session_id: sessionId,
     session_type: sessionType,
+    session_name: sessionNamesById.get(sessionId) || getSessionDisplayName(sessionType, s.sessionNumberInDay),
     exercise_log_id: String(s.exerciseLogId ?? ''),
     exercise_id: toExerciseId(exerciseName, ActivityType.RESISTANCE),
     exercise_name: exerciseName,
@@ -271,18 +323,21 @@ const buildGymSetRow = (
 const buildActivityRow = (
   athleteId: string,
   athleteName: string,
-  s: Record<string, unknown>
+  s: Record<string, unknown>,
+  sessionNamesById: Map<string, string>
 ): FactActivityRow => {
   const activityType = resolvePowerBiActivityType(s);
   const exerciseName = normalizeExerciseDisplayName(String(s.exerciseName ?? ''));
   const loggedDate = getRowDate(s);
   const sessionType = normalizeSessionType(s.sessionType);
+  const sessionId = getStableSessionId(athleteId, loggedDate, sessionType, s);
 
   return {
     athlete_id: athleteId,
     athlete_name: athleteName,
-    session_id: getStableSessionId(athleteId, loggedDate, sessionType, s),
+    session_id: sessionId,
     session_type: sessionType,
+    session_name: sessionNamesById.get(sessionId) || getSessionDisplayName(sessionType, s.sessionNumberInDay),
     exercise_log_id: String(s.exerciseLogId ?? ''),
     exercise_name: exerciseName,
     activity_type: activityType,
@@ -342,11 +397,14 @@ interface SessionAccumulator {
   athlete_id: string;
   athlete_name: string;
   session_id: string;
+  session_name: string;
   session_type: string;
   date: string;
   activity_types: Set<string>;
   has_warmup: boolean;
-  total_sets: number;
+  resistance_set_count: number;
+  activity_entry_count: number;
+  sports_load_entry_count: number;
   total_reps: number;
   total_volume_kg: number;
   total_distance_m: number;
@@ -361,8 +419,8 @@ interface SessionAccumulator {
   hr_zone5_sec: number;
   calories: number;
   rpe_values: number[];
-  session_normalised_load: number;
-  explicit_session_load: number;
+  resistance_normalised_load: number;
+  reported_session_load: number;
   has_sports_load: boolean;
 }
 
@@ -377,6 +435,7 @@ const buildFactSessions = (
     athleteId: string,
     athleteName: string,
     sessionId: string,
+    sessionName: string,
     sessionType: string,
     date: string
   ): SessionAccumulator => {
@@ -386,11 +445,14 @@ const buildFactSessions = (
         athlete_id: athleteId,
         athlete_name: athleteName,
         session_id: sessionId,
+        session_name: sessionName,
         session_type: sessionType,
         date,
         activity_types: new Set(),
         has_warmup: false,
-        total_sets: 0,
+        resistance_set_count: 0,
+        activity_entry_count: 0,
+        sports_load_entry_count: 0,
         total_reps: 0,
         total_volume_kg: 0,
         total_distance_m: 0,
@@ -405,8 +467,8 @@ const buildFactSessions = (
         hr_zone5_sec: 0,
         calories: 0,
         rpe_values: [],
-        session_normalised_load: 0,
-        explicit_session_load: 0,
+        resistance_normalised_load: 0,
+        reported_session_load: 0,
         has_sports_load: false,
       });
     }
@@ -416,25 +478,25 @@ const buildFactSessions = (
   gymSets.forEach((s) => {
     if (!s.session_id) return;
     const acc = getOrCreate(
-      s.athlete_id, s.athlete_name, s.session_id, s.session_type, s.logged_date
+      s.athlete_id, s.athlete_name, s.session_id, s.session_name, s.session_type, s.logged_date
     );
     acc.activity_types.add('resistance');
     if (s.is_warmup) acc.has_warmup = true;
-    acc.total_sets++;
+    acc.resistance_set_count++;
     if (typeof s.reps === 'number') acc.total_reps += s.reps;
     if (typeof s.tonnage === 'number') acc.total_volume_kg += s.tonnage;
-    if (typeof s.normalised_load === 'number') acc.session_normalised_load += s.normalised_load;
+    if (typeof s.normalised_load === 'number') acc.resistance_normalised_load += s.normalised_load;
     if (typeof s.rpe === 'number') acc.rpe_values.push(s.rpe);
   });
 
   activityRows.forEach((s) => {
     if (!s.session_id) return;
     const acc = getOrCreate(
-      s.athlete_id, s.athlete_name, s.session_id, s.session_type, s.logged_date
+      s.athlete_id, s.athlete_name, s.session_id, s.session_name, s.session_type, s.logged_date
     );
     acc.activity_types.add(s.activity_type || 'other');
     if (s.is_warmup) acc.has_warmup = true;
-    acc.total_sets++;
+    acc.activity_entry_count++;
     if (typeof s.reps === 'number') acc.total_reps += s.reps;
     if (typeof s.distance_meters === 'number' && s.distance_meters > 0)
       acc.total_distance_m += s.distance_meters;
@@ -452,26 +514,17 @@ const buildFactSessions = (
   });
 
   sportsLoadRows.forEach((s) => {
-    const exactKey = `${s.athlete_id}::${s.session_id}`;
-    let acc = map.get(exactKey);
-
-    if (!acc) {
-      const sameDateSessions = Array.from(map.values()).filter(
-        (candidate) =>
-          candidate.athlete_id === s.athlete_id &&
-          candidate.date === s.logged_date &&
-          !candidate.has_sports_load
-      );
-
-      // Legacy sports-load rows are daily aggregates. Only merge them into an
-      // existing activity/gym session when there is exactly one same-day target;
-      // otherwise keep a separate summary row to avoid accidental double counting.
-      acc = sameDateSessions.length === 1
-        ? sameDateSessions[0]
-        : getOrCreate(s.athlete_id, s.athlete_name, s.session_id, 'main', s.logged_date);
-    }
+    const acc = getOrCreate(
+      s.athlete_id,
+      s.athlete_name,
+      s.session_id,
+      s.session_name,
+      'sport',
+      s.logged_date
+    );
 
     acc.activity_types.add('sport');
+    acc.sports_load_entry_count++;
     acc.has_sports_load = true;
     if (typeof s.duration_min === 'number' && s.duration_min > 0) {
       acc.sports_duration_sec += s.duration_min * 60;
@@ -484,7 +537,7 @@ const buildFactSessions = (
     if (typeof s.calories === 'number' && s.calories > 0 && acc.calories === 0) acc.calories += s.calories;
     if (typeof s.rpe === 'number') acc.rpe_values.push(s.rpe);
     if (typeof s.session_load === 'number' && s.session_load > 0) {
-      acc.explicit_session_load += s.session_load;
+      acc.reported_session_load += s.session_load;
     }
   });
 
@@ -516,13 +569,18 @@ const buildFactSessions = (
       athlete_id: acc.athlete_id,
       athlete_name: acc.athlete_name,
       session_id: acc.session_id,
+      session_name: acc.session_name,
       session_type: acc.session_type,
       date: acc.date,
       week_key: dateStringToWeekKey(acc.date),
       activity_types: Array.from(acc.activity_types).sort().join('|'),
       has_warmup: acc.has_warmup,
       duration_min: durationMin ?? '',
-      total_sets: acc.total_sets,
+      resistance_set_count: acc.resistance_set_count,
+      activity_entry_count: acc.activity_entry_count,
+      sports_load_entry_count: acc.sports_load_entry_count,
+      total_entry_count:
+        acc.resistance_set_count + acc.activity_entry_count + acc.sports_load_entry_count,
       total_reps: acc.total_reps > 0 ? acc.total_reps : '',
       total_volume_kg:
         acc.total_volume_kg > 0 ? Math.round(acc.total_volume_kg * 10) / 10 : '',
@@ -535,15 +593,16 @@ const buildFactSessions = (
       hr_zone4_sec: acc.hr_zone4_sec > 0 ? acc.hr_zone4_sec : '',
       hr_zone5_sec: acc.hr_zone5_sec > 0 ? acc.hr_zone5_sec : '',
       calories: acc.calories > 0 ? Math.round(acc.calories) : '',
-      session_rpe: avgRpe ?? '',
-      session_normalised_load:
-        acc.session_normalised_load > 0
-          ? Math.round(acc.session_normalised_load * 10) / 10
+      avg_set_rpe: avgRpe ?? '',
+      resistance_normalised_load:
+        acc.resistance_normalised_load > 0
+          ? Math.round(acc.resistance_normalised_load * 10) / 10
           : '',
-      session_load:
-        acc.explicit_session_load > 0
-          ? Math.round(acc.explicit_session_load * 10) / 10
-          : computedSessionLoad ?? '',
+      reported_session_load:
+        acc.reported_session_load > 0
+          ? Math.round(acc.reported_session_load * 10) / 10
+          : '',
+      estimated_session_load: computedSessionLoad ?? '',
     });
   });
 
@@ -566,6 +625,7 @@ const processRawSets = (
   sets: Record<string, unknown>[],
   athleteId: string,
   athleteName: string,
+  sessionNamesById: Map<string, string>,
   gymSets: FactGymSetRow[],
   activityRows: FactActivityRow[],
   allRawSets: Record<string, unknown>[]
@@ -573,9 +633,9 @@ const processRawSets = (
   sets.forEach((s) => {
     allRawSets.push(s);
     if (isResistanceSet(s)) {
-      gymSets.push(buildGymSetRow(athleteId, athleteName, s));
+      gymSets.push(buildGymSetRow(athleteId, athleteName, s, sessionNamesById));
     } else {
-      activityRows.push(buildActivityRow(athleteId, athleteName, s));
+      activityRows.push(buildActivityRow(athleteId, athleteName, s, sessionNamesById));
     }
   });
 };
@@ -630,6 +690,7 @@ const addFootballLoadRowsForAthlete = async (
         athlete_id: session.userId || athleteId,
         athlete_name: athleteName,
         session_id: session.id,
+        session_name: session.sessionName || session.sportName || 'Football',
         logged_date: session.date,
         sport_type: session.sportType || 'football',
         sport_name: session.sportName || 'Football',
@@ -653,6 +714,7 @@ const addFootballLoadRowsForAthlete = async (
         athlete_id: row.userId || athleteId,
         athlete_name: athleteName,
         session_id: `legacy-${row.date}`,
+        session_name: row.sessionName || row.sportName || 'Football',
         logged_date: row.date,
         sport_type: row.sportType || 'football',
         sport_name: row.sportName || 'Football',
@@ -905,7 +967,8 @@ export const buildPowerBiFiles = async (
 
   await runWithConcurrency(targets, 4, async (target) => {
     const data = await exportData(target.id, exportOptions);
-    processRawSets(data.sets, target.id, target.athleteName, gymSets, activityRows, allRawSets);
+    const sessionNamesById = await loadSessionNamesById(target.id, wellnessStart, wellnessEnd);
+    processRawSets(data.sets, target.id, target.athleteName, sessionNamesById, gymSets, activityRows, allRawSets);
     await addWellnessRowsForAthlete(target.id, target.athleteName, wellnessStart, wellnessEnd, wellnessRows);
     await addFootballLoadRowsForAthlete(target.id, target.athleteName, wellnessStart, wellnessEnd, sportsLoadRows);
 
@@ -936,14 +999,14 @@ export const buildPowerBiFiles = async (
 
   // ---- Column headers ----
   const gymSetHeaders: (keyof FactGymSetRow)[] = [
-    'athlete_id', 'athlete_name', 'session_id', 'session_type', 'exercise_log_id',
+    'athlete_id', 'athlete_name', 'session_id', 'session_type', 'session_name', 'exercise_log_id',
     'exercise_id', 'exercise_name', 'logged_date', 'exercise_order', 'set_number',
     'reps', 'weight', 'rpe', 'rest_sec', 'is_warmup', 'tonnage',
     'exercise_factor_category', 'exercise_factor', 'normalised_load', 'set_volume', 'notes',
   ];
 
   const activityHeaders: (keyof FactActivityRow)[] = [
-    'athlete_id', 'athlete_name', 'session_id', 'session_type', 'exercise_log_id',
+    'athlete_id', 'athlete_name', 'session_id', 'session_type', 'session_name', 'exercise_log_id',
     'exercise_name', 'activity_type', 'logged_date', 'exercise_order', 'set_number',
     'reps', 'duration_sec', 'distance_meters', 'avg_hr', 'max_hr',
     'hr_zone1', 'hr_zone2', 'hr_zone3', 'hr_zone4', 'hr_zone5',
@@ -951,11 +1014,13 @@ export const buildPowerBiFiles = async (
   ];
 
   const sessionHeaders: (keyof FactSessionRow)[] = [
-    'athlete_id', 'athlete_name', 'session_id', 'session_type', 'date', 'week_key',
-    'activity_types', 'has_warmup', 'duration_min', 'total_sets', 'total_reps',
+    'athlete_id', 'athlete_name', 'session_id', 'session_name', 'session_type', 'date', 'week_key',
+    'activity_types', 'has_warmup', 'duration_min', 'resistance_set_count',
+    'activity_entry_count', 'sports_load_entry_count', 'total_entry_count', 'total_reps',
     'total_volume_kg', 'total_distance_m', 'avg_hr', 'max_hr',
     'hr_zone1_sec', 'hr_zone2_sec', 'hr_zone3_sec', 'hr_zone4_sec', 'hr_zone5_sec',
-    'calories', 'session_rpe', 'session_normalised_load', 'session_load',
+    'calories', 'avg_set_rpe', 'resistance_normalised_load', 'reported_session_load',
+    'estimated_session_load',
   ];
 
   const wellnessHeaders: (keyof FactWellnessRow)[] = [

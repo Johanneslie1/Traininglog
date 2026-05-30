@@ -702,208 +702,66 @@ export const downloadActivityCSVs = async (userId: string, options: ExportOption
     });
 
     let exportedFiles = 0;
+    const sessionHeaders = [
+      'sessionId',
+      'sessionType',
+      'sessionDateKey',
+      'sessionWeekKey',
+      'sessionNumberInDay',
+      'sessionNumberInWeek',
+    ];
 
     // Export Resistance Training Sets
     if (setsByActivityType.resistance.length > 0) {
       const resistanceSets = setsByActivityType.resistance;
-      const headers = ['loggedDate', 'exerciseName', 'supersetId', 'supersetLabel', 'supersetName', 'setNumber', 'weight', 'reps', 'rpe', 'setVolume', 'isWarmup', 'restTimeSec', 'comment'];
-      
-      // Calculate summary
-      const totalVolume = resistanceSets.reduce((sum, set) => sum + (set.setVolume || 0), 0);
-      const totalSets = resistanceSets.length;
-      const avgRPE = resistanceSets.filter(s => s.rpe > 0).length > 0
-        ? resistanceSets.reduce((sum, set) => sum + (set.rpe || 0), 0) / resistanceSets.filter(s => s.rpe > 0).length
-        : 0;
-      const maxWeight = Math.max(...resistanceSets.map(s => s.weight || 0));
+      const headers = [...sessionHeaders, 'loggedDate', 'exerciseName', 'supersetId', 'supersetLabel', 'supersetName', 'setNumber', 'weight', 'reps', 'rpe', 'setVolume', 'isWarmup', 'restTimeSec', 'comment'];
 
-      // Add summary row
-      const summaryRow = {
-        loggedDate: 'SUMMARY',
-        exerciseName: `Total Sets: ${totalSets}`,
-        setNumber: '',
-        weight: `Max: ${maxWeight}`,
-        reps: '',
-        rpe: avgRPE > 0 ? `Avg: ${avgRPE.toFixed(1)}` : '',
-        setVolume: `Total: ${totalVolume}`,
-        isWarmup: '',
-        restTimeSec: '',
-        comment: ''
-      };
-
-      downloadCSV([...resistanceSets, summaryRow], headers, 'resistance_sets.csv');
+      downloadCSV(resistanceSets, headers, 'resistance_sets.csv');
       exportedFiles++;
     }
 
     // Export Endurance Sets
     if (setsByActivityType.endurance.length > 0) {
       const enduranceSets = setsByActivityType.endurance;
-      const headers = ['loggedDate', 'exerciseName', 'supersetId', 'supersetLabel', 'supersetName', 'setNumber', 'reps', 'duration', 'distance', 'durationSec', 'distanceMeters', 'rpe', 'pace', 'averageHeartRate', 'maxHeartRate', 'averageHR', 'maxHR', 'hrZone1', 'hrZone2', 'hrZone3', 'hrZone4', 'hrZone5', 'calories', 'elevation', 'comment', 'notes'];
-      
-      // Calculate summary
-      const totalDuration = enduranceSets.reduce((sum, set) => sum + (set.durationSec || 0), 0);
-      const totalDistance = enduranceSets.reduce((sum, set) => sum + (set.distanceMeters || 0), 0);
-      const totalCalories = enduranceSets.reduce((sum, set) => sum + (set.calories || 0), 0);
-      const avgHR = enduranceSets.filter(s => s.averageHR > 0).length > 0
-        ? enduranceSets.reduce((sum, set) => sum + (set.averageHR || 0), 0) / enduranceSets.filter(s => s.averageHR > 0).length
-        : 0;
+      const headers = [...sessionHeaders, 'loggedDate', 'exerciseName', 'supersetId', 'supersetLabel', 'supersetName', 'setNumber', 'reps', 'duration', 'distance', 'durationSec', 'distanceMeters', 'rpe', 'pace', 'averageHeartRate', 'maxHeartRate', 'averageHR', 'maxHR', 'hrZone1', 'hrZone2', 'hrZone3', 'hrZone4', 'hrZone5', 'calories', 'elevation', 'comment', 'notes'];
 
-      const summaryRow = {
-        loggedDate: 'SUMMARY',
-        exerciseName: `Total Sessions: ${enduranceSets.length}`,
-        setNumber: '',
-        reps: '',
-        duration: '',
-        distance: '',
-        durationSec: `Total: ${totalDuration}`,
-        distanceMeters: `Total: ${totalDistance}`,
-        rpe: '',
-        pace: '',
-        averageHeartRate: avgHR > 0 ? `Avg: ${avgHR.toFixed(0)}` : '',
-        maxHeartRate: '',
-        averageHR: avgHR > 0 ? `Avg: ${avgHR.toFixed(0)}` : '',
-        maxHR: '',
-        hrZone1: '',
-        hrZone2: '',
-        hrZone3: '',
-        hrZone4: '',
-        hrZone5: '',
-        calories: `Total: ${totalCalories}`,
-        elevation: '',
-        comment: '',
-        notes: ''
-      };
-
-      downloadCSV([...enduranceSets, summaryRow], headers, 'endurance_sets.csv');
+      downloadCSV(enduranceSets, headers, 'endurance_sets.csv');
       exportedFiles++;
     }
 
     // Export Speed & Agility Sets
     if (setsByActivityType.speedAgility.length > 0) {
       const speedAgilitySets = setsByActivityType.speedAgility;
-      const headers = ['loggedDate', 'exerciseName', 'supersetId', 'supersetLabel', 'supersetName', 'setNumber', 'reps', 'durationSec', 'distanceMeters', 'height', 'rpe', 'restTimeSec', 'drillMetric', 'performance', 'intensity', 'comment', 'notes'];
-      
-      // Calculate summary
-      const totalReps = speedAgilitySets.reduce((sum, set) => sum + (set.reps || 0), 0);
-      const totalDuration = speedAgilitySets.reduce((sum, set) => sum + (set.durationSec || 0), 0);
-      const avgHeight = speedAgilitySets.filter(s => s.height > 0).length > 0
-        ? speedAgilitySets.reduce((sum, set) => sum + (set.height || 0), 0) / speedAgilitySets.filter(s => s.height > 0).length
-        : 0;
+      const headers = [...sessionHeaders, 'loggedDate', 'exerciseName', 'supersetId', 'supersetLabel', 'supersetName', 'setNumber', 'reps', 'durationSec', 'distanceMeters', 'height', 'rpe', 'restTimeSec', 'drillMetric', 'performance', 'intensity', 'comment', 'notes'];
 
-      const summaryRow = {
-        loggedDate: 'SUMMARY',
-        exerciseName: `Total Drills: ${speedAgilitySets.length}`,
-        setNumber: '',
-        reps: `Total: ${totalReps}`,
-        durationSec: `Total: ${totalDuration}`,
-        distanceMeters: '',
-        height: avgHeight > 0 ? `Avg: ${avgHeight.toFixed(1)}` : '',
-        rpe: '',
-        restTimeSec: '',
-        drillMetric: '',
-        performance: '',
-        intensity: '',
-        comment: '',
-        notes: ''
-      };
-
-      downloadCSV([...speedAgilitySets, summaryRow], headers, 'speed_agility_sets.csv');
+      downloadCSV(speedAgilitySets, headers, 'speed_agility_sets.csv');
       exportedFiles++;
     }
 
     // Export Stretching Sets
     if (setsByActivityType.stretching.length > 0) {
       const stretchingSets = setsByActivityType.stretching;
-      const headers = ['loggedDate', 'exerciseName', 'supersetId', 'supersetLabel', 'supersetName', 'setNumber', 'reps', 'durationSec', 'holdTime', 'rpe', 'intensity', 'bodyPart', 'stretchType', 'flexibility', 'comment', 'notes'];
-      
-      // Calculate summary
-      const totalHoldTime = stretchingSets.reduce((sum, set) => sum + (set.holdTime || 0), 0);
-      const avgIntensity = stretchingSets.filter(s => s.intensity > 0).length > 0
-        ? stretchingSets.reduce((sum, set) => sum + (set.intensity || 0), 0) / stretchingSets.filter(s => s.intensity > 0).length
-        : 0;
-      const avgFlexibility = stretchingSets.filter(s => s.flexibility > 0).length > 0
-        ? stretchingSets.reduce((sum, set) => sum + (set.flexibility || 0), 0) / stretchingSets.filter(s => s.flexibility > 0).length
-        : 0;
+      const headers = [...sessionHeaders, 'loggedDate', 'exerciseName', 'supersetId', 'supersetLabel', 'supersetName', 'setNumber', 'reps', 'durationSec', 'holdTime', 'rpe', 'intensity', 'bodyPart', 'stretchType', 'flexibility', 'comment', 'notes'];
 
-      const summaryRow = {
-        loggedDate: 'SUMMARY',
-        exerciseName: `Total Stretches: ${stretchingSets.length}`,
-        setNumber: '',
-        reps: '',
-        durationSec: '',
-        holdTime: `Total: ${totalHoldTime}`,
-        rpe: '',
-        intensity: avgIntensity > 0 ? `Avg: ${avgIntensity.toFixed(1)}` : '',
-        bodyPart: '',
-        stretchType: '',
-        flexibility: avgFlexibility > 0 ? `Avg: ${avgFlexibility.toFixed(1)}` : '',
-        comment: '',
-        notes: ''
-      };
-
-      downloadCSV([...stretchingSets, summaryRow], headers, 'stretching_sets.csv');
+      downloadCSV(stretchingSets, headers, 'stretching_sets.csv');
       exportedFiles++;
     }
 
     // Export Sport Sets
     if (setsByActivityType.sport.length > 0) {
       const sportSets = setsByActivityType.sport;
-      const headers = ['loggedDate', 'exerciseName', 'supersetId', 'supersetLabel', 'supersetName', 'setNumber', 'reps', 'durationSec', 'distanceMeters', 'rpe', 'intensity', 'heartRate', 'calories', 'score', 'opponent', 'performance', 'comment', 'notes'];
-      
-      // Calculate summary
-      const totalDuration = sportSets.reduce((sum, set) => sum + (set.durationSec || 0), 0);
-      const totalCalories = sportSets.reduce((sum, set) => sum + (set.calories || 0), 0);
-      const avgIntensity = sportSets.filter(s => s.intensity > 0).length > 0
-        ? sportSets.reduce((sum, set) => sum + (set.intensity || 0), 0) / sportSets.filter(s => s.intensity > 0).length
-        : 0;
+      const headers = [...sessionHeaders, 'loggedDate', 'exerciseName', 'supersetId', 'supersetLabel', 'supersetName', 'setNumber', 'reps', 'durationSec', 'distanceMeters', 'rpe', 'intensity', 'heartRate', 'calories', 'score', 'opponent', 'performance', 'comment', 'notes'];
 
-      const summaryRow = {
-        loggedDate: 'SUMMARY',
-        exerciseName: `Total Activities: ${sportSets.length}`,
-        setNumber: '',
-        reps: '',
-        durationSec: `Total: ${totalDuration}`,
-        distanceMeters: '',
-        rpe: '',
-        intensity: avgIntensity > 0 ? `Avg: ${avgIntensity.toFixed(1)}` : '',
-        heartRate: '',
-        calories: `Total: ${totalCalories}`,
-        score: '',
-        opponent: '',
-        performance: '',
-        comment: '',
-        notes: ''
-      };
-
-      downloadCSV([...sportSets, summaryRow], headers, 'sport_sets.csv');
+      downloadCSV(sportSets, headers, 'sport_sets.csv');
       exportedFiles++;
     }
 
     // Export Other Sets (fallback)
     if (setsByActivityType.other.length > 0) {
       const otherSets = setsByActivityType.other;
-      const headers = ['loggedDate', 'exerciseName', 'supersetId', 'supersetLabel', 'supersetName', 'activityType', 'setNumber', 'reps', 'weight', 'duration', 'distance', 'durationSec', 'distanceMeters', 'height', 'rpe', 'intensity', 'pace', 'elevation', 'comment', 'notes'];
-      
-      const summaryRow = {
-        loggedDate: 'SUMMARY',
-        exerciseName: `Total Sets: ${otherSets.length}`,
-        activityType: '',
-        setNumber: '',
-        reps: '',
-        weight: '',
-        duration: '',
-        distance: '',
-        durationSec: '',
-        distanceMeters: '',
-        height: '',
-        rpe: '',
-        intensity: '',
-        pace: '',
-        elevation: '',
-        comment: '',
-        notes: ''
-      };
+      const headers = [...sessionHeaders, 'loggedDate', 'exerciseName', 'supersetId', 'supersetLabel', 'supersetName', 'activityType', 'setNumber', 'reps', 'weight', 'duration', 'distance', 'durationSec', 'distanceMeters', 'height', 'rpe', 'intensity', 'pace', 'elevation', 'comment', 'notes'];
 
-      downloadCSV([...otherSets, summaryRow], headers, 'other_sets.csv');
+      downloadCSV(otherSets, headers, 'other_sets.csv');
       exportedFiles++;
     }
 

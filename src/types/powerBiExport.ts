@@ -47,6 +47,7 @@ export interface FactGymSetRow {
   athlete_name: string;
   session_id: string;
   session_type: string;
+  session_name: string;
   exercise_log_id: string;
   exercise_id: string;
   exercise_name: string;
@@ -76,6 +77,7 @@ export interface FactActivityRow {
   athlete_name: string;
   session_id: string;
   session_type: string;
+  session_name: string;
   exercise_log_id: string;
   exercise_name: string;
   activity_type: string;
@@ -120,6 +122,7 @@ export interface FactSessionRow {
   athlete_id: string;
   athlete_name: string;
   session_id: string;
+  session_name: string;
   /** 'main' | 'warmup' */
   session_type: string;
   date: string;            // YYYY-MM-DD
@@ -129,7 +132,14 @@ export interface FactSessionRow {
   has_warmup: boolean;
   /** Minutes from activity duration or sports-load RPE report; empty for gym-only sessions without reliable duration. */
   duration_min: number | '';
-  total_sets: number;
+  /** Resistance set rows only. Non-gym activities are tracked separately because they are not always true sets. */
+  resistance_set_count: number;
+  /** Non-resistance rows from fact_activity.csv. These may be activities, intervals, drills, or stretches. */
+  activity_entry_count: number;
+  /** Rows from fact_sports_load.csv merged into this session summary. */
+  sports_load_entry_count: number;
+  /** Total contributing fact rows; useful for QA, not a training "sets" metric. */
+  total_entry_count: number;
   total_reps: number | '';
   total_volume_kg: number | '';   // sum of (reps × weight) across all resistance sets
   total_distance_m: number | '';  // sum of distance across all activity sets
@@ -141,11 +151,14 @@ export interface FactSessionRow {
   hr_zone4_sec: number | '';
   hr_zone5_sec: number | '';
   calories: number | '';
-  /** Average RPE across all sets. Proxy for session RPE (1–10). */
-  session_rpe: number | '';
-  session_normalised_load?: number | '';
-  /** Sports load = reported load, or session_rpe × duration_min when duration is available. */
-  session_load: number | '';
+  /** Simple average of RPE values recorded on contributing set/activity rows. Not a reported session RPE. */
+  avg_set_rpe: number | '';
+  /** Sum of resistance-set normalized load values. */
+  resistance_normalised_load?: number | '';
+  /** Explicit sRPE/session-load value reported in sports-load records. */
+  reported_session_load: number | '';
+  /** Estimated load = duration_min × avg_set_rpe when both are available. */
+  estimated_session_load: number | '';
 }
 
 // ---------------------------------------------------------------------------
@@ -180,6 +193,7 @@ export interface FactSportsLoadRow {
   athlete_id: string;
   athlete_name: string;
   session_id: string;       // SportsLoadSession.id or legacy-{YYYY-MM-DD}
+  session_name: string;
   logged_date: string;      // YYYY-MM-DD
   sport_type: string;
   sport_name: string;
@@ -199,6 +213,7 @@ export const FACT_SPORTS_LOAD_HEADERS = [
   'athlete_id',
   'athlete_name',
   'session_id',
+  'session_name',
   'logged_date',
   'sport_type',
   'sport_name',

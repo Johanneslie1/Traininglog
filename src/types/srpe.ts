@@ -19,6 +19,8 @@ export interface SrpeLog {
   sportType?: string;
   /** Human-readable sport label for exports and dashboards. */
   sportName?: string;
+  /** Human-readable session label for exports and dashboards. */
+  sessionName?: string;
   /** Number of sports sessions included in this daily aggregate. */
   sessionCount?: number;
   /** True when this row is aggregated from per-session sports load docs. */
@@ -40,6 +42,8 @@ export interface SaveSrpeLogInput {
   durationMinutes: number;
   sportType?: string;
   sportName?: string;
+  /** Optional name; defaults to sportName when omitted. */
+  sessionName?: string;
   /** Optional distance covered during the sports session, in meters. */
   distanceMeters?: number;
   /** Optional estimated energy expenditure, in kcal. */

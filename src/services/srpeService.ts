@@ -44,6 +44,10 @@ function assertValidSrpeInput(input: SaveSrpeLogInput): void {
     throw new Error('Sport name must not be empty');
   }
 
+  if (input.sessionName !== undefined && input.sessionName.trim().length === 0) {
+    throw new Error('Session name must not be empty');
+  }
+
   const optionalPositiveWholeNumbers: Array<[keyof SaveSrpeLogInput, string]> = [
     ['distanceMeters', 'Distance'],
     ['calories', 'Calories'],
@@ -68,11 +72,13 @@ export function calculateSessionLoad(input: SaveSrpeLogInput): number {
 }
 
 function mapSportsLoadSession(id: string, data: Omit<SportsLoadSession, 'id'>): SportsLoadSession {
+  const sportName = data.sportName || 'Football';
   return {
     id,
     ...data,
     sportType: data.sportType || 'football',
-    sportName: data.sportName || 'Football',
+    sportName,
+    sessionName: data.sessionName || sportName,
   };
 }
 
@@ -102,6 +108,7 @@ function aggregateSportsLoadSessions(
     : roundOne(sessions.reduce((sum, session) => sum + session.rpe, 0) / sessions.length);
   const firstSession = sessions[0];
   const hasOneSport = sessions.every((session) => (session.sportType || 'football') === (firstSession.sportType || 'football'));
+  const aggregateSportName = hasOneSport ? firstSession.sportName || 'Football' : 'Multiple sports';
 
   return {
     id: date,
@@ -113,7 +120,8 @@ function aggregateSportsLoadSessions(
     durationMinutes,
     sessionLoad,
     sportType: hasOneSport ? firstSession.sportType || 'football' : 'multiple',
-    sportName: hasOneSport ? firstSession.sportName || 'Football' : 'Multiple sports',
+    sportName: aggregateSportName,
+    sessionName: sessions.length === 1 ? sessions[0].sessionName || aggregateSportName : aggregateSportName,
     sessionCount: sessions.length,
     isAggregate: true,
   };
@@ -183,6 +191,7 @@ export async function saveSportsLoadSession(
   const sessionLoad = calculateSessionLoad(input);
   const sportType = input.sportType?.trim() || 'football';
   const sportName = input.sportName?.trim() || 'Football';
+  const sessionName = input.sessionName?.trim() || sportName;
   const sessionData: Record<string, unknown> = {
     userId,
     date,
@@ -192,6 +201,7 @@ export async function saveSportsLoadSession(
     sessionLoad,
     sportType,
     sportName,
+    sessionName,
     timestamp: serverTimestamp(),
   };
 

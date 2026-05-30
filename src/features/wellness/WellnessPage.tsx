@@ -1,15 +1,11 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { getWellnessByDate, saveWellnessLog } from '@/services/wellnessService';
 import { WELLNESS_METRICS, WellnessMetricKey } from '@/types/wellness';
-import { addDays, dateKeyToLocalDate, formatDisplayDate, toLocalDateString } from '@/utils/dateUtils';
+import { DailyDateHeader } from '@/features/daily-entry/DailyDateHeader';
+import { useDailyDateNavigation } from '@/features/daily-entry/useDailyDateNavigation';
 import toast from 'react-hot-toast';
-
-/** Returns a YYYY-MM-DD string for any Date in local timezone. */
-function toDateKey(date: Date): string {
-  return toLocalDateString(date);
-}
 
 const SCORE_DESCRIPTORS: Record<WellnessMetricKey, string[]> = {
   sleepQuality: [
@@ -254,20 +250,24 @@ function convertLegacyReadinessForInput(value: number | undefined): number | und
 
 const WellnessPage: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
-  const dateInputRef = useRef<HTMLInputElement>(null);
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const [selectedDate, setSelectedDate] = useState<Date>(today);
+  const {
+    dateInputRef,
+    selectedDate,
+    dateKey,
+    todayKey,
+    isToday,
+    isFuture,
+    selectDateKey,
+    openDatePicker,
+    goToPreviousDay,
+    goToNextDay,
+    jumpToToday,
+  } = useDailyDateNavigation();
   const [scores, setScores] = useState<Scores>({});
   const [notes, setNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [entryExists, setEntryExists] = useState(false);
-
-  const dateKey = toDateKey(selectedDate);
-  const todayKey = toDateKey(today);
 
   const loadEntry = useCallback(async () => {
     if (!user?.id) return;
@@ -315,24 +315,6 @@ const WellnessPage: React.FC = () => {
     }));
   };
 
-  const handleDateInputChange = (value: string) => {
-    const nextDate = dateKeyToLocalDate(value);
-    if (!nextDate) return;
-    setSelectedDate(nextDate);
-  };
-
-  const openDatePicker = () => {
-    const input = dateInputRef.current;
-    if (!input) return;
-
-    if (typeof input.showPicker === 'function') {
-      input.showPicker();
-      return;
-    }
-
-    input.click();
-  };
-
   const hasAnyScore = Object.values(scores).some((v) => v !== undefined);
 
   const handleSave = async () => {
@@ -350,83 +332,23 @@ const WellnessPage: React.FC = () => {
     }
   };
 
-  const isToday = dateKey === todayKey;
-  const isFuture = dateKey > todayKey;
-
   return (
     <div className="text-text-primary pb-24">
       {/* Header */}
-      <div>
-        <div className="max-w-xl mx-auto">
-          <div className="rounded-3xl border border-border bg-bg-tertiary/80 p-3 shadow-[0_18px_45px_rgba(0,0,0,0.18)]">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setSelectedDate((d) => addDays(d, -1))}
-                className="h-12 w-12 shrink-0 rounded-2xl border border-border bg-bg-secondary text-text-primary hover:border-accent-primary hover:text-accent-primary transition-colors flex items-center justify-center"
-                aria-label="Previous day"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-
-              <div className="min-w-0 flex-1 text-center">
-                <p className="text-[11px] uppercase tracking-[0.2em] text-text-tertiary">Wellness Check-in</p>
-                <h1 className="mt-1 text-lg font-semibold text-text-primary leading-tight">
-                  {formatDisplayDate(selectedDate)}
-                </h1>
-                <p className="text-[11px] text-text-tertiary mt-1">
-                  {isLoading ? 'Loading entry...' : entryExists ? 'Editing saved entry' : 'No entry saved yet'}
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setSelectedDate((d) => addDays(d, 1))}
-                disabled={dateKey >= todayKey}
-                className="h-12 w-12 shrink-0 rounded-2xl border border-border bg-bg-secondary text-text-primary hover:border-accent-primary hover:text-accent-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center"
-                aria-label="Next day"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-            </div>
-
-            <button
-              type="button"
-              onClick={openDatePicker}
-              className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-bg-secondary px-4 py-2.5 text-sm font-medium text-text-primary hover:border-accent-primary hover:text-accent-primary transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3M5 11h14M5 5h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z" />
-              </svg>
-              Open calendar
-            </button>
-            <input
-              ref={dateInputRef}
-              type="date"
-              value={dateKey}
-              max={todayKey}
-              onChange={(event) => handleDateInputChange(event.target.value)}
-              className="sr-only"
-              tabIndex={-1}
-            />
-          </div>
-        </div>
-
-        {!isToday && (
-          <div className="max-w-xl mx-auto px-4 pb-2">
-            <button
-              onClick={() => setSelectedDate(today)}
-              className="text-xs text-accent-primary underline"
-            >
-              Jump to today
-            </button>
-          </div>
-        )}
-      </div>
+      <DailyDateHeader
+        title="Wellness Check-in"
+        selectedDate={selectedDate}
+        dateKey={dateKey}
+        todayKey={todayKey}
+        isToday={isToday}
+        statusText={isLoading ? 'Loading entry...' : entryExists ? 'Editing saved entry' : 'No entry saved yet'}
+        inputRef={dateInputRef}
+        onPreviousDay={goToPreviousDay}
+        onNextDay={goToNextDay}
+        onOpenCalendar={openDatePicker}
+        onDateChange={selectDateKey}
+        onJumpToday={jumpToToday}
+      />
 
       {/* Body */}
       <div className="max-w-xl mx-auto py-6 space-y-4">

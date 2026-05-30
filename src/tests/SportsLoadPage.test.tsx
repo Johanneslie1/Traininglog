@@ -103,6 +103,7 @@ describe('SportsLoadPage', () => {
         durationMinutes: 60,
         sportType: 'football',
         sportName: 'Football',
+        sessionName: 'Football',
       },
       undefined
     ));
@@ -134,6 +135,7 @@ describe('SportsLoadPage', () => {
         durationMinutes: 75,
         sportType: 'football',
         sportName: 'Football',
+        sessionName: 'Football',
         distanceMeters: 9200,
         calories: 710,
         averageHeartRate: 151,
@@ -168,6 +170,7 @@ describe('SportsLoadPage', () => {
         sessionLoad: 360,
         sportType: 'basketball',
         sportName: 'Basketball',
+        sessionName: 'Basketball',
         distanceMeters: 4500,
         calories: 390,
         averageHeartRate: 148,

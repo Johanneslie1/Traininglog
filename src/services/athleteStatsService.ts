@@ -5,6 +5,8 @@ import { buildCoachRatingsDashboardData } from '@/services/coachRatingsService';
 import { addDays, dateKeyToLocalDate, getLocalWeekDateRange, toLocalDateString } from '@/utils/dateUtils';
 import type { CoachRatingsDashboardData, CoachRatingsRequest } from '@/types/coachRatings';
 import type { Team } from '@/services/teamService';
+import type { WellnessLog } from '@/types/wellness';
+import type { SrpeLog } from '@/types/srpe';
 
 export type AthleteStatsRequest = Pick<
   CoachRatingsRequest,
@@ -36,6 +38,59 @@ function splitDisplayName(displayName: string | null | undefined, email: string)
   };
 }
 
+interface SingleAthleteHealthDashboardParams extends AthleteStatsRequest {
+  athleteId: string;
+  email: string;
+  displayName?: string | null;
+  wellnessLogs: WellnessLog[];
+  srpeLogs: SrpeLog[];
+}
+
+export function buildSingleAthleteHealthDashboardData({
+  athleteId,
+  email,
+  displayName,
+  wellnessLogs,
+  srpeLogs,
+  selectedDate,
+  viewMode,
+  periodStartDate,
+  periodEndDate,
+}: SingleAthleteHealthDashboardParams): CoachRatingsDashboardData {
+  const { firstName, lastName } = splitDisplayName(displayName, email);
+  const personalTeam: Team = {
+    id: PERSONAL_TEAM_ID,
+    name: 'Personal stats',
+    description: 'Signed-in athlete only',
+    coachId: athleteId,
+    coachName: firstName,
+    inviteCode: '',
+    createdAt: '',
+    updatedAt: '',
+    isActive: true,
+  };
+
+  return buildCoachRatingsDashboardData({
+    selectedDate,
+    viewMode,
+    periodStartDate,
+    periodEndDate,
+    selectedTeamId: PERSONAL_TEAM_ID,
+    teamsWithMembers: [{
+      team: personalTeam,
+      members: [{
+        id: athleteId,
+        email,
+        firstName,
+        lastName,
+        status: 'active',
+      }],
+    }],
+    wellnessLogsByAthleteId: new Map([[athleteId, wellnessLogs]]),
+    srpeLogsByAthleteId: new Map([[athleteId, srpeLogs]]),
+  });
+}
+
 export async function getAthleteStatsDashboard(
   request: AthleteStatsRequest
 ): Promise<CoachRatingsDashboardData> {
@@ -61,37 +116,15 @@ export async function getAthleteStatsDashboard(
     getSrpeByDateRange(athlete.uid, srpeStartDateKey, srpeEndDateKey),
   ]);
 
-  const email = athlete.email || '';
-  const { firstName, lastName } = splitDisplayName(athlete.displayName, email);
-  const personalTeam: Team = {
-    id: PERSONAL_TEAM_ID,
-    name: 'Personal stats',
-    description: 'Signed-in athlete only',
-    coachId: athlete.uid,
-    coachName: firstName,
-    inviteCode: '',
-    createdAt: '',
-    updatedAt: '',
-    isActive: true,
-  };
-
-  return buildCoachRatingsDashboardData({
+  return buildSingleAthleteHealthDashboardData({
+    athleteId: athlete.uid,
+    email: athlete.email || '',
+    displayName: athlete.displayName,
+    wellnessLogs,
+    srpeLogs,
     selectedDate: request.selectedDate,
     viewMode: request.viewMode,
     periodStartDate,
     periodEndDate,
-    selectedTeamId: PERSONAL_TEAM_ID,
-    teamsWithMembers: [{
-      team: personalTeam,
-      members: [{
-        id: athlete.uid,
-        email,
-        firstName,
-        lastName,
-        status: 'active',
-      }],
-    }],
-    wellnessLogsByAthleteId: new Map([[athlete.uid, wellnessLogs]]),
-    srpeLogsByAthleteId: new Map([[athlete.uid, srpeLogs]]),
   });
 }

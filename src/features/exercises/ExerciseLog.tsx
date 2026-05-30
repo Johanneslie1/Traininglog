@@ -117,6 +117,11 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   const [creatingSessionType, setCreatingSessionType] = useState<SessionType | null>(null);
   const [renamingSessionId, setRenamingSessionId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
+  const [namePrompt, setNamePrompt] = useState<{
+    sessionId: string;
+    defaultName: string;
+    value: string;
+  } | null>(null);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastLoadedDateKeyRef = useRef<string | null>(null);
   const [selectedExercise, setSelectedExercise] = useState<ExerciseData | null>(null);
@@ -346,6 +351,10 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
 
       const labelsByExerciseId = buildSupersetLabels(state.supersets, exerciseOrder);
       const supersetMetadata = updatedExercise.id ? labelsByExerciseId[updatedExercise.id] : undefined;
+      const shouldPromptForFirstSessionName =
+        !selectedSessionId &&
+        currentSessionType === 'main' &&
+        availableSessions.filter((session) => session.sessionType === 'main').length === 0;
 
       // Save to Firestore
       const selectedExerciseWithMeta = selectedExercise as ExerciseData & SharedSessionExerciseMeta;
@@ -412,11 +421,27 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
 
       handleCloseSetLogger();
       await loadExercises(selectedDate);
+      const sessionsAfterSave = await getSessionsForDate(user.id, selectedDate);
+      setAvailableSessions(sessionsAfterSave);
+      if (shouldPromptForFirstSessionName) {
+        const firstMainSession =
+          sessionsAfterSave.find((session) => session.sessionType === 'main' && session.sessionNumberInDay === 1) ||
+          sessionsAfterSave.find((session) => session.sessionType === 'main');
+        if (firstMainSession) {
+          setSelectedSessionId(firstMainSession.sessionId);
+          const fallbackName = `${getSessionTypeLabel(firstMainSession.sessionType)} ${firstMainSession.sessionNumberInDay}`;
+          setNamePrompt({
+            sessionId: firstMainSession.sessionId,
+            defaultName: fallbackName,
+            value: firstMainSession.name || fallbackName,
+          });
+        }
+      }
     } catch (error) {
       console.error('❌ Error saving exercise sets:', error);
       alert('Failed to save exercise sets. Please try again.');
     }
-  }, [selectedExercise, user, selectedDate, exercises, state.supersets, handleCloseSetLogger, loadExercises, hasMeaningfulSetData, syncSharedAssignmentCompletion, getDateKey, currentSessionType]);
+  }, [selectedExercise, user, selectedDate, exercises, state.supersets, handleCloseSetLogger, loadExercises, hasMeaningfulSetData, syncSharedAssignmentCompletion, getDateKey, currentSessionType, selectedSessionId, availableSessions]);
 
   const handleDeleteExercise = async (exercise: UnifiedExerciseData) => {
     if (!user?.id) {
@@ -560,11 +585,11 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
       const sessions = await getSessionsForDate(user.id, date);
       setAvailableSessions(sessions);
       if (sessions.length > 0) {
+        const newestFirst = [...sessions].reverse();
         const preferredMainSession =
-          sessions.find((s) => s.sessionType === 'main' && s.sessionNumberInDay === 1) ||
-          sessions.find((s) => s.sessionType === 'main' && s.status === 'active') ||
-          sessions.find((s) => s.sessionType === 'main') ||
-          sessions.find((s) => s.status === 'active') ||
+          newestFirst.find((s) => s.sessionType === 'main' && s.status === 'active') ||
+          newestFirst.find((s) => s.sessionType === 'main') ||
+          newestFirst.find((s) => s.status === 'active') ||
           sessions[0];
 
         setSelectedSessionId(preferredMainSession.sessionId);
@@ -612,6 +637,26 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     }
     setRenamingSessionId(null);
   }, [user?.id, renamingSessionId, renameValue]);
+
+  const handleNamePromptSave = useCallback(async () => {
+    if (!user?.id || !namePrompt) return;
+    const trimmed = namePrompt.value.trim();
+    try {
+      if (trimmed && trimmed !== namePrompt.defaultName) {
+        await renameSession(user.id, namePrompt.sessionId, trimmed);
+        setAvailableSessions((prev) =>
+          prev.map((session) =>
+            session.sessionId === namePrompt.sessionId ? { ...session, name: trimmed } : session
+          )
+        );
+      }
+    } catch (error) {
+      console.error('Failed to name session:', error);
+      toast.error('Could not name session. You can rename it later.');
+    } finally {
+      setNamePrompt(null);
+    }
+  }, [user?.id, namePrompt]);
 
   const startLongPress = useCallback((sessionId: string, currentName: string) => {
     longPressTimerRef.current = setTimeout(() => {
@@ -661,6 +706,12 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
       toast.success(`Started ${getSessionTypeLabel(sessionType)} ${sessionContext.sessionNumberInDay}`);
       await Promise.all([loadExercises(selectedDate), loadSessionsForDate(selectedDate)]);
       setSelectedSessionId(sessionContext.sessionId);
+      const fallbackName = `${getSessionTypeLabel(sessionContext.sessionType)} ${sessionContext.sessionNumberInDay}`;
+      setNamePrompt({
+        sessionId: sessionContext.sessionId,
+        defaultName: fallbackName,
+        value: sessionContext.name || fallbackName,
+      });
       openLogOptions();
     } catch (error) {
       console.error('Failed to create new session:', error);
@@ -1161,6 +1212,49 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
             }))}
             onClose={() => updateUiState('showWorkoutSummary', false)}
           />
+        </div>
+      )}
+
+      {namePrompt && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-sm rounded-2xl border border-border bg-bg-secondary p-5 shadow-xl">
+            <h2 className="text-lg font-semibold text-text-primary">Name session</h2>
+            <p className="mt-1 text-sm text-text-secondary">
+              Optional, but useful when you have more than one session in a day.
+            </p>
+            <label htmlFor="sessionNamePrompt" className="mt-4 block text-sm font-medium text-text-primary">
+              Session name
+            </label>
+            <input
+              id="sessionNamePrompt"
+              autoFocus
+              value={namePrompt.value}
+              onChange={(event) => setNamePrompt((current) =>
+                current ? { ...current, value: event.target.value } : current
+              )}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') void handleNamePromptSave();
+                if (event.key === 'Escape') setNamePrompt(null);
+              }}
+              className="mt-2 w-full rounded-xl border border-border bg-bg-tertiary px-3 py-2 text-sm text-text-primary outline-none focus:ring-2 focus:ring-accent-primary"
+            />
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setNamePrompt(null)}
+                className="rounded-xl border border-border px-4 py-2 text-sm font-medium text-text-secondary hover:bg-bg-tertiary"
+              >
+                Skip
+              </button>
+              <button
+                type="button"
+                onClick={() => { void handleNamePromptSave(); }}
+                className="rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-text-inverse hover:opacity-90"
+              >
+                Save name
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

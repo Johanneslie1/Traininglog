@@ -122,6 +122,7 @@ describe('srpeService', () => {
         sessionLoad: 600,
         sportType: 'football',
         sportName: 'Football',
+        sessionName: 'Football',
         timestamp: { __serverTimestamp: true },
       })
     );
@@ -148,6 +149,7 @@ describe('srpeService', () => {
         rpe: 8,
         durationMinutes: 75,
         sessionLoad: 600,
+        sessionName: 'Football',
         distanceMeters: 9000,
         calories: 720,
         averageHeartRate: 152,

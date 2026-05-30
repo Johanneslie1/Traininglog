@@ -4,6 +4,26 @@ jest.mock('firebase/auth', () => ({
   getAuth: jest.fn(() => ({ currentUser: { uid: 'coach-1' } })),
 }));
 
+const firestoreGetDocsMock = jest.fn(async (_target?: unknown) => ({ docs: [] }));
+
+jest.mock('firebase/firestore', () => ({
+  collection: (...segments: unknown[]) => ({
+    path: segments.map((segment) => {
+      if (segment && typeof segment === 'object' && 'path' in (segment as Record<string, unknown>)) {
+        return String((segment as { path: string }).path);
+      }
+      return String(segment);
+    }).join('/'),
+  }),
+  getDocs: (target: unknown) => firestoreGetDocsMock(target),
+  query: (collectionRef: unknown, ...constraints: unknown[]) => ({ collectionRef, constraints }),
+  where: (field: string, op: string, value: unknown) => ({ field, op, value }),
+}));
+
+jest.mock('@/services/firebase/config', () => ({
+  db: {},
+}));
+
 jest.mock('@/services/exportService', () => ({
   exportData: jest.fn(async () => ({ sessions: [], exerciseLogs: [], sets: [] })),
   getWellnessExportRows: jest.fn(async () => []),
@@ -67,6 +87,7 @@ describe('powerBiExportService wellness export', () => {
     mockedCoachService.verifyCoachAthleteRelationship.mockResolvedValue(true);
     mockedSrpeService.getSrpeByDateRange.mockResolvedValue([]);
     mockedSrpeService.getSportsLoadSessionsByDateRange.mockResolvedValue([]);
+    firestoreGetDocsMock.mockResolvedValue({ docs: [] });
   });
 
   it('includes readiness in fact_wellness.csv for self exports', async () => {
@@ -183,7 +204,7 @@ describe('powerBiExportService wellness export', () => {
     expect(result.gymSetCount).toBe(2);
     expect(result.sessionCount).toBe(1);
     expect(sessionCsv).toContain(
-      'user-42,Test Athlete,default-user-42-2026-03-10-main,main,2026-03-10,2026-W11,resistance,false,,2,10,1025'
+      'user-42,Test Athlete,default-user-42-2026-03-10-main,Session 1,main,2026-03-10,2026-W11,resistance,false,,2,0,0,2,10,1025'
     );
   });
 
@@ -212,7 +233,7 @@ describe('powerBiExportService wellness export', () => {
     const sessionLines = getFileContent(result, 'fact_sessions.csv').split('\n');
 
     expect(sessionLines).toContain(
-      'user-42,Test Athlete,activity-session-1,main,2026-03-10,2026-W11,endurance,false,30,1,,,5000,,,,,,,,,7,,210'
+      'user-42,Test Athlete,activity-session-1,Session 1,main,2026-03-10,2026-W11,endurance,false,30,0,1,0,1,,,5000,,,,,,,,,7,,,210'
     );
   });
 
@@ -266,10 +287,10 @@ describe('powerBiExportService wellness export', () => {
     expect(result.footballLoadCount).toBe(2);
     expect(sportsCsv).toBe(csv);
     expect(lines).toHaveLength(3);
-    expect(lines[0]).toBe('athlete_id,athlete_name,session_id,logged_date,sport_type,sport_name,rpe,duration_min,session_load,distance_meters,calories,avg_hr,max_hr,notes');
+    expect(lines[0]).toBe('athlete_id,athlete_name,session_id,session_name,logged_date,sport_type,sport_name,rpe,duration_min,session_load,distance_meters,calories,avg_hr,max_hr,notes');
     expect(lines.filter((line) => line.includes(',2026-03-10,'))).toHaveLength(2);
-    expect(lines).toContain('user-42,Test Athlete,session-1,2026-03-10,basketball,Basketball,8,75,600,9200,710,151,184,High tempo small-sided game');
-    expect(lines).toContain('user-42,Test Athlete,session-2,2026-03-10,football,Football,6,30,180,,,,,');
+    expect(lines).toContain('user-42,Test Athlete,session-1,Basketball,2026-03-10,basketball,Basketball,8,75,600,9200,710,151,184,High tempo small-sided game');
+    expect(lines).toContain('user-42,Test Athlete,session-2,Football,2026-03-10,football,Football,6,30,180,,,,,');
   });
 
   it('exports legacy daily sRPE rows when no per-session sports load exists for that date', async () => {
@@ -305,7 +326,7 @@ describe('powerBiExportService wellness export', () => {
     const csv = footballLoadFile?.content.replace(/^\uFEFF/, '');
 
     expect(result.footballLoadCount).toBe(1);
-    expect(csv).toContain('user-42,Test Athlete,legacy-2026-03-12,2026-03-12,football,Football,7,60,420,7800,640,146,181,Legacy daily entry');
+    expect(csv).toContain('user-42,Test Athlete,legacy-2026-03-12,Football,2026-03-12,football,Football,7,60,420,7800,640,146,181,Legacy daily entry');
   });
 
   it('keeps sports-load metadata counts logical while emitting the compatibility alias', async () => {
