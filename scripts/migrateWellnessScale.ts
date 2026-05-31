@@ -24,6 +24,11 @@ type ListDocumentsResponse = {
   nextPageToken?: string;
 };
 
+type FirebaseCliTokens = {
+  accessToken?: string;
+  refreshToken?: string;
+};
+
 type Counters = {
   usersScanned: number;
   logsScanned: number;
@@ -34,21 +39,9 @@ type Counters = {
   writesApplied: number;
 };
 
-const WELLNESS_SCALE_VERSION = 2;
+const WELLNESS_SCALE_VERSION = 3;
 const DATABASE_ID = '(default)';
-const MIGRATED_FIELDS = ['sleepQuality', 'fatigue', 'muscleSoreness', 'stress', 'mood'] as const;
-const CONVERT_10_TO_7: Record<number, number> = {
-  1: 1,
-  2: 2,
-  3: 3,
-  4: 4,
-  5: 4,
-  6: 5,
-  7: 6,
-  8: 6,
-  9: 7,
-  10: 7,
-};
+const MIGRATED_FIELDS = ['sleepQuality', 'fatigue', 'muscleSoreness', 'stress', 'mood', 'readiness'] as const;
 
 function getScriptOptions(): ScriptOptions {
   const args = process.argv.slice(2);
@@ -75,7 +68,7 @@ function getProjectId(): string {
   return projectId;
 }
 
-function getFirebaseCliAccessToken(): string {
+function getFirebaseCliTokens(): FirebaseCliTokens {
   const configPaths = [
     resolve(process.env.USERPROFILE || '', '.config', 'configstore', 'firebase-tools.json'),
     resolve(process.env.APPDATA || '', 'configstore', 'firebase-tools.json'),
@@ -89,16 +82,46 @@ function getFirebaseCliAccessToken(): string {
 
     try {
       const raw = readFileSync(configPath, 'utf-8');
-      const parsed = JSON.parse(raw) as { tokens?: { access_token?: string } };
-      if (parsed.tokens?.access_token) {
-        return parsed.tokens.access_token;
+      const parsed = JSON.parse(raw) as { tokens?: { access_token?: string; refresh_token?: string } };
+      if (parsed.tokens?.access_token || parsed.tokens?.refresh_token) {
+        return {
+          accessToken: parsed.tokens.access_token,
+          refreshToken: parsed.tokens.refresh_token,
+        };
       }
     } catch {
       continue;
     }
   }
 
-  throw new Error('Could not find Firebase CLI access token. Run firebase login or provide a service-account based migration path.');
+  throw new Error('Could not find Firebase CLI tokens. Run firebase login first.');
+}
+
+async function refreshFirebaseCliAccessToken(refreshToken: string): Promise<string> {
+  const response = await fetch('https://accounts.google.com/o/oauth2/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
+      client_id: '563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com',
+      client_secret: 'j9iVZfS8kkCEFUPaAeJV0sAi',
+      refresh_token: refreshToken,
+      grant_type: 'refresh_token',
+    }),
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Could not refresh Firebase CLI token: ${response.status} ${body}`);
+  }
+
+  const parsed = await response.json() as { access_token?: string };
+  if (!parsed.access_token) {
+    throw new Error('Firebase CLI token refresh did not return an access token');
+  }
+
+  return parsed.access_token;
 }
 
 function documentId(documentName: string): string {
@@ -165,7 +188,28 @@ function readNumber(fields: Record<string, FirestoreValue> | undefined, key: str
   return undefined;
 }
 
-function convertHooper10To7(value: unknown): { converted?: number; changed: boolean; unexpected: boolean } {
+function inferSourceScaleMax(
+  version: number | undefined,
+  field: typeof MIGRATED_FIELDS[number],
+  value: number
+): number {
+  if (version === 2) {
+    return field === 'readiness' ? 5 : 7;
+  }
+
+  if (version === undefined || version < 2) {
+    return 10;
+  }
+
+  if (value <= 5) return 5;
+  if (value <= 7) return 7;
+  return 10;
+}
+
+function convertToFivePointScale(
+  value: unknown,
+  sourceScaleMax: number
+): { converted?: number; changed: boolean; unexpected: boolean } {
   if (value === undefined || value === null) {
     return { changed: false, unexpected: false };
   }
@@ -175,11 +219,15 @@ function convertHooper10To7(value: unknown): { converted?: number; changed: bool
   }
 
   const rounded = Math.round(value);
-  const converted = CONVERT_10_TO_7[rounded];
 
-  if (!converted) {
+  if (rounded < 1 || rounded > sourceScaleMax) {
     return { changed: false, unexpected: true };
   }
+
+  const converted = Math.max(
+    1,
+    Math.min(5, Math.round(1 + ((rounded - 1) / (sourceScaleMax - 1)) * 4))
+  );
 
   return {
     converted,
@@ -207,7 +255,13 @@ async function patchDocument(
 async function run() {
   const options = getScriptOptions();
   const projectId = getProjectId();
-  const token = getFirebaseCliAccessToken();
+  const cliTokens = getFirebaseCliTokens();
+  const token = cliTokens.refreshToken
+    ? await refreshFirebaseCliAccessToken(cliTokens.refreshToken)
+    : cliTokens.accessToken;
+  if (!token) {
+    throw new Error('Could not resolve Firebase CLI access token');
+  }
   const counters: Counters = {
     usersScanned: 0,
     logsScanned: 0,
@@ -239,11 +293,13 @@ async function run() {
         wellnessScaleVersion: { integerValue: String(WELLNESS_SCALE_VERSION) },
         wellnessScaleMigratedAt: { timestampValue: new Date().toISOString() },
       };
-      let changed = false;
 
       MIGRATED_FIELDS.forEach((field) => {
         const currentValue = readNumber(logDoc.fields, field);
-        const result = convertHooper10To7(currentValue);
+        const sourceScaleMax = currentValue === undefined
+          ? 5
+          : inferSourceScaleMax(version, field, currentValue);
+        const result = convertToFivePointScale(currentValue, sourceScaleMax);
         if (result.unexpected) {
           counters.unexpectedValues += 1;
         }
@@ -252,14 +308,9 @@ async function run() {
           updateFields[field] = { integerValue: String(result.converted) };
           if (result.changed) {
             counters.fieldValuesConverted += 1;
-            changed = true;
           }
         }
       });
-
-      if (!changed) {
-        continue;
-      }
 
       counters.logsChanged += 1;
       if (options.apply) {
@@ -273,7 +324,7 @@ async function run() {
     mode: options.apply ? 'apply' : 'dry-run',
     projectId,
     migratedFields: MIGRATED_FIELDS,
-    readinessMigrated: false,
+    readinessMigrated: true,
     wellnessScaleVersion: WELLNESS_SCALE_VERSION,
     counters,
   }, null, 2));

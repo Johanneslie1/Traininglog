@@ -63,11 +63,11 @@ describe('athleteStatsService', () => {
     jest.clearAllMocks();
     getWellnessByDateRangeMock.mockResolvedValue([
       wellnessLog('2026-03-10', {
-        sleepQuality: 6,
+        sleepQuality: 4,
         fatigue: 2,
         muscleSoreness: 2,
         stress: 2,
-        mood: 6,
+        mood: 4,
         readiness: 4,
       }),
     ]);

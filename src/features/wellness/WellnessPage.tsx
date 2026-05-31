@@ -10,46 +10,36 @@ import toast from 'react-hot-toast';
 const SCORE_DESCRIPTORS: Record<WellnessMetricKey, string[]> = {
   sleepQuality: [
     'Awful',
-    'Very poor',
     'Poor',
-    'Uneven',
     'Okay',
     'Good',
     'Excellent',
   ],
   fatigue: [
     'Fresh',
-    'Light',
     'Managed',
     'Noticeable',
-    'Heavy',
     'Drained',
     'Exhausted',
   ],
   muscleSoreness: [
     'Loose',
-    'Fine',
     'Light',
     'Noticeable',
-    'Tight',
     'Sore',
     'Very sore',
   ],
   stress: [
     'Calm',
-    'Settled',
     'Stable',
     'Busy',
-    'Loaded',
     'Pressured',
     'Maxed',
   ],
   mood: [
     'Flat',
     'Low',
-    'Off',
     'Neutral',
-    'Okay',
     'Good',
     'Flying',
   ],
@@ -239,15 +229,6 @@ const WellnessSlider: React.FC<WellnessSliderProps> = ({
   );
 };
 
-function convertLegacyReadinessForInput(value: number | undefined): number | undefined {
-  if (value === undefined || value <= 5) return value;
-  if (value <= 2) return 1;
-  if (value <= 4) return 2;
-  if (value <= 6) return 3;
-  if (value <= 8) return 4;
-  return 5;
-}
-
 const WellnessPage: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const {
@@ -282,7 +263,7 @@ const WellnessPage: React.FC = () => {
           muscleSoreness: entry.muscleSoreness,
           stress: entry.stress,
           mood: entry.mood,
-          readiness: convertLegacyReadinessForInput(entry.readiness),
+          readiness: entry.readiness,
         });
         setNotes(entry.notes ?? '');
       } else {

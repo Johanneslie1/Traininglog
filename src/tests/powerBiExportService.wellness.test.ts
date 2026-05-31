@@ -96,12 +96,12 @@ describe('powerBiExportService wellness export', () => {
         athleteId: 'user-42',
         athleteName: 'Test Athlete',
         loggedDate: '2026-03-10',
-        sleepQuality: 8,
+        sleepQuality: 5,
         fatigue: 3,
         muscleSoreness: 2,
         stress: 4,
-        mood: 7,
-        readiness: 9,
+        mood: 5,
+        readiness: 5,
         notes: 'ready to push',
       },
     ]);
@@ -122,7 +122,7 @@ describe('powerBiExportService wellness export', () => {
     expect(csv).toContain(
       'athlete_id,athlete_name,logged_date,sleep_quality,fatigue,muscle_soreness,stress,mood,readiness,notes'
     );
-    expect(csv).toContain('user-42,Test Athlete,2026-03-10,8,3,2,4,7,9,ready to push');
+    expect(csv).toContain('user-42,Test Athlete,2026-03-10,5,3,2,4,5,5,ready to push');
   });
 
   it('passes the selected start and end dates to training and wellness exports', async () => {
@@ -443,12 +443,12 @@ describe('powerBiExportService wellness export', () => {
         athleteId: 'athlete-1',
         athleteName: 'Ada Lovelace',
         loggedDate: '2026-03-11',
-        sleepQuality: 7,
+        sleepQuality: 5,
         fatigue: 4,
         muscleSoreness: 3,
         stress: '',
-        mood: 8,
-        readiness: 6,
+        mood: 5,
+        readiness: 4,
         notes: '',
       },
     ]);
@@ -471,7 +471,7 @@ describe('powerBiExportService wellness export', () => {
       '2026-03-01',
       expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/)
     );
-    expect(csv).toContain('athlete-1,Ada Lovelace,2026-03-11,7,4,3,,8,6,');
+    expect(csv).toContain('athlete-1,Ada Lovelace,2026-03-11,5,4,3,,5,4,');
   });
 
   it('exports multiple selected coach athletes only', async () => {

@@ -88,7 +88,7 @@ describe('wellnessService', () => {
   });
 
   it('creates new wellness logs with the selected date as the document id', async () => {
-    await saveWellnessLog('2026-03-10', { readiness: 8, sleepQuality: 7 }, 'Ready');
+    await saveWellnessLog('2026-03-10', { readiness: 4, sleepQuality: 5 }, 'Ready');
 
     expect(setDocMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -98,9 +98,9 @@ describe('wellnessService', () => {
         userId: 'user-42',
         date: '2026-03-10',
         dateEpochDay: 20522,
-        wellnessScaleVersion: 2,
-        readiness: 8,
-        sleepQuality: 7,
+        wellnessScaleVersion: 3,
+        readiness: 4,
+        sleepQuality: 5,
         notes: 'Ready',
         timestamp: { __serverTimestamp: true },
       })
@@ -114,7 +114,7 @@ describe('wellnessService', () => {
       docs: [{ id: 'legacy-random-id' }],
     });
 
-    await saveWellnessLog('2026-03-10', { readiness: 9 }, undefined);
+    await saveWellnessLog('2026-03-10', { readiness: 5 }, undefined);
 
     expect(updateDocMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -124,8 +124,8 @@ describe('wellnessService', () => {
         userId: 'user-42',
         date: '2026-03-10',
         dateEpochDay: 20522,
-        wellnessScaleVersion: 2,
-        readiness: 9,
+        wellnessScaleVersion: 3,
+        readiness: 5,
         notes: { __deleteField: true },
         timestamp: { __serverTimestamp: true },
       })

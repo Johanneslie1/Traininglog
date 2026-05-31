@@ -25,6 +25,8 @@
     "migrate:global-exercises:apply": "tsx scripts/migrateGlobalExercises.ts --apply",
     "migrate:rir-rpe:dry": "tsx scripts/migrateRirToRpe.ts",
     "migrate:rir-rpe:apply": "tsx scripts/migrateRirToRpe.ts --apply",
+    "migrate:wellness-scale:dry": "tsx scripts/migrateWellnessScale.ts",
+    "migrate:wellness-scale:apply": "tsx scripts/migrateWellnessScale.ts --apply",
     "fix-exercises": "node scripts/fixExerciseTypes.js",
     "user-role:set": "tsx scripts/setUserRole.ts",
     "coach-access:rebuild:dry": "tsx scripts/rebuildCoachAthleteAccess.ts --dry-run",

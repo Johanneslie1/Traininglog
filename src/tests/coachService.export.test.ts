@@ -71,12 +71,12 @@ jest.mock('@/services/exportService', () => ({
           athleteId: identity.athleteId,
           athleteName: identity.athleteName,
           loggedDate: '2026-03-01',
-          sleepQuality: 8,
+          sleepQuality: 5,
           fatigue: 3,
           muscleSoreness: 2,
           stress: 4,
-          mood: 7,
-          readiness: 9,
+          mood: 5,
+          readiness: 5,
           notes: 'ready',
         },
       ];
@@ -87,12 +87,12 @@ jest.mock('@/services/exportService', () => ({
         athleteId: identity.athleteId,
         athleteName: identity.athleteName,
         loggedDate: '2026-03-02',
-        sleepQuality: 6,
+        sleepQuality: 4,
         fatigue: 5,
         muscleSoreness: 4,
         stress: 3,
-        mood: 6,
-        readiness: 7,
+        mood: 4,
+        readiness: 4,
         notes: '',
       },
     ];
@@ -442,7 +442,7 @@ describe('coachService CSV exports', () => {
     expect(rows[0]).toEqual(expect.objectContaining({
       athleteId: 'athlete-1',
       athleteName: 'Ada Lovelace',
-      readiness: 9,
+      readiness: 5,
     }));
   });
 

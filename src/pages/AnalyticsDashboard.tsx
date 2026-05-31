@@ -474,7 +474,7 @@ const AnalyticsDashboard: React.FC = () => {
               </p>
               <p className="mt-1 text-xs text-text-secondary">
                 {healthRow?.wellnessSnapshot.metricValues.fatigue
-                  ? `Fatigue ${healthRow.wellnessSnapshot.metricValues.fatigue}/7 · ${healthRow.status}`
+                  ? `Fatigue ${healthRow.wellnessSnapshot.metricValues.fatigue}/5 · ${healthRow.status}`
                   : 'No wellness log'}
               </p>
             </div>

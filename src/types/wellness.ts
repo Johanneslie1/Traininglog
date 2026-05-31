@@ -3,20 +3,20 @@ import { Timestamp } from 'firebase/firestore';
 export interface WellnessLog {
   id: string;
   userId: string;
-  /** Local calendar date key — YYYY-MM-DD */
+  /** Local calendar date key - YYYY-MM-DD */
   date: string;
   /** Epoch day derived from date key (UTC midnight days since Unix epoch). */
   dateEpochDay?: number;
   /** Server timestamp for ordering */
   timestamp: Timestamp | Date;
-  /** 2 = 7-point wellness scale with 5-point readiness. Missing means legacy 1-10 wellness scale. */
+  /** 3 = 5-point wellness scale. 2 = 7-point wellness scale with 5-point readiness. Missing means legacy 1-10 wellness scale. */
   wellnessScaleVersion?: number;
-  sleepQuality?: number;  // 1–7 (1 = very poor, 7 = excellent)
-  fatigue?: number;       // 1–7 (1 = fresh, 7 = exhausted)
-  muscleSoreness?: number; // 1–7 (1 = none, 7 = very sore)
-  stress?: number;        // 1–7 (1 = relaxed, 7 = very stressed)
-  mood?: number;          // 1–7 (1 = very low, 7 = excellent)
-  readiness?: number;     // 1–5 (1 = not ready, 5 = fully ready)
+  sleepQuality?: number;  // 1-5 (1 = very poor, 5 = excellent)
+  fatigue?: number;       // 1-5 (1 = fresh, 5 = exhausted)
+  muscleSoreness?: number; // 1-5 (1 = none, 5 = very sore)
+  stress?: number;        // 1-5 (1 = relaxed, 5 = very stressed)
+  mood?: number;          // 1-5 (1 = very low, 5 = excellent)
+  readiness?: number;     // 1-5 (1 = not ready, 5 = fully ready)
   notes?: string;
 }
 
@@ -35,37 +35,37 @@ export const WELLNESS_METRICS: WellnessMetricConfig[] = [
   {
     key: 'sleepQuality',
     label: 'Sleep Quality',
-    description: '1 = Very poor · 7 = Excellent',
+    description: '1 = Very poor · 5 = Excellent',
     highIsGood: true,
-    scaleMax: 7,
+    scaleMax: 5,
   },
   {
     key: 'fatigue',
     label: 'Fatigue',
-    description: '1 = Fresh · 7 = Exhausted',
+    description: '1 = Fresh · 5 = Exhausted',
     highIsGood: false,
-    scaleMax: 7,
+    scaleMax: 5,
   },
   {
     key: 'muscleSoreness',
     label: 'Muscle Soreness',
-    description: '1 = None · 7 = Very sore',
+    description: '1 = None · 5 = Very sore',
     highIsGood: false,
-    scaleMax: 7,
+    scaleMax: 5,
   },
   {
     key: 'stress',
     label: 'Stress',
-    description: '1 = Relaxed · 7 = Very stressed',
+    description: '1 = Relaxed · 5 = Very stressed',
     highIsGood: false,
-    scaleMax: 7,
+    scaleMax: 5,
   },
   {
     key: 'mood',
     label: 'Mood',
-    description: '1 = Very low · 7 = Excellent',
+    description: '1 = Very low · 5 = Excellent',
     highIsGood: true,
-    scaleMax: 7,
+    scaleMax: 5,
   },
   {
     key: 'readiness',

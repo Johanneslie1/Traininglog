@@ -23,7 +23,7 @@ const WELLNESS_KEYS: WellnessMetricKey[] = [
   'readiness',
 ];
 
-const WELLNESS_SCALE_VERSION = 2;
+const WELLNESS_SCALE_VERSION = 3;
 
 function assertNotFutureDate(date: string): void {
   const todayKey = toLocalDateString(new Date());

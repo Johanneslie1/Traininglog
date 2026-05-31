@@ -87,9 +87,9 @@ function srpeLog(userId, date, rpe, durationMinutes) {
 describe('coachRatingsService aggregation', () => {
   it('calculates a wellness score from available metrics only', () => {
     expect(calculateWellnessScore(wellnessLog('athlete-a', '2026-03-10', {
-      sleepQuality: 6,
+      sleepQuality: 5,
       readiness: 4,
-    }))).toBe(5.8);
+    }))).toBe(6.3);
   });
 
   it('computes daily values, weekly averages, weekly totals, and missing counts', () => {
@@ -99,20 +99,20 @@ describe('coachRatingsService aggregation', () => {
       wellnessLogsByAthleteId: new Map([
         ['athlete-a', [
           wellnessLog('athlete-a', '2026-03-10', {
-            sleepQuality: 6,
+            sleepQuality: 4,
             fatigue: 2,
             muscleSoreness: 2,
             stress: 2,
-            mood: 6,
+            mood: 4,
             readiness: 4,
             notes: 'Felt sharp before training',
           }),
           wellnessLog('athlete-a', '2026-03-11', {
-            sleepQuality: 5,
-            fatigue: 4,
-            muscleSoreness: 4,
-            stress: 4,
-            mood: 5,
+            sleepQuality: 4,
+            fatigue: 3,
+            muscleSoreness: 3,
+            stress: 3,
+            mood: 4,
             readiness: 3,
           }),
         ]],
@@ -130,21 +130,21 @@ describe('coachRatingsService aggregation', () => {
 
     expect(data.weekStartDate).toBe('2026-03-09');
     expect(data.weekEndDate).toBe('2026-03-15');
-    expect(athleteA?.dailyWellness.score).toBe(5.9);
+    expect(athleteA?.dailyWellness.score).toBe(5.5);
     expect(athleteA?.dailyWellness.metricValues).toMatchObject({
-      sleepQuality: 6,
+      sleepQuality: 4,
       fatigue: 2,
       muscleSoreness: 2,
       stress: 2,
-      mood: 6,
+      mood: 4,
       readiness: 4,
     });
     expect(athleteA?.dailyWellness.hasNotes).toBe(true);
     expect(athleteA?.dailyWellness.notes).toBe('Felt sharp before training');
     expect(athleteA?.wellnessSnapshot.date).toBe('2026-03-10');
     expect(athleteA?.wellnessSnapshot.isSelectedDate).toBe(true);
-    expect(athleteA?.weeklyWellness.average).toBe(5.1);
-    expect(athleteA?.weeklyWellness.total).toBe(10.2);
+    expect(athleteA?.weeklyWellness.average).toBe(5);
+    expect(athleteA?.weeklyWellness.total).toBe(10);
     expect(athleteA?.dailySrpe.sessionLoad).toBe(420);
     expect(athleteA?.weeklySrpe.averageRpe).toBe(6);
     expect(athleteA?.weeklySrpe.totalLoad).toBe(620);
@@ -163,19 +163,19 @@ describe('coachRatingsService aggregation', () => {
       wellnessLogsByAthleteId: new Map([
         ['athlete-a', [
           wellnessLog('athlete-a', '2026-03-10', {
-            sleepQuality: 6,
+            sleepQuality: 4,
             fatigue: 2,
             muscleSoreness: 2,
             stress: 2,
-            mood: 6,
+            mood: 4,
             readiness: 4,
           }),
           wellnessLog('athlete-a', '2026-03-11', {
-            sleepQuality: 5,
-            fatigue: 4,
-            muscleSoreness: 4,
-            stress: 4,
-            mood: 5,
+            sleepQuality: 4,
+            fatigue: 3,
+            muscleSoreness: 3,
+            stress: 3,
+            mood: 4,
             readiness: 3,
           }),
         ]],
@@ -203,19 +203,19 @@ describe('coachRatingsService aggregation', () => {
       wellnessLogsByAthleteId: new Map([
         ['athlete-a', [
           wellnessLog('athlete-a', '2026-03-10', {
-            sleepQuality: 6,
+            sleepQuality: 4,
             fatigue: 2,
             muscleSoreness: 2,
             stress: 2,
-            mood: 6,
+            mood: 4,
             readiness: 4,
           }),
           wellnessLog('athlete-a', '2026-03-11', {
-            sleepQuality: 5,
-            fatigue: 4,
-            muscleSoreness: 4,
-            stress: 4,
-            mood: 5,
+            sleepQuality: 4,
+            fatigue: 3,
+            muscleSoreness: 3,
+            stress: 3,
+            mood: 4,
             readiness: 3,
           }),
         ]],
@@ -236,13 +236,13 @@ describe('coachRatingsService aggregation', () => {
     expect(data.summary.missingDailyWellnessCount).toBe(0);
     expect(athleteA?.wellnessSnapshot.submittedDays).toBe(2);
     expect(athleteA?.wellnessSnapshot.totalDays).toBe(7);
-    expect(athleteA?.wellnessSnapshot.score).toBe(5.1);
+    expect(athleteA?.wellnessSnapshot.score).toBe(5);
     expect(athleteA?.wellnessSnapshot.metricValues).toMatchObject({
-      sleepQuality: 5.5,
-      fatigue: 3,
-      muscleSoreness: 3,
-      stress: 3,
-      mood: 5.5,
+      sleepQuality: 4,
+      fatigue: 2.5,
+      muscleSoreness: 2.5,
+      stress: 2.5,
+      mood: 4,
       readiness: 3.5,
     });
     expect(athleteA?.weeklySrpe.averageRpe).toBe(7);
@@ -357,20 +357,20 @@ describe('coachRatingsService aggregation', () => {
       wellnessLogsByAthleteId: new Map([
         ['athlete-a', [
           wellnessLog('athlete-a', '2026-03-10', {
-            sleepQuality: 6,
+            sleepQuality: 4,
             fatigue: 2,
             muscleSoreness: 2,
             stress: 2,
-            mood: 6,
+            mood: 4,
             readiness: 4,
           }),
         ]],
         ['athlete-b', [
           wellnessLog('athlete-b', '2026-03-10', {
             sleepQuality: 2,
-            fatigue: 6,
-            muscleSoreness: 6,
-            stress: 6,
+            fatigue: 4,
+            muscleSoreness: 4,
+            stress: 4,
             mood: 2,
             readiness: 1,
           }),

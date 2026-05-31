@@ -34,12 +34,12 @@ export const statusPriority: Record<CoachRatingStatus, number> = {
 };
 
 const wellnessHelpByKey: Record<WellnessMetricKey, string> = {
-  sleepQuality: 'Athlete-reported sleep quality from 1 to 7. Higher is better.',
+  sleepQuality: 'Athlete-reported sleep quality from 1 to 5. Higher is better.',
   readiness: 'Athlete-reported readiness to train from 1 to 5. Higher is better.',
-  fatigue: 'Athlete-reported fatigue from 1 to 7. Lower is better.',
-  stress: 'Athlete-reported stress from 1 to 7. Lower is better.',
-  muscleSoreness: 'Athlete-reported muscle soreness from 1 to 7. Lower is better.',
-  mood: 'Athlete-reported mood from 1 to 7. Higher is better.',
+  fatigue: 'Athlete-reported fatigue from 1 to 5. Lower is better.',
+  stress: 'Athlete-reported stress from 1 to 5. Lower is better.',
+  muscleSoreness: 'Athlete-reported muscle soreness from 1 to 5. Lower is better.',
+  mood: 'Athlete-reported mood from 1 to 5. Higher is better.',
 };
 
 export const wellnessColumns = WELLNESS_METRICS.map((metric) => ({
