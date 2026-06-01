@@ -139,4 +139,32 @@ describe('addExerciseLog', () => {
     expect(setDocMock).toHaveBeenCalledTimes(1);
     expect(addActivityLogMock).not.toHaveBeenCalled();
   });
+
+  it('persists program source metadata on resistance logs', async () => {
+    docMock.mockImplementationOnce(() => ({ id: 'exercise-program-1', path: 'users/user-1/exercises/exercise-program-1' }));
+
+    await addExerciseLog(
+      {
+        exerciseName: 'Back Squat',
+        userId: 'user-1',
+        sets: [{ reps: 5, weight: 100 } as any],
+        activityType: ActivityType.RESISTANCE,
+        sourceProgramId: 'program-1',
+        sourceProgramName: 'Strength Block',
+        sourceProgramSessionId: 'program-session-1',
+        sourceProgramSessionName: 'Lower Body',
+        sourceProgramExerciseId: 'program-exercise-1',
+      },
+      new Date('2026-03-09T12:00:00.000Z')
+    );
+
+    const savedPayload = (setDocMock.mock.calls[0] as unknown[])[1] as Record<string, unknown>;
+    expect(savedPayload).toMatchObject({
+      sourceProgramId: 'program-1',
+      sourceProgramName: 'Strength Block',
+      sourceProgramSessionId: 'program-session-1',
+      sourceProgramSessionName: 'Lower Body',
+      sourceProgramExerciseId: 'program-exercise-1',
+    });
+  });
 });

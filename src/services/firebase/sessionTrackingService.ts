@@ -75,6 +75,11 @@ const parseTimestamp = (value: unknown): number => {
   return 0;
 };
 
+const parseOptionalTimestampDate = (value: unknown): Date | undefined => {
+  const timestamp = parseTimestamp(value);
+  return timestamp > 0 ? new Date(timestamp) : undefined;
+};
+
 const getDefaultSessionDocId = (sessionDateKey: string, sessionType: SessionType): string => {
   return `default-${sessionDateKey}-${sessionType}`;
 };
@@ -365,6 +370,14 @@ export interface SessionInfo extends SessionContext {
   status: 'active' | 'completed';
 }
 
+export interface UserSessionExportInfo extends SessionInfo {
+  userId: string;
+  startedAt?: Date;
+  endedAt?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
 export const getSessionsForDate = async (userId: string, date: Date): Promise<SessionInfo[]> => {
   const sessionDateKey = toLocalDateString(date);
   const dayQuery = query(
@@ -384,6 +397,44 @@ export const getSessionsForDate = async (userId: string, date: Date): Promise<Se
       };
     })
     .sort((a, b) => a.startedAtSortKey - b.startedAtSortKey)
+    .map(({ startedAtSortKey, ...session }) => session);
+};
+
+export const getUserSessions = async (
+  userId: string,
+  startDate?: Date,
+  endDate?: Date
+): Promise<UserSessionExportInfo[]> => {
+  const constraints = [where('userId', '==', userId)];
+  if (startDate) {
+    constraints.push(where('sessionDateKey', '>=', toLocalDateString(startDate)));
+  }
+  if (endDate) {
+    constraints.push(where('sessionDateKey', '<=', toLocalDateString(endDate)));
+  }
+
+  const sessionsQuery = query(
+    collection(db, 'users', userId, 'sessions'),
+    ...constraints
+  );
+  const snapshot = await getDocs(sessionsQuery);
+
+  return snapshot.docs
+    .map((docSnap) => {
+      const data = docSnap.data() as Partial<SessionDoc>;
+      return {
+        ...toSessionContext(docSnap.id, data),
+        userId,
+        name: data.name,
+        status: (data.status === 'active' ? 'active' : 'completed') as 'active' | 'completed',
+        startedAt: parseOptionalTimestampDate(data.startedAt),
+        endedAt: parseOptionalTimestampDate(data.endedAt),
+        createdAt: parseOptionalTimestampDate(data.createdAt),
+        updatedAt: parseOptionalTimestampDate(data.updatedAt),
+        startedAtSortKey: parseTimestamp(data.startedAt) || parseTimestamp(data.createdAt),
+      };
+    })
+    .sort((a, b) => a.sessionDateKey.localeCompare(b.sessionDateKey) || a.startedAtSortKey - b.startedAtSortKey)
     .map(({ startedAtSortKey, ...session }) => session);
 };
 

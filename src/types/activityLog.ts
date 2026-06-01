@@ -36,6 +36,12 @@ export interface ActivityLog {
   supersetName?: string;
   /** Additional notes */
   notes?: string;
+  /** Program template that staged this log, if imported from a program. */
+  sourceProgramId?: string;
+  sourceProgramName?: string;
+  sourceProgramSessionId?: string;
+  sourceProgramSessionName?: string;
+  sourceProgramExerciseId?: string;
   /** Normalized training session identifier */
   sessionId?: string;
   /** Session mode for this log entry */
@@ -61,6 +67,11 @@ export type ActivityLogInput = {
   supersetName?: string;
   categories?: string[];
   notes?: string;
+  sourceProgramId?: string;
+  sourceProgramName?: string;
+  sourceProgramSessionId?: string;
+  sourceProgramSessionName?: string;
+  sourceProgramExerciseId?: string;
   sessionId?: string;
   sessionType?: SessionType;
   sessionDateKey?: string;

@@ -16,6 +16,11 @@ import { normalizeSessionType } from '@/types/sessionType';
 export interface UnifiedExerciseData extends ExerciseData {
   activityType?: ActivityType;
   activityData?: StoredActivityLog;
+  sourceProgramId?: string;
+  sourceProgramName?: string;
+  sourceProgramSessionId?: string;
+  sourceProgramSessionName?: string;
+  sourceProgramExerciseId?: string;
 }
 
 /**
@@ -65,6 +70,11 @@ export async function getAllExercisesByDate(
       sharedSessionExerciseId: log.sharedSessionExerciseId,
       sharedSessionDateKey: log.sharedSessionDateKey,
       sharedSessionExerciseCompleted: log.sharedSessionExerciseCompleted,
+      sourceProgramId: log.sourceProgramId,
+      sourceProgramName: log.sourceProgramName,
+      sourceProgramSessionId: log.sourceProgramSessionId,
+      sourceProgramSessionName: log.sourceProgramSessionName,
+      sourceProgramExerciseId: log.sourceProgramExerciseId,
       sessionId: log.sessionId,
       sessionType: log.sessionType,
       sessionDateKey: log.sessionDateKey,
@@ -94,6 +104,11 @@ export async function getAllExercisesByDate(
       sessionWeekKey: log.sessionWeekKey,
       sessionNumberInDay: log.sessionNumberInDay,
       sessionNumberInWeek: log.sessionNumberInWeek,
+      sourceProgramId: log.sourceProgramId,
+      sourceProgramName: log.sourceProgramName,
+      sourceProgramSessionId: log.sourceProgramSessionId,
+      sourceProgramSessionName: log.sourceProgramSessionName,
+      sourceProgramExerciseId: log.sourceProgramExerciseId,
       isWarmup: normalizeSessionType(log.sessionType) === 'warmup',
       activityData: log
     }));
@@ -133,6 +148,11 @@ export async function getAllExercisesByDate(
         sharedSessionExerciseId: log.sharedSessionExerciseId,
         sharedSessionDateKey: log.sharedSessionDateKey,
         sharedSessionExerciseCompleted: log.sharedSessionExerciseCompleted,
+        sourceProgramId: log.sourceProgramId,
+        sourceProgramName: log.sourceProgramName,
+        sourceProgramSessionId: log.sourceProgramSessionId,
+        sourceProgramSessionName: log.sourceProgramSessionName,
+        sourceProgramExerciseId: log.sourceProgramExerciseId,
         sessionId: log.sessionId,
         sessionType: log.sessionType,
         sessionDateKey: log.sessionDateKey,

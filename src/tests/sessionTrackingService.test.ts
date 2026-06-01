@@ -35,7 +35,7 @@ jest.mock('@/services/firebase/config', () => ({
   db: {},
 }));
 
-import { ensureDefaultSessionForDate } from '@/services/firebase/sessionTrackingService';
+import { ensureDefaultSessionForDate, ensureSessionContextForLog } from '@/services/firebase/sessionTrackingService';
 
 describe('sessionTrackingService baseline defaults', () => {
   beforeEach(() => {
@@ -149,6 +149,32 @@ describe('sessionTrackingService baseline defaults', () => {
       expect.objectContaining({ id: 'default-2026-03-31-main' }),
       expect.objectContaining({ name: 'Morning lift' })
     );
+  });
+
+  it('can create a named warm-up session for program imports before warm-up logs exist', async () => {
+    docMock.mockImplementationOnce((coll: any) => ({
+      kind: 'doc',
+      path: `${coll.path}/program-warmup-session`,
+      id: 'program-warmup-session',
+    }));
+
+    const result = await ensureSessionContextForLog(
+      'user-1',
+      new Date('2026-03-31T00:00:00.000Z'),
+      {
+        requestedSessionType: 'warmup',
+        forceNewSession: true,
+        sessionName: 'Program Warm-up',
+      }
+    );
+
+    expect(result).toMatchObject({
+      sessionId: 'program-warmup-session',
+      sessionType: 'warmup',
+      name: 'Program Warm-up',
+      sessionNumberInDay: 1,
+    });
+    expect(transactionSetMock).not.toHaveBeenCalled();
   });
 
   it('reuses existing deterministic baseline without creating duplicate', async () => {

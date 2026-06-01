@@ -109,6 +109,11 @@ type ExerciseLogInput = {
   sharedSessionExerciseId?: string;
   sharedSessionDateKey?: string;
   sharedSessionExerciseCompleted?: boolean;
+  sourceProgramId?: string;
+  sourceProgramName?: string;
+  sourceProgramSessionId?: string;
+  sourceProgramSessionName?: string;
+  sourceProgramExerciseId?: string;
   sessionId?: string;
   sessionType?: SessionType;
   sessionDateKey?: string;
@@ -178,6 +183,11 @@ export const addExerciseLog = async (
           supersetId: logData.supersetId,
           supersetLabel: logData.supersetLabel,
           supersetName: logData.supersetName,
+          sourceProgramId: logData.sourceProgramId,
+          sourceProgramName: logData.sourceProgramName,
+          sourceProgramSessionId: logData.sourceProgramSessionId,
+          sourceProgramSessionName: logData.sourceProgramSessionName,
+          sourceProgramExerciseId: logData.sourceProgramExerciseId,
           sessionId: sessionContext.sessionId,
           sessionType: sessionContext.sessionType,
           sessionDateKey: sessionContext.sessionDateKey,
@@ -209,6 +219,11 @@ export const addExerciseLog = async (
       ...(typeof logData.sharedSessionExerciseCompleted === 'boolean' && {
         sharedSessionExerciseCompleted: logData.sharedSessionExerciseCompleted
       }),
+      ...(logData.sourceProgramId && { sourceProgramId: logData.sourceProgramId }),
+      ...(logData.sourceProgramName && { sourceProgramName: logData.sourceProgramName }),
+      ...(logData.sourceProgramSessionId && { sourceProgramSessionId: logData.sourceProgramSessionId }),
+      ...(logData.sourceProgramSessionName && { sourceProgramSessionName: logData.sourceProgramSessionName }),
+      ...(logData.sourceProgramExerciseId && { sourceProgramExerciseId: logData.sourceProgramExerciseId }),
       sessionId: sessionContext.sessionId,
       sessionType: sessionContext.sessionType,
       sessionDateKey: sessionContext.sessionDateKey,
@@ -271,6 +286,11 @@ export const addExerciseLog = async (
       sharedSessionExerciseId: logData.sharedSessionExerciseId,
       sharedSessionDateKey: logData.sharedSessionDateKey,
       sharedSessionExerciseCompleted: logData.sharedSessionExerciseCompleted,
+      sourceProgramId: logData.sourceProgramId,
+      sourceProgramName: logData.sourceProgramName,
+      sourceProgramSessionId: logData.sourceProgramSessionId,
+      sourceProgramSessionName: logData.sourceProgramSessionName,
+      sourceProgramExerciseId: logData.sourceProgramExerciseId,
       sessionId: sessionContext.sessionId,
       sessionType: sessionContext.sessionType,
       sessionDateKey: sessionContext.sessionDateKey,
@@ -325,6 +345,11 @@ export const addExerciseLog = async (
       sharedSessionExerciseId: logData.sharedSessionExerciseId,
       sharedSessionDateKey: logData.sharedSessionDateKey,
       sharedSessionExerciseCompleted: logData.sharedSessionExerciseCompleted,
+      sourceProgramId: logData.sourceProgramId,
+      sourceProgramName: logData.sourceProgramName,
+      sourceProgramSessionId: logData.sourceProgramSessionId,
+      sourceProgramSessionName: logData.sourceProgramSessionName,
+      sourceProgramExerciseId: logData.sourceProgramExerciseId,
       sessionId: logData.sessionId,
       sessionType: logData.sessionType,
       sessionDateKey: logData.sessionDateKey,
@@ -481,6 +506,11 @@ export const getExerciseLogs = async (userId: string, startDate: Date, endDate: 
         sharedSessionExerciseId: data.sharedSessionExerciseId,
         sharedSessionDateKey: data.sharedSessionDateKey,
         sharedSessionExerciseCompleted: data.sharedSessionExerciseCompleted,
+        sourceProgramId: data.sourceProgramId,
+        sourceProgramName: data.sourceProgramName,
+        sourceProgramSessionId: data.sourceProgramSessionId,
+        sourceProgramSessionName: data.sourceProgramSessionName,
+        sourceProgramExerciseId: data.sourceProgramExerciseId,
         sessionId: data.sessionId,
         sessionType: data.sessionType,
         sessionDateKey: data.sessionDateKey,
@@ -536,6 +566,11 @@ export const getLegacyExerciseLogs = async (userId: string, startDate: Date, end
         supersetId: data.supersetId,
         supersetLabel: data.supersetLabel,
         supersetName: data.supersetName,
+        sourceProgramId: data.sourceProgramId,
+        sourceProgramName: data.sourceProgramName,
+        sourceProgramSessionId: data.sourceProgramSessionId,
+        sourceProgramSessionName: data.sourceProgramSessionName,
+        sourceProgramExerciseId: data.sourceProgramExerciseId,
         sessionId: data.sessionId,
         sessionType: data.sessionType,
         sessionDateKey: data.sessionDateKey,
@@ -578,6 +613,11 @@ export const getTopLevelLegacyExerciseLogs = async (userId: string, startDate: D
         supersetId: data.supersetId,
         supersetLabel: data.supersetLabel,
         supersetName: data.supersetName,
+        sourceProgramId: data.sourceProgramId,
+        sourceProgramName: data.sourceProgramName,
+        sourceProgramSessionId: data.sourceProgramSessionId,
+        sourceProgramSessionName: data.sourceProgramSessionName,
+        sourceProgramExerciseId: data.sourceProgramExerciseId,
       } as ExerciseLog;
     };
 

@@ -30,6 +30,12 @@ jest.mock('@/services/powerBiExportService', () => ({
   buildPowerBiFiles: jest.fn(),
 }));
 
+jest.mock('@/services/onedriveService', () => ({
+  uploadToOneDrive: jest.fn(),
+  signOutOneDrive: jest.fn(),
+  isOneDriveSignedIn: jest.fn(() => false),
+}));
+
 jest.mock('@/services/teamService', () => ({
   getCoachTeams: jest.fn(async () => []),
 }));

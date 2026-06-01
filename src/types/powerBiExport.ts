@@ -51,6 +51,11 @@ export interface FactGymSetRow {
   exercise_log_id: string;
   exercise_id: string;
   exercise_name: string;
+  source_program_id?: string;
+  source_program_name?: string;
+  source_program_session_id?: string;
+  source_program_session_name?: string;
+  source_program_exercise_id?: string;
   logged_date: string;       // YYYY-MM-DD
   exercise_order: number;    // 1-based order of exercise within the day
   set_number: number;
@@ -81,6 +86,11 @@ export interface FactActivityRow {
   exercise_log_id: string;
   exercise_name: string;
   activity_type: string;
+  source_program_id?: string;
+  source_program_name?: string;
+  source_program_session_id?: string;
+  source_program_session_name?: string;
+  source_program_exercise_id?: string;
   logged_date: string;       // YYYY-MM-DD
   exercise_order: number;    // 1-based order of exercise within the day
   set_number: number;
@@ -123,6 +133,10 @@ export interface FactSessionRow {
   athlete_name: string;
   session_id: string;
   session_name: string;
+  source_program_id?: string;
+  source_program_name?: string;
+  source_program_session_id?: string;
+  source_program_session_name?: string;
   /** 'main' | 'warmup' */
   session_type: string;
   date: string;            // YYYY-MM-DD

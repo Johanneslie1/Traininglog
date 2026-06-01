@@ -31,6 +31,11 @@ type SourceLog = {
   supersetId?: string;
   supersetLabel?: string;
   supersetName?: string;
+  sourceProgramId?: string;
+  sourceProgramName?: string;
+  sourceProgramSessionId?: string;
+  sourceProgramSessionName?: string;
+  sourceProgramExerciseId?: string;
   sessionId?: string;
   sessionType?: string;
   sessionDateKey?: string;
@@ -189,6 +194,11 @@ const readLocalExerciseLogs = (userId: string, startDate: Date, endDate: Date): 
         supersetId: typeof log.supersetId === 'string' ? log.supersetId : undefined,
         supersetLabel: typeof log.supersetLabel === 'string' ? log.supersetLabel : undefined,
         supersetName: typeof log.supersetName === 'string' ? log.supersetName : undefined,
+        sourceProgramId: typeof log.sourceProgramId === 'string' ? log.sourceProgramId : undefined,
+        sourceProgramName: typeof log.sourceProgramName === 'string' ? log.sourceProgramName : undefined,
+        sourceProgramSessionId: typeof log.sourceProgramSessionId === 'string' ? log.sourceProgramSessionId : undefined,
+        sourceProgramSessionName: typeof log.sourceProgramSessionName === 'string' ? log.sourceProgramSessionName : undefined,
+        sourceProgramExerciseId: typeof log.sourceProgramExerciseId === 'string' ? log.sourceProgramExerciseId : undefined,
         collectionType: 'local' as const,
       };
     })
@@ -334,6 +344,11 @@ export const getAggregatedExportLogs = async (
       supersetId: log.supersetId,
       supersetLabel: log.supersetLabel,
       supersetName: log.supersetName,
+      sourceProgramId: (log as unknown as Record<string, unknown>).sourceProgramId as string | undefined,
+      sourceProgramName: (log as unknown as Record<string, unknown>).sourceProgramName as string | undefined,
+      sourceProgramSessionId: (log as unknown as Record<string, unknown>).sourceProgramSessionId as string | undefined,
+      sourceProgramSessionName: (log as unknown as Record<string, unknown>).sourceProgramSessionName as string | undefined,
+      sourceProgramExerciseId: (log as unknown as Record<string, unknown>).sourceProgramExerciseId as string | undefined,
       sessionId: (log as unknown as Record<string, unknown>).sessionId as string | undefined,
       sessionType: (log as unknown as Record<string, unknown>).sessionType as string | undefined,
       sessionDateKey: (log as unknown as Record<string, unknown>).sessionDateKey as string | undefined,
@@ -353,6 +368,11 @@ export const getAggregatedExportLogs = async (
       supersetId: log.supersetId,
       supersetLabel: log.supersetLabel,
       supersetName: log.supersetName,
+      sourceProgramId: (log as unknown as Record<string, unknown>).sourceProgramId as string | undefined,
+      sourceProgramName: (log as unknown as Record<string, unknown>).sourceProgramName as string | undefined,
+      sourceProgramSessionId: (log as unknown as Record<string, unknown>).sourceProgramSessionId as string | undefined,
+      sourceProgramSessionName: (log as unknown as Record<string, unknown>).sourceProgramSessionName as string | undefined,
+      sourceProgramExerciseId: (log as unknown as Record<string, unknown>).sourceProgramExerciseId as string | undefined,
       sessionId: (log as unknown as Record<string, unknown>).sessionId as string | undefined,
       sessionType: (log as unknown as Record<string, unknown>).sessionType as string | undefined,
       sessionDateKey: (log as unknown as Record<string, unknown>).sessionDateKey as string | undefined,
@@ -373,6 +393,11 @@ export const getAggregatedExportLogs = async (
       supersetId: log.supersetId,
       supersetLabel: log.supersetLabel,
       supersetName: log.supersetName,
+      sourceProgramId: (log as unknown as Record<string, unknown>).sourceProgramId as string | undefined,
+      sourceProgramName: (log as unknown as Record<string, unknown>).sourceProgramName as string | undefined,
+      sourceProgramSessionId: (log as unknown as Record<string, unknown>).sourceProgramSessionId as string | undefined,
+      sourceProgramSessionName: (log as unknown as Record<string, unknown>).sourceProgramSessionName as string | undefined,
+      sourceProgramExerciseId: (log as unknown as Record<string, unknown>).sourceProgramExerciseId as string | undefined,
       sessionId: (log as unknown as Record<string, unknown>).sessionId as string | undefined,
       sessionType: (log as unknown as Record<string, unknown>).sessionType as string | undefined,
       sessionDateKey: (log as unknown as Record<string, unknown>).sessionDateKey as string | undefined,
@@ -392,6 +417,11 @@ export const getAggregatedExportLogs = async (
       supersetId: log.supersetId,
       supersetLabel: log.supersetLabel,
       supersetName: log.supersetName,
+      sourceProgramId: (log as unknown as Record<string, unknown>).sourceProgramId as string | undefined,
+      sourceProgramName: (log as unknown as Record<string, unknown>).sourceProgramName as string | undefined,
+      sourceProgramSessionId: (log as unknown as Record<string, unknown>).sourceProgramSessionId as string | undefined,
+      sourceProgramSessionName: (log as unknown as Record<string, unknown>).sourceProgramSessionName as string | undefined,
+      sourceProgramExerciseId: (log as unknown as Record<string, unknown>).sourceProgramExerciseId as string | undefined,
       sessionId: (log as unknown as Record<string, unknown>).sessionId as string | undefined,
       sessionType: (log as unknown as Record<string, unknown>).sessionType as string | undefined,
       sessionDateKey: (log as unknown as Record<string, unknown>).sessionDateKey as string | undefined,
@@ -411,6 +441,11 @@ export const getAggregatedExportLogs = async (
       supersetId: log.supersetId,
       supersetLabel: log.supersetLabel,
       supersetName: log.supersetName,
+      sourceProgramId: (log as unknown as Record<string, unknown>).sourceProgramId as string | undefined,
+      sourceProgramName: (log as unknown as Record<string, unknown>).sourceProgramName as string | undefined,
+      sourceProgramSessionId: (log as unknown as Record<string, unknown>).sourceProgramSessionId as string | undefined,
+      sourceProgramSessionName: (log as unknown as Record<string, unknown>).sourceProgramSessionName as string | undefined,
+      sourceProgramExerciseId: (log as unknown as Record<string, unknown>).sourceProgramExerciseId as string | undefined,
       sessionId: (log as unknown as Record<string, unknown>).sessionId as string | undefined,
       sessionType: (log as unknown as Record<string, unknown>).sessionType as string | undefined,
       sessionDateKey: (log as unknown as Record<string, unknown>).sessionDateKey as string | undefined,

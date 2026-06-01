@@ -77,6 +77,18 @@ jest.mock('@/services/teamService', () => ({
   getCoachTeams: jest.fn(async () => [{ id: 'team-1', name: 'U19' }]),
 }));
 
+jest.mock('@/services/wellnessService', () => ({
+  getWellnessByDateRange: jest.fn(async () => []),
+}));
+
+jest.mock('@/services/srpeService', () => ({
+  getSrpeByDateRange: jest.fn(async () => []),
+}));
+
+jest.mock('@/services/athleteStatsService', () => ({
+  buildSingleAthleteHealthDashboardData: jest.fn(() => ({ rows: [] })),
+}));
+
 jest.mock('@/services/powerBiExportService', () => ({
   downloadPowerBiZip: jest.fn(async () => ({
     gymSetCount: 1,

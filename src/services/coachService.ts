@@ -55,6 +55,11 @@ export interface AthleteExerciseLog {
   supersetId?: string;
   supersetLabel?: string;
   supersetName?: string;
+  sourceProgramId?: string;
+  sourceProgramName?: string;
+  sourceProgramSessionId?: string;
+  sourceProgramSessionName?: string;
+  sourceProgramExerciseId?: string;
 }
 
 export interface AthleteSessionHistoryItem {
@@ -379,7 +384,12 @@ function toAthleteLog(
     notes: typeof data?.notes === 'string' ? data.notes : undefined,
     supersetId: typeof data?.supersetId === 'string' ? data.supersetId : undefined,
     supersetLabel: typeof data?.supersetLabel === 'string' ? data.supersetLabel : undefined,
-    supersetName: typeof data?.supersetName === 'string' ? data.supersetName : undefined
+    supersetName: typeof data?.supersetName === 'string' ? data.supersetName : undefined,
+    sourceProgramId: typeof data?.sourceProgramId === 'string' ? data.sourceProgramId : undefined,
+    sourceProgramName: typeof data?.sourceProgramName === 'string' ? data.sourceProgramName : undefined,
+    sourceProgramSessionId: typeof data?.sourceProgramSessionId === 'string' ? data.sourceProgramSessionId : undefined,
+    sourceProgramSessionName: typeof data?.sourceProgramSessionName === 'string' ? data.sourceProgramSessionName : undefined,
+    sourceProgramExerciseId: typeof data?.sourceProgramExerciseId === 'string' ? data.sourceProgramExerciseId : undefined
   };
 }
 
@@ -455,6 +465,11 @@ function buildFallbackSettingsParityExportData(
       supersetId: log.supersetId || '',
       supersetLabel: log.supersetLabel || '',
       supersetName: log.supersetName || '',
+      sourceProgramId: log.sourceProgramId || '',
+      sourceProgramName: log.sourceProgramName || '',
+      sourceProgramSessionId: log.sourceProgramSessionId || '',
+      sourceProgramSessionName: log.sourceProgramSessionName || '',
+      sourceProgramExerciseId: log.sourceProgramExerciseId || '',
       category: mapSourceCollectionToExportCategory(log.sourceCollection),
       type: normalizedType,
       setCount: log.sets.length,
@@ -481,7 +496,12 @@ function buildFallbackSettingsParityExportData(
         timestamp: log.timestamp,
         supersetId: log.supersetId,
         supersetLabel: log.supersetLabel,
-        supersetName: log.supersetName
+        supersetName: log.supersetName,
+        sourceProgramId: log.sourceProgramId,
+        sourceProgramName: log.sourceProgramName,
+        sourceProgramSessionId: log.sourceProgramSessionId,
+        sourceProgramSessionName: log.sourceProgramSessionName,
+        sourceProgramExerciseId: log.sourceProgramExerciseId
       },
       set,
       index

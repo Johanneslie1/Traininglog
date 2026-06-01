@@ -531,6 +531,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
         reorderedExercises
           .filter((exercise) => Boolean(exercise.id))
           .map(async (exercise, index) => {
+            const exerciseWithSource = exercise as UnifiedExerciseData;
             const newTimestamp = new Date(baseTime);
             newTimestamp.setMilliseconds(index * 100);
 
@@ -549,6 +550,11 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
                 sharedSessionExerciseId: exercise.sharedSessionExerciseId,
                 sharedSessionDateKey: exercise.sharedSessionDateKey,
                 sharedSessionExerciseCompleted: exercise.sharedSessionExerciseCompleted,
+                sourceProgramId: exerciseWithSource.sourceProgramId,
+                sourceProgramName: exerciseWithSource.sourceProgramName,
+                sourceProgramSessionId: exerciseWithSource.sourceProgramSessionId,
+                sourceProgramSessionName: exerciseWithSource.sourceProgramSessionName,
+                sourceProgramExerciseId: exerciseWithSource.sourceProgramExerciseId,
                 sessionId: exercise.sessionId,
                 sessionType: exercise.sessionType,
                 sessionDateKey: exercise.sessionDateKey,
@@ -634,6 +640,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
       );
     } catch (error) {
       console.error('Failed to rename session:', error);
+      toast.error('Could not rename session. Please try again.');
     }
     setRenamingSessionId(null);
   }, [user?.id, renamingSessionId, renameValue]);
@@ -658,19 +665,24 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     }
   }, [user?.id, namePrompt]);
 
-  const startLongPress = useCallback((sessionId: string, currentName: string) => {
-    longPressTimerRef.current = setTimeout(() => {
-      setRenamingSessionId(sessionId);
-      setRenameValue(currentName);
-    }, 500);
-  }, []);
-
   const cancelLongPress = useCallback(() => {
     if (longPressTimerRef.current !== null) {
       clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
     }
   }, []);
+
+  const beginRenameSession = useCallback((sessionId: string, currentName: string) => {
+    cancelLongPress();
+    setRenamingSessionId(sessionId);
+    setRenameValue(currentName);
+  }, [cancelLongPress]);
+
+  const startLongPress = useCallback((sessionId: string, currentName: string) => {
+    longPressTimerRef.current = setTimeout(() => {
+      beginRenameSession(sessionId, currentName);
+    }, 500);
+  }, [beginRenameSession]);
 
   const handleCreateNewSession = useCallback(async (sessionType: SessionType = 'main') => {
     if (!user?.id || creatingSessionType !== null || sessionsLoading) {
@@ -1066,21 +1078,25 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
                           <input
                             autoFocus
                             value={renameValue}
+                            aria-label={`Rename ${label}`}
+                            title="Press Enter to save, Escape to cancel"
                             onChange={(e) => setRenameValue(e.target.value)}
                             onBlur={() => { void handleRenameCommit(); }}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter') { void handleRenameCommit(); }
                               if (e.key === 'Escape') { setRenamingSessionId(null); }
                             }}
-                            className="px-3 py-1.5 bg-transparent outline-none min-w-[80px] max-w-[140px]"
+                            className="min-h-9 min-w-[120px] max-w-[180px] bg-bg-primary px-3 py-1.5 text-text-primary outline-none ring-2 ring-accent-primary"
                           />
                         ) : (
                           <button
                             type="button"
                             onClick={() => setSelectedSessionId(session.sessionId)}
+                            onDoubleClick={() => beginRenameSession(session.sessionId, label)}
                             onPointerDown={() => startLongPress(session.sessionId, label)}
                             onPointerUp={cancelLongPress}
                             onPointerLeave={cancelLongPress}
+                            title="Double-click or hold to rename"
                             className="px-3 py-1.5 text-left"
                           >
                             {label}
@@ -1161,8 +1177,16 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
             updateUiState('showLogOptions', false);
             setEditingExercise(null); // Clear editing state when closing
           }}
-          onExerciseAdded={() => {
-            loadExercises(selectedDate);
+          onExerciseAdded={(details) => {
+            void (async () => {
+              await Promise.all([
+                loadExercises(selectedDate),
+                loadSessionsForDate(selectedDate),
+              ]);
+              if (details?.selectedSessionId) {
+                setSelectedSessionId(details.selectedSessionId);
+              }
+            })();
             setEditingExercise(null); // Clear editing state after saving
           }}
           selectedDate={selectedDate}

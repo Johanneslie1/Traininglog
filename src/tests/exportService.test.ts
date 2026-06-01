@@ -4,6 +4,10 @@ jest.mock('@/services/firebase/workouts', () => ({
   getUserWorkouts: jest.fn(async () => []),
 }));
 
+jest.mock('@/services/firebase/sessionTrackingService', () => ({
+  getUserSessions: jest.fn(async () => []),
+}));
+
 jest.mock('@/services/logAggregationService', () => ({
   getAggregatedExportLogs: jest.fn(async () => []),
 }));
@@ -28,6 +32,9 @@ type RestorableSpy = {
 
 const mockedWorkouts = jest.requireMock('@/services/firebase/workouts') as {
   getUserWorkouts: any;
+};
+const mockedSessionTracking = jest.requireMock('@/services/firebase/sessionTrackingService') as {
+  getUserSessions: any;
 };
 const mockedLogAggregationService = jest.requireMock('@/services/logAggregationService') as {
   getAggregatedExportLogs: any;
@@ -60,6 +67,10 @@ Object.defineProperty(globalThis, 'localStorage', {
 describe('exportService serialization', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockedWorkouts.getUserWorkouts.mockResolvedValue([]);
+    mockedSessionTracking.getUserSessions.mockResolvedValue([]);
+    mockedLogAggregationService.getAggregatedExportLogs.mockResolvedValue([]);
+    mockedWellnessService.getWellnessByDateRange.mockResolvedValue([]);
     localStorage.clear();
   });
 
@@ -164,6 +175,84 @@ describe('exportService serialization', () => {
       supersetId: 'ss-1',
       supersetLabel: '1a',
       supersetName: 'Press Pair',
+    });
+  });
+
+  it('exports canonical tracked sessions with saved names', async () => {
+    mockedSessionTracking.getUserSessions.mockResolvedValue([
+      {
+        userId: 'user-1',
+        sessionId: 'session-program-1',
+        sessionType: 'main',
+        sessionDateKey: '2026-03-01',
+        sessionWeekKey: '2026-W09',
+        sessionNumberInDay: 1,
+        sessionNumberInWeek: 3,
+        status: 'active',
+        name: 'Lower Body Program',
+        startedAt: new Date('2026-03-01T09:00:00.000Z'),
+        createdAt: new Date('2026-03-01T09:00:00.000Z'),
+        updatedAt: new Date('2026-03-01T09:05:00.000Z'),
+      },
+    ]);
+    mockedLogAggregationService.getAggregatedExportLogs.mockResolvedValue([]);
+
+    const result = await exportData('user-1', {
+      includeSessions: true,
+      includeExerciseLogs: false,
+      includeSets: false,
+    });
+
+    expect(result.sessions[0]).toMatchObject({
+      sessionId: 'session-program-1',
+      sessionName: 'Lower Body Program',
+      sessionType: 'main',
+      sessionDateKey: '2026-03-01',
+      sessionNumberInDay: 1,
+    });
+    expect(mockedWorkouts.getUserWorkouts).not.toHaveBeenCalled();
+  });
+
+  it('exports program source metadata on exercise and set rows', async () => {
+    mockedLogAggregationService.getAggregatedExportLogs.mockResolvedValue([
+      {
+        id: 'ex-program-1',
+        exerciseName: 'Back Squat',
+        sets: [{ reps: 5, weight: 100 }],
+        timestamp: new Date('2026-03-01T10:00:00.000Z'),
+        userId: 'user-1',
+        activityType: 'resistance',
+        collectionType: 'exercise',
+        sessionId: 'session-program-1',
+        sessionType: 'main',
+        sessionDateKey: '2026-03-01',
+        sessionNumberInDay: 1,
+        sourceProgramId: 'program-1',
+        sourceProgramName: 'Strength Block',
+        sourceProgramSessionId: 'program-session-1',
+        sourceProgramSessionName: 'Lower Body',
+        sourceProgramExerciseId: 'program-exercise-1',
+      },
+    ]);
+
+    const result = await exportData('user-1', {
+      includeSessions: false,
+      includeExerciseLogs: true,
+      includeSets: true,
+    });
+
+    expect(result.exerciseLogs[0]).toMatchObject({
+      sourceProgramId: 'program-1',
+      sourceProgramName: 'Strength Block',
+      sourceProgramSessionId: 'program-session-1',
+      sourceProgramSessionName: 'Lower Body',
+      sourceProgramExerciseId: 'program-exercise-1',
+    });
+    expect(result.sets[0]).toMatchObject({
+      sessionId: 'session-program-1',
+      sourceProgramId: 'program-1',
+      sourceProgramSessionName: 'Lower Body',
+      sourceProgramExerciseId: 'program-exercise-1',
     });
   });
 
@@ -299,7 +388,7 @@ describe('exportService serialization', () => {
     const startDate = new Date(2026, 1, 23, 0, 0, 0, 0);
     const endDate = new Date(2026, 2, 2, 23, 59, 59, 999);
 
-    mockedWorkouts.getUserWorkouts.mockRejectedValue(new Error('session source unavailable'));
+    mockedSessionTracking.getUserSessions.mockRejectedValue(new Error('session source unavailable'));
     mockedLogAggregationService.getAggregatedExportLogs.mockResolvedValue([
       {
         id: 'ex-1',

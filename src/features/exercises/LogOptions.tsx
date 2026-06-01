@@ -32,10 +32,15 @@ import { SupersetGroup } from '@/types/session';
 import AppOverlay from '@/components/ui/AppOverlay';
 import { logger } from '@/utils/logger';
 import { SessionType } from '@/types/sessionType';
+import {
+  ensureSessionContextForLog,
+  getSessionsForDate,
+  SessionContext,
+} from '@/services/firebase/sessionTrackingService';
 
 interface LogOptionsProps {
   onClose: () => void;
-  onExerciseAdded?: () => void;
+  onExerciseAdded?: (details?: { selectedSessionId?: string }) => void;
   selectedDate?: Date;
   editingExercise?: UnifiedExerciseData | null; // Add editing exercise prop
   selectedSessionId?: string | null;
@@ -190,16 +195,62 @@ export const LogOptions = ({
         return `superset-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
       };
 
+      const importDate = selectedDate || new Date();
+      const sourceGroupKeyForSelection = (selection: ProgramExerciseSelection, index: number): string =>
+        selection.sourceSessionId
+          ? `program-session:${selection.sourceProgramId || 'program'}:${selection.sourceSessionId}`
+          : `unscoped:${index}`;
+
+      const groupedSelections = new Map<string, ProgramExerciseSelection[]>();
+      exercises.forEach((selection, index) => {
+        const key = sourceGroupKeyForSelection(selection, index);
+        groupedSelections.set(key, [...(groupedSelections.get(key) || []), selection]);
+      });
+
+      const existingSessions = await getSessionsForDate(userId, importDate);
+      const sessionCountByType = new Map<SessionType, number>([
+        ['main', existingSessions.filter((session) => session.sessionType === 'main').length],
+        ['warmup', existingSessions.filter((session) => session.sessionType === 'warmup').length],
+      ]);
+      const sessionContextByGroup = new Map<string, SessionContext>();
+      let sessionToSelectAfterImport: string | undefined;
+
+      for (const [groupKey, selections] of groupedSelections.entries()) {
+        const firstSelection = selections[0];
+        const sessionType: SessionType = firstSelection.sourceIsWarmup ? 'warmup' : effectiveSessionType;
+        const sourceSessionName = firstSelection.sourceSessionName?.trim();
+        const sourceProgramName = firstSelection.sourceProgramName?.trim();
+        const sessionName = sourceSessionName || sourceProgramName || undefined;
+        const hasProgramSessionSource = Boolean(firstSelection.sourceSessionId || firstSelection.sourceProgramId);
+        const forceNewSession = hasProgramSessionSource && (sessionCountByType.get(sessionType) || 0) > 0;
+
+        const sessionContext = hasProgramSessionSource
+          ? await ensureSessionContextForLog(userId, importDate, {
+              requestedSessionType: sessionType,
+              forceNewSession,
+              sessionName,
+            })
+          : await ensureSessionContextForLog(userId, importDate, {
+              requestedSessionId: selectedSessionId || undefined,
+              requestedSessionType: sessionType,
+            });
+
+        sessionContextByGroup.set(groupKey, sessionContext);
+        sessionCountByType.set(sessionType, (sessionCountByType.get(sessionType) || 0) + 1);
+        sessionToSelectAfterImport = sessionContext.sessionId;
+      }
+
       // Check if any exercises have pre-filled sets (from prescriptions)
       const hasPrefilledSets = exercises.some(ex => ex.sets && ex.sets.length > 0);
       let savedCount = 0;
       const runtimeSupersetIdBySourceKey = new Map<string, string>();
       const importedSupersetGroupsById = new Map<string, { name?: string; exerciseIds: string[] }>();
       
-      for (const selection of exercises) {
+      for (const [selectionIndex, selection] of exercises.entries()) {
         const { exercise } = selection;
         const sets: ExerciseSet[] = [];
         const resolvedActivityType = resolveActivityTypeFromExerciseLike(exercise, { fallback: ActivityType.RESISTANCE });
+        const sessionContext = sessionContextByGroup.get(sourceGroupKeyForSelection(selection, selectionIndex));
 
         const sourceSupersetToken =
           selection.sourceProgramSupersetId ||
@@ -241,10 +292,19 @@ export const LogOptions = ({
             sets: sets,
             activityType: resolvedActivityType,
             isWarmup: isWarmupMode || Boolean(selection.sourceIsWarmup),
-            sessionId: selectedSessionId || undefined,
-            sessionType: effectiveSessionType,
+            sessionId: sessionContext?.sessionId || selectedSessionId || undefined,
+            sessionType: sessionContext?.sessionType || effectiveSessionType,
+            sessionDateKey: sessionContext?.sessionDateKey,
+            sessionWeekKey: sessionContext?.sessionWeekKey,
+            sessionNumberInDay: sessionContext?.sessionNumberInDay,
+            sessionNumberInWeek: sessionContext?.sessionNumberInWeek,
             prescription: exercise.prescription,
             instructionMode: exercise.instructionMode,
+            sourceProgramId: selection.sourceProgramId,
+            sourceProgramName: selection.sourceProgramName,
+            sourceProgramSessionId: selection.sourceSessionId,
+            sourceProgramSessionName: selection.sourceSessionName,
+            sourceProgramExerciseId: selection.sourceProgramExerciseId,
             supersetId: runtimeSupersetId,
             supersetLabel: runtimeSupersetLabel,
             supersetName: runtimeSupersetName,
@@ -266,11 +326,20 @@ export const LogOptions = ({
           timestamp: selectedDate || new Date(),
           activityType: resolvedActivityType,
           isWarmup: isWarmupMode || Boolean(selection.sourceIsWarmup),
-          sessionId: selectedSessionId || undefined,
-          sessionType: effectiveSessionType,
+          sessionId: sessionContext?.sessionId || selectedSessionId || undefined,
+          sessionType: sessionContext?.sessionType || effectiveSessionType,
+          sessionDateKey: sessionContext?.sessionDateKey,
+          sessionWeekKey: sessionContext?.sessionWeekKey,
+          sessionNumberInDay: sessionContext?.sessionNumberInDay,
+          sessionNumberInWeek: sessionContext?.sessionNumberInWeek,
           supersetId: runtimeSupersetId,
           supersetLabel: runtimeSupersetLabel,
           supersetName: runtimeSupersetName,
+          sourceProgramId: selection.sourceProgramId,
+          sourceProgramName: selection.sourceProgramName,
+          sourceProgramSessionId: selection.sourceSessionId,
+          sourceProgramSessionName: selection.sourceSessionName,
+          sourceProgramExerciseId: selection.sourceProgramExerciseId,
           prescription: exercise.prescription,
           instructionMode: exercise.instructionMode,
           instructions: typeof exercise.instructions === 'string'
@@ -307,7 +376,7 @@ export const LogOptions = ({
           addSuperset(nextSuperset);
         });
 
-      onExerciseAdded?.();
+      onExerciseAdded?.({ selectedSessionId: sessionToSelectAfterImport });
       onClose();
       
       // Show appropriate toast message

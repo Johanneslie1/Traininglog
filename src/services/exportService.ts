@@ -1,4 +1,5 @@
 import { getUserWorkouts } from './firebase/workouts';
+import { getUserSessions } from './firebase/sessionTrackingService';
 import { DifficultyCategory } from '@/types/difficulty';
 import { ActivityType } from '@/types/activityTypes';
 import { mapExerciseTypeToActivityType, normalizeActivityType } from '@/types/activityLog';
@@ -34,6 +35,11 @@ export const SET_EXPORT_HEADERS = [
   'supersetId',
   'supersetLabel',
   'supersetName',
+  'sourceProgramId',
+  'sourceProgramName',
+  'sourceProgramSessionId',
+  'sourceProgramSessionName',
+  'sourceProgramExerciseId',
   'exerciseDate',
   'loggedDate',
   'loggedTimestamp',
@@ -105,6 +111,18 @@ const getSupersetNumberFromLabel = (label: string | undefined): string | null =>
   if (!label) return null;
   const match = label.trim().toLowerCase().match(/^(\d+)[a-z]+$/);
   return match ? match[1] : null;
+};
+
+const getSessionDisplayName = (sessionType: unknown, sessionNumberInDay: unknown, name?: string): string => {
+  const trimmedName = name?.trim();
+  if (trimmedName) return trimmedName;
+
+  const number = typeof sessionNumberInDay === 'number' && sessionNumberInDay > 0
+    ? sessionNumberInDay
+    : 1;
+  return normalizeSessionType(sessionType) === 'warmup'
+    ? `Warm-up ${number}`
+    : `Session ${number}`;
 };
 
 const readLegacySupersetDataForDate = (dateKey: string): { supersets: SupersetGroup[]; exerciseOrder: string[] } => {
@@ -222,6 +240,11 @@ export const serializeSetForExport = (
     supersetId?: string;
     supersetLabel?: string;
     supersetName?: string;
+    sourceProgramId?: string;
+    sourceProgramName?: string;
+    sourceProgramSessionId?: string;
+    sourceProgramSessionName?: string;
+    sourceProgramExerciseId?: string;
     exerciseNumber?: number;
   },
   set: Record<string, any>,
@@ -246,6 +269,11 @@ export const serializeSetForExport = (
     supersetId: log.supersetId || '',
     supersetLabel: log.supersetLabel || '',
     supersetName: log.supersetName || '',
+    sourceProgramId: (log as any).sourceProgramId || '',
+    sourceProgramName: (log as any).sourceProgramName || '',
+    sourceProgramSessionId: (log as any).sourceProgramSessionId || '',
+    sourceProgramSessionName: (log as any).sourceProgramSessionName || '',
+    sourceProgramExerciseId: (log as any).sourceProgramExerciseId || '',
     exerciseDate: log.timestamp ? toLocalDateString(log.timestamp) : '',
     loggedDate: log.timestamp ? toLocalDateString(log.timestamp) : '',
     loggedTimestamp: safeDateToLocalTimestamp(log.timestamp),
@@ -313,33 +341,61 @@ export const exportData = async (userId: string, options: ExportOptions = {}) =>
   try {
     // Export sessions
     if (includeSessions) {
-      let sessions = await getUserWorkouts(userId);
-      
-      // Filter by date range if provided
-      if (startDate || endDate) {
-        sessions = sessions.filter(session => {
-          const sessionDate = new Date(session.date);
-          if (startDate && sessionDate < startDate) return false;
-          if (endDate && sessionDate > endDate) return false;
-          return true;
-        });
+      try {
+        const sessions = await getUserSessions(userId, startDate, endDate);
+        results.sessions = sessions.map(session => ({
+          userId: session.userId,
+          sessionId: session.sessionId,
+          sessionName: getSessionDisplayName(session.sessionType, session.sessionNumberInDay, session.name),
+          sessionType: session.sessionType,
+          sessionDate: session.sessionDateKey,
+          sessionDateKey: session.sessionDateKey,
+          sessionWeekKey: session.sessionWeekKey,
+          sessionNumberInDay: session.sessionNumberInDay,
+          sessionNumberInWeek: session.sessionNumberInWeek,
+          status: session.status,
+          startTime: session.startedAt ? safeDateToLocalTimestamp(session.startedAt) : '',
+          endTime: session.endedAt ? safeDateToLocalTimestamp(session.endedAt) : '',
+          notes: '',
+          totalVolume: 0,
+          sessionRPE: 0,
+          exerciseCount: 0,
+          setCount: 0,
+          durationMinutes: 0,
+          createdAt: session.createdAt ? safeDateToLocalTimestamp(session.createdAt) : '',
+          updatedAt: session.updatedAt ? safeDateToLocalTimestamp(session.updatedAt) : ''
+        }));
+      } catch (sessionError) {
+        console.warn('Failed to export canonical sessions; falling back to legacy trainingSessions.', sessionError);
+        let sessions = await getUserWorkouts(userId);
+
+        // Filter by date range if provided
+        if (startDate || endDate) {
+          sessions = sessions.filter(session => {
+            const sessionDate = new Date(session.date);
+            if (startDate && sessionDate < startDate) return false;
+            if (endDate && sessionDate > endDate) return false;
+            return true;
+          });
+        }
+
+        results.sessions = sessions.map(session => ({
+          userId: session.userId,
+          sessionId: session.id,
+          sessionName: '',
+          sessionDate: session.date,
+          startTime: '', // Not available in legacy data
+          endTime: '', // Not available in legacy data
+          notes: session.notes || '',
+          totalVolume: session.totalVolume || 0,
+          sessionRPE: session.sessionRPE || 0,
+          exerciseCount: session.exercises?.length || 0,
+          setCount: session.exercises?.reduce((total, ex) => total + (ex.sets?.length || 0), 0) || 0,
+          durationMinutes: 0,
+          createdAt: '',
+          updatedAt: ''
+        }));
       }
-      
-      results.sessions = sessions.map(session => ({
-        userId: session.userId,
-        sessionId: session.id,
-        sessionDate: session.date,
-        startTime: '', // Not available in current data
-        endTime: '', // Not available in current data
-        notes: session.notes || '',
-        totalVolume: session.totalVolume || 0,
-        sessionRPE: session.sessionRPE || 0,
-        exerciseCount: session.exercises?.length || 0,
-        setCount: session.exercises?.reduce((total, ex) => total + (ex.sets?.length || 0), 0) || 0,
-        durationMinutes: 0, // TODO: calculate from timestamps
-        createdAt: '', // Not available in current data
-        updatedAt: '' // Not available in current data
-      }));
     }
 
     // Export exercise logs
@@ -505,6 +561,11 @@ export const exportData = async (userId: string, options: ExportOptions = {}) =>
             supersetId: supersetMeta.supersetId,
             supersetLabel: supersetMeta.supersetLabel,
             supersetName: supersetMeta.supersetName,
+            sourceProgramId: (log as any).sourceProgramId || '',
+            sourceProgramName: (log as any).sourceProgramName || '',
+            sourceProgramSessionId: (log as any).sourceProgramSessionId || '',
+            sourceProgramSessionName: (log as any).sourceProgramSessionName || '',
+            sourceProgramExerciseId: (log as any).sourceProgramExerciseId || '',
             category: log.collectionType,
             type: log.activityType,
             setCount: log.sets.length,
@@ -583,7 +644,7 @@ export const getExportPreview = async (userId: string, startDate?: Date, endDate
   const { start, end } = getDateRange(startDate, endDate);
 
   const [sessionsResult, logsResult] = await Promise.allSettled([
-    getUserWorkouts(userId),
+    getUserSessions(userId, start, end),
     getAggregatedExportLogs(userId, start, end),
   ]);
 
@@ -599,12 +660,7 @@ export const getExportPreview = async (userId: string, startDate?: Date, endDate
     throw new Error(`Failed to load export preview logs: ${reason}`);
   }
 
-  const sessionCount = sessionsResult.status === 'fulfilled'
-    ? sessionsResult.value.filter((session) => {
-      const sessionDate = new Date(session.date);
-      return sessionDate >= start && sessionDate <= end;
-    }).length
-    : 0;
+  const sessionCount = sessionsResult.status === 'fulfilled' ? sessionsResult.value.length : 0;
 
   const logs = logsResult.status === 'fulfilled' ? logsResult.value : [];
   const setCount = logs.reduce((sum, log) => sum + (Array.isArray(log.sets) ? log.sets.length : 0), 0);
@@ -710,11 +766,18 @@ export const downloadActivityCSVs = async (userId: string, options: ExportOption
       'sessionNumberInDay',
       'sessionNumberInWeek',
     ];
+    const programSourceHeaders = [
+      'sourceProgramId',
+      'sourceProgramName',
+      'sourceProgramSessionId',
+      'sourceProgramSessionName',
+      'sourceProgramExerciseId',
+    ];
 
     // Export Resistance Training Sets
     if (setsByActivityType.resistance.length > 0) {
       const resistanceSets = setsByActivityType.resistance;
-      const headers = [...sessionHeaders, 'loggedDate', 'exerciseName', 'supersetId', 'supersetLabel', 'supersetName', 'setNumber', 'weight', 'reps', 'rpe', 'setVolume', 'isWarmup', 'restTimeSec', 'comment'];
+      const headers = [...sessionHeaders, ...programSourceHeaders, 'loggedDate', 'exerciseName', 'supersetId', 'supersetLabel', 'supersetName', 'setNumber', 'weight', 'reps', 'rpe', 'setVolume', 'isWarmup', 'restTimeSec', 'comment'];
 
       downloadCSV(resistanceSets, headers, 'resistance_sets.csv');
       exportedFiles++;
@@ -723,7 +786,7 @@ export const downloadActivityCSVs = async (userId: string, options: ExportOption
     // Export Endurance Sets
     if (setsByActivityType.endurance.length > 0) {
       const enduranceSets = setsByActivityType.endurance;
-      const headers = [...sessionHeaders, 'loggedDate', 'exerciseName', 'supersetId', 'supersetLabel', 'supersetName', 'setNumber', 'reps', 'duration', 'distance', 'durationSec', 'distanceMeters', 'rpe', 'pace', 'averageHeartRate', 'maxHeartRate', 'averageHR', 'maxHR', 'hrZone1', 'hrZone2', 'hrZone3', 'hrZone4', 'hrZone5', 'calories', 'elevation', 'comment', 'notes'];
+      const headers = [...sessionHeaders, ...programSourceHeaders, 'loggedDate', 'exerciseName', 'supersetId', 'supersetLabel', 'supersetName', 'setNumber', 'reps', 'duration', 'distance', 'durationSec', 'distanceMeters', 'rpe', 'pace', 'averageHeartRate', 'maxHeartRate', 'averageHR', 'maxHR', 'hrZone1', 'hrZone2', 'hrZone3', 'hrZone4', 'hrZone5', 'calories', 'elevation', 'comment', 'notes'];
 
       downloadCSV(enduranceSets, headers, 'endurance_sets.csv');
       exportedFiles++;
@@ -732,7 +795,7 @@ export const downloadActivityCSVs = async (userId: string, options: ExportOption
     // Export Speed & Agility Sets
     if (setsByActivityType.speedAgility.length > 0) {
       const speedAgilitySets = setsByActivityType.speedAgility;
-      const headers = [...sessionHeaders, 'loggedDate', 'exerciseName', 'supersetId', 'supersetLabel', 'supersetName', 'setNumber', 'reps', 'durationSec', 'distanceMeters', 'height', 'rpe', 'restTimeSec', 'drillMetric', 'performance', 'intensity', 'comment', 'notes'];
+      const headers = [...sessionHeaders, ...programSourceHeaders, 'loggedDate', 'exerciseName', 'supersetId', 'supersetLabel', 'supersetName', 'setNumber', 'reps', 'durationSec', 'distanceMeters', 'height', 'rpe', 'restTimeSec', 'drillMetric', 'performance', 'intensity', 'comment', 'notes'];
 
       downloadCSV(speedAgilitySets, headers, 'speed_agility_sets.csv');
       exportedFiles++;
@@ -741,7 +804,7 @@ export const downloadActivityCSVs = async (userId: string, options: ExportOption
     // Export Stretching Sets
     if (setsByActivityType.stretching.length > 0) {
       const stretchingSets = setsByActivityType.stretching;
-      const headers = [...sessionHeaders, 'loggedDate', 'exerciseName', 'supersetId', 'supersetLabel', 'supersetName', 'setNumber', 'reps', 'durationSec', 'holdTime', 'rpe', 'intensity', 'bodyPart', 'stretchType', 'flexibility', 'comment', 'notes'];
+      const headers = [...sessionHeaders, ...programSourceHeaders, 'loggedDate', 'exerciseName', 'supersetId', 'supersetLabel', 'supersetName', 'setNumber', 'reps', 'durationSec', 'holdTime', 'rpe', 'intensity', 'bodyPart', 'stretchType', 'flexibility', 'comment', 'notes'];
 
       downloadCSV(stretchingSets, headers, 'stretching_sets.csv');
       exportedFiles++;
@@ -750,7 +813,7 @@ export const downloadActivityCSVs = async (userId: string, options: ExportOption
     // Export Sport Sets
     if (setsByActivityType.sport.length > 0) {
       const sportSets = setsByActivityType.sport;
-      const headers = [...sessionHeaders, 'loggedDate', 'exerciseName', 'supersetId', 'supersetLabel', 'supersetName', 'setNumber', 'reps', 'durationSec', 'distanceMeters', 'rpe', 'intensity', 'heartRate', 'calories', 'score', 'opponent', 'performance', 'comment', 'notes'];
+      const headers = [...sessionHeaders, ...programSourceHeaders, 'loggedDate', 'exerciseName', 'supersetId', 'supersetLabel', 'supersetName', 'setNumber', 'reps', 'durationSec', 'distanceMeters', 'rpe', 'intensity', 'heartRate', 'calories', 'score', 'opponent', 'performance', 'comment', 'notes'];
 
       downloadCSV(sportSets, headers, 'sport_sets.csv');
       exportedFiles++;
@@ -759,7 +822,7 @@ export const downloadActivityCSVs = async (userId: string, options: ExportOption
     // Export Other Sets (fallback)
     if (setsByActivityType.other.length > 0) {
       const otherSets = setsByActivityType.other;
-      const headers = [...sessionHeaders, 'loggedDate', 'exerciseName', 'supersetId', 'supersetLabel', 'supersetName', 'activityType', 'setNumber', 'reps', 'weight', 'duration', 'distance', 'durationSec', 'distanceMeters', 'height', 'rpe', 'intensity', 'pace', 'elevation', 'comment', 'notes'];
+      const headers = [...sessionHeaders, ...programSourceHeaders, 'loggedDate', 'exerciseName', 'supersetId', 'supersetLabel', 'supersetName', 'activityType', 'setNumber', 'reps', 'weight', 'duration', 'distance', 'durationSec', 'distanceMeters', 'height', 'rpe', 'intensity', 'pace', 'elevation', 'comment', 'notes'];
 
       downloadCSV(otherSets, headers, 'other_sets.csv');
       exportedFiles++;

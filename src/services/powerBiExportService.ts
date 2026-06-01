@@ -303,6 +303,11 @@ const buildGymSetRow = (
     exercise_log_id: String(s.exerciseLogId ?? ''),
     exercise_id: toExerciseId(exerciseName, ActivityType.RESISTANCE),
     exercise_name: exerciseName,
+    source_program_id: String(s.sourceProgramId ?? ''),
+    source_program_name: String(s.sourceProgramName ?? ''),
+    source_program_session_id: String(s.sourceProgramSessionId ?? ''),
+    source_program_session_name: String(s.sourceProgramSessionName ?? ''),
+    source_program_exercise_id: String(s.sourceProgramExerciseId ?? ''),
     logged_date: loggedDate,
     exercise_order: typeof s.exerciseNumber === 'number' ? s.exerciseNumber : 0,
     set_number: typeof s.setNumber === 'number' ? s.setNumber : 0,
@@ -341,6 +346,11 @@ const buildActivityRow = (
     exercise_log_id: String(s.exerciseLogId ?? ''),
     exercise_name: exerciseName,
     activity_type: activityType,
+    source_program_id: String(s.sourceProgramId ?? ''),
+    source_program_name: String(s.sourceProgramName ?? ''),
+    source_program_session_id: String(s.sourceProgramSessionId ?? ''),
+    source_program_session_name: String(s.sourceProgramSessionName ?? ''),
+    source_program_exercise_id: String(s.sourceProgramExerciseId ?? ''),
     logged_date: loggedDate,
     exercise_order: typeof s.exerciseNumber === 'number' ? s.exerciseNumber : 0,
     set_number: typeof s.setNumber === 'number' ? s.setNumber : 0,
@@ -399,6 +409,10 @@ interface SessionAccumulator {
   session_id: string;
   session_name: string;
   session_type: string;
+  source_program_id: string;
+  source_program_name: string;
+  source_program_session_id: string;
+  source_program_session_name: string;
   date: string;
   activity_types: Set<string>;
   has_warmup: boolean;
@@ -437,7 +451,13 @@ const buildFactSessions = (
     sessionId: string,
     sessionName: string,
     sessionType: string,
-    date: string
+    date: string,
+    source?: {
+      source_program_id?: string;
+      source_program_name?: string;
+      source_program_session_id?: string;
+      source_program_session_name?: string;
+    }
   ): SessionAccumulator => {
     const key = `${athleteId}::${sessionId}`;
     if (!map.has(key)) {
@@ -447,6 +467,10 @@ const buildFactSessions = (
         session_id: sessionId,
         session_name: sessionName,
         session_type: sessionType,
+        source_program_id: source?.source_program_id || '',
+        source_program_name: source?.source_program_name || '',
+        source_program_session_id: source?.source_program_session_id || '',
+        source_program_session_name: source?.source_program_session_name || '',
         date,
         activity_types: new Set(),
         has_warmup: false,
@@ -472,13 +496,24 @@ const buildFactSessions = (
         has_sports_load: false,
       });
     }
-    return map.get(key)!;
+    const acc = map.get(key)!;
+    acc.source_program_id = acc.source_program_id || source?.source_program_id || '';
+    acc.source_program_name = acc.source_program_name || source?.source_program_name || '';
+    acc.source_program_session_id = acc.source_program_session_id || source?.source_program_session_id || '';
+    acc.source_program_session_name = acc.source_program_session_name || source?.source_program_session_name || '';
+    return acc;
   };
 
   gymSets.forEach((s) => {
     if (!s.session_id) return;
     const acc = getOrCreate(
-      s.athlete_id, s.athlete_name, s.session_id, s.session_name, s.session_type, s.logged_date
+      s.athlete_id,
+      s.athlete_name,
+      s.session_id,
+      s.session_name,
+      s.session_type,
+      s.logged_date,
+      s
     );
     acc.activity_types.add('resistance');
     if (s.is_warmup) acc.has_warmup = true;
@@ -492,7 +527,13 @@ const buildFactSessions = (
   activityRows.forEach((s) => {
     if (!s.session_id) return;
     const acc = getOrCreate(
-      s.athlete_id, s.athlete_name, s.session_id, s.session_name, s.session_type, s.logged_date
+      s.athlete_id,
+      s.athlete_name,
+      s.session_id,
+      s.session_name,
+      s.session_type,
+      s.logged_date,
+      s
     );
     acc.activity_types.add(s.activity_type || 'other');
     if (s.is_warmup) acc.has_warmup = true;
@@ -570,6 +611,10 @@ const buildFactSessions = (
       athlete_name: acc.athlete_name,
       session_id: acc.session_id,
       session_name: acc.session_name,
+      source_program_id: acc.source_program_id,
+      source_program_name: acc.source_program_name,
+      source_program_session_id: acc.source_program_session_id,
+      source_program_session_name: acc.source_program_session_name,
       session_type: acc.session_type,
       date: acc.date,
       week_key: dateStringToWeekKey(acc.date),

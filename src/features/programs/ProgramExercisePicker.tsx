@@ -39,8 +39,12 @@ interface ProgramExercisePickerProps {
 export interface ProgramExerciseSelection {
   exercise: Exercise;
   sets: ExerciseSet[];
+  sourceProgramId?: string;
+  sourceProgramName?: string;
   sourceSessionId?: string;
+  sourceSessionName?: string;
   sourceIsWarmup?: boolean;
+  sourceProgramExerciseId?: string;
   sourceProgramSupersetId?: string;
   sourceProgramSupersetLabel?: string;
   sourceProgramSupersetName?: string;
@@ -202,8 +206,12 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
           supersetName: exercise.supersetName,
         },
         sets,
+        sourceProgramId: selectedProgram.id,
+        sourceProgramName: selectedProgram.name,
         sourceSessionId: session?.id,
+        sourceSessionName: session?.name,
         sourceIsWarmup: session?.isWarmupSession === true,
+        sourceProgramExerciseId: exercise.id,
         sourceProgramSupersetId: exercise.supersetId,
         sourceProgramSupersetLabel: exercise.supersetLabel,
         sourceProgramSupersetName: exercise.supersetName,

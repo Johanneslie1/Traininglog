@@ -181,6 +181,12 @@ export interface ExerciseLog {
   sharedSessionDateKey?: string;
   /** Marks that this imported exercise was actually logged/updated by athlete */
   sharedSessionExerciseCompleted?: boolean;
+  /** Program template that staged this log, if imported from a program. */
+  sourceProgramId?: string;
+  sourceProgramName?: string;
+  sourceProgramSessionId?: string;
+  sourceProgramSessionName?: string;
+  sourceProgramExerciseId?: string;
   /** Program prescription metadata for showing guide during later edits */
   prescription?: Prescription;
   /** Indicates whether guidance is structured or freeform */
