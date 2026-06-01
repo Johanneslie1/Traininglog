@@ -4,6 +4,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { requestPasswordReset } from '@/services/firebase/auth';
+import { AppLogo } from '@/components/brand';
+import { Button } from '@/components/ui';
 
 const forgotPasswordSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -33,71 +35,73 @@ const ForgotPassword = () => {
 
       await requestPasswordReset(data);
       setSuccessMessage('If an account exists for that email, a password reset link has been sent.');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Unable to send reset link. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Reset your password
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Enter your email address and we will send you a password reset link.
-          </p>
-        </div>
-
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
-          <div>
-            <label htmlFor="email" className="sr-only">
-              Email address
-            </label>
-            <input
-              {...register('email')}
-              id="email"
-              type="email"
-              autoComplete="email"
-              className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
-              placeholder="Email address"
-            />
-            {errors.email && (
-              <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
-            )}
+    <div className="min-h-[100dvh] bg-bg-primary text-text-primary flex items-center justify-center px-4 py-10">
+      <div className="w-full max-w-md">
+        <div className="rounded-3xl border border-border bg-bg-secondary p-6 shadow-2xl shadow-black/30 sm:p-8">
+          <div className="mb-8 text-center">
+            <AppLogo className="mx-auto h-16 w-16" />
+            <p className="mt-5 text-xs font-semibold uppercase tracking-[0.25em] text-text-tertiary">Gym Keeper</p>
+            <h1 className="mt-2 text-3xl font-bold text-text-primary">Reset your password</h1>
+            <p className="mt-2 text-sm text-text-secondary">
+              Enter your email address and we will send you a password reset link.
+            </p>
           </div>
 
+          <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
+            <div>
+              <label htmlFor="email" className="mb-2 block text-sm font-medium text-text-secondary">
+                Email address
+              </label>
+              <input
+                {...register('email')}
+                id="email"
+                type="email"
+                autoComplete="email"
+                className="block w-full rounded-2xl border border-border bg-bg-primary px-4 py-3 text-text-primary placeholder:text-text-tertiary outline-none transition focus:border-accent-primary focus:ring-2 focus:ring-focus-ring/40"
+                placeholder="you@example.com"
+              />
+              {errors.email && (
+                <p className="mt-2 text-sm text-error-text">{errors.email.message}</p>
+              )}
+            </div>
+
           {error && (
-            <div className="text-sm text-red-600 text-center">{error}</div>
+              <div className="rounded-xl border border-error-border bg-error-bg px-4 py-3 text-sm text-error-text">
+                {error}
+              </div>
           )}
 
           {successMessage && (
-            <div className="text-sm text-green-700 text-center">{successMessage}</div>
+              <div className="rounded-xl border border-success-border bg-success-bg px-4 py-3 text-sm text-success-text">
+                {successMessage}
+              </div>
           )}
 
-          <div>
-            <button
+            <Button
               type="submit"
-              disabled={isLoading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
+              isLoading={isLoading}
+              fullWidth
             >
-              {isLoading ? 'Sending reset link...' : 'Send reset link'}
-            </button>
-          </div>
+              Send reset link
+            </Button>
 
-          <div className="text-center">
             <button
               type="button"
               onClick={() => navigate('/login')}
-              className="text-sm font-medium text-primary-600 hover:text-primary-700 underline"
+              className="block w-full text-center text-sm font-medium text-accent-primary hover:text-accent-hover underline"
             >
               Back to sign in
             </button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
   );

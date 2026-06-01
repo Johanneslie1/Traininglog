@@ -113,18 +113,24 @@ interface RoleRouteProps {
   redirectTo: string;
 }
 
+const RouteLoading: React.FC<{ label?: string }> = ({ label = 'Loading...' }) => (
+  <div className="flex min-h-[100dvh] items-center justify-center bg-bg-primary px-4 text-text-primary">
+    <div className="rounded-2xl border border-border bg-bg-secondary px-5 py-4 shadow-lg">
+      <div className="flex items-center gap-3">
+        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-t-2 border-accent-primary" />
+        <span className="text-sm font-medium text-text-secondary">{label}</span>
+      </div>
+    </div>
+  </div>
+);
+
 // Protected Route wrapper
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { isAuthenticated, isLoading } = useSelector((state: RootState) => state.auth);
   // Remove verbose logging - this component renders frequently
   
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[100dvh] bg-bg-primary text-text-primary">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
-        <div className="ml-3 text-text-primary">Loading authentication...</div>
-      </div>
-    );
+    return <RouteLoading label="Loading authentication..." />;
   }
 
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
@@ -144,12 +150,7 @@ const RoleRoute: React.FC<RoleRouteProps> = ({ children, allowedRole, redirectTo
 const AppRoutes: React.FC = () => {
   // Remove frequent rendering log
   return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center min-h-[100dvh] bg-bg-primary text-text-primary">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
-        <div className="ml-3 text-text-primary">Loading...</div>
-      </div>
-    }>
+    <Suspense fallback={<RouteLoading />}>
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -310,7 +311,7 @@ const AppRoutes: React.FC = () => {
           path="/debug"
           element={
             <ProtectedRoute>
-              <Debug />
+              {import.meta.env.DEV ? <Debug /> : <Navigate to="/" replace />}
             </ProtectedRoute>
           }
         />

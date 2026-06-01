@@ -13,3 +13,5 @@ export { default as EmptyState } from './EmptyState';
 export { default as Card, CardHeader, CardBody, CardFooter } from './Card';
 
 export { default as DashboardSection } from './DashboardSection';
+
+export { default as ConfirmDialog } from './ConfirmDialog';

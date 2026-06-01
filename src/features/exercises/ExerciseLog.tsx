@@ -25,7 +25,7 @@ import {
 import DraggableExerciseDisplay from '../../components/DraggableExerciseDisplay';
 import FloatingSupersetControls from '../../components/FloatingSupersetControls';
 import { getAllExercisesByDate, UnifiedExerciseData, deleteExercise } from '../../utils/unifiedExerciseUtils';
-import { FloatingActionButton, EmptyState, ExerciseListSkeleton } from '../../components/ui';
+import { ConfirmDialog, FloatingActionButton, EmptyState, ExerciseListSkeleton } from '../../components/ui';
 import { getSharedSessionAssignment, updateSharedSessionStatus } from '@/services/sessionService';
 import { createNewSessionForDate, getSessionsForDate, SessionInfo, deleteSession, renameSession } from '@/services/firebase/sessionTrackingService';
 import { normalizeActivityType } from '@/types/activityLog';
@@ -122,6 +122,13 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     defaultName: string;
     value: string;
   } | null>(null);
+  const [pendingDeleteExercise, setPendingDeleteExercise] = useState<UnifiedExerciseData | null>(null);
+  const [deletingExerciseId, setDeletingExerciseId] = useState<string | null>(null);
+  const [pendingDeleteSession, setPendingDeleteSession] = useState<{
+    sessionId: string;
+    label: string;
+  } | null>(null);
+  const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastLoadedDateKeyRef = useRef<string | null>(null);
   const [selectedExercise, setSelectedExercise] = useState<ExerciseData | null>(null);
@@ -439,20 +446,27 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
       }
     } catch (error) {
       console.error('❌ Error saving exercise sets:', error);
-      alert('Failed to save exercise sets. Please try again.');
+      toast.error('Failed to save exercise sets. Please try again.');
     }
   }, [selectedExercise, user, selectedDate, exercises, state.supersets, handleCloseSetLogger, loadExercises, hasMeaningfulSetData, syncSharedAssignmentCompletion, getDateKey, currentSessionType, selectedSessionId, availableSessions]);
 
-  const handleDeleteExercise = async (exercise: UnifiedExerciseData) => {
+  const handleDeleteExercise = (exercise: UnifiedExerciseData) => {
     if (!user?.id) {
       console.error('Cannot delete exercise: missing user ID', { userId: user?.id });
-      alert('Cannot delete exercise: user not authenticated');
+      toast.error('Cannot delete exercise: user not authenticated');
       return;
     }
-    
-    if (!window.confirm('Are you sure you want to delete this exercise?')) {
+
+    setPendingDeleteExercise(exercise);
+  };
+
+  const confirmDeleteExercise = async () => {
+    if (!user?.id || !pendingDeleteExercise) {
       return;
     }
+
+    const exercise = pendingDeleteExercise;
+    setDeletingExerciseId(exercise.id || exercise.exerciseName);
 
     // Optimistically update UI
     setExercises(prev => prev.filter(ex => ex.id !== exercise.id));
@@ -471,6 +485,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
       
       if (deleteResult) {
         console.log('✅ Exercise deleted successfully');
+        setPendingDeleteExercise(null);
         
         // Remove exercise from any superset it might be in
         if (exercise.id) {
@@ -491,10 +506,12 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
       
       // Show a more specific error message
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      alert(`Failed to delete exercise: ${errorMessage}`);
+      toast.error(`Failed to delete exercise: ${errorMessage}`);
 
       // Reload exercises to ensure UI is in sync
       await loadExercises(selectedDate);
+    } finally {
+      setDeletingExerciseId(null);
     }
   };
   
@@ -613,11 +630,18 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   const handleDeleteSession = useCallback(async (sessionId: string, sessionNumber: number, sessionType: SessionType, sessionName?: string) => {
     if (!user?.id) return;
     const label = sessionName || `${getSessionTypeLabel(sessionType)} ${sessionNumber}`;
-    if (!window.confirm(`Delete "${label}" and all its exercises? This cannot be undone.`)) return;
+    setPendingDeleteSession({ sessionId, label });
+  }, [user?.id]);
 
+  const confirmDeleteSession = useCallback(async () => {
+    if (!user?.id || !pendingDeleteSession) return;
+
+    const { sessionId, label } = pendingDeleteSession;
+    setDeletingSessionId(sessionId);
     try {
       await deleteSession(user.id, sessionId);
       toast.success(`${label} deleted`);
+      setPendingDeleteSession(null);
       const sessions = await getSessionsForDate(user.id, selectedDate);
       setAvailableSessions(sessions);
       if (selectedSessionId === sessionId) {
@@ -628,8 +652,10 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     } catch (error) {
       console.error('Failed to delete session:', error);
       toast.error('Could not delete session. Please try again.');
+    } finally {
+      setDeletingSessionId(null);
     }
-  }, [user?.id, selectedDate, selectedSessionId, loadExercises]);
+  }, [user?.id, pendingDeleteSession, selectedDate, selectedSessionId, loadExercises]);
 
   const handleRenameCommit = useCallback(async () => {
     if (!user?.id || !renamingSessionId) { setRenamingSessionId(null); return; }
@@ -1281,6 +1307,38 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={pendingDeleteExercise !== null}
+        title="Delete exercise?"
+        description={`This will remove "${pendingDeleteExercise?.exerciseName ?? 'this exercise'}" from the selected day.`}
+        confirmLabel="Delete exercise"
+        isConfirming={deletingExerciseId !== null}
+        onCancel={() => {
+          if (!deletingExerciseId) {
+            setPendingDeleteExercise(null);
+          }
+        }}
+        onConfirm={() => {
+          void confirmDeleteExercise();
+        }}
+      />
+
+      <ConfirmDialog
+        isOpen={pendingDeleteSession !== null}
+        title="Delete session?"
+        description={`This will delete "${pendingDeleteSession?.label ?? 'this session'}" and all exercises inside it. This action cannot be undone.`}
+        confirmLabel="Delete session"
+        isConfirming={deletingSessionId !== null}
+        onCancel={() => {
+          if (!deletingSessionId) {
+            setPendingDeleteSession(null);
+          }
+        }}
+        onConfirm={() => {
+          void confirmDeleteSession();
+        }}
+      />
     </div>
   );
 };

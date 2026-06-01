@@ -5,7 +5,7 @@ import CreateNewProgram from './CreateNewProgram';
 import { Program } from '@/types/program';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { TrashIcon, PlusIcon, DuplicateIcon } from '@heroicons/react/outline';
-import { Button, EmptyState } from '@/components/ui';
+import { Button, ConfirmDialog, EmptyState } from '@/components/ui';
 
 const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onSelect }) => {
   const navigate = useNavigate();
@@ -14,6 +14,7 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
   const [error, setError] = useState<string | null>(null);
   const [deletingProgramId, setDeletingProgramId] = useState<string | null>(null);
   const [duplicatingProgramId, setDuplicatingProgramId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
 
   // No need for useEffect to refresh - ProgramsContext handles this automatically
 
@@ -41,24 +42,29 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
 
   const handleDeleteProgram = async (programId: string, programName: string, event: React.MouseEvent) => {
     event.stopPropagation(); // Prevent card click navigation
-    
-    if (window.confirm(`Are you sure you want to delete the program "${programName}"? This action cannot be undone.`)) {
-      setDeletingProgramId(programId);
-      setError(null);
-      
-      try {
-        console.log('[ProgramList] Deleting program:', programId);
-        await deleteProgram(programId);
-        console.log('[ProgramList] Program deleted successfully');
-        // Refresh the programs list
-        await refresh();
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to delete program';
-        console.error('[ProgramList] Error deleting program:', err);
-        setError(errorMessage);
-      } finally {
-        setDeletingProgramId(null);
-      }
+    setPendingDelete({ id: programId, name: programName });
+  };
+
+  const confirmDeleteProgram = async () => {
+    if (!pendingDelete) {
+      return;
+    }
+
+    setDeletingProgramId(pendingDelete.id);
+    setError(null);
+
+    try {
+      console.log('[ProgramList] Deleting program:', pendingDelete.id);
+      await deleteProgram(pendingDelete.id);
+      console.log('[ProgramList] Program deleted successfully');
+      setPendingDelete(null);
+      await refresh();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete program';
+      console.error('[ProgramList] Error deleting program:', err);
+      setError(errorMessage);
+    } finally {
+      setDeletingProgramId(null);
     }
   };
 
@@ -195,6 +201,22 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
           onSave={handleCreateNewSave}
         />
       )}
+
+      <ConfirmDialog
+        isOpen={pendingDelete !== null}
+        title="Delete program?"
+        description={`This will permanently delete "${pendingDelete?.name ?? 'this program'}". This action cannot be undone.`}
+        confirmLabel="Delete program"
+        isConfirming={deletingProgramId === pendingDelete?.id}
+        onCancel={() => {
+          if (!deletingProgramId) {
+            setPendingDelete(null);
+          }
+        }}
+        onConfirm={() => {
+          void confirmDeleteProgram();
+        }}
+      />
     </div>
   );
 };

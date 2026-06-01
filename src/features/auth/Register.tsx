@@ -6,6 +6,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { registerUser } from '@/services/firebase/auth';
 import { setUser } from '@/features/auth/authSlice';
+import { AppLogo } from '@/components/brand';
+import { Button } from '@/components/ui';
 
 const registerSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -37,55 +39,63 @@ const Register = () => {
       const user = await registerUser(data);
       dispatch(setUser(user));
       navigate('/');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Unable to create your account. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Create your account
-          </h2>
-        </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
-          <div className="rounded-md shadow-sm -space-y-px">
-            <div>
-              <label htmlFor="firstName" className="sr-only">
-                First Name
-              </label>
-              <input
-                {...register('firstName')}
-                id="firstName"
-                type="text"
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
-                placeholder="First Name"
-              />
-              {errors.firstName && (
-                <p className="mt-1 text-sm text-red-600">{errors.firstName.message}</p>
-              )}
+    <div className="min-h-[100dvh] bg-bg-primary text-text-primary flex items-center justify-center px-4 py-10">
+      <div className="w-full max-w-md">
+        <div className="rounded-3xl border border-border bg-bg-secondary p-6 shadow-2xl shadow-black/30 sm:p-8">
+          <div className="mb-8 text-center">
+            <AppLogo className="mx-auto h-16 w-16" />
+            <p className="mt-5 text-xs font-semibold uppercase tracking-[0.25em] text-text-tertiary">Gym Keeper</p>
+            <h1 className="mt-2 text-3xl font-bold text-text-primary">Create your account</h1>
+            <p className="mt-2 text-sm text-text-secondary">Start with an athlete workspace. Coach tools can be enabled when your role is upgraded.</p>
+          </div>
+
+          <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor="firstName" className="mb-2 block text-sm font-medium text-text-secondary">
+                  First name
+                </label>
+                <input
+                  {...register('firstName')}
+                  id="firstName"
+                  type="text"
+                  autoComplete="given-name"
+                  className="block w-full rounded-2xl border border-border bg-bg-primary px-4 py-3 text-text-primary placeholder:text-text-tertiary outline-none transition focus:border-accent-primary focus:ring-2 focus:ring-focus-ring/40"
+                  placeholder="First"
+                />
+                {errors.firstName && (
+                  <p className="mt-2 text-sm text-error-text">{errors.firstName.message}</p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="lastName" className="mb-2 block text-sm font-medium text-text-secondary">
+                  Last name
+                </label>
+                <input
+                  {...register('lastName')}
+                  id="lastName"
+                  type="text"
+                  autoComplete="family-name"
+                  className="block w-full rounded-2xl border border-border bg-bg-primary px-4 py-3 text-text-primary placeholder:text-text-tertiary outline-none transition focus:border-accent-primary focus:ring-2 focus:ring-focus-ring/40"
+                  placeholder="Last"
+                />
+                {errors.lastName && (
+                  <p className="mt-2 text-sm text-error-text">{errors.lastName.message}</p>
+                )}
+              </div>
             </div>
+
             <div>
-              <label htmlFor="lastName" className="sr-only">
-                Last Name
-              </label>
-              <input
-                {...register('lastName')}
-                id="lastName"
-                type="text"
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
-                placeholder="Last Name"
-              />
-              {errors.lastName && (
-                <p className="mt-1 text-sm text-red-600">{errors.lastName.message}</p>
-              )}
-            </div>
-            <div>
-              <label htmlFor="email" className="sr-only">
+              <label htmlFor="email" className="mb-2 block text-sm font-medium text-text-secondary">
                 Email address
               </label>
               <input
@@ -93,15 +103,16 @@ const Register = () => {
                 id="email"
                 type="email"
                 autoComplete="email"
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
-                placeholder="Email address"
+                className="block w-full rounded-2xl border border-border bg-bg-primary px-4 py-3 text-text-primary placeholder:text-text-tertiary outline-none transition focus:border-accent-primary focus:ring-2 focus:ring-focus-ring/40"
+                placeholder="you@example.com"
               />
               {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+                <p className="mt-2 text-sm text-error-text">{errors.email.message}</p>
               )}
             </div>
+
             <div>
-              <label htmlFor="password" className="sr-only">
+              <label htmlFor="password" className="mb-2 block text-sm font-medium text-text-secondary">
                 Password
               </label>
               <input
@@ -109,42 +120,40 @@ const Register = () => {
                 id="password"
                 type="password"
                 autoComplete="new-password"
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
-                placeholder="Password"
+                className="block w-full rounded-2xl border border-border bg-bg-primary px-4 py-3 text-text-primary placeholder:text-text-tertiary outline-none transition focus:border-accent-primary focus:ring-2 focus:ring-focus-ring/40"
+                placeholder="At least 6 characters"
               />
               {errors.password && (
-                <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+                <p className="mt-2 text-sm text-error-text">{errors.password.message}</p>
               )}
             </div>
-          </div>
 
           {error && (
-            <div className="text-sm text-red-600 text-center">{error}</div>
+              <div className="rounded-xl border border-error-border bg-error-bg px-4 py-3 text-sm text-error-text">
+                {error}
+              </div>
           )}
 
-          <div>
-            <button
+            <Button
               type="submit"
-              disabled={isLoading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
+              isLoading={isLoading}
+              fullWidth
             >
-              {isLoading ? 'Creating account...' : 'Create account'}
-            </button>
-          </div>
+              Create account
+            </Button>
 
-          <div className="text-center">
-            <p className="text-sm text-gray-600">
+            <p className="text-center text-sm text-text-secondary">
               Already have an account?{' '}
               <button
                 type="button"
                 onClick={() => navigate('/login')}
-                className="font-medium text-primary-600 hover:text-primary-700 underline"
+                className="font-medium text-accent-primary hover:text-accent-hover underline"
               >
                 Sign in
               </button>
             </p>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
   );

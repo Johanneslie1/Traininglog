@@ -90,16 +90,13 @@ const App: React.FC = () => {
 
   if (!isAuthInitialized) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        minHeight: '100dvh',
-        backgroundColor: 'var(--color-bg-primary)',
-        color: 'var(--color-text-primary)',
-        fontSize: '1.2em' 
-      }}>
-        Initializing...
+      <div className="flex min-h-[100dvh] items-center justify-center bg-bg-primary px-4 text-text-primary">
+        <div className="rounded-2xl border border-border bg-bg-secondary px-5 py-4 shadow-lg">
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-t-2 border-accent-primary" />
+            <span className="text-sm font-medium text-text-secondary">Initializing...</span>
+          </div>
+        </div>
       </div>
     );
   }

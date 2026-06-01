@@ -6,7 +6,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { loginUser } from '@/services/firebase/auth';
 import { setUser } from '@/features/auth/authSlice';
-import { auth } from '@/services/firebase/config';
+import { AppLogo } from '@/components/brand';
+import { Button } from '@/components/ui';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -32,62 +33,32 @@ const Login = () => {
     try {
       setIsLoading(true);
       setError('');
-      console.log('Attempting login...');
-      
-      // Test mode bypass for testing purposes
-      if (data.email === 'test@test.com' && data.password === 'test123') {
-        console.log('Using test mode bypass');
-        const testUser = {
-          id: 'test-user-id',
-          email: 'test@test.com',
-          firstName: 'Test',
-          lastName: 'User',
-          role: 'athlete' as const,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-        dispatch(setUser(testUser));
-        // Mock Firebase auth state for test user
-        Object.defineProperty(auth, 'currentUser', {
-          get: () => ({
-            uid: 'test-user-id',
-            email: 'test@test.com'
-          }),
-          configurable: true
-        });
-        console.log('Test user dispatched to Redux store and Firebase auth mocked');
-        navigate('/');
-        console.log('Navigation attempted');
-        return;
-      }
-      
+
       const user = await loginUser(data);
-      console.log('Login successful, user:', user);
       dispatch(setUser(user));
-      console.log('User dispatched to Redux store');
-      // Navigate to root which has the protected route with ExerciseLog
       navigate('/');
-      console.log('Navigation attempted');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Login error:', err);
-      setError(err.message);
+      setError(err instanceof Error ? err.message : 'Unable to sign in. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Sign in to your account
-          </h2>
-        </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
-          <div className="rounded-md shadow-sm -space-y-px">
+    <div className="min-h-[100dvh] bg-bg-primary text-text-primary flex items-center justify-center px-4 py-10">
+      <div className="w-full max-w-md">
+        <div className="rounded-3xl border border-border bg-bg-secondary p-6 shadow-2xl shadow-black/30 sm:p-8">
+          <div className="mb-8 text-center">
+            <AppLogo className="mx-auto h-16 w-16" />
+            <p className="mt-5 text-xs font-semibold uppercase tracking-[0.25em] text-text-tertiary">Gym Keeper</p>
+            <h1 className="mt-2 text-3xl font-bold text-text-primary">Welcome back</h1>
+            <p className="mt-2 text-sm text-text-secondary">Sign in to log training, review progress, and stay connected.</p>
+          </div>
+
+          <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
             <div>
-              <label htmlFor="email" className="sr-only">
+              <label htmlFor="email" className="mb-2 block text-sm font-medium text-text-secondary">
                 Email address
               </label>
               <input
@@ -95,15 +66,16 @@ const Login = () => {
                 id="email"
                 type="email"
                 autoComplete="email"
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
-                placeholder="Email address"
+                className="block w-full rounded-2xl border border-border bg-bg-primary px-4 py-3 text-text-primary placeholder:text-text-tertiary outline-none transition focus:border-accent-primary focus:ring-2 focus:ring-focus-ring/40"
+                placeholder="you@example.com"
               />
               {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+                <p className="mt-2 text-sm text-error-text">{errors.email.message}</p>
               )}
             </div>
+
             <div>
-              <label htmlFor="password" className="sr-only">
+              <label htmlFor="password" className="mb-2 block text-sm font-medium text-text-secondary">
                 Password
               </label>
               <input
@@ -111,52 +83,50 @@ const Login = () => {
                 id="password"
                 type="password"
                 autoComplete="current-password"
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
-                placeholder="Password"
+                className="block w-full rounded-2xl border border-border bg-bg-primary px-4 py-3 text-text-primary placeholder:text-text-tertiary outline-none transition focus:border-accent-primary focus:ring-2 focus:ring-focus-ring/40"
+                placeholder="Enter your password"
               />
               {errors.password && (
-                <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+                <p className="mt-2 text-sm text-error-text">{errors.password.message}</p>
               )}
             </div>
-          </div>
 
           {error && (
-            <div className="text-sm text-red-600 text-center">{error}</div>
+              <div className="rounded-xl border border-error-border bg-error-bg px-4 py-3 text-sm text-error-text">
+                {error}
+              </div>
           )}
 
-          <div className="text-right">
+            <div className="text-right">
             <button
               type="button"
               onClick={() => navigate('/forgot-password')}
-              className="text-sm font-medium text-primary-600 hover:text-primary-700 underline"
+                className="text-sm font-medium text-accent-primary hover:text-accent-hover underline"
             >
               Forgot password?
             </button>
-          </div>
+            </div>
 
-          <div>
-            <button
+            <Button
               type="submit"
-              disabled={isLoading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
+              isLoading={isLoading}
+              fullWidth
             >
-              {isLoading ? 'Signing in...' : 'Sign in'}
-            </button>
-          </div>
+              Sign in
+            </Button>
 
-          <div className="text-center">
-            <p className="text-sm text-gray-600">
+            <p className="text-center text-sm text-text-secondary">
               New user?{' '}
               <button
                 type="button"
                 onClick={() => navigate('/register')}
-                className="font-medium text-primary-600 hover:text-primary-700 underline"
+                className="font-medium text-accent-primary hover:text-accent-hover underline"
               >
                 Create account
               </button>
             </p>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
   );
