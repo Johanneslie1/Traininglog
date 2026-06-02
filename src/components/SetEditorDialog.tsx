@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { ExerciseSet } from '@/types/sets';
 import { DifficultyCategory } from '@/types/difficulty';
 import { format } from 'date-fns';
 import { toast } from 'react-hot-toast';
+import AppOverlay from '@/components/ui/AppOverlay';
 
 interface SetEditorDialogProps {
   onSave: (set: ExerciseSet) => void;
@@ -79,10 +81,18 @@ export const SetEditorDialog: React.FC<SetEditorDialogProps> = ({
     });
   }, [previousSet, setNumber, totalSets, initialSet]);
 
-  return (
-    <div className="fixed inset-0 bg-black/95 flex flex-col z-50 max-w-[100vw] overflow-x-hidden">
+  const dialog = (
+    <AppOverlay
+      isOpen={true}
+      onClose={onClose}
+      closeOnBackdrop={false}
+      closeOnEscape={false}
+      className="z-[90] flex flex-col bg-bg-primary text-text-primary overflow-hidden"
+      ariaLabel={`Edit set for ${exerciseName || 'exercise'}`}
+    >
+      <div className="flex h-full min-h-0 w-full flex-col bg-bg-primary">
       {/* Header */}
-      <header className="px-4 py-3 border-b border-border shrink-0">
+      <header className="px-4 py-3 border-b border-border bg-bg-secondary shrink-0">
         <div className="flex items-center justify-between mb-1">
           <h2 className="text-xl font-bold text-text-primary truncate flex-1">
             {exerciseName}
@@ -90,7 +100,7 @@ export const SetEditorDialog: React.FC<SetEditorDialogProps> = ({
           {previousSet && (
             <button
               onClick={handleCopyPreviousSet}
-              className="ml-2 w-[44px] h-[44px] rounded-lg bg-white/5 hover:bg-white/10 text-text-primary flex items-center justify-center shrink-0 group relative"
+              className="ml-2 w-[44px] h-[44px] rounded-lg bg-bg-tertiary hover:bg-hover-overlay text-text-primary flex items-center justify-center shrink-0 group relative"
               aria-label={`Copy values from previous set (${previousSet.weight}kg × ${previousSet.reps})`}
               title={`Copy previous set: ${previousSet.weight}kg × ${previousSet.reps}`}
             >
@@ -98,7 +108,7 @@ export const SetEditorDialog: React.FC<SetEditorDialogProps> = ({
                 <path d="M7 9a2 2 0 012-2h6a2 2 0 012 2v6a2 2 0 01-2 2H9a2 2 0 01-2-2V9z" />
                 <path d="M5 3a2 2 0 00-2 2v6a2 2 0 002 2V5h8a2 2 0 00-2-2H5z" />
               </svg>
-              <span className="absolute bottom-full right-0 mb-2 px-2 py-1 text-sm bg-black/90 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+              <span className="absolute bottom-full right-0 mb-2 px-2 py-1 text-sm bg-bg-secondary border border-border rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                 Copy: {previousSet.weight}kg × {previousSet.reps}
               </span>
             </button>
@@ -115,7 +125,7 @@ export const SetEditorDialog: React.FC<SetEditorDialogProps> = ({
       </header>
 
       {/* Main Content - Scrollable if needed */}
-      <main className="flex-1 overflow-y-auto px-4 py-6 space-y-6 max-w-full">
+      <main className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-6 space-y-6 max-w-full">
         {/* Weight Input */}
         <div className="space-y-2 max-w-full">
           <label className="text-lg text-text-primary">Weight (kg)</label>
@@ -210,12 +220,12 @@ export const SetEditorDialog: React.FC<SetEditorDialogProps> = ({
       </main>
 
       {/* Footer */}
-      <footer className="px-4 py-3 border-t border-border shrink-0">
+      <footer className="px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] border-t border-border bg-bg-secondary shrink-0">
         <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-3">
           {onDelete && (
             <button
               onClick={onDelete}
-              className="w-full sm:w-auto px-6 py-3 rounded-lg bg-red-500/10 text-red-500 font-medium min-h-[44px]"
+              className="w-full sm:w-auto px-6 py-3 rounded-lg bg-error-bg text-error-text font-medium min-h-[44px]"
             >
               Delete Set
             </button>
@@ -223,7 +233,7 @@ export const SetEditorDialog: React.FC<SetEditorDialogProps> = ({
           <div className="flex items-stretch sm:items-center gap-3 flex-1 w-full sm:w-auto justify-end">
             <button
               onClick={onClose}
-              className="flex-1 sm:flex-initial px-6 py-3 rounded-lg bg-white/10 text-text-primary font-medium min-h-[44px]"
+              className="flex-1 sm:flex-initial px-6 py-3 rounded-lg bg-bg-tertiary text-text-primary font-medium min-h-[44px]"
             >
               Cancel
             </button>
@@ -236,8 +246,15 @@ export const SetEditorDialog: React.FC<SetEditorDialogProps> = ({
           </div>
         </div>
       </footer>
-    </div>
+      </div>
+    </AppOverlay>
   );
+
+  if (typeof document === 'undefined') {
+    return dialog;
+  }
+
+  return createPortal(dialog, document.body);
 };
 
 export default SetEditorDialog;

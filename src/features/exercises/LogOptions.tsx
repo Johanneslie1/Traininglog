@@ -7,7 +7,7 @@ import { ExerciseSet } from '@/types/sets';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import CopyFromPreviousSessionDialog from './CopyFromPreviousSessionDialog';
-import CategoryButton, { Category } from './CategoryButton';
+import type { Category } from './CategoryButton';
 import ProgramExercisePicker from '@/features/programs/ProgramExercisePicker';
 import { ProgramExerciseSelection } from '@/features/programs/ProgramExercisePicker';
 import { UniversalSetLogger } from '@/components/UniversalSetLogger';
@@ -51,7 +51,7 @@ type ViewState = 'main' | 'setEditor' | 'programPicker' | 'copyPrevious' | 'stre
 
 const helperCategories: Category[] = [
   { id: 'programs', name: 'Add from Program', icon: '📋', bgColor: 'bg-bg-tertiary', iconBgColor: 'bg-accent-primary', textColor: 'text-text-primary' },
-  { id: 'copyPrevious', name: 'Copy from Previous', icon: '📝', bgColor: 'bg-bg-tertiary', iconBgColor: 'bg-blue-600', textColor: 'text-text-primary' },
+  { id: 'copyPrevious', name: 'Copy from Previous', icon: '📝', bgColor: 'bg-bg-tertiary', iconBgColor: 'bg-accent-primary', textColor: 'text-text-primary' },
 ];
 
 // Activity types for the main selection
@@ -61,8 +61,8 @@ const activityTypes = [
     name: 'Resistance Training',
     description: 'Weight lifting, strength training',
     icon: '🏋️‍♂️',
-    bgColor: 'bg-blue-600 dark:bg-blue-600',
-    textColor: 'text-white',
+    accentTextColor: 'text-activity-resistance',
+    iconBgColor: 'bg-activity-resistance-bg',
     examples: 'Squats, Deadlifts, Bench Press'
   },
   {
@@ -70,8 +70,8 @@ const activityTypes = [
     name: 'Stretching & Flexibility',
     description: 'Static stretches, yoga, mobility',
     icon: '🧘‍♀️',
-    bgColor: 'bg-accent-primary dark:bg-accent-primary',
-    textColor: 'text-white',
+    accentTextColor: 'text-activity-stretching',
+    iconBgColor: 'bg-activity-stretching-bg',
     examples: 'Yoga, Static Stretches, PNF'
   },
   {
@@ -79,26 +79,26 @@ const activityTypes = [
     name: 'Endurance Training',
     description: 'Cardio, running, cycling',
     icon: '🏃‍♂️',
-    bgColor: 'bg-red-600 dark:bg-red-600',
-    textColor: 'text-white',
+    accentTextColor: 'text-activity-endurance',
+    iconBgColor: 'bg-activity-endurance-bg',
     examples: 'Running, Cycling, Swimming'
   },
   {
     id: 'speedAgility',
-  name: 'Speed, Agility & Plyometrics',
-  description: 'Sprints, jumps, plyometrics, change of direction',
+    name: 'Speed, Agility & Plyometrics',
+    description: 'Sprints, jumps, plyometrics, change of direction',
     icon: '⚡',
-    bgColor: 'bg-amber-600 dark:bg-amber-600',
-    textColor: 'text-white',
-  examples: 'Plyometrics, Ladder, Sprints, Jumps'
+    accentTextColor: 'text-activity-speed',
+    iconBgColor: 'bg-activity-speed-bg',
+    examples: 'Plyometrics, Ladder, Sprints, Jumps'
   },
   {
     id: 'other',
     name: 'Other Activities',
     description: 'Custom activities and tracking',
     icon: '🎯',
-    bgColor: 'bg-gray-600 dark:bg-gray-600',
-    textColor: 'text-white',
+    accentTextColor: 'text-activity-other',
+    iconBgColor: 'bg-activity-other-bg',
     examples: 'Meditation, Therapy, Custom'
   }
 ];
@@ -174,6 +174,21 @@ export const LogOptions = ({
         setView('main');
     }
   };
+
+  const handleActivityTypeSelected = (activityTypeId: string) => {
+    if (activityTypeId === 'resistance') {
+      setView('resistance');
+    } else if (activityTypeId === 'stretching') {
+      setView('stretching');
+    } else if (activityTypeId === 'endurance') {
+      setView('endurance');
+    } else if (activityTypeId === 'other') {
+      setView('other');
+    } else if (activityTypeId === 'speedAgility') {
+      setView('speedAgility');
+    }
+  };
+
   const handleProgramSelected = async (exercises: ProgramExerciseSelection[]) => {
     const userId = user?.id || auth.currentUser?.uid;
 
@@ -735,17 +750,22 @@ export const LogOptions = ({
     <AppOverlay
       isOpen={true}
       onClose={onClose}
-      className="z-50 flex flex-col bg-black/90"
+      className="z-50 flex flex-col !bg-bg-primary !backdrop-blur-none"
       ariaLabel={editingExercise ? 'Edit exercise' : 'Add exercise'}
     >
       {/* Header - Fixed at top */}
-      <header className="sticky top-0 flex items-center justify-between p-4 bg-bg-secondary border-b border-border">
-        <h2 className="text-xl font-bold text-text-primary">
-          {editingExercise ? 'Edit Exercise' : 'Add Exercise'}
-        </h2>
+      <header className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-border bg-bg-secondary px-4 py-4">
+        <div className="min-w-0 flex-1">
+          <h2 className="text-xl font-bold text-text-primary">
+            {editingExercise ? 'Edit Exercise' : 'Add Exercise'}
+          </h2>
+          <p className="mt-1 text-sm text-text-tertiary">
+            Choose how you want to add training to this session.
+          </p>
+        </div>
         <button 
           onClick={onClose}
-          className="p-2 hover:bg-white/10 rounded-lg transition-colors text-text-tertiary hover:text-text-primary"
+          className="shrink-0 rounded-xl p-2 text-text-tertiary transition-colors hover:bg-hover-overlay hover:text-text-primary"
           aria-label="Close"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -755,16 +775,18 @@ export const LogOptions = ({
       </header>
 
       {/* Main Content - Scrollable */}
-      <main className="flex-1 overflow-y-auto overscroll-contain pb-safe min-h-0">
-        <div className="max-w-md mx-auto p-4 space-y-6 md:space-y-8">
+      <main className="flex-1 min-h-0 overflow-y-auto overscroll-contain bg-bg-primary">
+        <div className="mx-auto w-full max-w-xl space-y-6 px-4 py-5 pb-[calc(env(safe-area-inset-bottom)+1.25rem)] md:space-y-8 md:py-6">
           {/* Quick Add Section */}
           <section className="space-y-3 md:space-y-4">
-            <h3 className="text-lg font-semibold text-text-primary">Quick Add</h3>
-            <div className="grid grid-cols-2 gap-3 md:gap-4">
+            <div>
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-text-tertiary">Quick Add</h3>
+              <p className="mt-1 text-sm text-text-secondary">Reuse structured work without searching manually.</p>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {helperCategories.map(category => (
-                <CategoryButton
+                <button
                   key={category.id}
-                  category={category}
                   onClick={() => {
                     if (category.id === 'programs') {
                       setView('programPicker');
@@ -772,75 +794,84 @@ export const LogOptions = ({
                       setView('copyPrevious');
                     }
                   }}
-                />
+                  className="group flex min-h-[88px] items-center gap-4 rounded-2xl border border-border bg-bg-secondary p-4 text-left text-text-primary transition-colors hover:border-border-hover hover:bg-hover-overlay active:bg-active-overlay focus:outline-none focus:ring-2 focus:ring-focus-ring"
+                >
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-accent-primary text-2xl text-text-on-accent shadow-sm transition-transform group-active:scale-95">
+                    {category.icon}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-semibold">{category.name}</span>
+                    <span className="mt-1 block text-sm text-text-tertiary">
+                      {category.id === 'programs' ? 'Pick exercises from a plan' : 'Repeat sets from history'}
+                    </span>
+                  </span>
+                  <svg className="h-5 w-5 shrink-0 text-text-tertiary transition-transform group-hover:translate-x-0.5 group-hover:text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
               ))}
             </div>
-            <div className="w-full px-4 py-3 rounded-xl border bg-white/10 border-border text-text-primary">
-              <div className="font-semibold">
-                Saving to {effectiveSessionType === 'warmup' ? 'Warm-up session' : 'Session'}
+            <div className="w-full rounded-2xl border border-border bg-bg-secondary px-4 py-3 text-text-primary">
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-info-bg text-info-text">
+                  <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fillRule="evenodd" d="M18 10A8 8 0 112 10a8 8 0 0116 0zM9 9a1 1 0 000 2v4a1 1 0 102 0v-4a1 1 0 00-1-1H9zm1-4a1.25 1.25 0 100 2.5A1.25 1.25 0 0010 5z" clipRule="evenodd" />
+                  </svg>
+                </span>
+                <div>
+                  <div className="font-semibold">
+                    Saving to {effectiveSessionType === 'warmup' ? 'Warm-up session' : 'Session'}
+                  </div>
+                  <div className="text-sm text-text-secondary">Session type follows the selected item in the session switcher.</div>
+                </div>
               </div>
-              <div className="text-sm opacity-80">Session type follows the selected item in the session switcher.</div>
             </div>
           </section>
 
           {/* Activity Types Section */}
           <section className="space-y-3 md:space-y-4">
-            <h3 className="text-lg font-semibold text-text-primary">Choose Activity Type</h3>
-            <div className="grid grid-cols-1 gap-3 md:gap-4">
+            <div>
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-text-tertiary">Choose Activity Type</h3>
+              <p className="mt-1 text-sm text-text-secondary">Start a new log with the right fields for the activity.</p>
+            </div>
+            <div className="grid grid-cols-1 gap-3">
               {activityTypes.map(activityType => (
-                <div
+                <button
                   key={activityType.id}
-                  onClick={() => {
-                    if (activityType.id === 'resistance') {
-                      // For resistance training, show the resistance training menu
-                      setView('resistance');
-                    } else if (activityType.id === 'stretching') {
-                      setView('stretching');
-                    } else if (activityType.id === 'endurance') {
-                      setView('endurance');
-                    } else if (activityType.id === 'other') {
-                      setView('other');
-                    } else if (activityType.id === 'speedAgility') {
-                      setView('speedAgility');
-                    }
-                  }}
-                  className={`
-                    ${activityType.bgColor}
-                    rounded-xl p-4 cursor-pointer
-                    transition-all duration-200 ease-in-out
-                    hover:scale-105 hover:shadow-lg
-                    active:scale-95
-                    border border-border
-                  `}
+                  type="button"
+                  onClick={() => handleActivityTypeSelected(activityType.id)}
+                  className="group w-full rounded-2xl border border-border bg-bg-secondary p-4 text-left transition-colors hover:border-border-hover hover:bg-hover-overlay active:bg-active-overlay focus:outline-none focus:ring-2 focus:ring-focus-ring"
                 >
-                  <div className="flex items-center space-x-3">
-                    <div className="text-3xl">{activityType.icon}</div>
-                    <div className="flex-1">
-                      <h4 className={`font-semibold text-lg ${activityType.textColor}`}>
+                  <div className="flex items-center gap-4">
+                    <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-2xl ${activityType.iconBgColor} ${activityType.accentTextColor}`}>
+                      {activityType.icon}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-base font-semibold text-text-primary sm:text-lg">
                         {activityType.name}
                       </h4>
-                      <p className={`text-sm opacity-90 ${activityType.textColor}`}>
+                      <p className="mt-0.5 text-sm text-text-secondary">
                         {activityType.description}
                       </p>
-                      <p className={`text-xs opacity-75 mt-1 ${activityType.textColor}`}>
+                      <p className="mt-1 text-xs text-text-tertiary">
                         {activityType.examples}
                       </p>
                     </div>
-                    <div className="text-text-tertiary">
+                    <div className="text-text-tertiary transition-transform group-hover:translate-x-0.5 group-hover:text-text-secondary">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     </div>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           </section>
 
-          <section className="space-y-3 md:space-y-4 border-t border-border pt-4">
+          <section className="border-t border-border pt-4">
             <button
               onClick={() => setShowCreateDialog(true)}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/10 border border-border text-text-primary hover:bg-white/15 transition-colors"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-bg-secondary px-4 py-3 text-text-primary transition-colors hover:bg-hover-overlay active:bg-active-overlay focus:outline-none focus:ring-2 focus:ring-focus-ring"
             >
               <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 102 0v-5h5a1 1 0 100-2h-5V4a1 1 0 00-1-1z" clipRule="evenodd" />

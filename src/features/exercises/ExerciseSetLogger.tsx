@@ -361,7 +361,7 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
                 displayClassName="text-text-primary font-medium"
                 formatDisplay={(v) => `${v ?? 0}kg`}
               />
-              <span className="text-gray-500">×</span>
+              <span className="text-text-muted">×</span>
               <InlineEditableValue
                 value={set.reps}
                 onSave={(val) => handleInlineUpdate(index, 'reps', val)}
@@ -376,12 +376,12 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
           
           <div className="flex items-center space-x-2 shrink-0">
             <span className={`px-2 py-1 rounded text-xs sm:text-sm ${
-              set.difficulty === DifficultyCategory.WARMUP ? 'bg-gray-600' :
-              set.difficulty === DifficultyCategory.EASY ? 'bg-green-600' :
-              set.difficulty === DifficultyCategory.NORMAL ? 'bg-blue-600' :
-              set.difficulty === DifficultyCategory.HARD ? 'bg-red-600' :
+              set.difficulty === DifficultyCategory.WARMUP ? 'bg-difficulty-warmup' :
+              set.difficulty === DifficultyCategory.EASY ? 'bg-difficulty-easy' :
+              set.difficulty === DifficultyCategory.NORMAL ? 'bg-difficulty-normal' :
+              set.difficulty === DifficultyCategory.HARD ? 'bg-difficulty-hard' :
               set.difficulty === DifficultyCategory.DROP ? 'bg-difficulty-drop' :
-              'bg-gray-600'
+              'bg-bg-tertiary'
             }`}>
               {set.difficulty}
             </span>
@@ -408,8 +408,8 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
 
 
   return (
-    <div className="flex flex-col h-full bg-bg-secondary">
-      <div ref={setsListRef} className="flex-1 p-4 overflow-y-auto">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-bg-secondary">
+      <div ref={setsListRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-text-primary">
             {isEditing ? 'Edit' : 'Log'} {exercise.name}
@@ -465,7 +465,7 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
             <button
               type="button"
               onClick={() => setShowRecentHistory((current) => !current)}
-              className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-left"
+              className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-border bg-bg-tertiary text-left"
               aria-expanded={showRecentHistory}
               aria-controls="recent-history-section"
             >
@@ -502,7 +502,7 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
         
         {/* Swipe hint - only show on mobile when there are multiple sets */}
         {sets.length > 1 && (
-          <p className="text-xs text-gray-500 text-center mt-3 sm:hidden">
+          <p className="text-xs text-text-muted text-center mt-3 sm:hidden">
             💡 Swipe left on a set to delete, or tap values to edit inline
           </p>
         )}
@@ -528,7 +528,7 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
         {!isAddingSet && editingSetIndex === null && (
           <button
             onClick={() => setIsAddingSet(true)}
-            className="w-full py-4 mt-4 rounded-lg bg-white/5 hover:bg-white/10 text-text-primary font-medium transition-colors"
+            className="w-full py-4 mt-4 rounded-lg bg-bg-tertiary hover:bg-hover-overlay text-text-primary font-medium transition-colors"
           >
             Add Set
           </button>
@@ -536,7 +536,7 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
       </div>
 
       {/* Bottom Actions */}
-      <div className="p-4 border-t border-border">
+      <div className="shrink-0 border-t border-border bg-bg-secondary px-4 pt-4 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
         <div className="flex gap-4">
           <button
             onClick={handleSaveAndClose}
@@ -546,7 +546,7 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
           </button>
           <button
             onClick={onCancel}
-            className="flex-1 py-3 rounded-lg bg-white/5 text-text-primary font-medium hover:bg-white/10 transition-colors"
+            className="flex-1 py-3 rounded-lg bg-bg-tertiary text-text-primary font-medium hover:bg-hover-overlay transition-colors"
           >
             Cancel
           </button>

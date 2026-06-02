@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import SegmentedPicker from './SegmentedPicker';
 import { RPESlider } from './RPESlider';
 import type { Exercise } from '@/types/exercise';
@@ -25,6 +26,7 @@ import { ExercisePrescriptionAssistantData } from '@/types/exercise';
 import { generateExercisePrescriptionAssistant } from '@/services/exercisePrescriptionAssistantService';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
+import AppOverlay from '@/components/ui/AppOverlay';
 
 interface UniversalSetLoggerProps {
   exercise: Exercise;
@@ -502,7 +504,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
                   const newValue = Math.max(min || 0, currentNumValue - (step || 1));
                   updateSet(setIndex, field, newValue);
                 }}
-                className="resistance-button flex-shrink-0 w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center bg-red-600 hover:bg-red-700 active:bg-red-800 text-white rounded-lg text-base sm:text-sm font-semibold transition-colors"
+                className="resistance-button flex-shrink-0 w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center bg-error-bg hover:opacity-90 active:opacity-80 text-error-text rounded-lg text-base sm:text-sm font-semibold transition-opacity"
                 aria-label={`Decrease ${label.toLowerCase()}`}
               >
                 -
@@ -548,7 +550,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
                   const newValue = currentNumValue + (step || 1);
                   updateSet(setIndex, field, newValue);
                 }}
-                className="resistance-button flex-shrink-0 w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center bg-green-600 hover:bg-green-700 active:bg-green-800 text-white rounded-lg text-base sm:text-sm font-semibold transition-colors"
+                className="resistance-button flex-shrink-0 w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center bg-success-bg hover:opacity-90 active:opacity-80 text-success-text rounded-lg text-base sm:text-sm font-semibold transition-opacity"
                 aria-label={`Increase ${label.toLowerCase()}`}
               >
                 +
@@ -894,10 +896,10 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
     }
   };
 
-  return (
-    <div className="fixed inset-0 bg-bg-primary/95 flex flex-col z-50">
+  const loggerContent = (
+    <div className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-bg-primary text-text-primary">
       {/* Header */}
-      <div className="p-3 sm:p-4 border-b border-border">
+      <div className="shrink-0 border-b border-border bg-bg-secondary p-3 sm:p-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg sm:text-xl font-bold text-text-primary">
             {isEditing ? 'Edit' : 'Log'} {exercise.name}
@@ -962,7 +964,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
             <button
               type="button"
               onClick={() => setShowRecentHistory((current) => !current)}
-              className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-left"
+              className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-border bg-bg-tertiary text-left"
               aria-expanded={showRecentHistory}
               aria-controls="universal-recent-history-section"
             >
@@ -996,7 +998,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
       </div>
 
       {/* Sets List */}
-      <div ref={setListRef} className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2.5 sm:space-y-3">
+      <div ref={setListRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-3 sm:p-4 space-y-2.5 sm:space-y-3">
         {sets.map((set, index) => {
           const isExpanded = expandedSetIndex === index;
           const isNewlyAdded = lastAddedIndex === index;
@@ -1094,7 +1096,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
                             e.stopPropagation();
                             removeSet(index);
                           }}
-                          className="px-2 py-1 sm:px-3 sm:py-1 text-xs sm:text-sm bg-red-600 hover:bg-red-700 text-white rounded transition-colors touch-manipulation"
+                          className="px-2 py-1 sm:px-3 sm:py-1 text-xs sm:text-sm bg-error-bg hover:opacity-90 text-error-text rounded transition-opacity touch-manipulation"
                         >
                           Remove
                         </button>
@@ -1128,7 +1130,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
 
       {/* RPE Helper Modal */}
       {showRPEHelper && (
-        <div className="fixed inset-0 bg-bg-primary/80 flex items-center justify-center z-60">
+        <div className="fixed inset-0 bg-bg-primary/80 flex items-center justify-center z-[100]">
           <div className="bg-bg-secondary rounded-lg p-6 max-w-md w-full mx-4 border border-border">
             <h3 className="text-lg font-bold text-text-primary mb-4">RPE Scale Reference</h3>
             <div className="space-y-2 max-h-64 overflow-y-auto">
@@ -1150,17 +1152,17 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
       )}
 
       {/* Bottom Actions */}
-      <div className="p-3 sm:p-4 border-t border-white/10">
+      <div className="shrink-0 border-t border-border bg-bg-secondary px-3 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] sm:px-4 sm:pt-4 sm:pb-[calc(env(safe-area-inset-bottom)+1rem)]">
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
           <button
             onClick={handleSave}
-            className="flex-1 py-3 rounded-lg bg-accent-primary text-white font-medium hover:bg-accent-hover active:bg-accent-active transition-colors touch-manipulation text-base"
+            className="flex-1 py-3 rounded-lg bg-accent-primary text-text-inverse font-medium hover:bg-accent-hover active:bg-accent-active transition-colors touch-manipulation text-base"
           >
             {isEditing ? 'Update' : 'Save'} {getSetLabel()}{sets.length !== 1 ? 's' : ''}
           </button>
           <button
             onClick={onCancel}
-            className="flex-1 py-3 rounded-lg bg-white/5 text-white font-medium hover:bg-white/10 active:bg-white/15 transition-colors touch-manipulation text-base"
+            className="flex-1 py-3 rounded-lg bg-bg-tertiary text-text-primary font-medium hover:bg-hover-overlay active:bg-active-overlay transition-colors touch-manipulation text-base"
           >
             Cancel
           </button>
@@ -1169,6 +1171,25 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
 
     </div>
   );
+
+  const logger = (
+    <AppOverlay
+      isOpen={true}
+      onClose={onCancel}
+      closeOnBackdrop={false}
+      closeOnEscape={false}
+      className="z-[80] flex flex-col bg-bg-primary overflow-hidden"
+      ariaLabel={`${isEditing ? 'Edit' : 'Log'} sets for ${exercise.name}`}
+    >
+      {loggerContent}
+    </AppOverlay>
+  );
+
+  if (typeof document === 'undefined') {
+    return logger;
+  }
+
+  return createPortal(logger, document.body);
 };
 
 export default UniversalSetLogger;
