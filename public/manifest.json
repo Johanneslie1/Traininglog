@@ -4,8 +4,8 @@
   "description": "A professional strength training logging application",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#23272F",
-  "theme_color": "#23272F",
+  "background_color": "#f7fcfd",
+  "theme_color": "#f7fcfd",
   "icons": [
     {
       "src": "./logo/app-logo-16.png",

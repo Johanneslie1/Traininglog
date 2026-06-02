@@ -4,11 +4,44 @@
     <meta charset="UTF-8" />
     <link rel="icon" href="./favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark light" />
     <title>TrainingLog</title>
     <!-- Add PWA meta tags -->
-    <meta name="theme-color" content="#1a1a1a" />
+    <meta name="theme-color" content="#f7fcfd" />
     <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
     <link rel="manifest" href="./manifest.json" />
+    <script>
+      (function () {
+        var themeColors = { dark: '#011c40', light: '#f7fcfd' };
+        var preference = 'dark';
+
+        try {
+          var savedTheme = localStorage.getItem('theme');
+          if (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'system') {
+            preference = savedTheme;
+          }
+        } catch (error) {
+          preference = 'dark';
+        }
+
+        var resolvedTheme = preference;
+        if (preference === 'system') {
+          resolvedTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+
+        var root = document.documentElement;
+        root.classList.remove('light', 'dark');
+        root.classList.add(resolvedTheme);
+        root.dataset.theme = resolvedTheme;
+        root.dataset.themePreference = preference;
+        root.style.colorScheme = resolvedTheme === 'light' ? 'only light' : 'dark';
+
+        var metaThemeColor = document.querySelector('meta[name="theme-color"]');
+        if (metaThemeColor) {
+          metaThemeColor.setAttribute('content', themeColors[resolvedTheme]);
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

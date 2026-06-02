@@ -137,7 +137,7 @@
 }
 
 .light {
-  color-scheme: light;
+  color-scheme: only light;
 
   /* Base surfaces */
   --color-bg-primary: #f7fcfd;

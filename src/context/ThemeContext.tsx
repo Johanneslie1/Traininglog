@@ -9,6 +9,11 @@ const THEME_META_COLORS: Record<ActualTheme, string> = {
   light: '#f7fcfd',
 };
 
+const THEME_COLOR_SCHEMES: Record<ActualTheme, string> = {
+  dark: 'dark',
+  light: 'only light',
+};
+
 const isTheme = (value: string | null): value is Theme =>
   value === 'light' || value === 'dark' || value === 'system';
 
@@ -51,7 +56,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       root.classList.add(newActualTheme);
       root.dataset.theme = newActualTheme;
       root.dataset.themePreference = theme;
-      root.style.colorScheme = newActualTheme;
+      root.style.colorScheme = THEME_COLOR_SCHEMES[newActualTheme];
       
       const metaThemeColor = document.querySelector('meta[name="theme-color"]');
       if (metaThemeColor) {
