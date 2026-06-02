@@ -50,18 +50,18 @@ export const CreateCustomExerciseModal: React.FC<CreateCustomExerciseModalProps>
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 rounded-lg border border-gray-700 p-6 w-full max-w-md space-y-4">
+    <div className="fixed inset-0 bg-bg-primary/80 flex items-center justify-center z-50 p-4">
+      <div className="bg-bg-secondary rounded-lg border border-border p-6 w-full max-w-md space-y-4">
         <div>
-          <h2 className="text-xl font-bold text-white">
+          <h2 className="text-xl font-bold text-text-primary">
             {config.icon} Create Custom {config.label}
           </h2>
-          <p className="text-xs text-gray-400 mt-1">{config.description}</p>
+          <p className="text-xs text-text-tertiary mt-1">{config.description}</p>
         </div>
 
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-medium text-gray-300 mb-1">
+            <label className="block text-xs font-medium text-text-secondary mb-1">
               Exercise Name *
             </label>
             <input
@@ -76,7 +76,7 @@ export const CreateCustomExerciseModal: React.FC<CreateCustomExerciseModalProps>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-300 mb-1">
+            <label className="block text-xs font-medium text-text-secondary mb-1">
               Description (optional)
             </label>
             <textarea
@@ -91,13 +91,13 @@ export const CreateCustomExerciseModal: React.FC<CreateCustomExerciseModalProps>
         <div className="flex gap-2 pt-2">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-white text-sm font-medium transition-colors"
+            className="flex-1 px-4 py-2 bg-bg-tertiary hover:bg-hover-overlay rounded text-text-primary text-sm font-medium transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
-            className="flex-1 px-4 py-2 bg-accent-primary hover:bg-accent-hover rounded text-white text-sm font-medium transition-colors"
+            className="flex-1 px-4 py-2 bg-accent-primary hover:bg-accent-hover rounded text-text-inverse text-sm font-medium transition-colors"
           >
             Create Exercise
           </button>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Program } from '@/types/program';
 import { ActivityType } from '@/types/activityTypes';
+import { ActivityBadge, StatusBadge } from '@/components/ui';
 
 interface ProgramCardProps {
   program: Program;
@@ -33,25 +34,6 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({ program, onClick }) =>
 
   const composition = getProgramComposition();
 
-  // Helper function to get activity type display info
-  const getActivityTypeInfo = (activityType: ActivityType) => {
-    switch (activityType) {
-      case ActivityType.RESISTANCE:
-        return { label: 'Resistance', color: 'bg-blue-600', textColor: 'text-blue-100' };
-      case ActivityType.SPORT:
-        return { label: 'Sport', color: 'bg-green-600', textColor: 'text-green-100' };
-      case ActivityType.STRETCHING:
-        return { label: 'Flexibility', color: 'bg-activity-stretching', textColor: 'text-text-on-accent' };
-      case ActivityType.ENDURANCE:
-        return { label: 'Endurance', color: 'bg-orange-600', textColor: 'text-orange-100' };
-      case ActivityType.SPEED_AGILITY:
-        return { label: 'Speed', color: 'bg-red-600', textColor: 'text-red-100' };
-      case ActivityType.OTHER:
-        return { label: 'Other', color: 'bg-gray-600', textColor: 'text-gray-100' };
-      default:
-        return { label: 'Resistance', color: 'bg-blue-600', textColor: 'text-blue-100' };
-    }
-  };
   return (
     <div
       role="button"
@@ -81,21 +63,11 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({ program, onClick }) =>
         
         {/* Activity Type Badges */}
         <div className="flex flex-wrap gap-1 mt-2">
-          {composition.types.slice(0, 3).map(type => {
-            const typeInfo = getActivityTypeInfo(type);
-            return (
-              <span 
-                key={type} 
-                className={`px-2 py-0.5 text-xs rounded-full ${typeInfo.color} ${typeInfo.textColor}`}
-              >
-                {typeInfo.label}
-              </span>
-            );
-          })}
+          {composition.types.slice(0, 3).map(type => (
+            <ActivityBadge key={type} activityType={type} variant="solid" className="min-h-0 border-0 px-2 py-0.5" />
+          ))}
           {composition.types.length > 3 && (
-            <span className="px-2 py-0.5 text-xs rounded-full bg-gray-600 text-gray-100">
-              +{composition.types.length - 3}
-            </span>
+            <StatusBadge label={`+${composition.types.length - 3}`} className="min-h-0 px-2 py-0.5" />
           )}
         </div>
         
@@ -113,7 +85,7 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({ program, onClick }) =>
           // Handle options menu
         }}
         aria-label="Open program options"
-        className="absolute top-2 right-2 p-2 text-text-secondary hover:text-text-primary bg-black/20 hover:bg-black/40 rounded-lg transition-colors"
+        className="absolute top-2 right-2 p-2 text-text-secondary hover:text-text-primary bg-bg-primary/30 hover:bg-bg-primary/50 rounded-lg transition-colors"
       >
         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />

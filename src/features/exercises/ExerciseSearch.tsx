@@ -8,6 +8,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/services/firebase/config';
 import { useAuth } from '@/hooks/useAuth';
 import { getMergedExercisesByActivityType } from '@/services/exerciseDatabaseService';
+import { EmptyState, LoadingState } from '@/components/ui';
 
 interface ExerciseSearchProps {
   onClose: () => void;
@@ -154,7 +155,7 @@ export const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black flex flex-col">
+    <div className="fixed inset-0 bg-bg-primary flex flex-col">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-bg-primary border-b border-border">
         <div className="flex items-center p-4">
@@ -174,7 +175,7 @@ export const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder={`Search ${category ? category.name.toLowerCase() : 'exercises'}...`}
-              className="w-full bg-bg-secondary text-text-primary px-4 py-3 rounded-xl border border-border focus:outline-none focus:border-blue-600 transition-colors"
+              className="w-full bg-bg-secondary text-text-primary px-4 py-3 rounded-xl border border-border focus:outline-none focus:border-accent-primary transition-colors"
             />
           </div>
         </div>
@@ -184,9 +185,7 @@ export const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
       <div className="flex-1 overflow-y-auto pb-safe">
         <div className="p-4 space-y-2">
           {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-            </div>
+            <LoadingState label="Loading exercises..." />
           ) : filteredExercises.length > 0 ? (
             filteredExercises.map((exercise) => (
               <button
@@ -201,11 +200,12 @@ export const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
               </button>
             ))
           ) : (
-            <div className="flex flex-col items-center justify-center py-8 px-4 space-y-4">
-              <div className="text-center py-12">
-                <p className="text-text-secondary text-lg mb-2">No exercises found</p>
-                <p className="text-text-tertiary">Can't find what you're looking for?</p>
-              </div>
+            <div className="flex flex-col items-center justify-center px-4">
+              <EmptyState
+                title="No exercises found"
+                description="Can't find what you're looking for?"
+                illustration="search"
+              />
               <button
                 onClick={handleCreateExercise}
                 className="flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-accent-primary text-text-primary font-medium hover:bg-accent-hover transition-colors min-h-[44px]"

@@ -1,7 +1,7 @@
 import React from 'react';
 import { UnifiedExerciseLog } from '@/types/session';
 import { TRAINING_TYPE_CONFIG } from '@/config/trainingTypeConfig';
-import { Button, MetricChip } from '@/components/ui';
+import { ActivityBadge, Button, MetricChip } from '@/components/ui';
 import { formatDistance, formatDuration, formatSetSummary as formatDisplaySetSummary, formatTrainingVolume } from '@/utils/displayFormatters';
 
 interface UniversalExerciseCardProps {
@@ -61,7 +61,9 @@ export const UniversalExerciseCard: React.FC<UniversalExerciseCardProps> = ({
           <h3 className="text-base font-semibold text-text-primary">
             <span className="mr-2">{config.icon}</span>{exercise.exerciseName}
           </h3>
-          <p className="mt-0.5 text-xs uppercase tracking-wide text-text-tertiary">{config.label}</p>
+          <div className="mt-2">
+            <ActivityBadge activityType={exercise.activityType} />
+          </div>
         </div>
         <MetricChip label={summaryMetric.label} value={summaryMetric.value} tone={summaryMetric.tone} />
       </div>

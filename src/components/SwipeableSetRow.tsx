@@ -121,13 +121,13 @@ export const SwipeableSetRow: React.FC<SwipeableSetRowProps> = ({
     >
       {/* Delete button background */}
       <div 
-        className={`absolute inset-y-0 right-0 flex items-center justify-end bg-red-600 transition-all duration-200 ${
+        className={`absolute inset-y-0 right-0 flex items-center justify-end bg-status-error transition-all duration-200 ${
           showDeleteButton || offsetX < -30 ? 'w-20' : 'w-0'
         }`}
       >
         <button
           onClick={handleDeleteClick}
-          className="w-full h-full flex items-center justify-center text-white font-medium"
+          className="w-full h-full flex items-center justify-center text-text-on-accent font-medium"
           aria-label="Delete set"
         >
           <svg 

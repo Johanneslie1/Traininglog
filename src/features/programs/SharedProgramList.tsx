@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getSharedPrograms, copySharedProgram, updateAssignmentStatus } from '@/services/programService';
 import { usePrograms } from '@/context/ProgramsContext';
@@ -8,12 +8,11 @@ import {
   CalendarIcon, 
   CheckCircleIcon,
   PlayIcon,
-  ClockIcon,
   ChatAltIcon
 } from '@heroicons/react/outline';
 import toast from 'react-hot-toast';
-import { EmptyState, MetricChip, SectionDivider, Skeleton } from '@/components/ui';
-import { formatRelativeDate } from '@/utils/displayFormatters';
+import { EmptyState, InlineErrorState, MetricChip, SectionDivider, Skeleton, StatusBadge, ViewToggle } from '@/components/ui';
+import { formatRelativeDate, formatRelativeWithAbsolute } from '@/utils/displayFormatters';
 
 interface SharedProgramData {
   id: string;
@@ -40,6 +39,7 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
   const [error, setError] = useState<string | null>(null);
   const [copyingProgramId, setCopyingProgramId] = useState<string | null>(null);
   const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'compact' | 'detailed'>('compact');
 
   const loadSharedPrograms = useCallback(async () => {
     try {
@@ -129,40 +129,21 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'not-started':
-        return (
-          <div className="flex items-center bg-bg-tertiary text-text-secondary px-3 py-1 rounded-full text-sm">
-            <ClockIcon className="h-4 w-4 mr-1" />
-            Not Started
-          </div>
-        );
-      case 'in-progress':
-        return (
-          <div className="flex items-center bg-warning-bg text-warning-text px-3 py-1 rounded-full text-sm">
-            <PlayIcon className="h-4 w-4 mr-1" />
-            In Progress
-          </div>
-        );
-      case 'completed':
-        return (
-          <div className="flex items-center bg-success-bg text-success-text px-3 py-1 rounded-full text-sm">
-            <CheckCircleIcon className="h-4 w-4 mr-1" />
-            Completed
-          </div>
-        );
-      case 'copied':
-        return (
-          <div className="flex items-center bg-info-bg text-info-text px-3 py-1 rounded-full text-sm">
-            <DocumentDuplicateIcon className="h-4 w-4 mr-1" />
-            Copied
-          </div>
-        );
-      default:
-        return null;
-    }
-  };
+  const groupedPrograms = useMemo(() => {
+    const groups = [
+      { status: 'not-started', label: 'Assigned' },
+      { status: 'in-progress', label: 'In Progress' },
+      { status: 'completed', label: 'Completed' },
+      { status: 'copied', label: 'Copied' },
+    ];
+
+    return groups
+      .map((group) => ({
+        ...group,
+        items: sharedPrograms.filter((program) => program.assignmentStatus === group.status),
+      }))
+      .filter((group) => group.items.length > 0);
+  }, [sharedPrograms]);
 
   const getCoachDisplayName = (program: SharedProgramData) => {
     const rawName = program.sharedByName?.trim();
@@ -209,13 +190,22 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
           <p className="text-text-tertiary">
             Programs shared with you by your coach
           </p>
+          {sharedPrograms.length > 0 && (
+            <ViewToggle
+              value={viewMode}
+              onChange={setViewMode}
+              className="mt-4"
+              options={[
+                { value: 'compact', label: 'Compact' },
+                { value: 'detailed', label: 'Detailed' },
+              ]}
+            />
+          )}
         </div>
 
         {/* Error Message */}
         {error && (
-          <div className="bg-error-bg border border-error-border text-error-text p-4 rounded-lg mb-6">
-            {error}
-          </div>
+          <InlineErrorState className="mb-6" title="Could not load assigned programs" message={error} />
         )}
 
         {/* Programs List */}
@@ -229,8 +219,10 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
           </div>
         ) : (
           <div className="space-y-4">
-            <SectionDivider label="Assigned" count={sharedPrograms.length} />
-            {sharedPrograms.map((sharedProgram) => {
+            {groupedPrograms.map((group) => (
+              <div key={group.status} className="space-y-4">
+                <SectionDivider label={group.label} count={group.items.length} />
+                {group.items.map((sharedProgram) => {
               const program = sharedProgram.originalProgram;
               const isCopied = sharedProgram.assignmentStatus === 'copied';
               const isInProgress = sharedProgram.assignmentStatus === 'in-progress';
@@ -251,11 +243,11 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
                 >
                   {/* Coach Message (if exists) */}
                   {sharedProgram.coachMessage && (
-                    <div className="bg-primary-900/20 border-b border-primary-800/30 p-4">
+                    <div className="bg-info-bg border-b border-info-border p-4">
                       <div className="flex items-start gap-3">
-                        <ChatAltIcon className="h-5 w-5 text-primary-400 mt-0.5 flex-shrink-0" />
+                        <ChatAltIcon className="h-5 w-5 text-info-text mt-0.5 flex-shrink-0" />
                         <div className="flex-1">
-                          <p className="text-sm font-semibold text-primary-300 mb-1">
+                          <p className="text-sm font-semibold text-info-text mb-1">
                             Message from your coach:
                           </p>
                           <p className="text-text-secondary whitespace-pre-wrap">
@@ -289,9 +281,17 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
                           </div>
                           <div className="flex items-center">
                             <CalendarIcon className="h-4 w-4 mr-1" />
-                            Assigned {formatRelativeDate(sharedProgram.assignedAt)}
+                            Assigned {viewMode === 'detailed'
+                              ? formatRelativeWithAbsolute(sharedProgram.assignedAt)
+                              : formatRelativeDate(sharedProgram.assignedAt)}
                           </div>
                           <MetricChip label="Sessions" value={program.sessions?.length || 0} />
+                          {viewMode === 'detailed' && (
+                            <MetricChip
+                              label="Coach"
+                              value={getCoachDisplayName(sharedProgram)}
+                            />
+                          )}
                           {guidedExercises > 0 && (
                             <MetricChip label="Guided" value={guidedExercises} tone="accent" />
                           )}
@@ -300,7 +300,7 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
 
                       {/* Status Badge */}
                       <div className="ml-4">
-                        {getStatusBadge(sharedProgram.assignmentStatus)}
+                        <StatusBadge status={sharedProgram.assignmentStatus} />
                       </div>
                     </div>
 
@@ -337,7 +337,7 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
                       >
                         {copyingProgramId === sharedProgram.id ? (
                           <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                            <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-text-on-accent mr-2"></div>
                             Copying...
                           </>
                         ) : (
@@ -357,7 +357,7 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
                         >
                           {updatingStatusId === sharedProgram.assignmentId ? (
                             <>
-                              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-warning-text mr-2"></div>
                               Updating...
                             </>
                           ) : (
@@ -378,7 +378,7 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
                         >
                           {updatingStatusId === sharedProgram.assignmentId ? (
                             <>
-                              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-success-text mr-2"></div>
                               Updating...
                             </>
                           ) : (
@@ -393,7 +393,9 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
                   </div>
                 </div>
               );
-            })}
+              })}
+              </div>
+            ))}
           </div>
         )}
       </div>

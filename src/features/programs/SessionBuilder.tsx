@@ -17,6 +17,7 @@ import ProgramAddExerciseOptions from './ProgramAddExerciseOptions';
 import { usePersistedFormState } from '@/hooks/usePersistedState';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import toast from 'react-hot-toast';
+import { ActivityBadge, Button, EmptyState, InlineErrorState, MetricChip, StickyBottomActions } from '@/components/ui';
 
 interface SessionBuilderProps {
   onClose: () => void;
@@ -95,27 +96,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
   );
 
   const [view, setView] = useState<ViewState>('main');
-
-  // Helper function to get activity type display info
-  const getActivityTypeInfo = (activityType?: ActivityType) => {
-    const type = normalizeActivityType(activityType);
-    switch (type) {
-      case ActivityType.RESISTANCE:
-        return { label: 'Resistance', color: 'bg-activity-resistance', textColor: 'text-text-on-accent' };
-      case ActivityType.SPORT:
-        return { label: 'Sport', color: 'bg-activity-sport', textColor: 'text-green-100' };
-      case ActivityType.STRETCHING:
-        return { label: 'Stretching', color: 'bg-activity-stretching', textColor: 'text-cyan-100' };
-      case ActivityType.ENDURANCE:
-        return { label: 'Endurance', color: 'bg-activity-endurance', textColor: 'text-orange-100' };
-      case ActivityType.SPEED_AGILITY:
-        return { label: 'Speed/Agility', color: 'bg-activity-speed', textColor: 'text-red-100' };
-      case ActivityType.OTHER:
-        return { label: 'Other', color: 'bg-activity-other', textColor: 'text-text-on-accent' };
-      default:
-        return { label: 'Resistance', color: 'bg-activity-resistance', textColor: 'text-text-on-accent' };
-    }
-  };
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   // Use persisted state
   const [selectedExercises, setSelectedExercises] = useState<Exercise[]>(persistedState.exercises);
@@ -386,7 +367,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
 
   const handleSaveExerciseName = () => {
     if (!tempExerciseName.trim()) {
-      alert('Exercise name cannot be empty');
+      setValidationError('Exercise name cannot be empty.');
       return;
     }
     
@@ -451,20 +432,22 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
   };
 
   const handleSaveSession = async () => {
+    setValidationError(null);
+
     if (!currentSessionName.trim()) {
-      alert('Please enter a session name');
+      setValidationError('Please enter a session name.');
       return;
     }
 
     if (selectedExercises.length === 0) {
-      alert('Please add at least one exercise');
+      setValidationError('Please add at least one exercise.');
       return;
     }
 
     // Validate that all exercises have names
     const exercisesWithoutNames = selectedExercises.filter(item => !item.name?.trim());
     if (exercisesWithoutNames.length > 0) {
-      alert(`Please ensure all exercises have names. Found ${exercisesWithoutNames.length} exercise(s) without names.`);
+      setValidationError(`Please ensure all exercises have names. Found ${exercisesWithoutNames.length} exercise(s) without names.`);
       return;
     }
 
@@ -667,7 +650,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
 
   // Main session builder view
   return (
-    <div className="fixed inset-0 bg-black z-[80] flex flex-col">
+    <div className="fixed inset-0 bg-bg-primary z-[80] flex flex-col text-text-primary">
       {/* Breadcrumb */}
       <div className="bg-bg-secondary px-4 py-2 border-b border-border flex-shrink-0">
         <div className="flex items-center gap-2 text-sm text-text-tertiary">
@@ -679,35 +662,35 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
-          <span className="text-white">{initialSession ? 'Edit Session' : 'New Session'}</span>
+          <span className="text-text-primary">{initialSession ? 'Edit Session' : 'New Session'}</span>
         </div>
       </div>
 
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-4 bg-black/95 backdrop-blur-sm border-b border-white/10 min-h-[64px] flex-shrink-0 z-10">
+      <header className="flex items-center justify-between px-4 py-4 bg-bg-primary/95 backdrop-blur-sm border-b border-border min-h-[64px] flex-shrink-0 z-10">
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <button 
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors flex-shrink-0"
+            className="min-h-[44px] min-w-[44px] p-2 hover:bg-hover-overlay rounded-lg transition-colors flex-shrink-0"
             onClick={onClose}
             aria-label="Close"
           >
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6 text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
-          <h1 className="text-white text-xl font-medium truncate">Session Builder</h1>
+          <h1 className="text-text-primary text-xl font-medium truncate">Session Builder</h1>
         </div>
         
-        <button
+        <Button
           onClick={handleSaveSession}
-          className="px-4 py-2 bg-accent-primary hover:bg-accent-hover text-white rounded-lg transition-colors font-medium flex-shrink-0 ml-4"
+          className="hidden flex-shrink-0 sm:inline-flex"
         >
           Save Session
-        </button>
+        </Button>
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto overscroll-contain px-4 py-6 min-h-0 bg-black">
+      <main className="flex-1 overflow-y-auto overscroll-contain px-4 py-6 pb-28 min-h-0 bg-bg-primary">
         {/* Session Details */}
         <div className="mb-6 space-y-4 max-w-full max-w-4xl mx-auto">
           <div>
@@ -717,7 +700,10 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
             <input
               type="text"
               value={currentSessionName}
-              onChange={(e) => setCurrentSessionName(e.target.value)}
+              onChange={(e) => {
+                setCurrentSessionName(e.target.value);
+                setValidationError(null);
+              }}
               placeholder="Enter session name"
               className="w-full px-3 py-2 bg-bg-tertiary border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:border-accent-primary"
             />
@@ -748,13 +734,21 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
             <div className="font-semibold">{isWarmupSession ? '🔥 Warm-up session enabled' : 'Warm-up session disabled'}</div>
             <div className="text-sm opacity-80">All exercises in this session will be logged as warm-up when imported/logged.</div>
           </button>
+
+          {validationError && (
+            <InlineErrorState
+              title="Session needs attention"
+              message={validationError}
+            />
+          )}
         </div>
 
         {/* Exercises Section */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <div className="flex items-center gap-3">
-              <h2 className="text-lg font-medium text-white">Exercises</h2>
+              <h2 className="text-lg font-medium text-text-primary">Exercises</h2>
+              <MetricChip label="Selected" value={selectedExercises.length} />
               {lastAction && (
                 <button
                   onClick={handleUndo}
@@ -770,7 +764,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
             </div>
             <button
               onClick={() => setView('exerciseSelection')}
-              className="px-4 py-2 bg-bg-tertiary hover:bg-bg-quaternary text-text-primary rounded-lg transition-colors border border-border flex-shrink-0"
+              className="min-h-[44px] px-4 py-2 bg-bg-tertiary hover:bg-bg-quaternary text-text-primary rounded-lg transition-colors border border-border flex-shrink-0"
             >
               Add Exercise
             </button>
@@ -808,7 +802,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
                   </div>
                   <button
                     onClick={() => removeSuperset(superset.id)}
-                    className="text-xs text-red-300 hover:text-red-200"
+                    className="text-xs text-error-text hover:opacity-80"
                   >
                     Remove
                   </button>
@@ -818,19 +812,16 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
           )}
 
           {selectedExercises.length === 0 ? (
-            <div className="text-center py-12 bg-bg-secondary rounded-xl border border-border">
-              <div className="text-text-muted mb-4">
-                <svg className="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-                No exercises added yet
-              </div>
-              <button
-                onClick={() => setView('exerciseSelection')}
-                className="px-6 py-3 bg-accent-primary hover:bg-accent-hover text-white rounded-lg transition-colors font-medium"
-              >
-                Add First Exercise
-              </button>
+            <div className="rounded-2xl border border-border bg-bg-secondary">
+              <EmptyState
+                illustration="workout"
+                title="No exercises added yet"
+                description="Add exercises from history, programs, the database, or search to build this session."
+                primaryAction={{
+                  label: 'Add First Exercise',
+                  onClick: () => setView('exerciseSelection'),
+                }}
+              />
             </div>
           ) : (
             <DragDropContext onDragEnd={handleExerciseDragEnd}>
@@ -852,7 +843,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
                             className={`bg-bg-secondary rounded-xl border p-4 transition-all ${
                               snapshot.isDragging
                                 ? 'border-accent-primary shadow-2xl shadow-glow scale-102'
-                                : 'border-white/10'
+                                : 'border-border'
                             }`}
                           >
                             {/* Exercise Header */}
@@ -862,7 +853,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
                                 {...provided.dragHandleProps}
                                 className="flex items-start gap-3 flex-1 min-w-0 cursor-move group"
                               >
-                                <div className="p-2 rounded-lg bg-white/5 group-hover:bg-white/10 transition-colors flex-shrink-0 mt-1">
+                                <div className="min-h-[44px] min-w-[44px] p-2 rounded-lg bg-bg-tertiary group-hover:bg-hover-overlay transition-colors flex-shrink-0 mt-1 flex items-center justify-center">
                                   <svg className="w-5 h-5 text-text-tertiary group-hover:text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
                                   </svg>
@@ -879,7 +870,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
                                       />
                                       <button
                                         onClick={handleSaveExerciseName}
-                                        className="p-1 hover:bg-white/10 rounded text-green-400 flex-shrink-0"
+                                        className="min-h-[36px] min-w-[36px] p-1 hover:bg-success-bg rounded text-success-text flex-shrink-0"
                                       >
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -898,18 +889,16 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
                                     <div className="w-full">
                                       <button
                                         onClick={() => handleEditExerciseName(exerciseIndex)}
-                                        className="text-left hover:bg-white/5 rounded p-1 -m-1 transition-colors w-full"
+                                        className="text-left hover:bg-hover-overlay rounded p-1 -m-1 transition-colors w-full"
                                       >
                                         <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                          <h3 className="text-lg font-medium text-white break-words">{exercise.name}</h3>
+                                          <h3 className="text-lg font-medium text-text-primary break-words">{exercise.name}</h3>
                                           {exercise.id && previewLabelsByExerciseId[exercise.id] && (
                                             <span className="px-2 py-0.5 text-xs rounded-full bg-focus-bg text-accent-secondary border border-border-focus">
                                               {previewLabelsByExerciseId[exercise.id].label}
                                             </span>
                                           )}
-                                          <span className={`px-2 py-0.5 text-xs rounded-full flex-shrink-0 ${getActivityTypeInfo(exercise.activityType).color} ${getActivityTypeInfo(exercise.activityType).textColor}`}>
-                                            {getActivityTypeInfo(exercise.activityType).label}
-                                          </span>
+                                          <ActivityBadge activityType={exercise.activityType} variant="solid" />
                                         </div>
                                         <p className="text-sm text-text-tertiary">Sets and reps will be logged during workout</p>
                                       </button>
@@ -1034,7 +1023,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
                             
                             {/* Prescription Editor - shown when editing */}
                             {editingPrescription === exerciseIndex && (
-                              <div className="mt-4 pt-4 border-t border-white/10">
+                              <div className="mt-4 pt-4 border-t border-border">
                                 <PrescriptionEditor
                                   activityType={normalizeActivityType(exercise.activityType)}
                                   initialPrescription={exercisePrescriptions[exerciseIndex]?.prescription}
@@ -1063,6 +1052,14 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
           )}
         </div>
       </main>
+      <StickyBottomActions className="sm:hidden">
+        <Button type="button" variant="secondary" onClick={onClose} fullWidth>
+          Cancel
+        </Button>
+        <Button type="button" onClick={handleSaveSession} fullWidth>
+          Save Session
+        </Button>
+      </StickyBottomActions>
     </div>
   );
 };

@@ -3,6 +3,7 @@ import { Exercise } from '@/types/exercise';
 import { ExerciseSet } from '@/types/sets';
 import { ActivityType } from '@/types/activityTypes';
 import { TrashIcon, DuplicateIcon, PlayIcon } from '@heroicons/react/outline';
+import { formatDisplayDate } from '@/utils/displayFormatters';
 
 interface Template {
   id: string;
@@ -92,14 +93,6 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
     onUseTemplate(template.exercises);
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
-
   // Helper function to get activity type display info
   const getActivityTypeInfo = (activityType: ActivityType) => {
     switch (activityType) {
@@ -127,12 +120,12 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
 
   return (
     <>
-      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50">
+      <div className="fixed inset-0 flex items-center justify-center bg-bg-primary/60 z-50">
         <div className="bg-bg-secondary rounded-lg w-full max-w-4xl h-5/6 flex flex-col shadow-xl">
           {/* Header */}
           <div className="p-6 border-b border-white/10">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-white">Program Templates</h2>
+              <h2 className="text-2xl font-bold text-text-primary">Program Templates</h2>
               <button 
                 onClick={onClose}
                 className="text-text-tertiary hover:text-text-primary text-2xl"
@@ -164,13 +157,13 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
-                        <h3 className="text-white font-medium text-lg mb-1">{template.name}</h3>
+                        <h3 className="text-text-primary font-medium text-lg mb-1">{template.name}</h3>
                         <div className="text-sm text-text-tertiary">
                           {template.totalExercises || template.exercises.length} exercise{(template.totalExercises || template.exercises.length) !== 1 ? 's' : ''}
                           {template.sessions && ` • ${template.sessions.length} session${template.sessions.length !== 1 ? 's' : ''}`}
                         </div>
                         <div className="text-xs text-text-muted mt-1">
-                          Created {formatDate(template.createdAt)}
+                          Created {formatDisplayDate(template.createdAt)}
                         </div>
                         
                         {/* Activity Type Badges */}
@@ -199,7 +192,7 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
                         
                         {/* Balance Indicator */}
                         {template.isBalanced && (
-                          <div className="text-xs text-green-400 mt-1">
+                          <div className="text-xs text-success-text mt-1">
                             🎯 Well-balanced program
                           </div>
                         )}
@@ -276,15 +269,15 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
 
       {/* Template Preview Modal */}
       {showPreview && selectedTemplate && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 z-60">
+        <div className="fixed inset-0 flex items-center justify-center bg-bg-primary/70 z-60">
           <div className="bg-bg-secondary rounded-lg w-full max-w-2xl max-h-5/6 flex flex-col shadow-xl">
             {/* Preview Header */}
             <div className="p-6 border-b border-white/10">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-xl font-bold text-white">{selectedTemplate.name}</h3>
+                  <h3 className="text-xl font-bold text-text-primary">{selectedTemplate.name}</h3>
                   <p className="text-text-tertiary text-sm">
-                    {selectedTemplate.exercises.length} exercises • Created {formatDate(selectedTemplate.createdAt)}
+                    {selectedTemplate.exercises.length} exercises • Created {formatDisplayDate(selectedTemplate.createdAt)}
                   </p>
                 </div>
                 <button 
@@ -301,7 +294,7 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
               <div className="space-y-4">
                 {selectedTemplate.exercises.map((item, index) => (
                   <div key={index} className="bg-bg-tertiary rounded-lg p-4 border border-border">
-                    <h4 className="text-white font-medium mb-3">{item.exercise.name}</h4>
+                    <h4 className="text-text-primary font-medium mb-3">{item.exercise.name}</h4>
                     
                     <div className="space-y-2">
                       {item.sets.map((set, setIndex) => (

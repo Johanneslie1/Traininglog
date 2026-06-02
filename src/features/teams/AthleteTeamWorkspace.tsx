@@ -5,6 +5,7 @@ import { RootState } from '@/store/store';
 import { Team, TeamMember, getAthleteTeams, getTeamMembers, leaveTeam } from '@/services/teamService';
 import { UsersIcon, UserAddIcon, LogoutIcon } from '@heroicons/react/outline';
 import toast from 'react-hot-toast';
+import { EmptyState, LoadingState } from '@/components/ui';
 
 interface AthleteTeamWorkspaceProps {
   embedded?: boolean;
@@ -104,10 +105,10 @@ const AthleteTeamWorkspace: React.FC<AthleteTeamWorkspaceProps> = ({ embedded = 
 
   if (loading) {
     return (
-      <div className={`flex items-center justify-center ${embedded ? 'py-10' : 'min-h-[100dvh] bg-bg-primary'}`}>
-        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary-600"></div>
-        <div className="ml-3 text-text-primary">Loading your teams...</div>
-      </div>
+      <LoadingState
+        label="Loading your teams..."
+        className={embedded ? 'py-10' : 'min-h-[100dvh] bg-bg-primary'}
+      />
     );
   }
 
@@ -130,9 +131,11 @@ const AthleteTeamWorkspace: React.FC<AthleteTeamWorkspaceProps> = ({ embedded = 
 
         {teams.length === 0 ? (
           <div className="bg-bg-secondary border border-border rounded-xl p-10 text-center">
-            <UsersIcon className="h-14 w-14 text-text-tertiary mx-auto mb-3" />
-            <h3 className="text-xl font-semibold text-text-primary mb-2">You are not on a team yet</h3>
-            <p className="text-text-tertiary mb-6">Use an invite code from your coach to join a team.</p>
+            <EmptyState
+              icon={<UsersIcon className="h-10 w-10" />}
+              title="You are not on a team yet"
+              description="Use an invite code from your coach to join a team."
+            />
             <button
               onClick={() => navigate('/join')}
               className="inline-flex items-center gap-2 px-5 py-3 bg-accent-primary hover:bg-accent-hover rounded-lg text-text-inverse font-medium transition-colors"
@@ -154,7 +157,7 @@ const AthleteTeamWorkspace: React.FC<AthleteTeamWorkspaceProps> = ({ embedded = 
                       onClick={() => setSelectedTeamId(team.id)}
                       className={`w-full text-left rounded-lg p-3 border transition-colors ${
                         active
-                          ? 'border-primary-500 bg-primary-900/20'
+                          ? 'border-border-focus bg-accent-primary/10'
                           : 'border-border bg-bg-tertiary hover:border-border-hover'
                       }`}
                     >

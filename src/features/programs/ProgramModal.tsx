@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { InlineErrorState } from '@/components/ui';
 
 interface ProgramModalProps {
   isOpen: boolean;
@@ -58,9 +59,7 @@ const ProgramModal: React.FC<ProgramModalProps> = ({ isOpen, onClose, onSave }) 
         <h2 className="text-xl font-bold mb-4 text-text-primary">Add Program</h2>
         
         {error && (
-          <div className="mb-4 p-3 bg-red-900/50 border border-red-500 rounded text-red-200 text-sm">
-            {error}
-          </div>
+          <InlineErrorState className="mb-4" title="Could not create program" message={error} />
         )}
 
         <input
@@ -96,11 +95,11 @@ const ProgramModal: React.FC<ProgramModalProps> = ({ isOpen, onClose, onSave }) 
           <button 
             type="submit"
             disabled={isSubmitting} 
-            className="px-4 py-2 bg-blue-600 text-text-primary rounded-lg disabled:opacity-50 flex items-center gap-2"
+            className="px-4 py-2 bg-accent-primary hover:bg-accent-hover text-text-inverse rounded-lg disabled:opacity-50 flex items-center gap-2"
           >
             {isSubmitting ? (
               <>
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <div className="w-4 h-4 border-2 border-text-inverse/30 border-t-text-inverse rounded-full animate-spin"></div>
                 Creating...
               </>
             ) : (

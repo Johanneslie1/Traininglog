@@ -9,6 +9,7 @@ import { usePersistedFormState } from '@/hooks/usePersistedState';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import toast from 'react-hot-toast';
 import { buildSupersetDisplayTitle, buildSupersetLabels } from '@/utils/supersetUtils';
+import { ActivityBadge, Button, EmptyState, InlineErrorState, MetricChip } from '@/components/ui';
 
 interface ProgramBuilderProps {
   onClose: () => void;
@@ -48,6 +49,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
     type: 'reorderSessions' | 'moveExercise';
     data: any;
   } | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   // Update persisted state whenever form values change
   useEffect(() => {
@@ -63,19 +65,19 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
     const type = normalizeActivityType(activityType);
     switch (type) {
       case ActivityType.RESISTANCE:
-        return { label: 'Resistance', color: 'bg-activity-resistance', textColor: 'text-white' };
+        return { label: 'Resistance', color: 'bg-activity-resistance', textColor: 'text-text-on-accent' };
       case ActivityType.SPORT:
-        return { label: 'Sport', color: 'bg-activity-sport', textColor: 'text-white' };
+        return { label: 'Sport', color: 'bg-activity-sport', textColor: 'text-text-on-accent' };
       case ActivityType.STRETCHING:
-        return { label: 'Stretching', color: 'bg-activity-stretching', textColor: 'text-white' };
+        return { label: 'Stretching', color: 'bg-activity-stretching', textColor: 'text-text-on-accent' };
       case ActivityType.ENDURANCE:
-        return { label: 'Endurance', color: 'bg-activity-endurance', textColor: 'text-white' };
+        return { label: 'Endurance', color: 'bg-activity-endurance', textColor: 'text-text-on-accent' };
       case ActivityType.SPEED_AGILITY:
-        return { label: 'Speed/Agility', color: 'bg-activity-speed', textColor: 'text-white' };
+        return { label: 'Speed/Agility', color: 'bg-activity-speed', textColor: 'text-text-on-accent' };
       case ActivityType.OTHER:
-        return { label: 'Other', color: 'bg-activity-other', textColor: 'text-white' };
+        return { label: 'Other', color: 'bg-activity-other', textColor: 'text-text-on-accent' };
       default:
-        return { label: 'Resistance', color: 'bg-activity-resistance', textColor: 'text-white' };
+        return { label: 'Resistance', color: 'bg-activity-resistance', textColor: 'text-text-on-accent' };
     }
   };
 
@@ -210,7 +212,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
 
   const saveAsTemplate = () => {
     if (!programName.trim()) {
-      alert('Please enter a program name first');
+      setValidationError('Please enter a program name before saving a template.');
       return;
     }
 
@@ -233,28 +235,30 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
       templates.push(newTemplate);
       localStorage.setItem('program-templates', JSON.stringify(templates));
       setShowSaveTemplate(false);
-      alert(`Program saved as template!\n\n📊 ${analytics.totalExercises} exercises across ${analytics.uniqueTypes.length} activity type${analytics.uniqueTypes.length !== 1 ? 's' : ''}${analytics.isBalanced ? '\n🎯 Well-balanced program!' : ''}`);
+      toast.success(`Template saved with ${analytics.totalExercises} exercises`);
     } catch (error) {
       console.error('Error saving template:', error);
-      alert('Failed to save template');
+      setValidationError('Failed to save template.');
     }
   };
 
   const handleSaveProgram = () => {
+    setValidationError(null);
+
     if (!programName.trim()) {
-      alert('Please enter a program name');
+      setValidationError('Please enter a program name.');
       return;
     }
 
     if (sessions.length === 0) {
-      alert('Please add at least one session');
+      setValidationError('Please add at least one session.');
       return;
     }
 
     // Activity type validation
     const analytics = getProgramAnalytics();
     if (analytics.totalExercises === 0) {
-      alert('Please add at least one exercise to your program');
+      setValidationError('Please add at least one exercise to your program.');
       return;
     }
 
@@ -272,7 +276,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
 
     const user = auth.currentUser;
     if (!user) {
-      alert('You must be logged in to save a program');
+      setValidationError('You must be logged in to save a program.');
       return;
     }
 
@@ -359,21 +363,24 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
                   type="text"
                   placeholder="e.g., Push/Pull/Legs, Upper/Lower Split"
                   value={programName}
-                  onChange={(e) => setProgramName(e.target.value)}
+                  onChange={(e) => {
+                    setProgramName(e.target.value);
+                    setValidationError(null);
+                  }}
                   className="w-full px-4 py-3 bg-bg-secondary text-text-primary rounded-lg border border-border focus:border-accent-primary focus:outline-none text-lg"
                   autoFocus
                 />
               </div>
               
               <div className="flex justify-end">
-                <button
+                <Button
                   onClick={() => setShowSaveTemplate(true)}
                   disabled={sessions.length === 0}
-                  className="px-4 py-3 bg-status-success text-white rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+                  variant="success"
+                  leftIcon={<BookmarkIcon className="w-4 h-4" />}
                 >
-                  <BookmarkIcon className="w-4 h-4" />
                   Save as Template
-                </button>
+                </Button>
               </div>
 
               <div>
@@ -388,23 +395,25 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
                   rows={3}
                 />
               </div>
+              {validationError && (
+                <InlineErrorState title="Program needs attention" message={validationError} />
+              )}
             </div>
           </div>
 
           {/* Sessions List */}
           <div className="flex-1 overflow-y-auto p-6">
             {sessions.length === 0 ? (
-              <div className="text-center text-text-tertiary py-16">
-                <PlusIcon className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                <h3 className="text-xl font-medium mb-2">No sessions added yet</h3>
-                <p className="text-text-tertiary mb-6">Create sessions like "Push Day", "Pull Day", "Leg Day" etc.</p>
-                <button
-                  onClick={handleAddSession}
-                  className="px-8 py-4 bg-accent-primary text-text-on-accent rounded-lg hover:bg-accent-hover flex items-center gap-2 mx-auto text-lg font-medium transition-colors"
-                >
-                  <PlusIcon className="w-5 h-5" />
-                  Create First Session
-                </button>
+              <div className="rounded-2xl border border-border bg-bg-primary/40">
+                <EmptyState
+                  icon={<PlusIcon className="h-8 w-8" />}
+                  title="No sessions added yet"
+                  description="Create sessions like Push Day, Pull Day, Leg Day, or warm-ups to structure this program."
+                  primaryAction={{
+                    label: 'Create First Session',
+                    onClick: handleAddSession,
+                  }}
+                />
               </div>
             ) : (
               <div className="space-y-4">
@@ -413,9 +422,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
                     Program Sessions ({sessions.length})
                   </h3>
                   <div className="flex items-center gap-3">
-                    <div className="text-sm text-text-tertiary">
-                      {getTotalExercises()} exercises
-                    </div>
+                    <MetricChip label="Exercises" value={getTotalExercises()} />
                     {lastAction && (
                       <button
                         onClick={handleUndo}
@@ -450,7 +457,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
                                 className={`bg-bg-secondary rounded-xl p-5 border transition-all ${
                                   snapshot.isDragging
                                     ? 'border-accent-primary shadow-2xl shadow-glow scale-102'
-                                    : 'border-border hover:border-white/20'
+                                    : 'border-border hover:border-border-hover'
                                 }`}
                               >
                                 <div className="flex items-center justify-between mb-4">
@@ -459,7 +466,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
                                     {...provided.dragHandleProps}
                                     className="flex items-center gap-3 flex-1 cursor-move group"
                                   >
-                                    <div className="p-2 rounded-lg bg-white/5 group-hover:bg-hover-overlay transition-colors">
+                                    <div className="min-h-[44px] min-w-[44px] p-2 rounded-lg bg-bg-tertiary group-hover:bg-hover-overlay transition-colors flex items-center justify-center">
                                       <MenuIcon className="w-5 h-5 text-text-tertiary group-hover:text-text-primary" />
                                     </div>
                                     <div className="flex-1">
@@ -477,7 +484,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
                                     <button
                                       onClick={() => moveSession(index, 'up')}
                                       disabled={index === 0}
-                                      className="p-2 text-text-tertiary hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                    className="min-h-[44px] min-w-[44px] p-2 text-text-tertiary hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                                       title="Move up"
                                     >
                                       ↑
@@ -485,21 +492,21 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
                                     <button
                                       onClick={() => moveSession(index, 'down')}
                                       disabled={index === sessions.length - 1}
-                                      className="p-2 text-text-tertiary hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                      className="min-h-[44px] min-w-[44px] p-2 text-text-tertiary hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                                       title="Move down"
                                     >
                                       ↓
                                     </button>
                                     <button
                                       onClick={() => handleEditSession(session)}
-                                      className="p-2 text-accent-secondary hover:text-accent-primary transition-colors"
+                                      className="min-h-[44px] min-w-[44px] p-2 text-accent-secondary hover:text-accent-primary transition-colors"
                                       title="Edit session"
                                     >
                                       <PencilIcon className="w-4 h-4" />
                                     </button>
                                     <button
                                       onClick={() => handleDeleteSession(session.id)}
-                                      className="p-2 text-red-400 hover:text-red-300 transition-colors"
+                                      className="min-h-[44px] min-w-[44px] p-2 text-error-text hover:bg-error-bg rounded-lg transition-colors"
                                       title="Delete session"
                                     >
                                       <TrashIcon className="w-4 h-4" />
@@ -536,7 +543,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
                                           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                             {session.exercises.slice(0, 6).map((exercise, idx) => (
                                               <div key={`${session.id}-exercise-${idx}-${exercise.name}`} className="text-sm text-text-secondary flex items-center gap-2">
-                                                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${getActivityTypeInfo(exercise.activityType).color}`}></span>
+                                                <ActivityBadge activityType={exercise.activityType} variant="dot" />
                                                 {labelsByExerciseId[exercise.id]?.label && (
                                                   <span className="px-1.5 py-0.5 text-xs rounded border border-border-focus bg-focus-bg text-accent-secondary">
                                                     {labelsByExerciseId[exercise.id].label}
@@ -545,9 +552,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
                                                 <span className="truncate flex-1">
                                                   {exercise.name}
                                                 </span>
-                                                <span className={`px-1.5 py-0.5 text-xs rounded ${getActivityTypeInfo(exercise.activityType).color} ${getActivityTypeInfo(exercise.activityType).textColor}`}>
-                                                  {getActivityTypeInfo(exercise.activityType).label}
-                                                </span>
+                                                <ActivityBadge activityType={exercise.activityType} variant="soft" />
                                               </div>
                                             ))}
                                           </div>
@@ -598,13 +603,11 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
                       const typeInfo = getActivityTypeInfo(type);
                       const count = getProgramAnalytics().activityCounts[type] || 0;
                       return (
-                        <span 
-                          key={type} 
-                          className={`px-2 py-0.5 text-xs rounded-full ${typeInfo.color} ${typeInfo.textColor}`}
+                        <ActivityBadge
+                          key={type}
+                          activityType={type}
                           title={`${count} ${typeInfo.label.toLowerCase()} exercise${count !== 1 ? 's' : ''}`}
-                        >
-                          {typeInfo.label} ({count})
-                        </span>
+                        />
                       );
                     })}
                   </div>
@@ -619,19 +622,18 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
                 </div>
               </div>
               <div className="flex gap-3">
-                <button 
+                <Button
                   onClick={handleClose}
-                  className="px-6 py-3 bg-bg-tertiary text-text-primary rounded-lg hover:bg-bg-quaternary transition-colors"
+                  variant="secondary"
                 >
                   Cancel
-                </button>
-                <button 
+                </Button>
+                <Button
                   onClick={handleSaveProgram}
                   disabled={sessions.length === 0 || !programName.trim()}
-                  className="px-6 py-3 bg-accent-primary text-text-on-accent rounded-lg hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
                 >
                   {initialProgram ? 'Update Program' : 'Save Program'}
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -668,7 +670,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
               </button>
               <button
                 onClick={saveAsTemplate}
-                className="flex-1 px-4 py-2 bg-status-success text-white rounded hover:opacity-90"
+                className="flex-1 px-4 py-2 bg-status-success text-text-on-accent rounded hover:opacity-90"
               >
                 Save Template
               </button>

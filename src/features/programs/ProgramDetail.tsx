@@ -1,6 +1,5 @@
 import React, { useState, useCallback } from 'react';
 import { Program, ProgramSession } from '@/types/program';
-import { ActivityType } from '@/types/activityTypes';
 import { normalizeActivityType } from '@/types/activityLog';
 import { formatPrescription } from '@/utils/prescriptionUtils';
 import SessionBuilder from './SessionBuilder';
@@ -13,7 +12,7 @@ import { auth } from '@/services/firebase/config';
 import { signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import SideMenu from '@/components/SideMenu';
-import { EmptyState, MetricChip, StickyBottomActions } from '@/components/ui';
+import { ActivityBadge, Button, EmptyState, MetricChip, StickyBottomActions } from '@/components/ui';
 
 interface Props {
   program: Program;
@@ -44,27 +43,6 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
       (!!exercise.instructions && exercise.instructionMode === 'freeform')
     )).length
   ), 0);
-
-  // Helper function to get activity type display info
-  const getActivityTypeInfo = (activityType?: ActivityType) => {
-    const type = normalizeActivityType(activityType);
-    switch (type) {
-      case ActivityType.RESISTANCE:
-        return { label: 'Resistance', color: 'bg-activity-resistance', textColor: 'text-text-on-accent' };
-      case ActivityType.SPORT:
-        return { label: 'Sport', color: 'bg-activity-sport', textColor: 'text-text-on-accent' };
-      case ActivityType.STRETCHING:
-        return { label: 'Stretching', color: 'bg-activity-stretching', textColor: 'text-text-on-accent' };
-      case ActivityType.ENDURANCE:
-        return { label: 'Endurance', color: 'bg-activity-endurance', textColor: 'text-text-on-accent' };
-      case ActivityType.SPEED_AGILITY:
-        return { label: 'Speed/Agility', color: 'bg-activity-speed', textColor: 'text-text-on-accent' };
-      case ActivityType.OTHER:
-        return { label: 'Other', color: 'bg-activity-other', textColor: 'text-text-on-accent' };
-      default:
-        return { label: 'Resistance', color: 'bg-activity-resistance', textColor: 'text-text-on-accent' };
-    }
-  };
 
   React.useEffect(() => {
     // Set a timeout to show loading state for maximum 2 seconds
@@ -310,7 +288,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
           </div>
           <button
             onClick={handleLogout}
-            className="px-3 py-1.5 bg-status-error hover:opacity-90 text-white text-sm rounded-lg transition-colors flex-shrink-0"
+            className="px-3 py-1.5 bg-status-error hover:opacity-90 text-text-on-accent text-sm rounded-lg transition-colors flex-shrink-0"
           >
             Logout
           </button>
@@ -369,7 +347,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                 <div className="flex items-center gap-1 sm:gap-2">
                   <button
                     onClick={handleSaveProgramEdit}
-                    className="p-1.5 sm:p-2.5 hover:bg-bg-tertiary/60 rounded-xl transition-all duration-200 text-green-400 hover:text-green-300"
+                    className="p-1.5 sm:p-2.5 hover:bg-success-bg rounded-xl transition-all duration-200 text-success-text"
                     title="Save changes"
                     aria-label="Save changes"
                   >
@@ -379,7 +357,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                   </button>
                   <button
                     onClick={handleCancelProgramEdit}
-                    className="p-1.5 sm:p-2.5 hover:bg-bg-tertiary/60 rounded-xl transition-all duration-200 text-red-400 hover:text-red-300"
+                    className="p-1.5 sm:p-2.5 hover:bg-error-bg rounded-xl transition-all duration-200 text-error-text"
                     title="Cancel edit"
                     aria-label="Cancel edit"
                   >
@@ -392,7 +370,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                 <div className="flex items-center gap-1 sm:gap-2">
                   <button
                     onClick={() => setShowShareDialog(true)}
-                    className="p-1.5 sm:p-2.5 hover:bg-bg-tertiary/60 rounded-xl transition-all duration-200 text-green-400 hover:text-green-300"
+                    className="p-1.5 sm:p-2.5 hover:bg-success-bg rounded-xl transition-all duration-200 text-success-text"
                     title="Share program"
                     aria-label={`Share program ${program.name}`}
                   >
@@ -400,7 +378,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                   </button>
                   <button
                     onClick={handleProgramEdit}
-                    className="p-1.5 sm:p-2.5 hover:bg-bg-tertiary/60 rounded-xl transition-all duration-200 text-blue-400 hover:text-blue-300"
+                    className="p-1.5 sm:p-2.5 hover:bg-info-bg rounded-xl transition-all duration-200 text-info-text"
                     title="Edit program"
                     aria-label={`Edit program ${program.name}`}
                   >
@@ -409,12 +387,12 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                   <button
                     onClick={handleDeleteProgram}
                     disabled={isDeletingProgram}
-                    className="p-1.5 sm:p-2.5 hover:bg-bg-tertiary/60 rounded-xl transition-all duration-200 text-red-400 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="p-1.5 sm:p-2.5 hover:bg-error-bg rounded-xl transition-all duration-200 text-error-text disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Delete program"
                     aria-label={`Delete program ${program.name}`}
                   >
                     {isDeletingProgram ? (
-                      <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+                      <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-error-text border-t-transparent rounded-full animate-spin" />
                     ) : (
                       <TrashIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                     )}
@@ -467,7 +445,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                         aria-label="Duplicate session"
                       >
                         {duplicatingSessionId === session.id ? (
-                          <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                          <div className="w-4 h-4 border-2 border-accent-primary border-t-transparent rounded-full animate-spin" />
                         ) : (
                           <DuplicateIcon className="w-4 h-4" />
                         )}
@@ -519,9 +497,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <h4 className="text-base font-medium text-text-primary">{exercise.name}</h4>
-                            <span className={`px-2 py-0.5 text-xs rounded-full ${getActivityTypeInfo(exercise.activityType).color} ${getActivityTypeInfo(exercise.activityType).textColor}`}>
-                              {getActivityTypeInfo(exercise.activityType).label}
-                            </span>
+                            <ActivityBadge activityType={exercise.activityType} />
                           </div>
                           {exercise.prescription && exercise.instructionMode === 'structured' ? (
                             <div className="text-sm text-accent-secondary">
@@ -556,18 +532,18 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
         
         {!selectionMode && (
           <StickyBottomActions>
-            <button 
+            <Button
               onClick={() => {
                 setEditingSession(null);
                 setShowSessionBuilder(true);
               }} 
-              className="flex min-h-[52px] w-full items-center justify-center gap-3 rounded-2xl border border-border-focus bg-gradient-brand-button py-4 font-semibold text-text-on-accent shadow-lg transition-all duration-200 hover:opacity-95 hover:shadow-glow"
+              fullWidth
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
               Add New Session
-            </button>
+            </Button>
           </StickyBottomActions>
         )}
         </div>

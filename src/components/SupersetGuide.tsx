@@ -9,13 +9,13 @@ const SupersetGuide: React.FC<SupersetGuideProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-bg-primary/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-bg-secondary rounded-lg shadow-xl max-w-md w-full p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-text-primary">Superset Guide</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            className="p-2 hover:bg-hover-overlay rounded-lg transition-colors"
             aria-label="Close guide"
           >
             <svg className="w-5 h-5 text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -24,7 +24,7 @@ const SupersetGuide: React.FC<SupersetGuideProps> = ({ isOpen, onClose }) => {
           </button>
         </div>
         
-        <div className="space-y-4 text-gray-300">
+        <div className="space-y-4 text-text-secondary">
           <div>
             <h3 className="font-semibold text-text-primary mb-2">What is a Superset?</h3>
             <p className="text-sm">
@@ -54,14 +54,14 @@ const SupersetGuide: React.FC<SupersetGuideProps> = ({ isOpen, onClose }) => {
             </ul>
           </div>
           
-          <div className="bg-blue-500/10 border border-blue-500 rounded-lg p-3">
+          <div className="bg-info-bg border border-info-border rounded-lg p-3 text-info-text">
             <div className="flex items-center gap-2 mb-1">
-              <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-info-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <span className="text-sm font-medium text-text-primary">Tip</span>
+              <span className="text-sm font-medium">Tip</span>
             </div>
-            <p className="text-sm text-gray-300">
+            <p className="text-sm">
               Exercises in a superset will be highlighted with a blue border and connected visually.
             </p>
           </div>

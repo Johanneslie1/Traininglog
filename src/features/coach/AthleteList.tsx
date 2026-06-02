@@ -9,6 +9,8 @@ import {
   FilterIcon
 } from '@heroicons/react/outline';
 import toast from 'react-hot-toast';
+import { LoadingState } from '@/components/ui';
+import { formatRelativeDate } from '@/utils/displayFormatters';
 
 const AthleteList: React.FC = () => {
   const navigate = useNavigate();
@@ -72,18 +74,6 @@ const AthleteList: React.FC = () => {
     return Math.floor(diffMs / (1000 * 60 * 60 * 24));
   };
 
-  const getTimeAgo = (lastActive?: string): string => {
-    if (!lastActive) return 'Never';
-    
-    const days = getInactiveDays(lastActive);
-    if (days === null) return 'Never';
-    if (days === 0) return 'Today';
-    if (days === 1) return '1 day ago';
-    if (days < 7) return `${days} days ago`;
-    if (days < 30) return `${Math.floor(days / 7)} week${Math.floor(days / 7) !== 1 ? 's' : ''} ago`;
-    return `${Math.floor(days / 30)} month${Math.floor(days / 30) !== 1 ? 's' : ''} ago`;
-  };
-
   const getActivityBadge = (athlete: AthleteData) => {
     const days = getInactiveDays(athlete.lastActive);
     
@@ -117,17 +107,14 @@ const AthleteList: React.FC = () => {
     return (
       <div className="inline-flex items-center gap-1.5 text-xs text-warning-text bg-warning-bg border border-warning-border rounded-full px-2 py-1">
         <ClockIcon className="h-3 w-3 mr-1" />
-        {getTimeAgo(athlete.lastActive)}
+        {athlete.lastActive ? formatRelativeDate(athlete.lastActive) : 'Never'}
       </div>
     );
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
-        <span className="ml-3 text-text-tertiary">Loading athletes...</span>
-      </div>
+      <LoadingState label="Loading athletes..." className="py-12" />
     );
   }
 

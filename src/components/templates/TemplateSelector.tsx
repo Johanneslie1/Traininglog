@@ -120,7 +120,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-bg-primary/90 z-50 flex items-center justify-center p-4">
       <div className="bg-bg-secondary rounded-lg max-w-4xl w-full max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border">
@@ -155,7 +155,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                 onClick={() => setSelectedCategory(category)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
                   selectedCategory === category
-                    ? `${categoryColors[category]} text-white`
+                    ? `${categoryColors[category]} text-text-inverse`
                     : 'bg-bg-primary text-text-secondary hover:bg-bg-hover'
                 }`}
               >
@@ -183,7 +183,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                     onClick={() => handleSelectTemplate(template)}
                     className={`w-full text-left p-3 rounded-lg transition-colors ${
                       selectedTemplate?.id === template.id
-                        ? 'bg-accent text-white'
+                        ? 'bg-accent text-text-inverse'
                         : 'bg-bg-primary hover:bg-bg-hover text-text-primary'
                     }`}
                   >
@@ -192,7 +192,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                       <div className="flex-1 min-w-0">
                         <div className="font-medium truncate">{template.name}</div>
                         <div className={`text-sm ${
-                          selectedTemplate?.id === template.id ? 'text-white/80' : 'text-text-secondary'
+                          selectedTemplate?.id === template.id ? 'text-text-inverse/80' : 'text-text-secondary'
                         }`}>
                           {template.sets.length} sets
                           {template.isDefault ? ' • Predefined' : ' • Custom'}
@@ -218,7 +218,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                       </h3>
                       <div className="text-sm text-text-secondary">
                         {selectedTemplate.category && (
-                          <span className={`inline-block px-2 py-0.5 rounded text-white text-xs ${
+                          <span className={`inline-block px-2 py-0.5 rounded text-text-inverse text-xs ${
                             categoryColors[selectedTemplate.category]
                           }`}>
                             {selectedTemplate.category}
@@ -323,7 +323,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
           <button
             onClick={handleApplyTemplate}
             disabled={!selectedTemplate}
-            className="px-6 py-2 bg-accent text-white rounded-lg hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-2 bg-accent text-text-inverse rounded-lg hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Apply Template
           </button>

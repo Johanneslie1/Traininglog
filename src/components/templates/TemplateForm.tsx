@@ -238,7 +238,7 @@ export const TemplateForm: React.FC<TemplateFormProps> = ({
         {showLabels && (
           <label htmlFor={fieldId} className="block text-sm font-medium text-text-secondary">
             {field.label}
-            {field.required && <span className="text-red-400 ml-1">*</span>}
+            {field.required && <span className="text-error-text ml-1">*</span>}
             {field.unit && !field.type.includes('duration') && !field.type.includes('distance') && (
               <span className="text-text-tertiary ml-1">({field.unit})</span>
             )}
@@ -246,7 +246,7 @@ export const TemplateForm: React.FC<TemplateFormProps> = ({
         )}
         {renderInput()}
         {error && (
-          <p className="text-red-400 text-xs mt-1">{error}</p>
+          <p className="text-error-text text-xs mt-1">{error}</p>
         )}
       </div>
     );

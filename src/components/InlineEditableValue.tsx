@@ -131,7 +131,7 @@ export const InlineEditableValue: React.FC<InlineEditableValueProps> = ({
     <span
       onClick={startEditing}
       className={`
-        cursor-pointer hover:bg-white/10 rounded px-2 py-1 transition-colors
+        cursor-pointer hover:bg-hover-overlay rounded px-2 py-1 transition-colors
         ${displayClassName} ${className}
       `}
       role="button"

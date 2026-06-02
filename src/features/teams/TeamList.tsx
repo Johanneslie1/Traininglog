@@ -5,6 +5,8 @@ import { PlusIcon, UsersIcon, CalendarIcon } from '@heroicons/react/outline';
 import CreateTeamModal from './CreateTeamModal';
 import toast from 'react-hot-toast';
 import { useIsCoach } from '@/hooks/useUserRole';
+import { EmptyState, LoadingState } from '@/components/ui';
+import { formatDisplayDate } from '@/utils/displayFormatters';
 
 interface TeamListProps {
   embedded?: boolean;
@@ -40,21 +42,12 @@ const TeamList: React.FC<TeamListProps> = ({ embedded = false }) => {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
-    });
-  };
-
   if (loading) {
     return (
-      <div className={`flex items-center justify-center ${embedded ? 'py-10' : 'min-h-[100dvh] bg-bg-primary'}`}>
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
-        <div className="ml-3 text-text-primary">Loading teams...</div>
-      </div>
+      <LoadingState
+        label="Loading teams..."
+        className={embedded ? 'py-10' : 'min-h-[100dvh] bg-bg-primary'}
+      />
     );
   }
 
@@ -92,11 +85,11 @@ const TeamList: React.FC<TeamListProps> = ({ embedded = false }) => {
         {/* Teams Grid */}
         {teams.length === 0 ? (
           <div className="bg-bg-secondary border border-border rounded-lg p-12 text-center">
-            <UsersIcon className="h-16 w-16 text-text-tertiary mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">No Teams Yet</h2>
-            <p className="text-text-tertiary mb-6">
-              Create your first team to start coaching athletes
-            </p>
+            <EmptyState
+              icon={<UsersIcon className="h-10 w-10" />}
+              title="No Teams Yet"
+              description="Create your first team to start coaching athletes"
+            />
             <button
               onClick={() => setShowCreateModal(true)}
               className="inline-flex items-center gap-2 px-6 py-3 bg-accent-primary hover:bg-accent-hover text-text-inverse rounded-lg font-medium transition-colors"
@@ -139,7 +132,7 @@ const TeamList: React.FC<TeamListProps> = ({ embedded = false }) => {
                 {/* Meta Info */}
                 <div className="flex items-center text-sm text-text-tertiary">
                   <CalendarIcon className="h-4 w-4 mr-1" />
-                  Created {formatDate(team.createdAt)}
+                  Created {formatDisplayDate(team.createdAt)}
                 </div>
               </div>
             ))}

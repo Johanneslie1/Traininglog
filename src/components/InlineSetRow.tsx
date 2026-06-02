@@ -62,7 +62,7 @@ export const InlineSetRow: React.FC<InlineSetRowProps> = ({
               displayClassName="text-text-primary font-medium"
               formatDisplay={(v) => `${v ?? 0}kg`}
             />
-            <span className="text-gray-500">×</span>
+            <span className="text-text-tertiary">×</span>
             <InlineEditableValue
               value={set.reps}
               onSave={(val) => handleUpdate('reps', val)}
@@ -92,7 +92,7 @@ export const InlineSetRow: React.FC<InlineSetRowProps> = ({
             />
             {set.distance !== undefined && set.distance > 0 && (
               <>
-                <span className="text-gray-500">•</span>
+                <span className="text-text-tertiary">•</span>
                 <InlineEditableValue
                   value={set.distance}
                   onSave={(val) => handleUpdate('distance', val)}
@@ -110,7 +110,7 @@ export const InlineSetRow: React.FC<InlineSetRowProps> = ({
         
         if (set.averageHeartRate) {
           fields.push(
-            <span key="hr" className="text-gray-400 text-sm">
+            <span key="hr" className="text-text-tertiary text-sm">
               ❤️ {set.averageHeartRate} bpm
             </span>
           );
@@ -129,7 +129,7 @@ export const InlineSetRow: React.FC<InlineSetRowProps> = ({
               displayClassName="text-text-primary font-medium"
               formatDisplay={(v) => `${v ?? 0}s hold`}
             />
-            <span className="text-gray-500">×</span>
+            <span className="text-text-tertiary">×</span>
             <InlineEditableValue
               value={set.reps}
               onSave={(val) => handleUpdate('reps', val)}
@@ -144,7 +144,7 @@ export const InlineSetRow: React.FC<InlineSetRowProps> = ({
         
         if (set.intensity !== undefined) {
           fields.push(
-            <span key="intensity" className="text-gray-400 text-sm">
+            <span key="intensity" className="text-text-tertiary text-sm">
               Intensity: {set.intensity}/10
             </span>
           );
@@ -165,8 +165,8 @@ export const InlineSetRow: React.FC<InlineSetRowProps> = ({
             />
             {set.calories && set.calories > 0 && (
               <>
-                <span className="text-gray-500">•</span>
-                <span className="text-gray-400 text-sm">
+                <span className="text-text-tertiary">•</span>
+                <span className="text-text-tertiary text-sm">
                   🔥 {set.calories} cal
                 </span>
               </>
@@ -176,7 +176,7 @@ export const InlineSetRow: React.FC<InlineSetRowProps> = ({
         
         if (set.rpe !== undefined) {
           fields.push(
-            <span key="rpe" className="text-gray-400 text-sm">
+            <span key="rpe" className="text-text-tertiary text-sm">
               RPE: {set.rpe}/10
             </span>
           );
@@ -197,7 +197,7 @@ export const InlineSetRow: React.FC<InlineSetRowProps> = ({
             />
             {set.distance && set.distance > 0 && (
               <>
-                <span className="text-gray-500">•</span>
+                <span className="text-text-tertiary">•</span>
                 <InlineEditableValue
                   value={set.distance}
                   onSave={(val) => handleUpdate('distance', val)}
@@ -211,7 +211,7 @@ export const InlineSetRow: React.FC<InlineSetRowProps> = ({
             )}
             {set.height && set.height > 0 && (
               <>
-                <span className="text-gray-500">•</span>
+                <span className="text-text-tertiary">•</span>
                 <InlineEditableValue
                   value={set.height}
                   onSave={(val) => handleUpdate('height', val)}
@@ -258,7 +258,7 @@ export const InlineSetRow: React.FC<InlineSetRowProps> = ({
     >
       {/* Set number */}
       <div className="flex items-center gap-3 min-w-0 flex-1">
-        <span className="text-gray-400 font-medium w-8 shrink-0">
+        <span className="text-text-tertiary font-medium w-8 shrink-0">
           #{setIndex + 1}
         </span>
         
@@ -270,10 +270,10 @@ export const InlineSetRow: React.FC<InlineSetRowProps> = ({
 
       {/* Edit indicator */}
       {onEdit && (
-        <svg 
-          className="w-5 h-5 text-gray-500 shrink-0 ml-2" 
-          fill="none" 
-          stroke="currentColor" 
+        <svg
+          className="w-5 h-5 text-text-tertiary shrink-0 ml-2"
+          fill="none"
+          stroke="currentColor"
           viewBox="0 0 24 24"
         >
           <path 

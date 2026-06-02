@@ -57,7 +57,7 @@ export const WorkoutSummary: React.FC<WorkoutSummaryProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-bg-primary/90 flex items-center justify-center z-50">
       <div className="w-full max-w-md mx-4 bg-bg-secondary rounded-lg max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="bg-accent-primary p-4 text-center">
@@ -68,7 +68,7 @@ export const WorkoutSummary: React.FC<WorkoutSummaryProps> = ({
         </div>
 
         {/* Stats */}
-        <div className="p-4 border-b border-gray-700">
+        <div className="p-4 border-b border-border">
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
               <div className="text-text-primary text-xl font-bold">{exercises.length}</div>
@@ -88,7 +88,7 @@ export const WorkoutSummary: React.FC<WorkoutSummaryProps> = ({
         {/* Exercise List */}
         <div className="max-h-[50vh] overflow-y-auto">
           {exercises.map((exercise) => (
-            <div key={exercise.id} className="flex items-center p-4 border-b border-gray-800">
+            <div key={exercise.id} className="flex items-center p-4 border-b border-border">
               {/* Exercise Icon */}
               <div className="w-12 h-12 bg-bg-tertiary rounded-lg flex items-center justify-center mr-4">
                 <span className="text-2xl">{getExerciseIcon(exercise.exerciseName)}</span>
@@ -104,14 +104,14 @@ export const WorkoutSummary: React.FC<WorkoutSummaryProps> = ({
                 <div className="flex flex-wrap gap-1">
                   {exercise.sets.map((set, setIndex) => {
                     // Determine color based on difficulty
-                    let bgColor = 'bg-gray-700';
+                    let bgColor = 'bg-bg-tertiary';
                     if (set.difficulty) {
                       switch (set.difficulty) {
-                        case DifficultyCategory.WARMUP: bgColor = 'bg-blue-600'; break;
-                        case DifficultyCategory.EASY: bgColor = 'bg-gray-600'; break;
-                        case DifficultyCategory.NORMAL: bgColor = 'bg-yellow-600'; break;
-                        case DifficultyCategory.HARD: bgColor = 'bg-red-600'; break;
-                        default: bgColor = 'bg-gray-700';
+                        case DifficultyCategory.WARMUP: bgColor = 'bg-difficulty-warmup'; break;
+                        case DifficultyCategory.EASY: bgColor = 'bg-difficulty-easy'; break;
+                        case DifficultyCategory.NORMAL: bgColor = 'bg-difficulty-normal'; break;
+                        case DifficultyCategory.HARD: bgColor = 'bg-difficulty-hard'; break;
+                        default: bgColor = 'bg-bg-tertiary';
                       }
                     }
 
@@ -144,7 +144,7 @@ export const WorkoutSummary: React.FC<WorkoutSummaryProps> = ({
         <div className="p-4">
           <button
             onClick={onClose}
-            className="w-full bg-green-600 text-text-primary py-3 rounded-lg font-medium hover:bg-green-700 transition-colors"
+            className="w-full bg-success text-text-inverse py-3 rounded-lg font-medium hover:opacity-90 transition-opacity"
           >
             Done
           </button>

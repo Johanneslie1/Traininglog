@@ -121,13 +121,13 @@ const ShareSessionDialog: React.FC<ShareSessionDialogProps> = ({
   const exerciseCount = session.exercises?.length || 0;
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-bg-primary/70 flex items-center justify-center z-50 p-4">
       <div className="bg-bg-secondary rounded-lg max-w-2xl w-full shadow-2xl border border-border max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border">
           <div className="flex items-center gap-3">
             <ShareIcon className="h-6 w-6 text-primary-500" />
-            <h2 className="text-xl font-bold text-white">Share Session</h2>
+            <h2 className="text-xl font-bold text-text-primary">Share Session</h2>
           </div>
           <button
             onClick={onClose}
@@ -143,7 +143,7 @@ const ShareSessionDialog: React.FC<ShareSessionDialogProps> = ({
           {/* Session Info */}
           <div className="bg-bg-tertiary rounded-lg p-4">
             <p className="text-text-secondary mb-1">
-              Sharing: <span className="font-semibold text-white">{session.name}</span>
+              Sharing: <span className="font-semibold text-text-primary">{session.name}</span>
             </p>
             {sourceProgramName && (
               <p className="text-sm text-text-muted mb-1">
@@ -207,7 +207,7 @@ const ShareSessionDialog: React.FC<ShareSessionDialogProps> = ({
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <UsersIcon className="h-5 w-5 text-primary-500" />
-                          <h3 className="font-semibold text-white">{team.name}</h3>
+                          <h3 className="font-semibold text-text-primary">{team.name}</h3>
                           <span className="text-sm text-text-muted">
                             ({team.members.length} member{team.members.length !== 1 ? 's' : ''})
                           </span>
@@ -251,7 +251,7 @@ const ShareSessionDialog: React.FC<ShareSessionDialogProps> = ({
                                   </span>
                                 </div>
                                 <div>
-                                  <p className="text-white font-medium">
+                                  <p className="text-text-primary font-medium">
                                     {member.firstName} {member.lastName}
                                   </p>
                                   <p className="text-xs text-text-muted">{member.email}</p>
@@ -280,11 +280,11 @@ const ShareSessionDialog: React.FC<ShareSessionDialogProps> = ({
           <button
             onClick={handleShare}
             disabled={isSharing || selectedAthleteIds.size === 0 || loadingTeams}
-            className="flex-1 px-4 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            className="flex-1 px-4 py-3 bg-accent-primary hover:bg-accent-hover text-text-inverse rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
           >
             {isSharing ? (
               <>
-                <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white mr-2"></div>
+                <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-text-inverse mr-2"></div>
                 Sharing...
               </>
             ) : (

@@ -17,6 +17,8 @@ import {
   DuplicateIcon,
   CalendarIcon 
 } from '@heroicons/react/outline';
+import { InlineErrorState, LoadingState } from '@/components/ui';
+import { formatDisplayDate } from '@/utils/displayFormatters';
 
 const mapActivityTypeToExerciseType = (activityType: ActivityType): Exercise['type'] => {
   switch (activityType) {
@@ -317,22 +319,11 @@ export const ExerciseHistoryPicker: React.FC<ExerciseHistoryPickerProps> = ({
     onSelectExercises(exercisesToAdd as { exercise: Exercise; sets: ExerciseSet[] }[]);
   };
 
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    }).format(date);
-  };
-
   if (loading) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-[120]">
+      <div className="fixed inset-0 flex items-center justify-center bg-bg-primary/60 z-[120]">
         <div className="bg-bg-secondary p-8 rounded-lg">
-          <div className="flex items-center gap-3">
-            <div className="w-6 h-6 border-2 border-border border-t-accent-primary rounded-full animate-spin"></div>
-            <span className="text-white">Loading exercise history...</span>
-          </div>
+          <LoadingState label="Loading exercise history..." />
         </div>
       </div>
     );
@@ -340,10 +331,9 @@ export const ExerciseHistoryPicker: React.FC<ExerciseHistoryPickerProps> = ({
 
   if (error) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-[120]">
+      <div className="fixed inset-0 flex items-center justify-center bg-bg-primary/60 z-[120]">
         <div className="bg-bg-secondary p-6 rounded-lg max-w-md">
-          <h2 className="text-xl font-bold text-red-400 mb-4">Error</h2>
-          <p className="text-white mb-4">{error}</p>
+          <InlineErrorState className="mb-4" title="Could not load exercise history" message={error} />
           <div className="flex gap-2">
             <button onClick={loadExerciseHistory} className="px-4 py-2 bg-accent-primary text-text-on-accent rounded-lg">
               Retry
@@ -358,12 +348,12 @@ export const ExerciseHistoryPicker: React.FC<ExerciseHistoryPickerProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-[120]">
+    <div className="fixed inset-0 flex items-center justify-center bg-bg-primary/60 z-[120]">
       <div className="bg-bg-secondary rounded-lg w-full max-w-4xl h-5/6 flex flex-col shadow-xl">
         {/* Header */}
         <div className="p-6 border-b border-white/10">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold text-white">Add Exercises from History</h2>
+            <h2 className="text-2xl font-bold text-text-primary">Add Exercises from History</h2>
             <button 
               onClick={onClose}
               className="text-text-tertiary hover:text-text-primary text-2xl"
@@ -420,7 +410,7 @@ export const ExerciseHistoryPicker: React.FC<ExerciseHistoryPickerProps> = ({
                 <button
                   onClick={handleCopyDay}
                   disabled={!selectedDate}
-                  className="px-4 py-2 bg-status-success text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-status-success text-text-inverse rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Copy Day
                 </button>
@@ -494,7 +484,7 @@ export const ExerciseHistoryPicker: React.FC<ExerciseHistoryPickerProps> = ({
                             className="w-4 h-4"
                             onClick={(e) => e.stopPropagation()}
                           />
-                          <h3 className="text-white font-medium">{stat.name}</h3>
+                          <h3 className="text-text-primary font-medium">{stat.name}</h3>
                         </div>
                         <button
                           onClick={(e) => {
@@ -510,7 +500,7 @@ export const ExerciseHistoryPicker: React.FC<ExerciseHistoryPickerProps> = ({
                       </div>
                       
                       <div className="flex items-center gap-4 text-sm text-text-tertiary">
-                        <span>Last: {formatDate(stat.lastPerformed)}</span>
+                        <span>Last: {formatDisplayDate(stat.lastPerformed)}</span>
                         <span>{stat.totalSessions} session{stat.totalSessions !== 1 ? 's' : ''}</span>
                         {stat.bestSet && (
                           <span>

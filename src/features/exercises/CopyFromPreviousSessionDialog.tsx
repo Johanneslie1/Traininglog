@@ -6,6 +6,7 @@ import { ActivityType } from '@/types/activityTypes';
 import { resolveActivityTypeFromExerciseLike } from '@/utils/activityTypeResolver';
 import AppOverlay from '@/components/ui/AppOverlay';
 import { logger } from '@/utils/logger';
+import { EmptyState, InlineErrorState, LoadingState, StatusBadge } from '@/components/ui';
 
 interface Props {
   isOpen: boolean;
@@ -180,7 +181,7 @@ const CopyFromPreviousSessionDialog: React.FC<Props> = ({
           <h2 className="text-2xl font-medium">Copy from Previous Session</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-white/5 rounded-lg transition-colors"
+            className="p-2 hover:bg-hover-overlay rounded-lg transition-colors"
             aria-label="Close dialog"
           >
             <XIcon className="w-6 h-6" />
@@ -238,9 +239,7 @@ const CopyFromPreviousSessionDialog: React.FC<Props> = ({
 
           {/* Exercise List */}
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-accent-primary"></div>
-            </div>
+                <LoadingState label="Loading exercises..." className="py-12" />
           ) : (
             <>
               {filteredExercises.length > 0 ? (
@@ -251,7 +250,7 @@ const CopyFromPreviousSessionDialog: React.FC<Props> = ({
                       className={`flex items-center p-4 rounded-lg cursor-pointer transition-colors ${
                         ex.id && selectedExercises.has(ex.id)
                           ? 'bg-focus-bg border border-border-focus'
-                          : 'hover:bg-white/5 border border-transparent'
+                          : 'hover:bg-hover-overlay border border-transparent'
                       }`}
                     >
                       <input
@@ -280,20 +279,17 @@ const CopyFromPreviousSessionDialog: React.FC<Props> = ({
                   ))}
                 </div>
               ) : selectedDate && (
-                <div className="flex flex-col items-center justify-center py-12 text-text-tertiary">
-                  <div className="text-lg">No exercises found for this date</div>
-                  {searchQuery && (
-                    <div className="mt-2">Try adjusting your search terms</div>
-                  )}
-                </div>
+                <EmptyState
+                  title="No exercises found for this date"
+                  description={searchQuery ? 'Try adjusting your search terms' : 'Choose another date to copy from.'}
+                  illustration="calendar"
+                />
               )}
             </>
           )}
 
           {copyError && (
-            <div className="mb-4 rounded-md border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-              {copyError}
-            </div>
+            <InlineErrorState className="mb-4" title="Could not copy exercises" message={copyError} />
           )}
         </div>
 
@@ -308,10 +304,11 @@ const CopyFromPreviousSessionDialog: React.FC<Props> = ({
             </button>
             <div className="flex items-center gap-3">
               {copySuccess && (
-                <span className="text-green-500 flex items-center">
-                  <CheckIcon className="w-5 h-5 mr-1" />
-                  Copied successfully!
-                </span>
+                <StatusBadge
+                  label="Copied successfully!"
+                  tone="success"
+                  icon={<CheckIcon className="w-4 h-4" />}
+                />
               )}
               <button
                 className="px-6 py-2 bg-accent-primary text-text-primary rounded-lg hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"

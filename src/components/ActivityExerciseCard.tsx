@@ -3,6 +3,14 @@ import { ExerciseSet } from '@/types/sets';
 import { UnifiedExerciseData } from '@/utils/unifiedExerciseUtils';
 import { ActivityType } from '@/types/activityTypes';
 import { normalizeActivityType } from '@/types/activityLog';
+import { ActivityBadge, getActivityDisplayInfo } from '@/components/ui';
+import {
+  formatDistance,
+  formatDuration,
+  formatPace,
+  formatTrainingVolume,
+  formatWeight,
+} from '@/utils/displayFormatters';
 
 interface ActivityExerciseCardProps {
   exercise: UnifiedExerciseData;
@@ -16,28 +24,29 @@ interface ActivityExerciseCardProps {
 // Activity type color configuration - shared across the app
 export const getActivityTypeInfo = (activityType?: ActivityType) => {
   const type = normalizeActivityType(activityType);
+  const sharedInfo = getActivityDisplayInfo(type);
   switch (type) {
     case ActivityType.RESISTANCE:
       return { 
-        label: 'Resistance', 
-        color: 'bg-blue-600', 
-        textColor: 'text-blue-100',
-        borderColor: 'border-blue-500',
-        bgLight: 'bg-blue-600/10',
+        label: sharedInfo.label,
+        color: 'bg-activity-resistance',
+        textColor: 'text-text-on-accent',
+        borderColor: 'border-activity-resistance',
+        bgLight: 'bg-activity-resistance-bg',
         icon: '🏋️'
       };
     case ActivityType.SPORT:
       return { 
-        label: 'Sport', 
-        color: 'bg-green-600', 
-        textColor: 'text-green-100',
-        borderColor: 'border-green-500',
-        bgLight: 'bg-green-600/10',
+        label: sharedInfo.label,
+        color: 'bg-activity-sport',
+        textColor: 'text-text-on-accent',
+        borderColor: 'border-activity-sport',
+        bgLight: 'bg-activity-sport-bg',
         icon: '⚽'
       };
     case ActivityType.STRETCHING:
       return { 
-        label: 'Stretching', 
+        label: sharedInfo.label,
         color: 'bg-activity-stretching', 
         textColor: 'text-text-on-accent',
         borderColor: 'border-activity-stretching',
@@ -46,38 +55,38 @@ export const getActivityTypeInfo = (activityType?: ActivityType) => {
       };
     case ActivityType.ENDURANCE:
       return { 
-        label: 'Endurance', 
-        color: 'bg-orange-600', 
-        textColor: 'text-orange-100',
-        borderColor: 'border-orange-500',
-        bgLight: 'bg-orange-600/10',
+        label: sharedInfo.label,
+        color: 'bg-activity-endurance',
+        textColor: 'text-text-on-accent',
+        borderColor: 'border-activity-endurance',
+        bgLight: 'bg-activity-endurance-bg',
         icon: '🏃'
       };
     case ActivityType.SPEED_AGILITY:
       return { 
-        label: 'Speed/Agility', 
-        color: 'bg-red-600', 
-        textColor: 'text-red-100',
-        borderColor: 'border-red-500',
-        bgLight: 'bg-red-600/10',
+        label: sharedInfo.label,
+        color: 'bg-activity-speed',
+        textColor: 'text-text-on-accent',
+        borderColor: 'border-activity-speed',
+        bgLight: 'bg-activity-speed-bg',
         icon: '⚡'
       };
     case ActivityType.OTHER:
       return { 
-        label: 'Other', 
-        color: 'bg-bg-tertiary', 
-        textColor: 'text-gray-100',
-        borderColor: 'border-gray-500',
-        bgLight: 'bg-bg-tertiary/10',
+        label: sharedInfo.label,
+        color: 'bg-activity-other',
+        textColor: 'text-text-on-accent',
+        borderColor: 'border-activity-other',
+        bgLight: 'bg-activity-other-bg',
         icon: '📋'
       };
     default:
       return { 
-        label: 'Resistance', 
-        color: 'bg-blue-600', 
-        textColor: 'text-blue-100',
-        borderColor: 'border-blue-500',
-        bgLight: 'bg-blue-600/10',
+        label: sharedInfo.label,
+        color: 'bg-activity-other',
+        textColor: 'text-text-on-accent',
+        borderColor: 'border-activity-other',
+        bgLight: 'bg-activity-other-bg',
         icon: '🏋️'
       };
   }
@@ -135,14 +144,6 @@ const calculateMetrics = (sets: ExerciseSet[], activityType?: ActivityType) => {
   }
 };
 
-// Format pace as min:sec per km
-const formatPace = (paceMinPerKm: number): string => {
-  if (!paceMinPerKm || paceMinPerKm === Infinity) return '--:--';
-  const mins = Math.floor(paceMinPerKm);
-  const secs = Math.round((paceMinPerKm - mins) * 60);
-  return `${mins}:${secs.toString().padStart(2, '0')}/km`;
-};
-
 const ActivityExerciseCard: React.FC<ActivityExerciseCardProps> = ({
   exercise,
   onEdit,
@@ -167,10 +168,10 @@ const ActivityExerciseCard: React.FC<ActivityExerciseCardProps> = ({
           <div className="flex items-center gap-3 text-sm">
             <span className="text-text-primary font-medium">
               {metrics.setCount}×{Math.round((metrics as any).totalReps / metrics.setCount)}
-              {(metrics as any).avgWeight > 0 && ` @ ${Math.round((metrics as any).avgWeight)}kg`}
+              {(metrics as any).avgWeight > 0 && ` @ ${formatWeight((metrics as any).avgWeight)}`}
             </span>
             <span className="text-text-tertiary">
-              {(metrics as any).totalVolume.toLocaleString()}kg vol
+              {formatTrainingVolume((metrics as any).totalVolume)} vol
             </span>
           </div>
         );
@@ -178,11 +179,11 @@ const ActivityExerciseCard: React.FC<ActivityExerciseCardProps> = ({
         return (
           <div className="flex items-center gap-3 text-sm">
             {(metrics as any).totalDistance > 0 && (
-              <span className="text-text-primary font-medium">{(metrics as any).totalDistance.toFixed(1)}km</span>
+              <span className="text-text-primary font-medium">{formatDistance((metrics as any).totalDistance)}</span>
             )}
-            <span className="text-text-tertiary">{(metrics as any).totalDuration}min</span>
+            <span className="text-text-tertiary">{formatDuration((metrics as any).totalDuration)}</span>
             {(metrics as any).avgPace > 0 && (
-              <span className="text-orange-300">{formatPace((metrics as any).avgPace)}</span>
+              <span className="text-activity-endurance">{formatPace((metrics as any).avgPace)}</span>
             )}
           </div>
         );
@@ -194,7 +195,7 @@ const ActivityExerciseCard: React.FC<ActivityExerciseCardProps> = ({
               <span className="text-text-tertiary">{(metrics as any).totalTime}s</span>
             )}
             {(metrics as any).maxHeight > 0 && (
-              <span className="text-red-300">{(metrics as any).maxHeight}cm</span>
+              <span className="text-activity-speed">{(metrics as any).maxHeight}cm</span>
             )}
           </div>
         );
@@ -213,9 +214,9 @@ const ActivityExerciseCard: React.FC<ActivityExerciseCardProps> = ({
       case ActivityType.SPORT:
         return (
           <div className="flex items-center gap-3 text-sm">
-            <span className="text-text-primary font-medium">{(metrics as any).totalDuration}min</span>
+            <span className="text-text-primary font-medium">{formatDuration((metrics as any).totalDuration)}</span>
             {(metrics as any).avgPerformance > 0 && (
-              <span className="text-green-300">★ {(metrics as any).avgPerformance.toFixed(1)}</span>
+              <span className="text-activity-sport">★ {(metrics as any).avgPerformance.toFixed(1)}</span>
             )}
             {(metrics as any).totalCalories > 0 && (
               <span className="text-text-tertiary">{(metrics as any).totalCalories}kcal</span>
@@ -266,15 +267,15 @@ const ActivityExerciseCard: React.FC<ActivityExerciseCardProps> = ({
       case ActivityType.RESISTANCE:
         return (
           <div className="flex items-center gap-2 text-sm">
-            <span className="text-text-primary font-medium">{set.weight}kg × {set.reps}</span>
+            <span className="text-text-primary font-medium">{formatWeight(set.weight)} × {set.reps}</span>
             {set.rpe !== undefined && <span className="text-text-secondary">RPE {set.rpe}</span>}
           </div>
         );
       case ActivityType.ENDURANCE:
         return (
           <div className="flex items-center gap-2 text-sm">
-            {set.duration && <span className="text-text-primary">{set.duration}min</span>}
-            {set.distance && <span className="text-text-secondary">{set.distance}km</span>}
+            {set.duration && <span className="text-text-primary">{formatDuration(set.duration)}</span>}
+            {set.distance && <span className="text-text-secondary">{formatDistance(set.distance)}</span>}
             {set.averageHeartRate && <span className="text-text-secondary">♥ {set.averageHeartRate}</span>}
             {set.calories && <span className="text-text-tertiary">{set.calories}kcal</span>}
           </div>
@@ -300,15 +301,15 @@ const ActivityExerciseCard: React.FC<ActivityExerciseCardProps> = ({
       case ActivityType.SPORT:
         return (
           <div className="flex items-center gap-2 text-sm">
-            {set.duration && <span className="text-text-primary">{set.duration}min</span>}
-            {set.performance && <span className="text-green-300">★ {set.performance}</span>}
+            {set.duration && <span className="text-text-primary">{formatDuration(set.duration)}</span>}
+            {set.performance && <span className="text-activity-sport">★ {set.performance}</span>}
             {set.calories && <span className="text-text-tertiary">{set.calories}kcal</span>}
           </div>
         );
       default:
         return (
           <div className="flex items-center gap-2 text-sm">
-            {set.duration && <span className="text-text-primary">{set.duration}min</span>}
+            {set.duration && <span className="text-text-primary">{formatDuration(set.duration)}</span>}
             {set.reps && <span className="text-text-tertiary">{set.reps} reps</span>}
           </div>
         );
@@ -325,11 +326,11 @@ const ActivityExerciseCard: React.FC<ActivityExerciseCardProps> = ({
           <div className="grid grid-cols-3 gap-2 text-xs">
             <div>
               <span className="text-text-tertiary">Volume</span>
-              <div className="text-text-primary font-medium">{(metrics as any).totalVolume.toLocaleString()}kg</div>
+              <div className="text-text-primary font-medium">{formatTrainingVolume((metrics as any).totalVolume)}</div>
             </div>
             <div>
               <span className="text-text-tertiary">Max</span>
-              <div className="text-text-primary font-medium">{(metrics as any).maxWeight}kg</div>
+              <div className="text-text-primary font-medium">{formatWeight((metrics as any).maxWeight)}</div>
             </div>
             <div>
               <span className="text-text-tertiary">Reps</span>
@@ -342,11 +343,11 @@ const ActivityExerciseCard: React.FC<ActivityExerciseCardProps> = ({
           <div className="grid grid-cols-3 gap-2 text-xs">
             <div>
               <span className="text-text-tertiary">Distance</span>
-              <div className="text-text-primary font-medium">{(metrics as any).totalDistance.toFixed(1)}km</div>
+              <div className="text-text-primary font-medium">{formatDistance((metrics as any).totalDistance)}</div>
             </div>
             <div>
               <span className="text-text-tertiary">Time</span>
-              <div className="text-text-primary font-medium">{(metrics as any).totalDuration}min</div>
+              <div className="text-text-primary font-medium">{formatDuration((metrics as any).totalDuration)}</div>
             </div>
             <div>
               <span className="text-text-tertiary">Pace</span>
@@ -397,7 +398,7 @@ const ActivityExerciseCard: React.FC<ActivityExerciseCardProps> = ({
           <div className="grid grid-cols-3 gap-2 text-xs">
             <div>
               <span className="text-text-tertiary">Duration</span>
-              <div className="text-text-primary font-medium">{(metrics as any).totalDuration}min</div>
+              <div className="text-text-primary font-medium">{formatDuration((metrics as any).totalDuration)}</div>
             </div>
             {(metrics as any).totalCalories > 0 && (
               <div>
@@ -436,7 +437,7 @@ const ActivityExerciseCard: React.FC<ActivityExerciseCardProps> = ({
           <div className="flex items-center gap-2 flex-1 min-w-0">
             {/* Exercise number */}
             {exerciseNumber && (
-              <div className={`flex items-center justify-center min-w-6 h-6 ${typeInfo.color} text-text-primary text-xs font-bold rounded-full px-1.5`}>
+              <div className={`flex items-center justify-center min-w-6 h-6 ${typeInfo.color} text-text-on-accent text-xs font-bold rounded-full px-1.5`}>
                 {exerciseNumber}
               </div>
             )}
@@ -448,9 +449,7 @@ const ActivityExerciseCard: React.FC<ActivityExerciseCardProps> = ({
             <h3 className="text-base font-medium text-text-primary truncate">{exercise.exerciseName}</h3>
             
             {/* Activity type badge */}
-            <span className={`px-2 py-0.5 text-xs rounded-full ${typeInfo.color} ${typeInfo.textColor} flex-shrink-0`}>
-              {typeInfo.label}
-            </span>
+            <ActivityBadge activityType={activityType} variant="solid" className="flex-shrink-0" />
           </div>
 
           {/* Actions */}
@@ -458,7 +457,7 @@ const ActivityExerciseCard: React.FC<ActivityExerciseCardProps> = ({
             {/* Expand/collapse button */}
             <button
               onClick={() => setIsExpanded(!isExpanded)}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              className="p-2 hover:bg-hover-overlay rounded-lg transition-colors"
               aria-label={isExpanded ? "Collapse details" : "Expand details"}
             >
               <svg
@@ -476,7 +475,7 @@ const ActivityExerciseCard: React.FC<ActivityExerciseCardProps> = ({
                 {onEdit && (
                   <button 
                     onClick={onEdit}
-                    className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                    className="p-2 hover:bg-hover-overlay rounded-lg transition-colors"
                     aria-label="Edit exercise"
                   >
                     <svg className="w-5 h-5 text-text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -487,7 +486,7 @@ const ActivityExerciseCard: React.FC<ActivityExerciseCardProps> = ({
                 {onDelete && (
                   <button 
                     onClick={onDelete}
-                    className="p-2 hover:bg-white/10 rounded-lg transition-colors text-red-500"
+                    className="p-2 hover:bg-error-bg rounded-lg transition-colors text-error-text"
                     aria-label="Delete exercise"
                   >
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

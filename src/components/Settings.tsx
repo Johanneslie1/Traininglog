@@ -12,6 +12,7 @@ import { useTheme, Theme } from '@/context/ThemeContext';
 import { useSettings } from '@/context/SettingsContext';
 import { uploadToOneDrive, signOutOneDrive, isOneDriveSignedIn } from '@/services/onedriveService';
 import toast from 'react-hot-toast';
+import { EmptyState, LoadingState, MetricChip, StatusBadge } from '@/components/ui';
 
 type DateRangePreset = 'last7days' | 'last30days' | 'thisMonth' | 'lastMonth' | 'allTime' | 'custom';
 
@@ -377,7 +378,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-start sm:items-center justify-center overflow-y-auto p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-bg-primary/70 backdrop-blur-sm z-[100] flex items-start sm:items-center justify-center overflow-y-auto p-4" onClick={onClose}>
       <div className="bg-bg-primary rounded-xl w-full max-w-2xl h-[90vh] max-h-[90vh] flex flex-col overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
           {/* Header */}
           <div className="p-6 border-b border-border">
@@ -440,7 +441,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                   aria-label="Toggle progressive overload auto-fill"
                 >
                   <div
-                    className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transform transition-transform ${
+                    className={`absolute top-0.5 w-5 h-5 rounded-full bg-text-inverse transform transition-transform ${
                       appSettings.useProgressiveOverload ? 'translate-x-6' : 'translate-x-1'
                     }`}
                   />
@@ -457,7 +458,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                       }`}
                     >
                       <div
-                        className={`w-5 h-5 rounded-full bg-white transform transition-transform ${
+                        className={`w-5 h-5 rounded-full bg-text-inverse transform transition-transform ${
                           setting.value ? 'translate-x-6' : 'translate-x-1'
                         }`}
                       />
@@ -648,26 +649,31 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
 
                 {/* Data preview (own data only) */}
                 {user?.id && (
-                  <div className="bg-bg-secondary rounded-md p-3">
+                  <div className="rounded-2xl border border-border bg-bg-secondary p-4">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <div>
+                        <h4 className="text-sm font-semibold text-text-primary">Export summary</h4>
+                        <p className="text-xs text-text-secondary">Preview of records included in the selected range.</p>
+                      </div>
+                      <StatusBadge
+                        label={isLoadingPreview ? 'Loading' : exportPreview ? 'Ready' : 'No Data'}
+                        tone={isLoadingPreview ? 'info' : exportPreview ? 'success' : 'default'}
+                      />
+                    </div>
                     {isLoadingPreview ? (
-                      <p className="text-sm text-text-secondary">Loading preview...</p>
+                      <LoadingState label="Loading preview..." variant="spinner" className="p-3" />
                     ) : exportPreview ? (
-                      <div className="text-sm text-text-secondary">
-                        <span className="font-medium text-text-primary">
-                          {exportPreview.sessionCount} sessions
-                        </span>
-                        {', '}
-                        <span className="font-medium text-text-primary">
-                          {exportPreview.exerciseCount} exercises
-                        </span>
-                        {', '}
-                        <span className="font-medium text-text-primary">
-                          {exportPreview.setCount} sets
-                        </span>
-                        {' in selected range (your data)'}
+                      <div className="flex flex-wrap gap-2">
+                        <MetricChip label="Sessions" value={exportPreview.sessionCount} tone="accent" />
+                        <MetricChip label="Exercises" value={exportPreview.exerciseCount} />
+                        <MetricChip label="Sets" value={exportPreview.setCount} />
                       </div>
                     ) : (
-                      <p className="text-sm text-text-secondary">No data in selected range</p>
+                      <EmptyState
+                        title="No export data found"
+                        description="Try a wider date range or log training data before exporting."
+                        illustration="calendar"
+                      />
                     )}
                   </div>
                 )}
@@ -700,7 +706,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                     <h4 className="text-sm font-medium text-text-primary mb-1">
                       Upload to OneDrive
                       {oneDriveSignedIn && (
-                        <span className="ml-2 text-xs text-emerald-500 font-normal">Connected</span>
+                        <StatusBadge status="connected" className="ml-2" />
                       )}
                     </h4>
                     <p className="text-xs text-text-secondary">

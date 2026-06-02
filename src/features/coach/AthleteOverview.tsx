@@ -44,6 +44,7 @@ import {
 import toast from 'react-hot-toast';
 import AthleteAssignDialog from './AthleteAssignDialog';
 import StatTile from './StatTile';
+import { formatDisplayDate } from '@/utils/displayFormatters';
 
 type DateFilter = '7days' | '30days' | '3months' | 'all';
 type ExportDateRangePreset = 'last7days' | 'last30days' | 'thisMonth' | 'lastMonth' | 'allTime' | 'custom';
@@ -349,15 +350,6 @@ const AthleteOverview: React.FC = () => {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
-    });
-  };
-
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'not-started':
@@ -439,7 +431,7 @@ const AthleteOverview: React.FC = () => {
               </div>
               <div>
                 <h1 className="text-2xl font-bold">Athlete #{athleteId?.slice(0, 8) || 'Unknown'}</h1>
-                <p className="text-text-tertiary text-sm">Member since {formatDate(new Date().toISOString())}</p>
+                <p className="text-text-tertiary text-sm">Member since {formatDisplayDate(new Date().toISOString())}</p>
               </div>
             </div>
 
@@ -458,7 +450,7 @@ const AthleteOverview: React.FC = () => {
             <div className="flex items-center gap-2 text-sm">
               <CalendarIcon className="h-4 w-4 text-text-tertiary" />
               <span className="text-text-tertiary">
-                Last active: {formatDate(stats.lastActive)}
+                Last active: {formatDisplayDate(stats.lastActive)}
               </span>
             </div>
           )}
@@ -539,7 +531,7 @@ const AthleteOverview: React.FC = () => {
                   onClick={() => setExportScope(key)}
                   className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
                     exportScope === key
-                      ? 'bg-accent-primary text-white'
+                      ? 'bg-accent-primary text-text-inverse'
                       : 'bg-bg-tertiary text-text-secondary hover:bg-bg-primary'
                   }`}
                 >
@@ -565,7 +557,7 @@ const AthleteOverview: React.FC = () => {
                   onClick={() => handleExportPresetChange(key)}
                   className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
                     exportDateRange.preset === key
-                      ? 'bg-accent-primary text-white'
+                      ? 'bg-accent-primary text-text-inverse'
                       : 'bg-bg-tertiary text-text-secondary hover:bg-bg-primary'
                   }`}
                 >
@@ -706,7 +698,7 @@ const AthleteOverview: React.FC = () => {
                         Program #{assignment.programId.slice(0, 8)}
                       </h3>
                       <p className="text-sm text-text-tertiary">
-                        Assigned {formatDate(assignment.assignedAt)}
+                        Assigned {formatDisplayDate(assignment.assignedAt)}
                       </p>
                     </div>
                     {getStatusBadge(assignment.status)}
@@ -741,7 +733,7 @@ const AthleteOverview: React.FC = () => {
                         Session #{assignment.sharedSessionId?.slice(0, 8) || assignment.id.slice(0, 8)}
                       </h3>
                       <p className="text-sm text-text-tertiary">
-                        Assigned {formatDate(assignment.assignedAt)}
+                        Assigned {formatDisplayDate(assignment.assignedAt)}
                       </p>
                     </div>
                     {getStatusBadge(assignment.status)}
@@ -792,7 +784,7 @@ const AthleteOverview: React.FC = () => {
                       <div key={session.sessionKey} className="bg-bg-tertiary rounded-lg p-3 border border-border">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm font-semibold text-text-primary">{formatDate(session.date)}</p>
+                            <p className="text-sm font-semibold text-text-primary">{formatDisplayDate(session.date)}</p>
                             <p className="text-xs text-text-tertiary">
                               {session.totalExercises} exercise{session.totalExercises !== 1 ? 's' : ''}
                             </p>
@@ -832,7 +824,7 @@ const AthleteOverview: React.FC = () => {
                         <div className="flex items-start justify-between gap-4">
                           <div>
                             <h4 className="text-sm font-semibold text-text-primary">{exercise.name}</h4>
-                            <p className="text-xs text-text-tertiary">{formatDate(exercise.date)}</p>
+                            <p className="text-xs text-text-tertiary">{formatDisplayDate(exercise.date)}</p>
                             <p className="text-xs text-text-tertiary capitalize">{exercise.activityType || 'other'} • {exercise.sourceCollection}</p>
                           </div>
                           <div className="text-right">

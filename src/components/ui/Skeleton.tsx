@@ -88,6 +88,28 @@ export const ExerciseListSkeleton: React.FC<{ count?: number }> = ({ count = 3 }
   </div>
 );
 
+export const MetricGridSkeleton: React.FC<{ count?: number }> = ({ count = 3 }) => (
+  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+    {Array.from({ length: count }).map((_, index) => (
+      <div key={index} className="rounded-2xl border border-border bg-bg-secondary p-4">
+        <Skeleton width="45%" height="12px" />
+        <Skeleton width="70%" height="28px" className="mt-3" />
+      </div>
+    ))}
+  </div>
+);
+
+export const SettingsSectionSkeleton: React.FC = () => (
+  <div className="rounded-2xl border border-border bg-bg-secondary p-4">
+    <Skeleton width="40%" height="18px" />
+    <Skeleton width="70%" className="mt-2" />
+    <div className="mt-4 space-y-3">
+      <Skeleton height="42px" />
+      <Skeleton height="42px" />
+    </div>
+  </div>
+);
+
 // Add shimmer styles to global CSS
 if (typeof document !== 'undefined') {
   const style = document.createElement('style');

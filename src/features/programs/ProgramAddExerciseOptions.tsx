@@ -33,22 +33,22 @@ const helperCategories: Category[] = [
 ];
 
 const muscleGroups: Category[] = [
-  { id: 'chest', name: 'Chest', icon: '💪', bgColor: 'bg-brand-light', iconBgColor: 'bg-green-600', textColor: 'text-text-primary' },
-  { id: 'back', name: 'Back', icon: '🔙', bgColor: 'bg-brand-light', iconBgColor: 'bg-blue-600', textColor: 'text-text-primary' },
-  { id: 'legs', name: 'Legs', icon: '🦵', bgColor: 'bg-brand-light', iconBgColor: 'bg-yellow-600', textColor: 'text-text-primary' },
+  { id: 'chest', name: 'Chest', icon: '💪', bgColor: 'bg-brand-light', iconBgColor: 'bg-activity-resistance', textColor: 'text-text-primary' },
+  { id: 'back', name: 'Back', icon: '🔙', bgColor: 'bg-brand-light', iconBgColor: 'bg-activity-endurance', textColor: 'text-text-primary' },
+  { id: 'legs', name: 'Legs', icon: '🦵', bgColor: 'bg-brand-light', iconBgColor: 'bg-warning-bg', textColor: 'text-text-primary' },
   { id: 'shoulders', name: 'Shoulders', icon: '🎯', bgColor: 'bg-brand-light', iconBgColor: 'bg-cyan-600', textColor: 'text-text-primary' },
-  { id: 'arms', name: 'Arms', icon: '💪', bgColor: 'bg-brand-light', iconBgColor: 'bg-red-600', textColor: 'text-text-primary' },
+  { id: 'arms', name: 'Arms', icon: '💪', bgColor: 'bg-brand-light', iconBgColor: 'bg-error-bg', textColor: 'text-text-primary' },
   { id: 'core', name: 'Core', icon: '⭕', bgColor: 'bg-brand-light', iconBgColor: 'bg-primary-600', textColor: 'text-text-primary' },
   { id: 'fullBody', name: 'Full-Body', icon: '👤', bgColor: 'bg-brand-light', iconBgColor: 'bg-orange-600', textColor: 'text-text-primary' },
 ];
 
 const activityTypes = [
-  { id: 'resistance', name: 'Resistance Training', description: 'Weight lifting, strength training', icon: '🏋️‍♂️', bgColor: 'bg-gradient-to-r from-blue-500 to-blue-700', textColor: 'text-text-primary', examples: 'Squats, Deadlifts, Bench Press' },
-  { id: 'sport', name: 'Sports', description: 'Team sports, competitions', icon: '⚽', bgColor: 'bg-gradient-to-r from-green-500 to-green-700', textColor: 'text-text-primary', examples: 'Football, Basketball, Tennis' },
-  { id: 'stretching', name: 'Stretching & Flexibility', description: 'Mobility, yoga, flexibility', icon: '🧘‍♀️', bgColor: 'bg-gradient-to-r from-primary-300 to-primary-500', textColor: 'text-text-primary', examples: 'Yoga, Static Stretches' },
-  { id: 'endurance', name: 'Endurance Training', description: 'Cardio, running, cycling', icon: '🏃‍♂️', bgColor: 'bg-gradient-to-r from-red-500 to-red-700', textColor: 'text-text-primary', examples: 'Running, Cycling, Swimming' },
-  { id: 'speedAgility', name: 'Speed, Agility & Plyo', description: 'Sprints, jumps, change of direction', icon: '⚡', bgColor: 'bg-gradient-to-r from-yellow-500 to-amber-600', textColor: 'text-text-primary', examples: 'Ladder, Sprints, Jumps' },
-  { id: 'other', name: 'Other Activities', description: 'Custom & misc activities', icon: '🎯', bgColor: 'bg-gradient-to-r from-gray-500 to-gray-700', textColor: 'text-text-primary', examples: 'Meditation, Therapy' }
+  { id: 'resistance', name: 'Resistance Training', description: 'Weight lifting, strength training', icon: '🏋️‍♂️', bgColor: 'bg-activity-resistance-bg', textColor: 'text-text-primary', examples: 'Squats, Deadlifts, Bench Press' },
+  { id: 'sport', name: 'Sports', description: 'Team sports, competitions', icon: '⚽', bgColor: 'bg-activity-sport-bg', textColor: 'text-text-primary', examples: 'Football, Basketball, Tennis' },
+  { id: 'stretching', name: 'Stretching & Flexibility', description: 'Mobility, yoga, flexibility', icon: '🧘‍♀️', bgColor: 'bg-activity-stretching-bg', textColor: 'text-text-primary', examples: 'Yoga, Static Stretches' },
+  { id: 'endurance', name: 'Endurance Training', description: 'Cardio, running, cycling', icon: '🏃‍♂️', bgColor: 'bg-activity-endurance-bg', textColor: 'text-text-primary', examples: 'Running, Cycling, Swimming' },
+  { id: 'speedAgility', name: 'Speed, Agility & Plyo', description: 'Sprints, jumps, change of direction', icon: '⚡', bgColor: 'bg-activity-speed-bg', textColor: 'text-text-primary', examples: 'Ladder, Sprints, Jumps' },
+  { id: 'other', name: 'Other Activities', description: 'Custom & misc activities', icon: '🎯', bgColor: 'bg-activity-other-bg', textColor: 'text-text-primary', examples: 'Meditation, Therapy' }
 ];
 
 export const ProgramAddExerciseOptions: React.FC<ProgramAddExerciseOptionsProps> = ({
@@ -102,7 +102,7 @@ export const ProgramAddExerciseOptions: React.FC<ProgramAddExerciseOptionsProps>
     const setUniversalSearchQuery = (_: string) => {};
     
     return (
-      <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex flex-col z-[110]">
+      <div className="fixed inset-0 bg-bg-primary backdrop-blur-sm flex flex-col z-[110]">
         <header className="sticky top-0 flex items-center justify-between p-4 bg-bg-secondary border-b border-border">
           <div className="flex items-center space-x-3">
             <button
@@ -131,7 +131,7 @@ export const ProgramAddExerciseOptions: React.FC<ProgramAddExerciseOptionsProps>
                   placeholder="Search all exercise databases..."
                   value={universalSearchQuery}
                   onChange={(e) => setUniversalSearchQuery(e.target.value)}
-                  className="w-full px-4 py-3 pl-10 bg-white/10 border border-white/20 rounded-lg text-text-primary placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 pl-10 bg-bg-secondary border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-accent-primary focus:border-transparent"
                   autoFocus
                 />
                 <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
@@ -233,7 +233,7 @@ export const ProgramAddExerciseOptions: React.FC<ProgramAddExerciseOptionsProps>
 
   const renderActivityPicker = (activity: ActivityType, title: string, subtitle: string) => {
     return (
-      <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-[110]">
+      <div className="fixed inset-0 bg-bg-primary/90 flex items-center justify-center p-4 z-[110]">
         <div className="bg-bg-secondary rounded-xl w-full max-w-5xl max-h-[90vh] flex flex-col">
           <button
             onClick={() => setView('main')}
@@ -279,7 +279,7 @@ export const ProgramAddExerciseOptions: React.FC<ProgramAddExerciseOptionsProps>
 
   if (view === 'resistance') {
     return (
-      <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex flex-col z-[110]">
+      <div className="fixed inset-0 bg-bg-primary backdrop-blur-sm flex flex-col z-[110]">
         <header className="sticky top-0 flex items-center justify-between p-4 bg-bg-secondary border-b border-border">
           <div className="flex items-center space-x-3">
             <button
@@ -306,7 +306,7 @@ export const ProgramAddExerciseOptions: React.FC<ProgramAddExerciseOptionsProps>
                 <input
                   type="text"
                   placeholder="Search exercises..."
-                  className="w-full px-4 py-3 pl-10 bg-white/10 border border-white/20 rounded-lg text-text-primary placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 pl-10 bg-bg-secondary border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-accent-primary focus:border-transparent"
                   onFocus={() => { setSelectedCategory(null); setView('search'); }}
                 />
                 <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
@@ -343,7 +343,7 @@ export const ProgramAddExerciseOptions: React.FC<ProgramAddExerciseOptionsProps>
   }
 
   return (
-    <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex flex-col z-[110]">
+    <div className="fixed inset-0 bg-bg-primary backdrop-blur-sm flex flex-col z-[110]">
       <header className="sticky top-0 flex items-center justify-between p-4 bg-bg-secondary border-b border-border">
         <h2 className="text-xl font-bold text-text-primary">Add Exercise</h2>
         <button
@@ -398,7 +398,7 @@ export const ProgramAddExerciseOptions: React.FC<ProgramAddExerciseOptionsProps>
                 setCreateDialogActivityType(undefined);
                 setShowCreateDialog(true);
               }}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/10 border border-border text-text-primary hover:bg-white/15 transition-colors"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-bg-secondary border border-border text-text-primary hover:bg-bg-tertiary transition-colors"
             >
               <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 102 0v-5h5a1 1 0 100-2h-5V4a1 1 0 00-1-1z" clipRule="evenodd" />

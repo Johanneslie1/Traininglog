@@ -1,14 +1,13 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { SharedSessionAssignment } from '@/types/program';
 import { getSharedSessionsForAthlete, updateSharedSessionStatus } from '@/services/sessionService';
-import { ActivityType } from '@/types/activityTypes';
 import { normalizeActivityType } from '@/types/activityLog';
 import { formatPrescription } from '@/utils/prescriptionUtils';
 import { ClockIcon, CheckCircleIcon, UserIcon } from '@heroicons/react/outline';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { EmptyState, MetricChip, SectionDivider, Skeleton } from '@/components/ui';
-import { formatRelativeDate } from '@/utils/displayFormatters';
+import { ActivityBadge, EmptyState, MetricChip, SectionDivider, Skeleton, StatusBadge, ViewToggle } from '@/components/ui';
+import { formatRelativeDate, formatRelativeWithAbsolute } from '@/utils/displayFormatters';
 
 interface SharedSessionsListProps {
   embedded?: boolean;
@@ -18,6 +17,7 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
   const [assignments, setAssignments] = useState<SharedSessionAssignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedSessions, setExpandedSessions] = useState<Set<string>>(new Set());
+  const [viewMode, setViewMode] = useState<'compact' | 'detailed'>('compact');
   const navigate = useNavigate();
 
   const loadSharedSessions = useCallback(async () => {
@@ -103,40 +103,21 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
     });
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'not-started':
-        return { label: 'Not Started', color: 'bg-bg-tertiary', textColor: 'text-text-secondary' };
-      case 'in-progress':
-        return { label: 'In Progress', color: 'bg-info-bg', textColor: 'text-info-text' };
-      case 'completed':
-        return { label: 'Completed', color: 'bg-success-bg', textColor: 'text-success-text' };
-      case 'copied':
-        return { label: 'Copied', color: 'bg-accent-100', textColor: 'text-accent-700' };
-      default:
-        return { label: status, color: 'bg-bg-tertiary', textColor: 'text-text-secondary' };
-    }
-  };
+  const groupedAssignments = useMemo(() => {
+    const groups = [
+      { status: 'not-started', label: 'Assigned' },
+      { status: 'in-progress', label: 'In Progress' },
+      { status: 'completed', label: 'Completed' },
+      { status: 'copied', label: 'Copied' },
+    ];
 
-  const getActivityTypeInfo = (activityType?: ActivityType) => {
-    const type = normalizeActivityType(activityType);
-    switch (type) {
-      case ActivityType.RESISTANCE:
-        return { label: 'Resistance', color: 'bg-activity-resistance-bg', textColor: 'text-activity-resistance' };
-      case ActivityType.SPORT:
-        return { label: 'Sport', color: 'bg-activity-sport-bg', textColor: 'text-activity-sport' };
-      case ActivityType.STRETCHING:
-        return { label: 'Stretching', color: 'bg-activity-stretching-bg', textColor: 'text-activity-stretching' };
-      case ActivityType.ENDURANCE:
-        return { label: 'Endurance', color: 'bg-activity-endurance-bg', textColor: 'text-activity-endurance' };
-      case ActivityType.SPEED_AGILITY:
-        return { label: 'Speed/Agility', color: 'bg-activity-speed-bg', textColor: 'text-activity-speed' };
-      case ActivityType.OTHER:
-        return { label: 'Other', color: 'bg-activity-other-bg', textColor: 'text-activity-other' };
-      default:
-        return { label: 'Resistance', color: 'bg-activity-resistance-bg', textColor: 'text-activity-resistance' };
-    }
-  };
+    return groups
+      .map((group) => ({
+        ...group,
+        items: assignments.filter((assignment) => assignment.status === group.status),
+      }))
+      .filter((group) => group.items.length > 0);
+  }, [assignments]);
 
   const getGuidedExerciseCount = (assignment: SharedSessionAssignment) => {
     return assignment.sessionData.exercises.filter((exercise) => {
@@ -193,6 +174,17 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
           <p className="text-text-secondary text-sm">
             Sessions assigned to you by your coach
           </p>
+          {assignments.length > 0 && (
+            <ViewToggle
+              value={viewMode}
+              onChange={setViewMode}
+              className="mt-4"
+              options={[
+                { value: 'compact', label: 'Compact' },
+                { value: 'detailed', label: 'Detailed' },
+              ]}
+            />
+          )}
         </div>
       ) : (
         <header className="bg-bg-secondary border-b border-border p-4 sticky top-0 z-10">
@@ -201,6 +193,17 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
             <p className="text-text-secondary text-sm">
               Sessions assigned to you by your coach
             </p>
+            {assignments.length > 0 && (
+              <ViewToggle
+                value={viewMode}
+                onChange={setViewMode}
+                className="mt-4"
+                options={[
+                  { value: 'compact', label: 'Compact' },
+                  { value: 'detailed', label: 'Detailed' },
+                ]}
+              />
+            )}
           </div>
         </header>
       )}
@@ -217,11 +220,12 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
           </div>
         ) : (
           <div className="space-y-4">
-            <SectionDivider label="Assigned" count={assignments.length} />
-            {assignments.map(assignment => {
+            {groupedAssignments.map((group) => (
+              <div key={group.status} className="space-y-4">
+                <SectionDivider label={group.label} count={group.items.length} />
+                {group.items.map(assignment => {
               const session = assignment.sessionData;
               const isExpanded = expandedSessions.has(assignment.id);
-              const statusBadge = getStatusBadge(assignment.status);
               const guidedExerciseCount = getGuidedExerciseCount(assignment);
 
               return (
@@ -244,18 +248,18 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
                           )}
                           <span className="flex items-center gap-1">
                             <ClockIcon className="w-4 h-4" />
-                            {formatRelativeDate(assignment.assignedAt)}
+                            {viewMode === 'detailed'
+                              ? formatRelativeWithAbsolute(assignment.assignedAt)
+                              : formatRelativeDate(assignment.assignedAt)}
                           </span>
                           <MetricChip label="Exercises" value={session.exercises.length} />
-                          <MetricChip label="Coach" value={getCoachDisplayName(assignment)} />
+                          {viewMode === 'detailed' && <MetricChip label="Coach" value={getCoachDisplayName(assignment)} />}
                           {guidedExerciseCount > 0 && (
                             <MetricChip label="Guided" value={guidedExerciseCount} tone="accent" />
                           )}
                         </div>
                       </div>
-                      <span className={`px-3 py-1 text-xs font-medium rounded-full ${statusBadge.color} ${statusBadge.textColor} flex-shrink-0`}>
-                        {statusBadge.label}
-                      </span>
+                      <StatusBadge status={assignment.status} className="flex-shrink-0" />
                     </div>
 
                     {/* Coach Message */}
@@ -325,9 +329,7 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
                                     {idx + 1}.
                                   </span>
                                   <h5 className="text-text-primary font-medium">{exercise.name}</h5>
-                                  <span className={`px-2 py-0.5 text-xs rounded-full ${getActivityTypeInfo(exercise.activityType).color} ${getActivityTypeInfo(exercise.activityType).textColor}`}>
-                                    {getActivityTypeInfo(exercise.activityType).label}
-                                  </span>
+                                  <ActivityBadge activityType={exercise.activityType} />
                                 </div>
                                 {exercise.prescription && exercise.instructionMode === 'structured' && (
                                   <div className="text-sm text-info-text ml-8">
@@ -353,7 +355,9 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
                   )}
                 </div>
               );
-            })}
+              })}
+              </div>
+            ))}
           </div>
         )}
       </main>

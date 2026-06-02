@@ -4,11 +4,11 @@ import { useNavigate } from 'react-router-dom';
 import { RootState } from '../../store/store';
 import { getAllExercisesByDate } from '../../utils/unifiedExerciseUtils';
 import { ActivityType } from '../../types/activityTypes';
-import { Button, DashboardSection, EmptyState, MetricChip, SectionDivider, Skeleton, ViewToggle } from '@/components/ui';
+import { ActivityBadge, Button, DashboardSection, EmptyState, MetricChip, SectionDivider, Skeleton, ViewToggle } from '@/components/ui';
 import {
-  formatDisplayDateTime,
   formatNumberCompact,
   formatRelativeDate,
+  formatRelativeWithAbsolute,
   formatTrainingVolume,
   getDateSectionLabel,
 } from '@/utils/displayFormatters';
@@ -45,18 +45,6 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
     loadRecentData();
   }, [user?.id]);
-
-  const getActivityTypeColor = (activityType?: ActivityType) => {
-    switch (activityType) {
-      case ActivityType.RESISTANCE: return 'bg-activity-resistance';
-      case ActivityType.ENDURANCE: return 'bg-activity-endurance';
-      case ActivityType.SPORT: return 'bg-activity-sport';
-      case ActivityType.STRETCHING: return 'bg-activity-stretching';
-      case ActivityType.SPEED_AGILITY: return 'bg-activity-speed';
-      case ActivityType.OTHER: return 'bg-activity-other';
-      default: return 'bg-activity-other';
-    }
-  };
 
   const dashboardStats = useMemo(() => {
     const now = new Date();
@@ -201,16 +189,20 @@ const Dashboard: React.FC<DashboardProps> = () => {
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex min-w-0 items-start gap-3">
-                            <div className={`mt-1 h-3 w-3 flex-shrink-0 rounded-full ${getActivityTypeColor(exercise.activityType)} shadow-glow`} />
+                            <ActivityBadge activityType={exercise.activityType} variant="dot" className="mt-1 shadow-glow" />
                             <div className="min-w-0">
                               <p className="truncate font-semibold text-text-primary">{exercise.exerciseName}</p>
                               <p className="mt-0.5 text-xs text-text-tertiary">
-                                {exercise.activityType || 'resistance'} • {formatRelativeDate(exercise.timestamp)}
-                                {viewMode === 'detailed' ? ` • ${formatDisplayDateTime(exercise.timestamp)}` : ''}
+                                {viewMode === 'detailed'
+                                  ? formatRelativeWithAbsolute(exercise.timestamp)
+                                  : formatRelativeDate(exercise.timestamp)}
                               </p>
                             </div>
                           </div>
                           <div className="flex flex-wrap justify-end gap-2">
+                            {viewMode === 'detailed' ? (
+                              <ActivityBadge activityType={exercise.activityType} />
+                            ) : null}
                             <MetricChip label="Sets" value={setCount} />
                             {viewMode === 'detailed' ? (
                               <MetricChip label="Volume" value={formatTrainingVolume(volume)} tone={volume > 0 ? 'accent' : 'default'} />

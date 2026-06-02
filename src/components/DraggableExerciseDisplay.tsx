@@ -353,7 +353,7 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
                                     <div className="absolute -bottom-2 left-4 h-3 w-0.5 bg-accent-primary/50"></div>
                                   )}
                                   
-                                  <div className="transition-all duration-200 hover:bg-black/20 rounded-lg">
+                                  <div className="transition-all duration-200 hover:bg-hover-overlay rounded-lg">
                                     <ExerciseCard
                                       exercise={exercise}
                                       supersetLabel={exercise.id ? labelsByExerciseId[exercise.id]?.label : undefined}

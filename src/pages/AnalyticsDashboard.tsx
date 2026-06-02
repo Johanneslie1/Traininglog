@@ -13,7 +13,9 @@ import { SrpeLog } from '@/types/srpe';
 import { WellnessLog } from '@/types/wellness';
 import { addDays, toLocalDateString } from '@/utils/dateUtils';
 import type { CoachRatingsDashboardData } from '@/types/coachRatings';
-import { DashboardSection } from '@/components/ui';
+import { EmptyState, DashboardSection, MetricChip } from '@/components/ui';
+import { formatNumberCompact, formatTrainingVolume } from '@/utils/displayFormatters';
+import { formatMuscleName } from '@/utils/chartDataFormatters';
 
 type Timeframe = 'day' | 'week' | 'month' | 'year';
 
@@ -89,17 +91,6 @@ const getChangeClass = (value: number): string => {
   if (value < 0) return 'text-error-text';
   return 'text-text-secondary';
 };
-
-const formatMetric = (value: number): string => {
-  if (value >= 1000) return value.toLocaleString();
-  return String(value);
-};
-
-const formatMuscleName = (value: string): string =>
-  value
-    .split('_')
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
 
 const getStatusLabel = (status: MuscleGroupAnalytics['status']): string => {
   switch (status) {
@@ -238,7 +229,7 @@ const VolumeAreaChart: React.FC<AreaChartProps> = ({ dataPoints }) => {
             fill="var(--color-accent-primary, #54acbf)"
             className="drop-shadow"
           >
-            <title>{`${format(new Date(p.date), 'MMM d')}: ${formatMetric(Math.round(p.volume))} kg volume`}</title>
+            <title>{`${format(new Date(p.date), 'MMM d')}: ${formatTrainingVolume(p.volume)} volume, ${p.totalSets} sets, avg ${formatNumberCompact(Math.round(p.averageWeight))} kg`}</title>
           </circle>
         ))}
 
@@ -263,7 +254,7 @@ const VolumeAreaChart: React.FC<AreaChartProps> = ({ dataPoints }) => {
           <span className="h-2.5 w-2.5 rounded-full bg-accent-primary shadow-glow" />
           Daily volume
         </span>
-        <span>Tooltips show exact date and volume.</span>
+        <span>Point tooltips include exact date, volume, sets, and average weight.</span>
       </div>
     </div>
   );
@@ -442,10 +433,11 @@ const AnalyticsDashboard: React.FC = () => {
 
       {!isLoading && !error && user?.id && !hasAnalyticsData && (
         <div className="rounded-xl border border-border bg-bg-secondary p-6 text-center">
-          <h2 className="text-lg font-semibold text-text-primary">No training data yet</h2>
-          <p className="mt-2 text-text-secondary">
-            Log a few sessions to unlock trends, PR tracking, and workload insights.
-          </p>
+          <EmptyState
+            illustration="chart"
+            title="No training data yet"
+            description="Log a few sessions to unlock trends, PR tracking, and workload insights."
+          />
         </div>
       )}
 
@@ -493,7 +485,13 @@ const AnalyticsDashboard: React.FC = () => {
           <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <DashboardSection title="Daily Volume" className="lg:col-span-2">
               {dailyVolume.length === 0 ? (
-                <p className="mt-4 text-sm text-text-secondary">No volume data for this period.</p>
+                <div className="mt-4 rounded-xl border border-border bg-bg-tertiary p-4">
+                  <EmptyState
+                    title="No volume data"
+                    description="Log resistance sets with weight and reps in this period to populate the volume chart."
+                    illustration="chart"
+                  />
+                </div>
               ) : (
                 <VolumeAreaChart dataPoints={dailyVolume} />
               )}
@@ -501,24 +499,9 @@ const AnalyticsDashboard: React.FC = () => {
 
             <DashboardSection title="Vs Previous Period">
               <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3 lg:grid-cols-1">
-                <div className="rounded-lg bg-bg-tertiary px-3 py-2">
-                  <p className="text-text-tertiary">Volume</p>
-                  <p className={`mt-1 text-lg font-semibold ${getChangeClass(periodComparison.changes.volumeChange)}`}>
-                    {formatChange(periodComparison.changes.volumeChange)}
-                  </p>
-                </div>
-                <div className="rounded-lg bg-bg-tertiary px-3 py-2">
-                  <p className="text-text-tertiary">Workouts</p>
-                  <p className={`mt-1 text-lg font-semibold ${getChangeClass(periodComparison.changes.workoutsChange)}`}>
-                    {formatChange(periodComparison.changes.workoutsChange)}
-                  </p>
-                </div>
-                <div className="rounded-lg bg-bg-tertiary px-3 py-2">
-                  <p className="text-text-tertiary">Unique Exercises</p>
-                  <p className={`mt-1 text-lg font-semibold ${getChangeClass(periodComparison.changes.exercisesChange)}`}>
-                    {formatChange(periodComparison.changes.exercisesChange)}
-                  </p>
-                </div>
+                <MetricChip label="Volume" value={formatChange(periodComparison.changes.volumeChange)} tone={periodComparison.changes.volumeChange > 0 ? 'success' : periodComparison.changes.volumeChange < 0 ? 'error' : 'default'} />
+                <MetricChip label="Workouts" value={formatChange(periodComparison.changes.workoutsChange)} tone={periodComparison.changes.workoutsChange > 0 ? 'success' : periodComparison.changes.workoutsChange < 0 ? 'error' : 'default'} />
+                <MetricChip label="Exercises" value={formatChange(periodComparison.changes.exercisesChange)} tone={periodComparison.changes.exercisesChange > 0 ? 'success' : periodComparison.changes.exercisesChange < 0 ? 'error' : 'default'} />
               </div>
             </DashboardSection>
           </section>
@@ -526,7 +509,9 @@ const AnalyticsDashboard: React.FC = () => {
           <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <DashboardSection title="Recent PRs">
               {recentPRs.length === 0 ? (
-                <p className="mt-3 text-sm text-text-secondary">No PRs in this period yet.</p>
+                <p className="mt-3 rounded-xl border border-border bg-bg-tertiary p-3 text-sm text-text-secondary">
+                  No PRs in this period yet. Log heavier, faster, longer, or higher-quality efforts to see records here.
+                </p>
               ) : (
                 <div className="mt-3 space-y-2">
                   {recentPRs.map((record) => (
@@ -543,7 +528,9 @@ const AnalyticsDashboard: React.FC = () => {
 
             <DashboardSection title="Activity Load">
               {activityAnalytics.length === 0 ? (
-                <p className="mt-3 text-sm text-text-secondary">No activity load data for this period.</p>
+                <p className="mt-3 rounded-xl border border-border bg-bg-tertiary p-3 text-sm text-text-secondary">
+                  No activity load data for this period. Log duration, intensity, or sports load values to populate this view.
+                </p>
               ) : (
                 <div className="mt-3 space-y-2">
                   {activityAnalytics.slice(0, 5).map((row) => (
@@ -556,7 +543,7 @@ const AnalyticsDashboard: React.FC = () => {
                       </div>
                       <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-text-secondary">
                         <span>{row.sessionCount} sessions</span>
-                        <span>Load {formatMetric(row.totalLoad)}</span>
+                        <span>Load {formatNumberCompact(row.totalLoad)}</span>
                         {row.totalSets > 0 && <span>{row.totalSets} sets</span>}
                         {row.totalDurationMinutes > 0 && <span>{row.totalDurationMinutes} min</span>}
                         {row.averageRpe > 0 && <span>RPE {row.averageRpe}</span>}
@@ -573,7 +560,9 @@ const AnalyticsDashboard: React.FC = () => {
             subtitle="Resistance volume is mapped to primary and secondary muscles, then compared with the previous period."
           >
             {muscleGroupAnalytics.length === 0 ? (
-              <p className="mt-4 text-sm text-text-secondary">No muscle-group data for this period.</p>
+              <p className="mt-4 rounded-xl border border-border bg-bg-tertiary p-3 text-sm text-text-secondary">
+                No muscle-group data for this period. Resistance exercises need muscle metadata and logged sets to appear here.
+              </p>
             ) : (
               <div className="mobile-scroll-area mt-4 overflow-x-auto pb-2">
                 <div className="min-w-[720px] space-y-2">
@@ -598,7 +587,7 @@ const AnalyticsDashboard: React.FC = () => {
                         </p>
                       </div>
                       <span className="font-semibold text-text-primary">{row.totalSets}</span>
-                      <span className="text-text-secondary">{formatMetric(row.totalVolume)}</span>
+                      <span className="text-text-secondary">{formatNumberCompact(row.totalVolume)}</span>
                       <span className={getChangeClass(row.volumeChange)}>{formatChange(row.volumeChange)}</span>
                       <span className="text-text-secondary">{row.averageRpe || '-'}</span>
                       <span className={`inline-flex w-fit rounded-full border px-2 py-1 text-xs font-medium ${getStatusClass(row.status)}`}>

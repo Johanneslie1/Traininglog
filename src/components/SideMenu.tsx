@@ -50,7 +50,7 @@ const SideMenu: React.FC<SideMenuProps> = ({
     <AppOverlay
       isOpen={isOpen}
       onClose={onClose}
-      className="z-50 bg-black/60"
+      className="z-50 bg-bg-primary/60"
       ariaLabel="Main navigation"
     >
       <aside className="fixed left-0 top-0 bottom-0 flex w-[min(20rem,88vw)] flex-col bg-bg-secondary shadow-2xl ring-1 ring-border">

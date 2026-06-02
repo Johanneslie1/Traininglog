@@ -6,6 +6,7 @@ import { ExerciseLog } from '@/types/exercise';
 import { format } from 'date-fns';
 import { ExerciseData } from '@/services/exerciseDataService';
 import { auth } from '@/services/firebase/config';
+import { EmptyState, LoadingState } from '@/components/ui';
 
 const CalendarPage: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -58,13 +59,9 @@ const CalendarPage: React.FC = () => {
             </div>
 
             {loading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-accent-primary"></div>
-              </div>
+              <LoadingState label="Loading workouts..." className="py-8" />
             ) : workouts.length === 0 ? (
-              <div className="text-center py-8 text-gray-400">
-                No workouts found
-              </div>
+              <EmptyState title="No workouts found" illustration="calendar" />
             ) : (
               <div className="space-y-4">
                 {workouts.map(workout => {
