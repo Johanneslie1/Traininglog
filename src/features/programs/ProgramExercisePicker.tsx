@@ -252,7 +252,7 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
       >
         <div className="bg-bg-secondary rounded-lg shadow-xl p-6 max-w-lg w-full mx-4">
           <div className="flex flex-col items-center space-y-4">
-            <div className="text-red-500 mb-4">
+            <div className="text-error-text mb-4">
               <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -260,7 +260,7 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
             <p className="text-text-primary text-center">{error}</p>
             <button
               onClick={() => refresh()}
-              className="px-4 py-2 bg-primary text-text-primary rounded-lg hover:bg-primary-dark transition-colors"
+              className="px-4 py-2 bg-accent-primary text-text-on-accent rounded-lg hover:bg-accent-hover transition-colors"
             >
               Try Again
             </button>
@@ -289,7 +289,7 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
             <p className="text-text-primary text-center">No programs found. Create a program first.</p>
             <button
               onClick={onClose}
-              className="px-4 py-2 bg-primary text-text-primary rounded-lg hover:bg-primary-dark transition-colors"
+              className="px-4 py-2 bg-accent-primary text-text-on-accent rounded-lg hover:bg-accent-hover transition-colors"
             >
               Close
             </button>
@@ -353,19 +353,19 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
             renderCard={(ex: any) => {
               const active = !!librarySelectedMap[ex.id];
               return (
-                <div className={`relative ${active ? 'ring-2 ring-yellow-400' : ''}`}>
+                <div className={`relative ${active ? 'ring-2 ring-warning-text' : ''}`}>
                   <h3 className="text-lg font-semibold text-text-primary mb-1">{ex.name}</h3>
                   {ex.description && (
                     <p className="text-text-tertiary text-xs mb-2 line-clamp-3">{ex.description}</p>
                   )}
                   <div className="flex flex-wrap gap-1">
-                    <span className="px-2 py-0.5 bg-purple-600 text-text-primary text-[10px] rounded">{ex.activityType}</span>
+                    <span className="px-2 py-0.5 bg-accent-100 text-accent-700 text-[10px] rounded">{ex.activityType}</span>
                     {Array.isArray(ex.tags) && ex.tags.slice(0,3).map((t: string) => (
                       <span key={t} className="px-2 py-0.5 bg-bg-tertiary text-text-secondary text-[10px] rounded">{t}</span>
                     ))}
                   </div>
                   {active && (
-                    <div className="absolute top-1 right-1 text-yellow-400 text-xs font-bold">✓</div>
+                    <div className="absolute top-1 right-1 text-warning-text text-xs font-bold">✓</div>
                   )}
                 </div>
               );
@@ -373,7 +373,7 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
           />
           <div className="sticky bottom-0 bg-bg-secondary border-t border-border p-4 flex justify-between items-center">
             <p className="text-xs text-text-tertiary">
-              Selected: <span className="text-yellow-400 font-semibold">{selectedCount}</span>
+              Selected: <span className="text-warning-text font-semibold">{selectedCount}</span>
             </p>
             <div className="flex gap-2">
               <button onClick={() => setLibrarySelectedMap({})} className="px-3 py-2 text-xs font-medium bg-bg-tertiary border border-border rounded-md text-text-secondary hover:text-text-primary">
@@ -382,7 +382,7 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
               <button
                 disabled={selectedCount===0}
                 onClick={handleAddFromLibrary}
-                className={`px-4 py-2 rounded-md text-sm font-semibold transition ${selectedCount===0 ? 'bg-bg-tertiary text-text-tertiary cursor-not-allowed' : 'bg-yellow-500 hover:bg-yellow-400 text-black'}`}
+                className={`px-4 py-2 rounded-md text-sm font-semibold transition ${selectedCount===0 ? 'bg-bg-tertiary text-text-tertiary cursor-not-allowed' : 'bg-accent-primary hover:bg-accent-hover text-text-on-accent'}`}
               >
                 Add {selectedCount || ''} to Program
               </button>
@@ -452,7 +452,7 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
                             e.stopPropagation();
                             handleSelectAllInSession(session.id, session.exercises);
                           }}
-                          className="text-sm text-purple-400 hover:text-purple-300 transition-colors whitespace-nowrap px-2"
+                          className="text-sm text-accent-primary hover:text-accent-hover transition-colors whitespace-nowrap px-2"
                         >
                           {selectedExercises.filter(sel => sel.sessionId === session.id).length === session.exercises.length
                             ? 'Deselect All'
@@ -494,11 +494,11 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
                               </h4>
                               <div className="mt-2 flex flex-wrap gap-2">
                                 {exercise.prescription && exercise.instructionMode === 'structured' ? (
-                                  <span className="inline-flex items-center px-2 py-1 rounded bg-blue-500/20 text-blue-300 text-sm">
+                                  <span className="inline-flex items-center px-2 py-1 rounded bg-info-bg text-info-text text-sm">
                                     📋 {formatPrescriptionBadge(exercise.prescription, normalizeActivityType(exercise.activityType))}
                                   </span>
                                 ) : exercise.instructions && exercise.instructionMode === 'freeform' ? (
-                                  <span className="inline-flex items-center px-2 py-1 rounded bg-purple-500/20 text-purple-300 text-sm italic">
+                                  <span className="inline-flex items-center px-2 py-1 rounded bg-accent-100 text-accent-700 text-sm italic">
                                     {exercise.instructions}
                                   </span>
                                 ) : (

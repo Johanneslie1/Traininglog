@@ -90,8 +90,8 @@ export const TemplateForm: React.FC<TemplateFormProps> = ({
     const fieldId = `${template.id}-${field.fieldId}`;
 
     const baseInputClasses = compact
-      ? "block w-full rounded-md border-border bg-bg-tertiary text-white text-sm px-2 py-1 focus:border-blue-500 focus:ring-blue-500"
-      : "block w-full rounded-md border-border bg-bg-tertiary text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm";
+      ? "block w-full rounded-md border-border bg-bg-tertiary text-text-primary text-sm px-2 py-1 focus:border-accent-primary focus:ring-accent-primary"
+      : "block w-full rounded-md border-border bg-bg-tertiary text-text-primary shadow-sm focus:border-accent-primary focus:ring-accent-primary sm:text-sm";
 
     const errorClasses = error ? "border-red-500 ring-red-500" : "";
 
@@ -119,7 +119,7 @@ export const TemplateForm: React.FC<TemplateFormProps> = ({
               />
               {field.unit && (
                 <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                  <span className="text-gray-400 text-sm">{field.unit}</span>
+                  <span className="text-text-tertiary text-sm">{field.unit}</span>
                 </div>
               )}
             </div>
@@ -141,7 +141,7 @@ export const TemplateForm: React.FC<TemplateFormProps> = ({
                 required={field.required}
               />
               <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                <span className="text-gray-400 text-sm">min</span>
+                <span className="text-text-tertiary text-sm">min</span>
               </div>
             </div>
           );
@@ -162,7 +162,7 @@ export const TemplateForm: React.FC<TemplateFormProps> = ({
                 required={field.required}
               />
               <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                <span className="text-gray-400 text-sm">{field.unit || 'km'}</span>
+                <span className="text-text-tertiary text-sm">{field.unit || 'km'}</span>
               </div>
             </div>
           );
@@ -204,11 +204,11 @@ export const TemplateForm: React.FC<TemplateFormProps> = ({
               <input
                 type="checkbox"
                 id={fieldId}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                className="h-4 w-4 text-accent-primary focus:ring-accent-primary border-border rounded"
                 checked={value || false}
                 onChange={(e) => handleChange(field, e.target.checked)}
               />
-              <label htmlFor={fieldId} className="ml-2 block text-sm text-white">
+              <label htmlFor={fieldId} className="ml-2 block text-sm text-text-primary">
                 {field.label}
               </label>
             </div>
@@ -236,11 +236,11 @@ export const TemplateForm: React.FC<TemplateFormProps> = ({
     return (
       <div className={compact ? "space-y-1" : "space-y-2"}>
         {showLabels && (
-          <label htmlFor={fieldId} className="block text-sm font-medium text-white/90">
+          <label htmlFor={fieldId} className="block text-sm font-medium text-text-secondary">
             {field.label}
             {field.required && <span className="text-red-400 ml-1">*</span>}
             {field.unit && !field.type.includes('duration') && !field.type.includes('distance') && (
-              <span className="text-gray-400 ml-1">({field.unit})</span>
+              <span className="text-text-tertiary ml-1">({field.unit})</span>
             )}
           </label>
         )}

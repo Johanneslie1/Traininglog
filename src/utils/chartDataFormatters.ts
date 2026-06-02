@@ -8,7 +8,7 @@ export const DEFAULT_CHART_COLORS = [
   '#10b981', // Green
   '#f59e0b', // Amber
   '#ef4444', // Red
-  '#8b5cf6', // Purple (brand)
+  '#54acbf', // Blue-teal (brand)
   '#ec4899', // Pink
   '#14b8a6', // Teal
   '#f97316', // Orange

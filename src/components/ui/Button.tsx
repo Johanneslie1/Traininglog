@@ -27,11 +27,11 @@ const Button: React.FC<ButtonProps> = ({
   const baseStyles = 'inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-bg-primary disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100';
   
   const variantStyles = {
-    primary: 'bg-accent-primary text-text-inverse hover:bg-accent-secondary shadow-md hover:shadow-lg focus:ring-accent-primary',
+    primary: 'bg-accent-primary text-text-on-accent hover:bg-accent-secondary shadow-md hover:shadow-lg focus:ring-accent-primary',
     secondary: 'bg-bg-secondary text-text-primary border-2 border-border hover:border-border-hover hover:bg-bg-tertiary focus:ring-accent-primary',
     ghost: 'bg-transparent text-text-primary hover:bg-bg-tertiary focus:ring-accent-primary',
-    danger: 'bg-error-text text-text-inverse hover:opacity-90 shadow-md hover:shadow-lg focus:ring-error-text',
-    success: 'bg-success-text text-text-inverse hover:opacity-90 shadow-md hover:shadow-lg focus:ring-success-text',
+    danger: 'bg-status-error text-text-on-accent hover:opacity-90 shadow-md hover:shadow-lg focus:ring-error-text',
+    success: 'bg-status-success text-text-on-accent hover:opacity-90 shadow-md hover:shadow-lg focus:ring-success-text',
   };
   
   const sizeStyles = {

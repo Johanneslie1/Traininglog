@@ -55,7 +55,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
       case ActivityType.RESISTANCE: return 'bg-blue-500';
       case ActivityType.ENDURANCE: return 'bg-green-500';
       case ActivityType.SPORT: return 'bg-orange-500';
-      case ActivityType.STRETCHING: return 'bg-purple-500';
+      case ActivityType.STRETCHING: return 'bg-activity-stretching';
       case ActivityType.SPEED_AGILITY: return 'bg-red-500';
       case ActivityType.OTHER: return 'bg-gray-500';
       default: return 'bg-gray-500';
@@ -99,7 +99,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
 
           <div className="bg-gray-800 rounded-lg p-6">
             <h3 className="text-lg font-semibold mb-2">Activity Types</h3>
-            <p className="text-2xl font-bold text-purple-400">
+            <p className="text-2xl font-bold text-accent-secondary">
               {new Set(recentExercises.map(ex => ex.activityType)).size}
             </p>
             <p className="text-sm text-gray-400">different activities</p>

@@ -169,7 +169,7 @@ const ExerciseTypeDebugger: React.FC = () => {
                 <p className="text-2xl font-bold">{debugData.enduranceCount}</p>
               </div>
               <div className="bg-[#2a2a2a] p-4 rounded-lg">
-                <h3 className="text-lg font-semibold text-purple-400">Sports</h3>
+                <h3 className="text-lg font-semibold text-accent-secondary">Sports</h3>
                 <p className="text-2xl font-bold">{debugData.sportCount}</p>
               </div>
               <div className="bg-[#2a2a2a] p-4 rounded-lg">

@@ -252,15 +252,15 @@ const PrescriptionEditor: React.FC<PrescriptionEditorProps> = ({
   };
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 space-y-4">
+    <div className="bg-bg-secondary p-4 rounded-lg border border-border space-y-4">
       {/* Mode Toggle */}
       <div className="flex gap-2 mb-4">
         <button
           onClick={() => setInstructionMode('structured')}
           className={`px-4 py-2 rounded-lg font-medium transition-colors ${
             instructionMode === 'structured'
-              ? 'bg-blue-500 text-white'
-              : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+              ? 'bg-accent-primary text-text-on-accent'
+              : 'bg-bg-tertiary text-text-secondary'
           }`}
         >
           Structured
@@ -269,8 +269,8 @@ const PrescriptionEditor: React.FC<PrescriptionEditorProps> = ({
           onClick={() => setInstructionMode('freeform')}
           className={`px-4 py-2 rounded-lg font-medium transition-colors ${
             instructionMode === 'freeform'
-              ? 'bg-blue-500 text-white'
-              : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+              ? 'bg-accent-primary text-text-on-accent'
+              : 'bg-bg-tertiary text-text-secondary'
           }`}
         >
           Freeform
@@ -280,14 +280,14 @@ const PrescriptionEditor: React.FC<PrescriptionEditorProps> = ({
       {instructionMode === 'freeform' ? (
         // Freeform mode
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm font-medium text-text-secondary mb-2">
             Instructions
           </label>
           <textarea
             value={freeformText}
             onChange={(e) => setFreeformText(e.target.value)}
             placeholder="Enter custom instructions (e.g., AMRAP 10 min, Tabata 20:10 x 8, etc.)"
-            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full p-3 border border-border rounded-lg bg-bg-tertiary text-text-primary focus:ring-2 focus:ring-focus-ring focus:border-transparent"
             rows={4}
           />
         </div>
@@ -296,7 +296,7 @@ const PrescriptionEditor: React.FC<PrescriptionEditorProps> = ({
         <div className="space-y-4">
           {/* Sets - Common to all types */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-text-secondary mb-2">
               Sets
             </label>
             <div className="flex items-center gap-2">
@@ -788,11 +788,11 @@ const PrescriptionEditor: React.FC<PrescriptionEditorProps> = ({
       )}
 
       {/* Preview */}
-      <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+      <div className="pt-4 border-t border-border">
+        <label className="block text-sm font-medium text-text-secondary mb-2">
           Preview
         </label>
-        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-sm text-gray-800 dark:text-gray-200">
+        <div className="p-3 bg-focus-bg rounded-lg text-sm text-text-primary">
           {getPreview()}
         </div>
       </div>
@@ -802,14 +802,14 @@ const PrescriptionEditor: React.FC<PrescriptionEditorProps> = ({
         <button
           onClick={onCancel}
           disabled={isSaving}
-          className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-4 py-2 text-text-secondary hover:bg-hover-overlay rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Cancel
         </button>
         <button
           onClick={handleSave}
           disabled={isSaving}
-          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          className="px-4 py-2 bg-accent-primary text-text-on-accent rounded-lg hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
         >
           {isSaving ? (
             <>

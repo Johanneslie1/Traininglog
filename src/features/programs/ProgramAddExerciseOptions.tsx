@@ -27,8 +27,8 @@ interface ProgramAddExerciseOptionsProps {
 }
 
 const helperCategories: Category[] = [
-  { id: 'programs', name: 'Add from Program', icon: '📋', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-purple-600', textColor: 'text-text-primary' },
-  { id: 'copyPrevious', name: 'Copy from Previous', icon: '📝', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-blue-600', textColor: 'text-text-primary' }
+  { id: 'programs', name: 'Add from Program', icon: '📋', bgColor: 'bg-bg-secondary', iconBgColor: 'bg-accent-primary', textColor: 'text-text-primary' },
+  { id: 'copyPrevious', name: 'Copy from Previous', icon: '📝', bgColor: 'bg-bg-secondary', iconBgColor: 'bg-accent-secondary', textColor: 'text-text-primary' }
   // Removed: 'From History' and 'Exercise Database' - not needed for program sessions
 ];
 
@@ -45,7 +45,7 @@ const muscleGroups: Category[] = [
 const activityTypes = [
   { id: 'resistance', name: 'Resistance Training', description: 'Weight lifting, strength training', icon: '🏋️‍♂️', bgColor: 'bg-gradient-to-r from-blue-500 to-blue-700', textColor: 'text-text-primary', examples: 'Squats, Deadlifts, Bench Press' },
   { id: 'sport', name: 'Sports', description: 'Team sports, competitions', icon: '⚽', bgColor: 'bg-gradient-to-r from-green-500 to-green-700', textColor: 'text-text-primary', examples: 'Football, Basketball, Tennis' },
-  { id: 'stretching', name: 'Stretching & Flexibility', description: 'Mobility, yoga, flexibility', icon: '🧘‍♀️', bgColor: 'bg-gradient-to-r from-purple-500 to-purple-700', textColor: 'text-text-primary', examples: 'Yoga, Static Stretches' },
+  { id: 'stretching', name: 'Stretching & Flexibility', description: 'Mobility, yoga, flexibility', icon: '🧘‍♀️', bgColor: 'bg-gradient-to-r from-primary-300 to-primary-500', textColor: 'text-text-primary', examples: 'Yoga, Static Stretches' },
   { id: 'endurance', name: 'Endurance Training', description: 'Cardio, running, cycling', icon: '🏃‍♂️', bgColor: 'bg-gradient-to-r from-red-500 to-red-700', textColor: 'text-text-primary', examples: 'Running, Cycling, Swimming' },
   { id: 'speedAgility', name: 'Speed, Agility & Plyo', description: 'Sprints, jumps, change of direction', icon: '⚡', bgColor: 'bg-gradient-to-r from-yellow-500 to-amber-600', textColor: 'text-text-primary', examples: 'Ladder, Sprints, Jumps' },
   { id: 'other', name: 'Other Activities', description: 'Custom & misc activities', icon: '🎯', bgColor: 'bg-gradient-to-r from-gray-500 to-gray-700', textColor: 'text-text-primary', examples: 'Meditation, Therapy' }

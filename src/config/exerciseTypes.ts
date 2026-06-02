@@ -56,7 +56,7 @@ export const EXERCISE_TYPE_CONFIGS: Record<ExerciseType, ExerciseTypeConfig> = {
       'Ultimate Frisbee', 'Water Polo', 'Lacrosse', 'Netball', 'Softball'
     ],
     icon: '⚽',
-    color: 'bg-purple-600'
+    color: 'bg-activity-sport'
   },
   flexibility: {
     type: 'flexibility',

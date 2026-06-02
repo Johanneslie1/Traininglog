@@ -237,24 +237,24 @@ const SpeedAgilityActivityPicker: React.FC<SpeedAgilityActivityPickerProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50">
-      <div className="bg-[#1a1a1a] rounded-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 bg-bg-primary/90 flex items-center justify-center p-4 z-50">
+      <div className="bg-bg-secondary rounded-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-700">
+        <div className="flex items-center justify-between p-6 border-b border-border">
           <div className="flex items-center gap-4">
             <button
               onClick={onBack}
-              className="text-gray-400 hover:text-white transition-colors"
+              className="text-text-tertiary hover:text-text-primary transition-colors"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <h2 className="text-2xl font-bold text-white">Speed, Agility & Plyometrics</h2>
+            <h2 className="text-2xl font-bold text-text-primary">Speed, Agility & Plyometrics</h2>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors"
+            className="text-text-tertiary hover:text-text-primary transition-colors"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -264,24 +264,24 @@ const SpeedAgilityActivityPicker: React.FC<SpeedAgilityActivityPickerProps> = ({
 
         {/* Search & Advanced Filters */}
         {/* Search, Quick Filters & Advanced (Sticky) */}
-        <div className="p-4 border-b border-gray-700 space-y-3 bg-[#1a1a1a]/95 backdrop-blur sticky top-0 z-10">
+        <div className="p-4 border-b border-border space-y-3 bg-bg-secondary/95 backdrop-blur sticky top-0 z-10">
           <div className="flex gap-2 items-center">
             <input
               type="text"
               placeholder="Search drills (name or instructions)"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:border-yellow-500"
+              className="flex-1 px-3 py-2 bg-bg-tertiary border border-border rounded-md text-text-primary placeholder-text-muted focus:outline-none focus:border-accent-primary"
               aria-label="Search speed agility plyometric drills"
             />
             <button
               onClick={() => { setSearch(''); setTypeFilter(new Set()); setLateralFilter(new Set()); setEquipmentFilter(new Set()); setTagFilter(new Set()); }}
-              className="px-3 py-2 text-xs font-medium bg-gray-800 border border-gray-600 rounded-md text-gray-300 hover:text-white hover:border-yellow-500"
+              className="px-3 py-2 text-xs font-medium bg-bg-tertiary border border-border rounded-md text-text-secondary hover:text-text-primary hover:border-accent-primary"
               aria-label="Reset filters"
             >Reset</button>
             <button
               onClick={() => setShowAdvanced(s => !s)}
-              className="px-3 py-2 text-xs font-medium bg-gray-800 border border-gray-600 rounded-md text-gray-300 hover:text-white hover:border-yellow-500"
+              className="px-3 py-2 text-xs font-medium bg-bg-tertiary border border-border rounded-md text-text-secondary hover:text-text-primary hover:border-accent-primary"
               aria-expanded={showAdvanced}
               aria-controls="advanced-filters"
             >{showAdvanced ? 'Hide' : 'Filters'}</button>
@@ -302,7 +302,7 @@ const SpeedAgilityActivityPicker: React.FC<SpeedAgilityActivityPickerProps> = ({
                 <button
                   key={q}
                   onClick={handler}
-                  className={`px-3 py-1 rounded-full text-xs font-medium border transition ${active ? 'bg-yellow-500 border-yellow-400 text-black' : 'bg-gray-800 border-gray-600 text-gray-300 hover:border-yellow-500 hover:text-white'}`}
+                  className={`px-3 py-1 rounded-full text-xs font-medium border transition ${active ? 'bg-accent-primary border-accent-primary text-text-on-accent' : 'bg-bg-tertiary border-border text-text-secondary hover:border-accent-primary hover:text-text-primary'}`}
                 >{q}</button>
               );
             })}
@@ -313,7 +313,7 @@ const SpeedAgilityActivityPicker: React.FC<SpeedAgilityActivityPickerProps> = ({
                 <button
                   key={lat}
                   onClick={() => toggle(setLateralFilter, lat)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium border transition ${active ? 'bg-blue-500 border-blue-400 text-white' : 'bg-gray-800 border-gray-600 text-gray-300 hover:border-blue-400 hover:text-white'}`}
+                  className={`px-3 py-1 rounded-full text-xs font-medium border transition ${active ? 'bg-accent-secondary border-accent-secondary text-text-on-accent' : 'bg-bg-tertiary border-border text-text-secondary hover:border-accent-secondary hover:text-text-primary'}`}
                 >{lat}</button>
               );
             })}
@@ -329,7 +329,7 @@ const SpeedAgilityActivityPicker: React.FC<SpeedAgilityActivityPickerProps> = ({
               </div>
             </div>
           )}
-          <p className="text-[11px] text-gray-400">Showing <span className="text-yellow-400 font-semibold">{advancedFiltered.length}</span> of {enriched.length} drills</p>
+          <p className="text-[11px] text-text-tertiary">Showing <span className="text-accent-secondary font-semibold">{advancedFiltered.length}</span> of {enriched.length} drills</p>
         </div>
 
         {/* Activities List - Compact View */}
@@ -339,7 +339,7 @@ const SpeedAgilityActivityPicker: React.FC<SpeedAgilityActivityPickerProps> = ({
               <div
                 key={ex.id}
                 onClick={() => handleSelectEnriched(ex)}
-                className="relative flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer transition-all border bg-gray-800/50 border-transparent hover:bg-gray-800 hover:border-gray-600"
+                className="relative flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer transition-all border bg-bg-tertiary/50 border-transparent hover:bg-bg-tertiary hover:border-border"
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => {
@@ -352,19 +352,19 @@ const SpeedAgilityActivityPicker: React.FC<SpeedAgilityActivityPickerProps> = ({
                 {/* Main content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <h3 className="font-semibold truncate text-white">
+                    <h3 className="font-semibold truncate text-text-primary">
                       {ex.name}
                     </h3>
                     {/* Primary badge only */}
                     {(ex.category || (ex as any).drillType) && (
-                      <span className="flex-shrink-0 px-2 py-0.5 bg-gray-700 border border-gray-600 text-gray-300 text-[10px] rounded uppercase tracking-wide">
+                      <span className="flex-shrink-0 px-2 py-0.5 bg-bg-secondary border border-border text-text-tertiary text-[10px] rounded uppercase tracking-wide">
                         {ex.category || (ex as any).drillType}
                       </span>
                     )}
                   </div>
                   {/* Optional: Show description */}
                   {(ex as any).description && (
-                    <p className="text-gray-400 text-xs mt-0.5 line-clamp-1">{(ex as any).description}</p>
+                    <p className="text-text-tertiary text-xs mt-0.5 line-clamp-1">{(ex as any).description}</p>
                   )}
                 </div>
 
@@ -375,7 +375,7 @@ const SpeedAgilityActivityPicker: React.FC<SpeedAgilityActivityPickerProps> = ({
                       (ex as any).difficulty === 'beginner' ? 'bg-green-600/20 text-green-400' :
                       (ex as any).difficulty === 'intermediate' ? 'bg-yellow-600/20 text-yellow-400' :
                       (ex as any).difficulty === 'advanced' ? 'bg-red-600/20 text-red-400' :
-                      'bg-gray-700 text-gray-300'
+                      'bg-bg-secondary text-text-tertiary'
                     }`}>
                       {(ex as any).difficulty}
                     </span>
@@ -383,7 +383,7 @@ const SpeedAgilityActivityPicker: React.FC<SpeedAgilityActivityPickerProps> = ({
                 )}
 
                 {/* Right arrow indicator */}
-                <svg className="flex-shrink-0 w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="flex-shrink-0 w-5 h-5 text-text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </div>
@@ -392,8 +392,8 @@ const SpeedAgilityActivityPicker: React.FC<SpeedAgilityActivityPickerProps> = ({
 
           {advancedFiltered.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-gray-400 text-lg">No drills found</p>
-              <p className="text-gray-500 text-sm mt-2">Try adjusting your search or filter</p>
+              <p className="text-text-tertiary text-lg">No drills found</p>
+              <p className="text-text-muted text-sm mt-2">Try adjusting your search or filter</p>
             </div>
           )}
         </div>
@@ -414,7 +414,7 @@ const FilterBlock: React.FC<FilterBlockProps> = ({ title, values, selected, onTo
   if (!values.length) return null;
   return (
     <div>
-      <p className="text-[10px] uppercase tracking-wide text-gray-400 mb-1 font-semibold">{title}</p>
+      <p className="text-[10px] uppercase tracking-wide text-text-tertiary mb-1 font-semibold">{title}</p>
       <div className="flex flex-wrap gap-1">
         {values.sort().map(v => {
           const active = selected.has(v);
@@ -422,7 +422,7 @@ const FilterBlock: React.FC<FilterBlockProps> = ({ title, values, selected, onTo
             <button
               key={v}
               onClick={() => onToggle(v)}
-              className={`px-2 py-0.5 rounded border text-[10px] ${active ? 'bg-yellow-600 border-yellow-500 text-white' : 'bg-gray-800 border-gray-600 text-gray-300 hover:border-yellow-500 hover:text-white'}`}
+              className={`px-2 py-0.5 rounded border text-[10px] ${active ? 'bg-accent-primary border-accent-primary text-text-on-accent' : 'bg-bg-tertiary border-border text-text-secondary hover:border-accent-primary hover:text-text-primary'}`}
             >{v}</button>
           );
         })}

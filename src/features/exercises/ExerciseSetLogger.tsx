@@ -235,9 +235,9 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
         duration: 1500,
         icon: '✓',
         style: {
-          background: '#2a2a2a',
-          color: '#fff',
-          border: '1px solid rgba(139, 92, 246, 0.5)',
+          background: 'var(--color-bg-tertiary)',
+          color: 'var(--color-text-primary)',
+          border: '1px solid var(--color-border-focus)',
         },
       });
       
@@ -380,7 +380,7 @@ export const ExerciseSetLogger: React.FC<ExerciseSetLoggerProps> = ({
               set.difficulty === DifficultyCategory.EASY ? 'bg-green-600' :
               set.difficulty === DifficultyCategory.NORMAL ? 'bg-blue-600' :
               set.difficulty === DifficultyCategory.HARD ? 'bg-red-600' :
-              set.difficulty === DifficultyCategory.DROP ? 'bg-purple-600' :
+              set.difficulty === DifficultyCategory.DROP ? 'bg-difficulty-drop' :
               'bg-gray-600'
             }`}>
               {set.difficulty}

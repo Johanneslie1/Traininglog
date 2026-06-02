@@ -25,7 +25,7 @@ const getMuscleGroupColor = (muscle: string): string => {
     'hamstrings': '#10b981',
     'glutes': '#10b981',
     'calves': '#10b981',
-    'forearms': '#8b5cf6',
+    'forearms': '#54acbf',
     'core': '#ec4899',
     'traps': '#f97316',
     'lats': '#f97316',

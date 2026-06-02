@@ -133,7 +133,7 @@ export const SetEditorDialog: React.FC<SetEditorDialogProps> = ({
                 value={set.weight || ''}
                 onChange={(e) => handleNumberInput(e, 'weight')}
                 step="2.5"
-                className="w-full bg-transparent text-center text-2xl sm:text-3xl font-semibold text-text-primary border-b-2 border-white/20 focus:border-purple-500 focus:outline-none"
+                className="w-full bg-transparent text-center text-2xl sm:text-3xl font-semibold text-text-primary border-b-2 border-border focus:border-accent-primary focus:outline-none"
                 inputMode="decimal"
               />
             </div>
@@ -163,7 +163,7 @@ export const SetEditorDialog: React.FC<SetEditorDialogProps> = ({
                 type="number"
                 value={set.reps || ''}
                 onChange={(e) => handleNumberInput(e, 'reps')}
-                className="w-full bg-transparent text-center text-2xl sm:text-3xl font-semibold text-text-primary border-b-2 border-white/20 focus:border-purple-500 focus:outline-none"
+                className="w-full bg-transparent text-center text-2xl sm:text-3xl font-semibold text-text-primary border-b-2 border-border focus:border-accent-primary focus:outline-none"
                 inputMode="numeric"
               />
             </div>
@@ -204,7 +204,7 @@ export const SetEditorDialog: React.FC<SetEditorDialogProps> = ({
             value={set.comment || ''}
             onChange={(e) => setSet(prev => ({ ...prev, comment: e.target.value }))}
             placeholder="Add a note..."
-            className="w-full h-24 px-4 py-3 rounded-lg bg-bg-tertiary text-text-primary placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="w-full h-24 px-4 py-3 rounded-lg bg-bg-tertiary text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-accent-primary"
           />
         </div>
       </main>

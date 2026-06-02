@@ -170,14 +170,14 @@ export const TemplatedExerciseLogger: React.FC<TemplatedExerciseLoggerProps> = (
   };
 
   return (
-    <div className="bg-bg-secondary min-h-screen text-white p-4">
+    <div className="bg-bg-secondary min-h-screen text-text-primary p-4">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">Log Training</h1>
           <button
             onClick={onCancel}
-            className="text-gray-400 hover:text-white transition-colors"
+            className="text-text-tertiary hover:text-text-primary transition-colors"
           >
             ✕
           </button>
@@ -185,7 +185,7 @@ export const TemplatedExerciseLogger: React.FC<TemplatedExerciseLoggerProps> = (
 
         {/* Exercise/Activity Name */}
         <div className="mb-6">
-          <label className="block text-sm font-medium text-white/90 mb-2">
+          <label className="block text-sm font-medium text-text-secondary mb-2">
             {selectedTemplate?.type === 'strength' || selectedTemplate?.type === 'plyometrics' 
               ? 'Exercise Name' 
               : 'Activity Name'}
@@ -202,7 +202,7 @@ export const TemplatedExerciseLogger: React.FC<TemplatedExerciseLoggerProps> = (
                 setCurrentActivityName(e.target.value);
               }
             }}
-            className="block w-full rounded-md border-border bg-bg-tertiary text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            className="block w-full rounded-md border-border bg-bg-tertiary text-text-primary shadow-sm focus:border-accent-primary focus:ring-accent-primary sm:text-sm"
             placeholder={`Enter ${selectedTemplate?.type === 'strength' || selectedTemplate?.type === 'plyometrics' ? 'exercise' : 'activity'} name...`}
           />
         </div>
@@ -237,7 +237,7 @@ export const TemplatedExerciseLogger: React.FC<TemplatedExerciseLoggerProps> = (
               {selectedTemplate.type === 'strength' || selectedTemplate.type === 'plyometrics' ? (
                 <button
                   onClick={addSet}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="px-4 py-2 bg-accent-primary text-text-on-accent rounded-lg hover:bg-accent-hover transition-colors"
                 >
                   Add Set
                 </button>
@@ -274,14 +274,14 @@ export const TemplatedExerciseLogger: React.FC<TemplatedExerciseLoggerProps> = (
 
             {/* Notes */}
             <div>
-              <label className="block text-sm font-medium text-white/90 mb-2">
+              <label className="block text-sm font-medium text-text-secondary mb-2">
                 Notes (Optional)
               </label>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={3}
-                className="block w-full rounded-md border-border bg-bg-tertiary text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                className="block w-full rounded-md border-border bg-bg-tertiary text-text-primary shadow-sm focus:border-accent-primary focus:ring-accent-primary sm:text-sm"
                 placeholder="Any additional notes about this session..."
               />
             </div>
@@ -291,13 +291,13 @@ export const TemplatedExerciseLogger: React.FC<TemplatedExerciseLoggerProps> = (
               <button
                 onClick={handleSave}
                 disabled={saving || !selectedTemplate}
-                className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="flex-1 px-4 py-3 bg-accent-primary text-text-on-accent rounded-lg hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {saving ? 'Saving...' : existingLogId ? 'Update' : 'Save'} {getExerciseTitle()}
               </button>
               <button
                 onClick={onCancel}
-                className="px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                className="px-4 py-3 bg-bg-tertiary text-text-primary rounded-lg hover:bg-bg-quaternary transition-colors"
               >
                 Cancel
               </button>

@@ -104,19 +104,19 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
   const getActivityTypeInfo = (activityType: ActivityType) => {
     switch (activityType) {
       case ActivityType.RESISTANCE:
-        return { label: 'Resistance', color: 'bg-blue-600', textColor: 'text-blue-100' };
+        return { label: 'Resistance', color: 'bg-activity-resistance', textColor: 'text-text-on-accent' };
       case ActivityType.SPORT:
-        return { label: 'Sport', color: 'bg-green-600', textColor: 'text-green-100' };
+        return { label: 'Sport', color: 'bg-activity-sport', textColor: 'text-text-on-accent' };
       case ActivityType.STRETCHING:
-        return { label: 'Stretching', color: 'bg-purple-600', textColor: 'text-purple-100' };
+        return { label: 'Stretching', color: 'bg-activity-stretching', textColor: 'text-text-on-accent' };
       case ActivityType.ENDURANCE:
-        return { label: 'Endurance', color: 'bg-orange-600', textColor: 'text-orange-100' };
+        return { label: 'Endurance', color: 'bg-activity-endurance', textColor: 'text-text-on-accent' };
       case ActivityType.SPEED_AGILITY:
-        return { label: 'Speed/Agility', color: 'bg-red-600', textColor: 'text-red-100' };
+        return { label: 'Speed/Agility', color: 'bg-activity-speed', textColor: 'text-text-on-accent' };
       case ActivityType.OTHER:
-        return { label: 'Other', color: 'bg-gray-600', textColor: 'text-gray-100' };
+        return { label: 'Other', color: 'bg-activity-other', textColor: 'text-text-on-accent' };
       default:
-        return { label: 'Resistance', color: 'bg-blue-600', textColor: 'text-blue-100' };
+        return { label: 'Resistance', color: 'bg-activity-resistance', textColor: 'text-text-on-accent' };
     }
   };
 
@@ -128,19 +128,19 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
   return (
     <>
       <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50">
-        <div className="bg-[#23272F] rounded-lg w-full max-w-4xl h-5/6 flex flex-col shadow-xl">
+        <div className="bg-bg-secondary rounded-lg w-full max-w-4xl h-5/6 flex flex-col shadow-xl">
           {/* Header */}
           <div className="p-6 border-b border-white/10">
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold text-white">Program Templates</h2>
               <button 
                 onClick={onClose}
-                className="text-gray-400 hover:text-white text-2xl"
+                className="text-text-tertiary hover:text-text-primary text-2xl"
               >
                 ×
               </button>
             </div>
-            <p className="text-gray-400 mt-2">
+            <p className="text-text-tertiary mt-2">
               Use saved templates to quickly create new programs
             </p>
           </div>
@@ -148,8 +148,8 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
           {/* Template List */}
           <div className="flex-1 overflow-y-auto p-6">
             {templates.length === 0 ? (
-              <div className="text-center text-gray-400 py-12">
-                <div className="w-16 h-16 mx-auto mb-4 bg-gray-700 rounded-lg flex items-center justify-center">
+              <div className="text-center text-text-tertiary py-12">
+                <div className="w-16 h-16 mx-auto mb-4 bg-bg-tertiary rounded-lg flex items-center justify-center">
                   <DuplicateIcon className="w-8 h-8" />
                 </div>
                 <p className="text-lg mb-2">No templates saved yet</p>
@@ -160,16 +160,16 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
                 {templates.map((template) => (
                   <div
                     key={template.id}
-                    className="bg-[#181A20] rounded-lg p-4 border border-white/10 hover:border-white/20 transition-colors"
+                    className="bg-bg-tertiary rounded-lg p-4 border border-border hover:border-border-hover transition-colors"
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
                         <h3 className="text-white font-medium text-lg mb-1">{template.name}</h3>
-                        <div className="text-sm text-gray-400">
+                        <div className="text-sm text-text-tertiary">
                           {template.totalExercises || template.exercises.length} exercise{(template.totalExercises || template.exercises.length) !== 1 ? 's' : ''}
                           {template.sessions && ` • ${template.sessions.length} session${template.sessions.length !== 1 ? 's' : ''}`}
                         </div>
-                        <div className="text-xs text-gray-500 mt-1">
+                        <div className="text-xs text-text-muted mt-1">
                           Created {formatDate(template.createdAt)}
                         </div>
                         
@@ -190,7 +190,7 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
                               );
                             })}
                             {template.activityTypes.length > 3 && (
-                              <span className="px-2 py-0.5 text-xs rounded-full bg-gray-600 text-gray-100">
+                              <span className="px-2 py-0.5 text-xs rounded-full bg-bg-quaternary text-text-primary">
                                 +{template.activityTypes.length - 3}
                               </span>
                             )}
@@ -208,15 +208,15 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
 
                     {/* Exercise Preview */}
                     <div className="mb-4">
-                      <div className="text-xs text-gray-400 mb-2">Exercises:</div>
+                      <div className="text-xs text-text-tertiary mb-2">Exercises:</div>
                       <div className="space-y-1">
                         {template.exercises.slice(0, 3).map((item, index) => (
-                          <div key={index} className="text-sm text-gray-300 truncate">
+                          <div key={index} className="text-sm text-text-secondary truncate">
                             • {item.exercise.name}
                           </div>
                         ))}
                         {template.exercises.length > 3 && (
-                          <div className="text-xs text-gray-500">
+                          <div className="text-xs text-text-muted">
                             +{template.exercises.length - 3} more...
                           </div>
                         )}
@@ -227,7 +227,7 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleUseTemplate(template)}
-                        className="flex-1 px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 flex items-center justify-center gap-1"
+                        className="flex-1 px-3 py-2 bg-accent-primary text-text-on-accent rounded text-sm hover:bg-accent-hover flex items-center justify-center gap-1"
                       >
                         <PlayIcon className="w-4 h-4" />
                         Use
@@ -235,21 +235,21 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
                       
                       <button
                         onClick={() => showTemplatePreview(template)}
-                        className="px-3 py-2 bg-gray-600 text-white rounded text-sm hover:bg-gray-700"
+                        className="px-3 py-2 bg-bg-quaternary text-text-primary rounded text-sm hover:bg-hover-overlay"
                       >
                         Preview
                       </button>
                       
                       <button
                         onClick={() => duplicateTemplate(template)}
-                        className="px-3 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+                        className="px-3 py-2 bg-status-success text-text-on-accent rounded text-sm hover:opacity-90"
                       >
                         <DuplicateIcon className="w-4 h-4" />
                       </button>
                       
                       <button
                         onClick={() => deleteTemplate(template.id)}
-                        className="px-3 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700"
+                        className="px-3 py-2 bg-status-error text-text-on-accent rounded text-sm hover:opacity-90"
                       >
                         <TrashIcon className="w-4 h-4" />
                       </button>
@@ -265,7 +265,7 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
             <div className="flex justify-end">
               <button 
                 onClick={onClose}
-                className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                className="px-6 py-2 bg-bg-tertiary text-text-primary rounded-lg hover:bg-bg-quaternary"
               >
                 Close
               </button>
@@ -277,19 +277,19 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
       {/* Template Preview Modal */}
       {showPreview && selectedTemplate && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 z-60">
-          <div className="bg-[#23272F] rounded-lg w-full max-w-2xl max-h-5/6 flex flex-col shadow-xl">
+          <div className="bg-bg-secondary rounded-lg w-full max-w-2xl max-h-5/6 flex flex-col shadow-xl">
             {/* Preview Header */}
             <div className="p-6 border-b border-white/10">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-xl font-bold text-white">{selectedTemplate.name}</h3>
-                  <p className="text-gray-400 text-sm">
+                  <p className="text-text-tertiary text-sm">
                     {selectedTemplate.exercises.length} exercises • Created {formatDate(selectedTemplate.createdAt)}
                   </p>
                 </div>
                 <button 
                   onClick={() => setShowPreview(false)}
-                  className="text-gray-400 hover:text-white text-2xl"
+                  className="text-text-tertiary hover:text-text-primary text-2xl"
                 >
                   ×
                 </button>
@@ -300,19 +300,19 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
             <div className="flex-1 overflow-y-auto p-6">
               <div className="space-y-4">
                 {selectedTemplate.exercises.map((item, index) => (
-                  <div key={index} className="bg-[#181A20] rounded-lg p-4 border border-white/10">
+                  <div key={index} className="bg-bg-tertiary rounded-lg p-4 border border-border">
                     <h4 className="text-white font-medium mb-3">{item.exercise.name}</h4>
                     
                     <div className="space-y-2">
                       {item.sets.map((set, setIndex) => (
                         <div key={setIndex} className="flex items-center gap-4 text-sm">
-                          <span className="text-gray-400 w-8">#{setIndex + 1}</span>
+                          <span className="text-text-tertiary w-8">#{setIndex + 1}</span>
                           <div className="flex items-center gap-2">
                             <span className="text-text-primary">{set.weight || 0}kg</span>
-                            <span className="text-gray-400">×</span>
+                            <span className="text-text-tertiary">×</span>
                             <span className="text-text-primary">{set.reps || 0} reps</span>
                             {set.difficulty && (
-                              <span className="text-xs px-2 py-1 bg-gray-700 text-gray-300 rounded">
+                              <span className="text-xs px-2 py-1 bg-bg-quaternary text-text-secondary rounded">
                                 {set.difficulty}
                               </span>
                             )}
@@ -322,7 +322,7 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
                     </div>
 
                     {item.exercise.description && (
-                      <div className="mt-3 text-sm text-gray-400">
+                      <div className="mt-3 text-sm text-text-tertiary">
                         {item.exercise.description}
                       </div>
                     )}
@@ -336,7 +336,7 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowPreview(false)}
-                  className="flex-1 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+                  className="flex-1 px-4 py-2 bg-bg-tertiary text-text-primary rounded hover:bg-bg-quaternary"
                 >
                   Close
                 </button>
@@ -345,7 +345,7 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
                     handleUseTemplate(selectedTemplate);
                     setShowPreview(false);
                   }}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  className="flex-1 px-4 py-2 bg-accent-primary text-text-on-accent rounded hover:bg-accent-hover"
                 >
                   Use This Template
                 </button>

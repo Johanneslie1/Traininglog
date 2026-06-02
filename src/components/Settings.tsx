@@ -499,7 +499,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                           onClick={() => setExportScope(key)}
                           className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
                             exportScope === key
-                              ? 'bg-accent-primary text-white'
+                              ? 'bg-accent-primary text-text-on-accent'
                               : 'bg-bg-tertiary text-text-secondary hover:bg-bg-secondary'
                           }`}
                         >
@@ -616,7 +616,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                         onClick={() => handlePresetChange(key)}
                         className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
                           dateRange.preset === key
-                            ? 'bg-accent-primary text-white'
+                            ? 'bg-accent-primary text-text-on-accent'
                             : 'bg-bg-tertiary text-text-secondary hover:bg-bg-secondary'
                         }`}
                       >
@@ -682,7 +682,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                     (exportScope === 'athletes' && selectedAthleteIds.length === 0) ||
                     (exportScope === 'team' && !selectedTeamId)
                   }
-                  className="w-full bg-accent-primary text-white py-3 px-4 rounded-md hover:bg-accent-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                  className="w-full bg-accent-primary text-text-on-accent py-3 px-4 rounded-md hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
                 >
                   {isPowerBiExporting
                     ? 'Exporting...'
@@ -747,7 +747,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                       {oneDriveSignedIn && (
                         <button
                           onClick={handleSignOutOneDrive}
-                          className="text-red-400 hover:underline ml-auto"
+                          className="text-error-text hover:underline ml-auto"
                         >
                           Sign out
                         </button>
@@ -764,7 +764,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                       (exportScope === 'athletes' && selectedAthleteIds.length === 0) ||
                       (exportScope === 'team' && !selectedTeamId)
                     }
-                    className="w-full bg-blue-700 text-white py-3 px-4 rounded-md hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                    className="w-full bg-status-info text-text-on-accent py-3 px-4 rounded-md hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
                   >
                     {isUploadingToOneDrive
                       ? 'Uploading to OneDrive...'
@@ -785,7 +785,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                   <button
                     onClick={handleExportJson}
                     disabled={isExportingJson || !user?.id}
-                    className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="w-full bg-accent-primary text-text-on-accent py-3 px-4 rounded-md hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     {isExportingJson ? 'Exporting JSON...' : !user?.id ? 'Login Required' : 'Export as JSON'}
                   </button>

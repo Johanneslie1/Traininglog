@@ -8,28 +8,28 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Original primary colors
+        // Brand primary colors
         primary: {
-          50: '#f5f3ff',
-          100: '#ede9fe',
-          200: '#ddd6fe',
-          300: '#c4b5fd',
-          400: '#a78bfa',
-          500: '#8b5cf6',
-          600: '#7c3aed',
-          700: '#6d28d9',
-          800: '#5b21b6',
-          900: '#4c1d95',
-          DEFAULT: '#8b5cf6', // Add default value
+          50: '#effdff',
+          100: '#d7f8fb',
+          200: '#a7ebf2',
+          300: '#7bd4e0',
+          400: '#54acbf',
+          500: '#3a91a8',
+          600: '#26658c',
+          700: '#023859',
+          800: '#012b4f',
+          900: '#011c40',
+          DEFAULT: '#54acbf',
         },
         // Gymkeeper specific colors - available for all color utilities (bg, text, border, ring)
         gymkeeper: {
-          dark: '#1a1a1a',
-          light: '#2d2d2d',
-          'purple-darker': '#2a1f42',
-          'purple': '#8B5CF6',
-          'purple-light': '#A78BFA',
-          DEFAULT: '#8B5CF6', // Add default value
+          dark: '#011c40',
+          light: '#023859',
+          'purple-darker': '#011c40',
+          'purple': '#54acbf',
+          'purple-light': '#a7ebf2',
+          DEFAULT: '#54acbf',
         },
         // Theme system colors using CSS variables
         'bg-primary': 'var(--color-bg-primary)',
@@ -43,8 +43,12 @@ export default {
         'text-tertiary': 'var(--color-text-tertiary)',
         'text-muted': 'var(--color-text-muted)',
         'text-inverse': 'var(--color-text-inverse)',
+        'text-on-accent': 'var(--color-text-on-accent)',
         'border': 'var(--color-border)',
         'border-hover': 'var(--color-border-hover)',
+        'border-focus': 'var(--color-border-focus)',
+        'hover-overlay': 'var(--color-hover-overlay)',
+        'active-overlay': 'var(--color-active-overlay)',
         // Status colors
         status: {
           success: 'var(--color-success)',
@@ -176,8 +180,8 @@ export default {
         'lg': '0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -4px rgba(0, 0, 0, 0.1)',
         'xl': '0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
         '2xl': '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-        'glow': '0 0 20px rgba(139, 92, 246, 0.3)',
-        'glow-lg': '0 0 30px rgba(139, 92, 246, 0.5)',
+        'glow': '0 0 20px rgba(84, 172, 191, 0.3)',
+        'glow-lg': '0 0 30px rgba(167, 235, 242, 0.45)',
       },
       // Add animation classes
       animation: {
@@ -244,7 +248,7 @@ export default {
     'text-activity-speed',
     'text-activity-other',
     {
-      pattern: /bg-(theme|status|difficulty|activity|accent|trend|achievement)-*/,
+      pattern: /bg-(theme|status|difficulty|activity|accent|trend|achievement|hover|active)-*/,
       variants: ['hover', 'focus', 'active'],
     },
   ],

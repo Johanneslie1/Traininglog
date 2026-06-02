@@ -101,7 +101,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
     const type = normalizeActivityType(activityType);
     switch (type) {
       case ActivityType.RESISTANCE:
-        return { label: 'Resistance', color: 'bg-activity-resistance', textColor: 'text-blue-100' };
+        return { label: 'Resistance', color: 'bg-activity-resistance', textColor: 'text-text-on-accent' };
       case ActivityType.SPORT:
         return { label: 'Sport', color: 'bg-activity-sport', textColor: 'text-green-100' };
       case ActivityType.STRETCHING:
@@ -111,9 +111,9 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
       case ActivityType.SPEED_AGILITY:
         return { label: 'Speed/Agility', color: 'bg-activity-speed', textColor: 'text-red-100' };
       case ActivityType.OTHER:
-        return { label: 'Other', color: 'bg-gray-600', textColor: 'text-gray-100' };
+        return { label: 'Other', color: 'bg-activity-other', textColor: 'text-text-on-accent' };
       default:
-        return { label: 'Resistance', color: 'bg-blue-600', textColor: 'text-blue-100' };
+        return { label: 'Resistance', color: 'bg-activity-resistance', textColor: 'text-text-on-accent' };
     }
   };
 
@@ -669,8 +669,8 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
   return (
     <div className="fixed inset-0 bg-black z-[80] flex flex-col">
       {/* Breadcrumb */}
-      <div className="bg-[#0f0f0f] px-4 py-2 border-b border-white/5 flex-shrink-0">
-        <div className="flex items-center gap-2 text-sm text-gray-400">
+      <div className="bg-bg-secondary px-4 py-2 border-b border-border flex-shrink-0">
+        <div className="flex items-center gap-2 text-sm text-text-tertiary">
           <span>Programs</span>
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -711,7 +711,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
         {/* Session Details */}
         <div className="mb-6 space-y-4 max-w-full max-w-4xl mx-auto">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-text-secondary mb-2">
               Session Name
             </label>
             <input
@@ -719,12 +719,12 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
               value={currentSessionName}
               onChange={(e) => setCurrentSessionName(e.target.value)}
               placeholder="Enter session name"
-              className="w-full px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-[#8B5CF6]"
+              className="w-full px-3 py-2 bg-bg-tertiary border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:border-accent-primary"
             />
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-text-secondary mb-2">
               Session Notes (Optional)
             </label>
             <textarea
@@ -732,7 +732,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
               onChange={(e) => setSessionNotes(e.target.value)}
               placeholder="Add any notes for this session..."
               rows={3}
-              className="w-full px-3 py-2 bg-[#2a2a2a] border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-[#8B5CF6] resize-none"
+              className="w-full px-3 py-2 bg-bg-tertiary border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:border-accent-primary resize-none"
             />
           </div>
 
@@ -741,8 +741,8 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
             onClick={() => setIsWarmupSession((current) => !current)}
             className={`w-full text-left px-4 py-3 rounded-xl border transition-colors ${
               isWarmupSession
-                ? 'bg-blue-600/20 border-blue-500 text-blue-200'
-                : 'bg-[#2a2a2a] border-white/10 text-gray-200 hover:bg-[#333]'
+                ? 'bg-focus-bg border-accent-primary text-accent-secondary'
+                : 'bg-bg-tertiary border-border text-text-secondary hover:bg-bg-quaternary'
             }`}
           >
             <div className="font-semibold">{isWarmupSession ? '🔥 Warm-up session enabled' : 'Warm-up session disabled'}</div>
@@ -758,7 +758,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
               {lastAction && (
                 <button
                   onClick={handleUndo}
-                  className="px-3 py-1.5 bg-yellow-600 hover:bg-yellow-700 text-white text-sm rounded-lg transition-colors flex items-center gap-2"
+                  className="px-3 py-1.5 bg-warning-bg hover:opacity-90 text-warning-text border border-warning-border text-sm rounded-lg transition-colors flex items-center gap-2"
                   title="Undo last action"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -770,7 +770,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
             </div>
             <button
               onClick={() => setView('exerciseSelection')}
-              className="px-4 py-2 bg-[#2a2a2a] hover:bg-[#3a3a3a] text-white rounded-lg transition-colors border border-white/10 flex-shrink-0"
+              className="px-4 py-2 bg-bg-tertiary hover:bg-bg-quaternary text-text-primary rounded-lg transition-colors border border-border flex-shrink-0"
             >
               Add Exercise
             </button>
@@ -783,7 +783,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
                   setIsCreatingSuperset((prev) => !prev);
                   setSelectedSupersetExerciseIds([]);
                 }}
-                className="px-3 py-1.5 bg-[#2a2a2a] hover:bg-[#3a3a3a] text-white rounded-lg transition-colors border border-white/10 text-sm"
+                className="px-3 py-1.5 bg-bg-tertiary hover:bg-bg-quaternary text-text-primary rounded-lg transition-colors border border-border text-sm"
               >
                 {isCreatingSuperset ? 'Cancel Superset Selection' : 'Create Superset'}
               </button>
@@ -791,7 +791,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
                 <button
                   onClick={createSupersetFromSelection}
                   disabled={selectedSupersetExerciseIds.length < 2}
-                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors text-sm"
+                  className="px-3 py-1.5 bg-accent-primary hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed text-text-on-accent rounded-lg transition-colors text-sm"
                 >
                   Create Selected ({selectedSupersetExerciseIds.length})
                 </button>
@@ -802,8 +802,8 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
           {previewSupersets.length > 0 && (
             <div className="mb-4 space-y-2">
               {previewSupersets.map((superset) => (
-                <div key={superset.id} className="flex items-center justify-between rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2">
-                  <div className="text-sm text-blue-200">
+                <div key={superset.id} className="flex items-center justify-between rounded-lg border border-border-focus bg-focus-bg px-3 py-2">
+                  <div className="text-sm text-accent-secondary">
                     {buildSupersetDisplayTitle(superset, previewLabelsByExerciseId)}
                   </div>
                   <button
@@ -818,8 +818,8 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
           )}
 
           {selectedExercises.length === 0 ? (
-            <div className="text-center py-12 bg-[#1a1a1a] rounded-xl border border-white/10">
-              <div className="text-gray-500 mb-4">
+            <div className="text-center py-12 bg-bg-secondary rounded-xl border border-border">
+              <div className="text-text-muted mb-4">
                 <svg className="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
@@ -840,7 +840,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
                     {...provided.droppableProps}
                     ref={provided.innerRef}
                     className={`space-y-3 transition-colors ${
-                      snapshot.isDraggingOver ? 'bg-purple-500/5 rounded-xl p-2' : ''
+                      snapshot.isDraggingOver ? 'bg-focus-bg rounded-xl p-2' : ''
                     }`}
                   >
                     {selectedExercises.map((exercise, exerciseIndex) => (
@@ -849,9 +849,9 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
                           <div 
                             ref={provided.innerRef}
                             {...provided.draggableProps}
-                            className={`bg-[#1a1a1a] rounded-xl border p-4 transition-all ${
+                            className={`bg-bg-secondary rounded-xl border p-4 transition-all ${
                               snapshot.isDragging
-                                ? 'border-purple-500 shadow-2xl shadow-purple-500/20 scale-102'
+                                ? 'border-accent-primary shadow-2xl shadow-glow scale-102'
                                 : 'border-white/10'
                             }`}
                           >
@@ -863,7 +863,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
                                 className="flex items-start gap-3 flex-1 min-w-0 cursor-move group"
                               >
                                 <div className="p-2 rounded-lg bg-white/5 group-hover:bg-white/10 transition-colors flex-shrink-0 mt-1">
-                                  <svg className="w-5 h-5 text-gray-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <svg className="w-5 h-5 text-text-tertiary group-hover:text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
                                   </svg>
                                 </div>
@@ -874,7 +874,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
                                         type="text"
                                         value={tempExerciseName}
                                         onChange={(e) => setTempExerciseName(e.target.value)}
-                                        className="flex-1 px-2 py-1 bg-[#2a2a2a] border border-white/10 rounded text-white text-lg font-medium focus:outline-none focus:border-[#8B5CF6]"
+                                        className="flex-1 px-2 py-1 bg-bg-tertiary border border-border rounded text-text-primary text-lg font-medium focus:outline-none focus:border-accent-primary"
                                         autoFocus
                                       />
                                       <button
@@ -887,7 +887,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
                                       </button>
                                       <button
                                         onClick={handleCancelExerciseNameEdit}
-                                        className="p-1 hover:bg-white/10 rounded text-red-400 flex-shrink-0"
+                                        className="p-1 hover:bg-hover-overlay rounded text-error-text flex-shrink-0"
                                       >
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -903,7 +903,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
                                         <div className="flex items-center gap-2 mb-1 flex-wrap">
                                           <h3 className="text-lg font-medium text-white break-words">{exercise.name}</h3>
                                           {exercise.id && previewLabelsByExerciseId[exercise.id] && (
-                                            <span className="px-2 py-0.5 text-xs rounded-full bg-blue-600/30 text-blue-200 border border-blue-400/40">
+                                            <span className="px-2 py-0.5 text-xs rounded-full bg-focus-bg text-accent-secondary border border-border-focus">
                                               {previewLabelsByExerciseId[exercise.id].label}
                                             </span>
                                           )}
@@ -911,17 +911,17 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
                                             {getActivityTypeInfo(exercise.activityType).label}
                                           </span>
                                         </div>
-                                        <p className="text-sm text-gray-400">Sets and reps will be logged during workout</p>
+                                        <p className="text-sm text-text-tertiary">Sets and reps will be logged during workout</p>
                                       </button>
                                       
                                       {/* Prescription display/editor */}
                                       {exercisePrescriptions[exerciseIndex] && editingPrescription !== exerciseIndex ? (
                                         <div className="mt-2">
                                           <div className="flex items-center gap-2 mb-1">
-                                            <span className="text-xs font-medium text-gray-400">Prescription:</span>
+                                            <span className="text-xs font-medium text-text-tertiary">Prescription:</span>
                                             <button
                                               onClick={() => setEditingPrescription(exerciseIndex)}
-                                              className="text-xs text-blue-400 hover:text-blue-300"
+                                              className="text-xs text-accent-secondary hover:text-accent-primary"
                                             >
                                               Edit
                                             </button>
@@ -936,15 +936,15 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
                                                   toast.success('Prescription removed');
                                                 }
                                               }}
-                                              className="text-xs text-red-400 hover:text-red-300"
+                                              className="text-xs text-error-text hover:opacity-80"
                                             >
                                               Remove
                                             </button>
                                           </div>
                                           {exercisePrescriptions[exerciseIndex].instructionMode === 'freeform' ? (
-                                            <p className="text-sm text-gray-300 italic">{exercisePrescriptions[exerciseIndex].instructions}</p>
+                                            <p className="text-sm text-text-secondary italic">{exercisePrescriptions[exerciseIndex].instructions}</p>
                                           ) : (
-                                            <span className="inline-block px-2 py-1 bg-blue-500/20 text-blue-300 text-sm rounded">
+                                            <span className="inline-block px-2 py-1 bg-focus-bg text-accent-secondary text-sm rounded">
                                               {formatPrescriptionBadge(exercisePrescriptions[exerciseIndex].prescription, normalizeActivityType(exercise.activityType))}
                                             </span>
                                           )}
@@ -952,7 +952,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
                                       ) : editingPrescription !== exerciseIndex ? (
                                         <button
                                           onClick={() => setEditingPrescription(exerciseIndex)}
-                                          className="mt-2 text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                                          className="mt-2 text-sm text-accent-secondary hover:text-accent-primary flex items-center gap-1"
                                         >
                                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -972,8 +972,8 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
                                     onClick={() => toggleSupersetExerciseSelection(exercise.id!)}
                                     className={`p-2 rounded-lg transition-colors ${
                                       selectedSupersetExerciseIds.includes(exercise.id)
-                                        ? 'bg-blue-600 text-white'
-                                        : 'hover:bg-white/10 text-gray-400 hover:text-white'
+                                        ? 'bg-accent-primary text-text-on-accent'
+                                        : 'hover:bg-hover-overlay text-text-tertiary hover:text-text-primary'
                                     }`}
                                     title="Select for superset"
                                   >
@@ -986,7 +986,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
                                 {exerciseIndex > 0 && (
                                   <button
                                     onClick={() => moveExercise(exerciseIndex, 'up')}
-                                    className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white"
+                                    className="p-2 hover:bg-hover-overlay rounded-lg transition-colors text-text-tertiary hover:text-text-primary"
                                     title="Move up"
                                   >
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -999,7 +999,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
                                 {exerciseIndex < selectedExercises.length - 1 && (
                                   <button
                                     onClick={() => moveExercise(exerciseIndex, 'down')}
-                                    className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white"
+                                    className="p-2 hover:bg-hover-overlay rounded-lg transition-colors text-text-tertiary hover:text-text-primary"
                                     title="Move down"
                                   >
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1011,7 +1011,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
                                 {/* Duplicate */}
                                 <button
                                   onClick={() => handleDuplicateExercise(exerciseIndex)}
-                                  className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white"
+                                  className="p-2 hover:bg-hover-overlay rounded-lg transition-colors text-text-tertiary hover:text-text-primary"
                                   title="Duplicate exercise"
                                 >
                                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1022,7 +1022,7 @@ const SessionBuilder: React.FC<SessionBuilderProps> = ({
                                 {/* Delete */}
                                 <button
                                   onClick={() => handleRemoveExercise(exerciseIndex)}
-                                  className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-red-400"
+                                  className="p-2 hover:bg-hover-overlay rounded-lg transition-colors text-text-tertiary hover:text-error-text"
                                   title="Remove exercise"
                                 >
                                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

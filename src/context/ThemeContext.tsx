@@ -1,44 +1,61 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 export type Theme = 'light' | 'dark' | 'system';
+type ActualTheme = 'light' | 'dark';
+
+const THEME_STORAGE_KEY = 'theme';
+const THEME_META_COLORS: Record<ActualTheme, string> = {
+  dark: '#011c40',
+  light: '#f7fcfd',
+};
+
+const isTheme = (value: string | null): value is Theme =>
+  value === 'light' || value === 'dark' || value === 'system';
+
+const getSystemTheme = (): ActualTheme =>
+  window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+
+const resolveTheme = (theme: Theme): ActualTheme =>
+  theme === 'system' ? getSystemTheme() : theme;
+
+const getSavedTheme = (): Theme => {
+  try {
+    const saved = localStorage.getItem(THEME_STORAGE_KEY);
+    return isTheme(saved) ? saved : 'dark';
+  } catch {
+    return 'dark';
+  }
+};
 
 interface ThemeContextType {
   theme: Theme;
-  actualTheme: 'light' | 'dark';
+  actualTheme: ActualTheme;
   setTheme: (theme: Theme) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    const saved = localStorage.getItem('theme') as Theme;
-    return saved || 'dark';
-  });
+  const [theme, setThemeState] = useState<Theme>(getSavedTheme);
 
-  const [actualTheme, setActualTheme] = useState<'light' | 'dark'>('dark');
+  const [actualTheme, setActualTheme] = useState<ActualTheme>(() => resolveTheme(getSavedTheme()));
 
   useEffect(() => {
     const updateTheme = () => {
-      let newActualTheme: 'light' | 'dark';
-      
-      if (theme === 'system') {
-        newActualTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-      } else {
-        newActualTheme = theme;
-      }
+      const newActualTheme = resolveTheme(theme);
       
       setActualTheme(newActualTheme);
       
-      // Apply theme to document
       const root = document.documentElement;
       root.classList.remove('light', 'dark');
       root.classList.add(newActualTheme);
+      root.dataset.theme = newActualTheme;
+      root.dataset.themePreference = theme;
+      root.style.colorScheme = newActualTheme;
       
-      // Update meta theme-color for mobile browsers
       const metaThemeColor = document.querySelector('meta[name="theme-color"]');
       if (metaThemeColor) {
-        metaThemeColor.setAttribute('content', newActualTheme === 'dark' ? '#1a1a1a' : '#ffffff');
+        metaThemeColor.setAttribute('content', THEME_META_COLORS[newActualTheme]);
       }
     };
 
@@ -58,7 +75,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
-    localStorage.setItem('theme', newTheme);
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, newTheme);
+    } catch {
+      // Ignore storage failures in restricted browsing contexts.
+    }
   };
 
   return (

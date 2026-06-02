@@ -104,15 +104,15 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'not-started':
-        return { label: 'Not Started', color: 'bg-gray-600', textColor: 'text-gray-100' };
+        return { label: 'Not Started', color: 'bg-bg-tertiary', textColor: 'text-text-secondary' };
       case 'in-progress':
-        return { label: 'In Progress', color: 'bg-blue-600', textColor: 'text-blue-100' };
+        return { label: 'In Progress', color: 'bg-info-bg', textColor: 'text-info-text' };
       case 'completed':
-        return { label: 'Completed', color: 'bg-green-600', textColor: 'text-green-100' };
+        return { label: 'Completed', color: 'bg-success-bg', textColor: 'text-success-text' };
       case 'copied':
-        return { label: 'Copied', color: 'bg-purple-600', textColor: 'text-purple-100' };
+        return { label: 'Copied', color: 'bg-accent-100', textColor: 'text-accent-700' };
       default:
-        return { label: status, color: 'bg-gray-600', textColor: 'text-gray-100' };
+        return { label: status, color: 'bg-bg-tertiary', textColor: 'text-text-secondary' };
     }
   };
 
@@ -120,19 +120,19 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
     const type = normalizeActivityType(activityType);
     switch (type) {
       case ActivityType.RESISTANCE:
-        return { label: 'Resistance', color: 'bg-blue-600', textColor: 'text-blue-100' };
+        return { label: 'Resistance', color: 'bg-activity-resistance-bg', textColor: 'text-activity-resistance' };
       case ActivityType.SPORT:
-        return { label: 'Sport', color: 'bg-green-600', textColor: 'text-green-100' };
+        return { label: 'Sport', color: 'bg-activity-sport-bg', textColor: 'text-activity-sport' };
       case ActivityType.STRETCHING:
-        return { label: 'Stretching', color: 'bg-purple-600', textColor: 'text-purple-100' };
+        return { label: 'Stretching', color: 'bg-activity-stretching-bg', textColor: 'text-activity-stretching' };
       case ActivityType.ENDURANCE:
-        return { label: 'Endurance', color: 'bg-orange-600', textColor: 'text-orange-100' };
+        return { label: 'Endurance', color: 'bg-activity-endurance-bg', textColor: 'text-activity-endurance' };
       case ActivityType.SPEED_AGILITY:
-        return { label: 'Speed/Agility', color: 'bg-red-600', textColor: 'text-red-100' };
+        return { label: 'Speed/Agility', color: 'bg-activity-speed-bg', textColor: 'text-activity-speed' };
       case ActivityType.OTHER:
-        return { label: 'Other', color: 'bg-gray-600', textColor: 'text-gray-100' };
+        return { label: 'Other', color: 'bg-activity-other-bg', textColor: 'text-activity-other' };
       default:
-        return { label: 'Resistance', color: 'bg-blue-600', textColor: 'text-blue-100' };
+        return { label: 'Resistance', color: 'bg-activity-resistance-bg', textColor: 'text-activity-resistance' };
     }
   };
 
@@ -189,7 +189,7 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
       <div className={`flex items-center justify-center ${embedded ? 'py-10' : 'min-h-screen bg-bg-primary'}`}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600 mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading shared sessions...</p>
+          <p className="text-text-secondary">Loading shared sessions...</p>
         </div>
       </div>
     );
@@ -200,16 +200,16 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
       {/* Header */}
       {embedded ? (
         <div className="mb-6">
-          <h2 className="text-2xl font-bold text-white mb-1">Assigned Sessions</h2>
-          <p className="text-gray-400 text-sm">
+          <h2 className="text-2xl font-bold text-text-primary mb-1">Assigned Sessions</h2>
+          <p className="text-text-secondary text-sm">
             Sessions assigned to you by your coach
           </p>
         </div>
       ) : (
         <header className="bg-bg-secondary border-b border-border p-4 sticky top-0 z-10">
           <div className="max-w-4xl mx-auto">
-            <h1 className="text-2xl font-bold text-white mb-1">Shared Sessions</h1>
-            <p className="text-gray-400 text-sm">
+            <h1 className="text-2xl font-bold text-text-primary mb-1">Shared Sessions</h1>
+            <p className="text-text-secondary text-sm">
               Sessions assigned to you by your coach
             </p>
           </div>
@@ -239,18 +239,18 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
               return (
                 <div
                   key={assignment.id}
-                  className="bg-bg-secondary rounded-xl border border-gray-800 hover:border-gray-700 transition-all overflow-hidden"
+                  className="bg-bg-secondary rounded-xl border border-border hover:border-border-hover transition-all overflow-hidden"
                 >
                   {/* Session Header */}
-                  <div className="p-4 border-b border-gray-800/50">
+                  <div className="p-4 border-b border-border">
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-semibold text-white mb-1">
+                        <h3 className="text-lg font-semibold text-text-primary mb-1">
                           {session.name}
                         </h3>
-                        <div className="flex items-center gap-2 text-sm text-gray-400 flex-wrap">
+                        <div className="flex items-center gap-2 text-sm text-text-secondary flex-wrap">
                           {session.isWarmupSession && (
-                            <span className="px-2 py-0.5 rounded-full bg-blue-900/40 text-blue-200 text-xs font-medium">
+                            <span className="px-2 py-0.5 rounded-full bg-info-bg text-info-text text-xs font-medium">
                               Warm-up session
                             </span>
                           )}
@@ -261,11 +261,11 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
                           <span>•</span>
                           <span>{session.exercises.length} exercises</span>
                           <span>•</span>
-                          <span className="text-gray-300">Coach: {getCoachDisplayName(assignment)}</span>
+                          <span className="text-text-secondary">Coach: {getCoachDisplayName(assignment)}</span>
                           {guidedExerciseCount > 0 && (
                             <>
                               <span>•</span>
-                              <span className="text-primary-300">{guidedExerciseCount} guided</span>
+                              <span className="text-accent-primary">{guidedExerciseCount} guided</span>
                             </>
                           )}
                         </div>
@@ -277,8 +277,8 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
 
                     {/* Coach Message */}
                     {assignment.coachMessage && (
-                      <div className="bg-blue-900/20 border border-blue-800/30 rounded-lg p-3 mb-3">
-                        <p className="text-sm text-blue-200 italic">
+                      <div className="bg-info-bg border border-info-border rounded-lg p-3 mb-3">
+                        <p className="text-sm text-info-text italic">
                           "{assignment.coachMessage}"
                         </p>
                       </div>
@@ -288,7 +288,7 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
                     <div className="flex gap-2 flex-wrap">
                       <button
                         onClick={() => handleLogSession(assignment)}
-                        className="flex-1 min-w-[140px] px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors"
+                        className="flex-1 min-w-[140px] px-4 py-2 bg-accent-primary hover:bg-accent-hover text-text-on-accent rounded-lg font-medium transition-colors"
                       >
                         {assignment.status === 'completed'
                           ? 'Log Again'
@@ -298,14 +298,14 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
                       </button>
                       <button
                         onClick={() => toggleExpand(assignment.id)}
-                        className="flex-1 min-w-[140px] px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors"
+                        className="flex-1 min-w-[140px] px-4 py-2 bg-bg-tertiary hover:bg-bg-quaternary text-text-primary rounded-lg font-medium transition-colors"
                       >
                         {isExpanded ? 'Hide' : 'View'} Details
                       </button>
                       {assignment.status === 'not-started' && (
                         <button
                           onClick={() => handleStatusUpdate(assignment.id, 'in-progress')}
-                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                          className="px-4 py-2 bg-status-info hover:opacity-90 text-text-on-accent rounded-lg font-medium transition-colors"
                         >
                           Start
                         </button>
@@ -313,51 +313,51 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
                       {assignment.status === 'in-progress' && (
                         <button
                           onClick={() => handleStatusUpdate(assignment.id, 'completed')}
-                          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                          className="px-4 py-2 bg-status-success hover:opacity-90 text-text-on-accent rounded-lg font-medium transition-colors flex items-center gap-2"
                         >
                           <CheckCircleIcon className="w-4 h-4" />
                           Complete
                         </button>
                       )}
                     </div>
-                    <p className="text-xs text-gray-500 mt-2">
+                    <p className="text-xs text-text-tertiary mt-2">
                       {getStatusHelperText(assignment)}
                     </p>
                   </div>
 
                   {/* Expanded Exercise List */}
                   {isExpanded && (
-                    <div className="p-4 bg-gray-900/50">
-                      <h4 className="text-sm font-semibold text-gray-300 mb-3">Exercises:</h4>
+                    <div className="p-4 bg-bg-primary">
+                      <h4 className="text-sm font-semibold text-text-secondary mb-3">Exercises:</h4>
                       <div className="space-y-2">
                         {session.exercises.map((exercise, idx) => (
                           <div
                             key={exercise.id}
-                            className="bg-gray-800/50 rounded-lg p-3 hover:bg-gray-800 transition-colors"
+                            className="bg-bg-tertiary rounded-lg p-3 hover:bg-bg-quaternary transition-colors"
                           >
                             <div className="flex items-start justify-between gap-3">
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                  <span className="text-gray-500 text-sm font-medium w-6">
+                                  <span className="text-text-tertiary text-sm font-medium w-6">
                                     {idx + 1}.
                                   </span>
-                                  <h5 className="text-white font-medium">{exercise.name}</h5>
+                                  <h5 className="text-text-primary font-medium">{exercise.name}</h5>
                                   <span className={`px-2 py-0.5 text-xs rounded-full ${getActivityTypeInfo(exercise.activityType).color} ${getActivityTypeInfo(exercise.activityType).textColor}`}>
                                     {getActivityTypeInfo(exercise.activityType).label}
                                   </span>
                                 </div>
                                 {exercise.prescription && exercise.instructionMode === 'structured' && (
-                                  <div className="text-sm text-blue-400 ml-8">
+                                  <div className="text-sm text-info-text ml-8">
                                     📋 {formatPrescription(exercise.prescription, normalizeActivityType(exercise.activityType))}
                                   </div>
                                 )}
                                 {exercise.instructions && exercise.instructionMode === 'freeform' && (
-                                  <div className="text-sm text-purple-400 italic ml-8">
+                                  <div className="text-sm text-accent-primary italic ml-8">
                                     {exercise.instructions}
                                   </div>
                                 )}
                                 {exercise.notes && (
-                                  <div className="text-sm text-gray-500 ml-8 mt-1">
+                                  <div className="text-sm text-text-tertiary ml-8 mt-1">
                                     Note: {exercise.notes}
                                   </div>
                                 )}

@@ -330,9 +330,9 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
       duration: 1500,
       icon: '✓',
       style: {
-        background: '#2a2a2a',
-        color: '#fff',
-        border: '1px solid rgba(139, 92, 246, 0.5)',
+        background: 'var(--color-bg-tertiary)',
+        color: 'var(--color-text-primary)',
+        border: '1px solid var(--color-border-focus)',
       },
     });
     
@@ -370,8 +370,8 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
         duration: 1500,
         icon: '🗑️',
         style: {
-          background: '#2a2a2a',
-          color: '#fff',
+          background: 'var(--color-bg-tertiary)',
+          color: 'var(--color-text-primary)',
         },
       });
     } else {
@@ -490,7 +490,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
       
       return (
         <div key={field} className="space-y-1">
-          <label className="block text-sm font-medium text-gray-300">{label}</label>
+          <label className="block text-sm font-medium text-text-secondary">{label}</label>
           <div className="flex items-center gap-2">
             {withButtons && (
               <button
@@ -565,7 +565,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
       return (
         <div key="duration-min-sec" className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-300">Duration Minutes *</label>
+            <label className="block text-sm font-medium text-text-secondary">Duration Minutes *</label>
             <input
               type="number"
               value={duration.minutes}
@@ -582,7 +582,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
             />
           </div>
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-300">Duration Seconds *</label>
+            <label className="block text-sm font-medium text-text-secondary">Duration Seconds *</label>
             <input
               type="number"
               value={duration.seconds}
@@ -699,7 +699,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
                 'flexibility-primary',
                 renderField('holdTime', 'Hold Time (seconds) *', 'number', 1, 1, '1-600'),
                 <div key="intensity" className="space-y-1">
-                  <label className="block text-sm font-medium text-gray-300">Intensity</label>
+                  <label className="block text-sm font-medium text-text-secondary">Intensity</label>
                   <select
                     value={sets[setIndex]?.intensity !== undefined ? sets[setIndex].intensity : ''}
                     onChange={(e) => {
@@ -801,7 +801,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
           key="rpe-helper"
           type="button"
           onClick={() => setShowRPEHelper(!showRPEHelper)}
-          className="w-full text-left text-xs text-blue-400 hover:text-blue-300"
+          className="w-full text-left text-xs text-accent-secondary hover:text-accent-primary"
         >
           View RPE scale reference
         </button>
@@ -811,7 +811,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
     // Notes field
     fields.push(
       <div key="notes" className="space-y-1">
-        <label className="block text-sm font-medium text-gray-300">Notes</label>
+        <label className="block text-sm font-medium text-text-secondary">Notes</label>
         <textarea
           value={sets[setIndex]?.notes || ''}
           onChange={(e) => {
@@ -895,18 +895,18 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/95 flex flex-col z-50">
+    <div className="fixed inset-0 bg-bg-primary/95 flex flex-col z-50">
       {/* Header */}
-      <div className="p-3 sm:p-4 border-b border-white/10">
+      <div className="p-3 sm:p-4 border-b border-border">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg sm:text-xl font-bold text-white">
+          <h2 className="text-lg sm:text-xl font-bold text-text-primary">
             {isEditing ? 'Edit' : 'Log'} {exercise.name}
           </h2>
-          <div className="text-xs sm:text-sm text-gray-400">
+          <div className="text-xs sm:text-sm text-text-tertiary">
             {sets.length} {getSetLabel()}{sets.length !== 1 ? 's' : ''}
           </div>
         </div>
-        <div className="text-xs sm:text-sm text-gray-400 mt-1">
+        <div className="text-xs sm:text-sm text-text-tertiary mt-1">
           {exerciseType.charAt(0).toUpperCase() + exerciseType.slice(1)} Exercise
         </div>
 
@@ -1017,13 +1017,13 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
                 <div 
                   className={`
                     flex items-center justify-between p-3 sm:p-4 cursor-pointer 
-                    hover:bg-white/5 transition-colors
-                    ${isExpanded ? 'border-b border-white/10' : ''}
+                    hover:bg-hover-overlay transition-colors
+                    ${isExpanded ? 'border-b border-border' : ''}
                   `}
                   onClick={() => setExpandedSetIndex(isExpanded ? null : index)}
                 >
                   <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <span className="text-gray-400 font-medium shrink-0">
+                    <span className="text-text-tertiary font-medium shrink-0">
                       {getSetLabel()} {index + 1}
                     </span>
                     {getInlineTargetText(index) && (
@@ -1063,7 +1063,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
                   <div className="flex items-center gap-2 shrink-0">
                     {/* Expand/Collapse indicator */}
                     <svg 
-                      className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                      className={`w-5 h-5 text-text-tertiary transition-transform ${isExpanded ? 'rotate-180' : ''}`}
                       fill="none" 
                       stroke="currentColor" 
                       viewBox="0 0 24 24"
@@ -1083,7 +1083,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
                             e.stopPropagation();
                             copyPreviousSet(index);
                           }}
-                          className="px-2 py-1 sm:px-3 sm:py-1 text-xs sm:text-sm bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors touch-manipulation"
+                          className="px-2 py-1 sm:px-3 sm:py-1 text-xs sm:text-sm bg-accent-primary hover:bg-accent-hover text-text-on-accent rounded transition-colors touch-manipulation"
                         >
                           Copy Previous
                         </button>
@@ -1113,14 +1113,14 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
         {/* Add Set Button */}
         <button
           onClick={addSet}
-          className="w-full py-3 sm:py-4 rounded-lg bg-white/5 hover:bg-white/10 active:bg-white/15 text-white font-medium transition-colors border-2 border-dashed border-white/20 touch-manipulation"
+          className="w-full py-3 sm:py-4 rounded-lg bg-hover-overlay hover:bg-active-overlay active:bg-active-overlay text-text-primary font-medium transition-colors border-2 border-dashed border-border touch-manipulation"
         >
           + Add {getSetLabel()}
         </button>
         
         {/* Swipe hint - only show on mobile when there are multiple sets */}
         {sets.length > 1 && (
-          <p className="text-xs text-gray-500 text-center mt-2 sm:hidden">
+          <p className="text-xs text-text-muted text-center mt-2 sm:hidden">
             💡 Swipe left on a set to delete, or tap to expand/collapse
           </p>
         )}
@@ -1128,20 +1128,20 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
 
       {/* RPE Helper Modal */}
       {showRPEHelper && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-60">
+        <div className="fixed inset-0 bg-bg-primary/80 flex items-center justify-center z-60">
           <div className="bg-bg-secondary rounded-lg p-6 max-w-md w-full mx-4 border border-border">
-            <h3 className="text-lg font-bold text-white mb-4">RPE Scale Reference</h3>
+            <h3 className="text-lg font-bold text-text-primary mb-4">RPE Scale Reference</h3>
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {Object.entries(RPE_SCALE).map(([value, { label, description }]) => (
                 <div key={value} className="flex justify-between items-center py-1">
-                  <span className="text-white font-medium">{value} - {label}</span>
-                  <span className="text-gray-400 text-sm">{description}</span>
+                  <span className="text-text-primary font-medium">{value} - {label}</span>
+                  <span className="text-text-tertiary text-sm">{description}</span>
                 </div>
               ))}
             </div>
             <button
               onClick={() => setShowRPEHelper(false)}
-              className="mt-4 w-full py-2 bg-accent-primary hover:bg-accent-hover text-white rounded transition-colors"
+              className="mt-4 w-full py-2 bg-accent-primary hover:bg-accent-hover text-text-on-accent rounded transition-colors"
             >
               Close
             </button>

@@ -18,11 +18,11 @@ export const UpdateNotification: React.FC = () => {
   if (!showReload) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 bg-purple-600 text-white p-4 rounded-lg shadow-lg flex justify-between items-center z-50">
+    <div className="fixed bottom-4 left-4 right-4 bg-accent-primary text-text-on-accent p-4 rounded-lg shadow-lg flex justify-between items-center z-50">
       <span>New version available!</span>
       <button 
         onClick={reloadPage}
-        className="bg-white text-purple-600 px-4 py-2 rounded-md"
+        className="bg-bg-primary text-text-primary px-4 py-2 rounded-md"
       >
         Update
       </button>

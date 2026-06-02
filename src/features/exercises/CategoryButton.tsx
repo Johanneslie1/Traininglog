@@ -23,7 +23,7 @@ export const CategoryButton: React.FC<CategoryButtonProps> = ({ category, onClic
         transition-all duration-200 
         hover:scale-[1.02] active:scale-[0.98]
         hover:bg-opacity-90 active:bg-opacity-100
-        focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50
+        focus:outline-none focus:ring-2 focus:ring-accent-primary focus:ring-opacity-50
         touch-manipulation
       `}
     >

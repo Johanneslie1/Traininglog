@@ -41,7 +41,7 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({ program, onClick }) =>
       case ActivityType.SPORT:
         return { label: 'Sport', color: 'bg-green-600', textColor: 'text-green-100' };
       case ActivityType.STRETCHING:
-        return { label: 'Flexibility', color: 'bg-purple-600', textColor: 'text-purple-100' };
+        return { label: 'Flexibility', color: 'bg-activity-stretching', textColor: 'text-text-on-accent' };
       case ActivityType.ENDURANCE:
         return { label: 'Endurance', color: 'bg-orange-600', textColor: 'text-orange-100' };
       case ActivityType.SPEED_AGILITY:
@@ -70,7 +70,7 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({ program, onClick }) =>
 
       {/* Program info */}
       <div className="absolute inset-x-0 bottom-0 p-4 text-left">
-        <h3 className="text-lg font-semibold text-text-primary group-hover:text-purple-400 transition-colors">
+        <h3 className="text-lg font-semibold text-text-primary group-hover:text-accent-secondary transition-colors">
           {program.name}
         </h3>
         <div className="flex items-center gap-2 mt-1">

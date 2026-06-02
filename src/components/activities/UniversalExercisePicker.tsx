@@ -19,7 +19,7 @@ const FilterBlock: React.FC<FilterBlockProps> = ({ title, values, selected, onTo
         {uniqueValues.sort().map((v: string, index: number) => {
           const active = selected.has(v);
             return (
-              <button key={`${title}-${v}-${index}`} onClick={() => onToggle(v)} className={`px-2 py-0.5 rounded border text-[10px] ${active ? 'bg-yellow-600 border-yellow-500 text-text-primary' : 'bg-bg-tertiary border-border text-text-secondary hover:border-yellow-500 hover:text-text-primary'}`}>{v}</button>
+              <button key={`${title}-${v}-${index}`} onClick={() => onToggle(v)} className={`px-2 py-0.5 rounded border text-[10px] ${active ? 'bg-accent-primary border-accent-primary text-text-on-accent' : 'bg-bg-tertiary border-border text-text-secondary hover:border-accent-primary hover:text-text-primary'}`}>{v}</button>
             );
         })}
       </div>
@@ -214,7 +214,7 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
           {subtitle && <p className="text-text-tertiary">{subtitle}</p>}
         </div>
         {multiSelect && (
-          <div className="text-xs text-text-tertiary">Selected: <span className="text-yellow-400 font-semibold">{selectedCount}</span></div>
+          <div className="text-xs text-text-tertiary">Selected: <span className="text-accent-secondary font-semibold">{selectedCount}</span></div>
         )}
       </div>
       {/* Search, Quick Filters & Advanced (Sticky) */}
@@ -225,17 +225,17 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
             placeholder="Search exercises (name or instructions)"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="flex-1 px-3 py-2 bg-bg-tertiary border border-border rounded-md text-text-primary placeholder-gray-400 focus:outline-none focus:border-yellow-500"
+            className="flex-1 px-3 py-2 bg-bg-tertiary border border-border rounded-md text-text-primary placeholder-text-muted focus:outline-none focus:border-accent-primary"
             aria-label="Search exercises"
           />
           <button
             onClick={() => { setSearch(''); setTypeFilter(new Set()); setLateralFilter(new Set()); setEquipmentFilter(new Set()); setTagFilter(new Set()); }}
-            className="px-3 py-2 text-xs font-medium bg-bg-tertiary border border-border rounded-md text-text-secondary hover:text-text-primary hover:border-yellow-500"
+            className="px-3 py-2 text-xs font-medium bg-bg-tertiary border border-border rounded-md text-text-secondary hover:text-text-primary hover:border-accent-primary"
             aria-label="Reset filters"
           >Reset</button>
           <button
             onClick={() => setShowAdvanced(s => !s)}
-            className="px-3 py-2 text-xs font-medium bg-bg-tertiary border border-border rounded-md text-text-secondary hover:text-text-primary hover:border-yellow-500"
+            className="px-3 py-2 text-xs font-medium bg-bg-tertiary border border-border rounded-md text-text-secondary hover:text-text-primary hover:border-accent-primary"
             aria-expanded={showAdvanced}
             aria-controls="advanced-filters"
           >{showAdvanced ? 'Hide' : 'Filters'}</button>
@@ -249,7 +249,7 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
               <button
                 key={value}
                 onClick={() => toggle(setTypeFilter, value)}
-                className={`px-3 py-1 rounded-full text-xs font-medium border transition ${active ? 'bg-yellow-500 border-yellow-400 text-black' : 'bg-bg-tertiary border-border text-text-secondary hover:border-yellow-500 hover:text-text-primary'}`}
+                className={`px-3 py-1 rounded-full text-xs font-medium border transition ${active ? 'bg-accent-primary border-accent-primary text-text-on-accent' : 'bg-bg-tertiary border-border text-text-secondary hover:border-accent-primary hover:text-text-primary'}`}
               >{value}</button>
             );
           })}
@@ -260,7 +260,7 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
               <button
                 key={value}
                 onClick={() => toggle(setLateralFilter, value)}
-                className={`px-3 py-1 rounded-full text-xs font-medium border transition ${active ? 'bg-blue-500 border-blue-400 text-text-primary' : 'bg-bg-tertiary border-border text-text-secondary hover:border-blue-400 hover:text-text-primary'}`}
+                className={`px-3 py-1 rounded-full text-xs font-medium border transition ${active ? 'bg-accent-secondary border-accent-secondary text-text-on-accent' : 'bg-bg-tertiary border-border text-text-secondary hover:border-accent-secondary hover:text-text-primary'}`}
               >{value}</button>
             );
           })}
@@ -275,7 +275,7 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
             </div>
           </div>
         )}
-        <p className="text-[11px] text-text-tertiary">Showing <span className="text-yellow-400 font-semibold">{advancedFiltered.length}</span> of {enriched.length} exercises</p>
+        <p className="text-[11px] text-text-tertiary">Showing <span className="text-accent-secondary font-semibold">{advancedFiltered.length}</span> of {enriched.length} exercises</p>
       </div>
       {/* Exercise List - Compact View */}
       <div className="flex-1 overflow-y-auto px-4 py-2">
@@ -288,7 +288,7 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
                 onClick={() => handleCardClick(ex)}
                 className={`relative flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer transition-all border ${
                   active 
-                    ? 'bg-yellow-500/10 border-yellow-500 shadow-sm' 
+                    ? 'bg-focus-bg border-accent-primary shadow-sm' 
                     : 'bg-bg-tertiary/50 border-transparent hover:bg-bg-tertiary hover:border-border'
                 }`}
                 role="button"
@@ -306,10 +306,10 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
                     {/* Selection indicator */}
                     {multiSelect && (
                       <div className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center ${
-                        active ? 'bg-yellow-500 border-yellow-500' : 'border-border bg-bg-secondary'
+                        active ? 'bg-accent-primary border-accent-primary' : 'border-border bg-bg-secondary'
                       }`}>
                         {active && (
-                          <svg className="w-3 h-3 text-black" fill="currentColor" viewBox="0 0 20 20">
+                          <svg className="w-3 h-3 text-text-on-accent" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                         )}
@@ -319,7 +319,7 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
                     {/* Main content */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <h3 className={`font-semibold truncate ${active ? 'text-yellow-400' : 'text-text-primary'}`}>
+                        <h3 className={`font-semibold truncate ${active ? 'text-accent-secondary' : 'text-text-primary'}`}>
                           {ex.name}
                         </h3>
                         {/* Primary badge only */}
@@ -364,11 +364,11 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
         {advancedFiltered.length === 0 && (
           <div className="text-center py-12">
             <p className="text-text-tertiary text-lg">No exercises found</p>
-            <p className="text-gray-500 text-sm mt-2">Try adjusting your search or filter</p>
+            <p className="text-text-muted text-sm mt-2">Try adjusting your search or filter</p>
             <div className="mt-6">
               <button
                 onClick={handleCreateExercise}
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-accent-primary text-text-primary font-medium hover:bg-accent-hover transition-colors"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-accent-primary text-text-on-accent font-medium hover:bg-accent-hover transition-colors"
               >
                 <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 102 0v-5h5a1 1 0 100-2h-5V4a1 1 0 00-1-1z" clipRule="evenodd" />
@@ -383,11 +383,11 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
         <div className="border-t border-border p-4 bg-bg-secondary flex items-center justify-between gap-4">
           <div className="flex flex-wrap gap-2 text-xs text-text-tertiary max-w-[60%]">
             {selectedList.slice(0,6).map(s => <span key={s.id} className="px-2 py-0.5 bg-bg-tertiary rounded border border-border text-text-secondary truncate max-w-[120px]">{s.name}</span>)}
-            {selectedList.length > 6 && <span className="text-gray-500">+{selectedList.length - 6} more</span>}
+            {selectedList.length > 6 && <span className="text-text-muted">+{selectedList.length - 6} more</span>}
           </div>
           <div className="flex gap-2 ml-auto">
-            <button onClick={() => setSelectedMap({})} disabled={selectedCount===0} className={`px-3 py-2 text-xs font-medium rounded-md border ${selectedCount===0 ? 'text-gray-500 border-border cursor-not-allowed' : 'text-text-secondary border-border hover:text-text-primary hover:border-yellow-500'}`}>Clear</button>
-            <button onClick={() => { if (onConfirmSelection) onConfirmSelection(selectedList); }} disabled={selectedCount===0} className={`px-4 py-2 text-sm font-semibold rounded-md ${selectedCount===0 ? 'bg-bg-tertiary hover:opacity-90 text-gray-500 cursor-not-allowed' : 'bg-yellow-500 hover:bg-yellow-400 text-black'}`}>{confirmLabel} {selectedCount>0 && `(${selectedCount})`}</button>
+            <button onClick={() => setSelectedMap({})} disabled={selectedCount===0} className={`px-3 py-2 text-xs font-medium rounded-md border ${selectedCount===0 ? 'text-text-muted border-border cursor-not-allowed' : 'text-text-secondary border-border hover:text-text-primary hover:border-accent-primary'}`}>Clear</button>
+            <button onClick={() => { if (onConfirmSelection) onConfirmSelection(selectedList); }} disabled={selectedCount===0} className={`px-4 py-2 text-sm font-semibold rounded-md ${selectedCount===0 ? 'bg-bg-tertiary hover:opacity-90 text-text-muted cursor-not-allowed' : 'bg-accent-primary hover:bg-accent-hover text-text-on-accent'}`}>{confirmLabel} {selectedCount>0 && `(${selectedCount})`}</button>
           </div>
         </div>
       )}

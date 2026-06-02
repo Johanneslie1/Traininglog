@@ -26,13 +26,13 @@ interface ResistanceTrainingPickerProps {
 }
 
 const muscleGroups: Category[] = [
-  { id: 'chest', name: 'Chest', icon: '💪', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-green-600', textColor: 'text-white' },
-  { id: 'back', name: 'Back', icon: '🔙', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-blue-600', textColor: 'text-white' },
-  { id: 'legs', name: 'Legs', icon: '🦵', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-yellow-600', textColor: 'text-white' },
-  { id: 'shoulders', name: 'Shoulders', icon: '🎯', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-cyan-600', textColor: 'text-white' },
-  { id: 'arms', name: 'Arms', icon: '💪', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-red-600', textColor: 'text-white' },
-  { id: 'core', name: 'Core', icon: '⭕', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-primary-600', textColor: 'text-white' },
-  { id: 'fullBody', name: 'Full-Body', icon: '👤', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-orange-600', textColor: 'text-white' },
+  { id: 'chest', name: 'Chest', icon: '💪', bgColor: 'bg-bg-secondary', iconBgColor: 'bg-activity-resistance', textColor: 'text-text-primary' },
+  { id: 'back', name: 'Back', icon: '🔙', bgColor: 'bg-bg-secondary', iconBgColor: 'bg-accent-primary', textColor: 'text-text-primary' },
+  { id: 'legs', name: 'Legs', icon: '🦵', bgColor: 'bg-bg-secondary', iconBgColor: 'bg-status-warning', textColor: 'text-text-primary' },
+  { id: 'shoulders', name: 'Shoulders', icon: '🎯', bgColor: 'bg-bg-secondary', iconBgColor: 'bg-activity-stretching', textColor: 'text-text-primary' },
+  { id: 'arms', name: 'Arms', icon: '💪', bgColor: 'bg-bg-secondary', iconBgColor: 'bg-status-error', textColor: 'text-text-primary' },
+  { id: 'core', name: 'Core', icon: '⭕', bgColor: 'bg-bg-secondary', iconBgColor: 'bg-accent-secondary', textColor: 'text-text-on-accent' },
+  { id: 'fullBody', name: 'Full-Body', icon: '👤', bgColor: 'bg-bg-secondary', iconBgColor: 'bg-activity-endurance', textColor: 'text-text-primary' },
 ];
 
 type ViewState = 'main' | 'search' | 'logging' | 'recentExercises';
@@ -211,24 +211,24 @@ const ResistanceTrainingPicker: React.FC<ResistanceTrainingPickerProps> = ({
 
   // Main view - shows search, recent exercises, and muscle groups
   return (
-    <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex flex-col z-50">
+    <div className="fixed inset-0 bg-bg-primary/90 backdrop-blur-sm flex flex-col z-50">
       {/* Header */}
-      <header className="sticky top-0 flex items-center justify-between p-4 bg-[#1a1a1a] border-b border-white/10">
+      <header className="sticky top-0 flex items-center justify-between p-4 bg-bg-secondary border-b border-border">
         <div className="flex items-center space-x-3">
           <button 
             onClick={onBack}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white"
+            className="p-2 hover:bg-hover-overlay rounded-lg transition-colors text-text-tertiary hover:text-text-primary"
             aria-label="Back"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <h2 className="text-xl font-bold text-white">🏋️‍♂️ Resistance Training</h2>
+          <h2 className="text-xl font-bold text-text-primary">🏋️‍♂️ Resistance Training</h2>
         </div>
         <button 
           onClick={onClose}
-          className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white"
+          className="p-2 hover:bg-hover-overlay rounded-lg transition-colors text-text-tertiary hover:text-text-primary"
           aria-label="Close"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -246,13 +246,13 @@ const ResistanceTrainingPicker: React.FC<ResistanceTrainingPickerProps> = ({
               <input
                 type="text"
                 placeholder="Search exercises..."
-                className="w-full px-4 py-3 pl-10 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 pl-10 bg-bg-tertiary border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-focus-ring focus:border-transparent"
                 onFocus={() => {
                   setSelectedCategory(null);
                   setView('search');
                 }}
               />
-              <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
@@ -260,10 +260,10 @@ const ResistanceTrainingPicker: React.FC<ResistanceTrainingPickerProps> = ({
 
           {/* Quick Options */}
           <section className="space-y-3 md:space-y-4">
-            <h3 className="text-lg font-semibold text-white/90">Quick Options</h3>
+            <h3 className="text-lg font-semibold text-text-primary">Quick Options</h3>
             <div className="grid grid-cols-1 gap-3 md:gap-4">
               <CategoryButton
-                category={{ id: 'recent', name: 'Recent Exercises', icon: '🕒', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-blue-600', textColor: 'text-white' }}
+                category={{ id: 'recent', name: 'Recent Exercises', icon: '🕒', bgColor: 'bg-bg-secondary', iconBgColor: 'bg-accent-primary', textColor: 'text-text-primary' }}
                 onClick={() => setView('recentExercises')}
               />
             </div>
@@ -271,7 +271,7 @@ const ResistanceTrainingPicker: React.FC<ResistanceTrainingPickerProps> = ({
 
           {/* Muscle Groups */}
           <section className="space-y-3 md:space-y-4">
-            <h3 className="text-lg font-semibold text-white/90">Muscle Groups</h3>
+            <h3 className="text-lg font-semibold text-text-primary">Muscle Groups</h3>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4">
               {muscleGroups.map(category => (
                 <CategoryButton

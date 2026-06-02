@@ -42,19 +42,19 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
     const type = normalizeActivityType(activityType);
     switch (type) {
       case ActivityType.RESISTANCE:
-        return { label: 'Resistance', color: 'bg-blue-600', textColor: 'text-blue-100' };
+        return { label: 'Resistance', color: 'bg-activity-resistance', textColor: 'text-text-on-accent' };
       case ActivityType.SPORT:
-        return { label: 'Sport', color: 'bg-green-600', textColor: 'text-green-100' };
+        return { label: 'Sport', color: 'bg-activity-sport', textColor: 'text-text-on-accent' };
       case ActivityType.STRETCHING:
-        return { label: 'Stretching', color: 'bg-purple-600', textColor: 'text-purple-100' };
+        return { label: 'Stretching', color: 'bg-activity-stretching', textColor: 'text-text-on-accent' };
       case ActivityType.ENDURANCE:
-        return { label: 'Endurance', color: 'bg-orange-600', textColor: 'text-orange-100' };
+        return { label: 'Endurance', color: 'bg-activity-endurance', textColor: 'text-text-on-accent' };
       case ActivityType.SPEED_AGILITY:
-        return { label: 'Speed/Agility', color: 'bg-red-600', textColor: 'text-red-100' };
+        return { label: 'Speed/Agility', color: 'bg-activity-speed', textColor: 'text-text-on-accent' };
       case ActivityType.OTHER:
-        return { label: 'Other', color: 'bg-gray-600', textColor: 'text-gray-100' };
+        return { label: 'Other', color: 'bg-activity-other', textColor: 'text-text-on-accent' };
       default:
-        return { label: 'Resistance', color: 'bg-blue-600', textColor: 'text-blue-100' };
+        return { label: 'Resistance', color: 'bg-activity-resistance', textColor: 'text-text-on-accent' };
     }
   };
 
@@ -302,7 +302,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
           </div>
           <button
             onClick={handleLogout}
-            className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-text-primary text-sm rounded-lg transition-colors flex-shrink-0"
+            className="px-3 py-1.5 bg-status-error hover:opacity-90 text-white text-sm rounded-lg transition-colors flex-shrink-0"
           >
             Logout
           </button>
@@ -418,9 +418,9 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
         <div className="space-y-3 max-w-4xl mx-auto">
         {sessions.length > 0 ? (
           sessions.map((session) => (
-            <div key={session.id} className="bg-bg-secondary rounded-2xl overflow-hidden border border-gray-800 hover:border-gray-700 transition-all duration-200">
+            <div key={session.id} className="bg-bg-secondary rounded-2xl overflow-hidden border border-border hover:border-border-hover transition-all duration-200">
               {/* Session Header */}
-              <div className="px-4 sm:px-5 py-3 sm:py-4 flex items-center justify-between border-b border-gray-800/50 gap-3">
+              <div className="px-4 sm:px-5 py-3 sm:py-4 flex items-center justify-between border-b border-border gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                     <h3 className="text-lg font-semibold text-text-primary">{session.name}</h3>
@@ -506,11 +506,11 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                             </span>
                           </div>
                           {exercise.prescription && exercise.instructionMode === 'structured' ? (
-                            <div className="text-sm text-blue-400">
+                            <div className="text-sm text-accent-secondary">
                               📋 {formatPrescription(exercise.prescription, normalizeActivityType(exercise.activityType))}
                             </div>
                           ) : exercise.instructions && exercise.instructionMode === 'freeform' ? (
-                            <div className="text-sm text-purple-400 italic">
+                            <div className="text-sm text-accent-secondary italic">
                               {exercise.instructions}
                             </div>
                           ) : (
@@ -544,7 +544,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
               setEditingSession(null);
               setShowSessionBuilder(true);
             }} 
-            className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-text-primary rounded-2xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 flex items-center justify-center gap-3 font-medium shadow-lg hover:shadow-xl border border-blue-500/20"
+            className="w-full py-4 bg-gradient-brand-button text-text-on-accent rounded-2xl hover:opacity-95 transition-all duration-200 flex items-center justify-center gap-3 font-medium shadow-lg hover:shadow-xl border border-border-focus"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />

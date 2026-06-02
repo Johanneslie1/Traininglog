@@ -15,11 +15,11 @@ const UpdatedExerciseCard: React.FC<UpdatedExerciseCardProps> = ({
   showActions = true
 }) => {
   return (
-    <div className="bg-surface p-4 rounded-lg shadow hover:shadow-md transition-shadow">
+    <div className="bg-bg-secondary text-text-primary p-4 rounded-lg shadow hover:shadow-md transition-shadow">
       <div className="flex justify-between items-start">
         <div>
           <h3 className="text-lg font-semibold">{exercise.name}</h3>
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-text-secondary">
             <p>{exercise.type} • {exercise.category}</p>
             {exercise.primaryMuscles && (
               <p>Primary muscles: {exercise.primaryMuscles.join(', ')}</p>
@@ -31,7 +31,7 @@ const UpdatedExerciseCard: React.FC<UpdatedExerciseCardProps> = ({
             {onEdit && (
               <button 
                 onClick={onEdit}
-                className="text-primary hover:text-primary-dark"
+                className="text-accent-primary hover:text-accent-hover"
               >
                 Edit
               </button>
@@ -39,7 +39,7 @@ const UpdatedExerciseCard: React.FC<UpdatedExerciseCardProps> = ({
             {onDelete && (
               <button 
                 onClick={onDelete}
-                className="text-red-500 hover:text-red-600"
+                className="text-error-text hover:text-error"
               >
                 Delete
               </button>
@@ -48,7 +48,7 @@ const UpdatedExerciseCard: React.FC<UpdatedExerciseCardProps> = ({
         )}
       </div>
       {exercise.description && (
-        <p className="mt-2 text-sm text-gray-700">{exercise.description}</p>
+        <p className="mt-2 text-sm text-text-secondary">{exercise.description}</p>
       )}
       {exercise.equipment && exercise.equipment.length > 0 && (
         <div className="mt-2 text-sm">

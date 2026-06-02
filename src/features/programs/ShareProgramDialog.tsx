@@ -112,16 +112,16 @@ const ShareProgramDialog: React.FC<ShareProgramDialogProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 rounded-lg max-w-2xl w-full shadow-2xl border border-gray-800 max-h-[90vh] flex flex-col">
+      <div className="bg-bg-secondary rounded-lg max-w-2xl w-full shadow-2xl border border-border max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-800">
+        <div className="flex items-center justify-between p-6 border-b border-border">
           <div className="flex items-center gap-3">
             <ShareIcon className="h-6 w-6 text-primary-500" />
             <h2 className="text-xl font-bold text-white">Share Program</h2>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors"
+            className="text-text-tertiary hover:text-text-primary transition-colors"
             aria-label="Close"
           >
             <XIcon className="h-6 w-6" />
@@ -131,49 +131,49 @@ const ShareProgramDialog: React.FC<ShareProgramDialogProps> = ({
         {/* Content - Scrollable */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Program Info */}
-          <div className="bg-gray-800 rounded-lg p-4">
-            <p className="text-gray-300 mb-1">
+          <div className="bg-bg-tertiary rounded-lg p-4">
+            <p className="text-text-secondary mb-1">
               Sharing: <span className="font-semibold text-white">{programName}</span>
             </p>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-text-muted">
               Selected: {selectedAthleteIds.size} of {totalAthletes} athlete{totalAthletes !== 1 ? 's' : ''}
             </p>
           </div>
 
           {/* Coach Message */}
           <div>
-            <label htmlFor="coachMessage" className="block text-sm font-medium text-gray-300 mb-2">
-              Message to Athletes <span className="text-gray-500">(Optional)</span>
+            <label htmlFor="coachMessage" className="block text-sm font-medium text-text-secondary mb-2">
+              Message to Athletes <span className="text-text-muted">(Optional)</span>
             </label>
             <textarea
               id="coachMessage"
               value={coachMessage}
               onChange={(e) => setCoachMessage(e.target.value.slice(0, 500))}
               rows={4}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+              className="w-full bg-bg-tertiary border border-border rounded-lg px-4 py-3 text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-focus-ring focus:border-transparent resize-none"
               placeholder="Add instructions, goals, or notes for your athletes..."
             />
-            <p className="text-xs text-gray-500 mt-1 text-right">
+            <p className="text-xs text-text-muted mt-1 text-right">
               {coachMessage.length}/500 characters
             </p>
           </div>
 
           {/* Team Member Selection */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-3">
+            <label className="block text-sm font-medium text-text-secondary mb-3">
               Select Athletes from Your Teams
             </label>
 
             {loadingTeams ? (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
-                <span className="ml-3 text-gray-400">Loading teams...</span>
+                <span className="ml-3 text-text-tertiary">Loading teams...</span>
               </div>
             ) : teams.length === 0 ? (
-              <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center">
-                <UsersIcon className="h-12 w-12 text-gray-600 mx-auto mb-3" />
-                <p className="text-gray-400 mb-2">No teams found</p>
-                <p className="text-sm text-gray-500">
+              <div className="bg-bg-tertiary border border-border rounded-lg p-6 text-center">
+                <UsersIcon className="h-12 w-12 text-text-muted mx-auto mb-3" />
+                <p className="text-text-tertiary mb-2">No teams found</p>
+                <p className="text-sm text-text-muted">
                   Create a team first to share programs with athletes
                 </p>
               </div>
@@ -182,15 +182,15 @@ const ShareProgramDialog: React.FC<ShareProgramDialogProps> = ({
                 {teams.map(team => (
                   <div 
                     key={team.id} 
-                    className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden"
+                    className="bg-bg-tertiary border border-border rounded-lg overflow-hidden"
                   >
                     {/* Team Header */}
-                    <div className="bg-gray-750 px-4 py-3 border-b border-gray-700">
+                    <div className="bg-bg-quaternary px-4 py-3 border-b border-border">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <UsersIcon className="h-5 w-5 text-primary-500" />
                           <h3 className="font-semibold text-white">{team.name}</h3>
-                          <span className="text-sm text-gray-500">
+                          <span className="text-sm text-text-muted">
                             ({team.members.length} member{team.members.length !== 1 ? 's' : ''})
                           </span>
                         </div>
@@ -210,20 +210,20 @@ const ShareProgramDialog: React.FC<ShareProgramDialogProps> = ({
                     {/* Team Members */}
                     <div className="p-2 space-y-1">
                       {team.members.length === 0 ? (
-                        <p className="text-gray-500 text-sm text-center py-4">
+                        <p className="text-text-muted text-sm text-center py-4">
                           No members in this team yet
                         </p>
                       ) : (
                         team.members.map(member => (
                           <label
                             key={member.id}
-                            className="flex items-center gap-3 px-3 py-2 hover:bg-gray-700 rounded-lg cursor-pointer transition-colors"
+                            className="flex items-center gap-3 px-3 py-2 hover:bg-hover-overlay rounded-lg cursor-pointer transition-colors"
                           >
                             <input
                               type="checkbox"
                               checked={selectedAthleteIds.has(member.id)}
                               onChange={() => toggleAthlete(member.id)}
-                              className="w-4 h-4 text-primary-600 bg-gray-700 border-gray-600 rounded focus:ring-primary-500 focus:ring-2"
+                              className="w-4 h-4 text-accent-primary bg-bg-tertiary border-border rounded focus:ring-accent-primary focus:ring-2"
                             />
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
@@ -236,7 +236,7 @@ const ShareProgramDialog: React.FC<ShareProgramDialogProps> = ({
                                   <p className="text-white font-medium">
                                     {member.firstName} {member.lastName}
                                   </p>
-                                  <p className="text-xs text-gray-500">{member.email}</p>
+                                  <p className="text-xs text-text-muted">{member.email}</p>
                                 </div>
                               </div>
                             </div>
@@ -252,10 +252,10 @@ const ShareProgramDialog: React.FC<ShareProgramDialogProps> = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="flex gap-3 p-6 border-t border-gray-800">
+        <div className="flex gap-3 p-6 border-t border-border">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
+            className="flex-1 px-4 py-3 bg-bg-tertiary hover:bg-bg-quaternary text-text-primary rounded-lg font-medium transition-colors"
           >
             Cancel
           </button>

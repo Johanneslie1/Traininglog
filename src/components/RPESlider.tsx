@@ -30,10 +30,10 @@ export const RPESlider: React.FC<RPESliderProps> = ({ value, onChange, label = '
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <label className="block text-sm font-medium text-gray-300">
+        <label className="block text-sm font-medium text-text-secondary">
           {label}
         </label>
-        <span className="text-lg font-semibold text-orange-400 bg-bg-tertiary px-3 py-1 rounded">
+        <span className="text-lg font-semibold text-accent-secondary bg-bg-tertiary px-3 py-1 rounded">
           {currentValue}
         </span>
       </div>
@@ -51,29 +51,29 @@ export const RPESlider: React.FC<RPESliderProps> = ({ value, onChange, label = '
         aria-valuenow={currentValue}
         aria-valuemin={1}
         aria-valuemax={10}
-        className="w-full h-3 bg-bg-tertiary rounded-lg appearance-none cursor-pointer accent-orange-500 slider"
+        className="w-full h-3 bg-bg-tertiary rounded-lg appearance-none cursor-pointer accent-accent-primary slider"
         style={{
-          background: `linear-gradient(to right, rgb(139, 92, 246) 0%, rgb(139, 92, 246) ${((currentValue - 1) / 9) * 100}%, rgb(55, 65, 81) ${((currentValue - 1) / 9) * 100}%, rgb(55, 65, 81) 100%)`
+          background: `linear-gradient(to right, var(--color-accent-primary) 0%, var(--color-accent-primary) ${((currentValue - 1) / 9) * 100}%, var(--color-bg-tertiary) ${((currentValue - 1) / 9) * 100}%, var(--color-bg-tertiary) 100%)`
         }}
       />
 
       {/* Scale labels and description */}
-      <div className="flex justify-between items-center text-xs text-gray-500 px-1">
+      <div className="flex justify-between items-center text-xs text-text-muted px-1">
         <span className="flex flex-col items-start">
-          <span className="font-semibold text-gray-400">1</span>
+          <span className="font-semibold text-text-tertiary">1</span>
           <span className="text-[10px]">Very Easy</span>
         </span>
         <span className="text-center flex-1">
-          <span className="text-gray-400">5 - Moderate</span>
+          <span className="text-text-tertiary">5 - Moderate</span>
         </span>
         <span className="flex flex-col items-end">
-          <span className="font-semibold text-gray-400">10</span>
+          <span className="font-semibold text-text-tertiary">10</span>
           <span className="text-[10px]">Maximum</span>
         </span>
       </div>
 
       {/* Current description */}
-      <div className="text-center text-sm text-gray-400 bg-bg-tertiary/50 rounded py-2">
+      <div className="text-center text-sm text-text-secondary bg-bg-tertiary/50 rounded py-2">
         {RPE_SCALE_LABELS[currentValue]}
       </div>
     </div>

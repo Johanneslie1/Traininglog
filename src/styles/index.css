@@ -20,6 +20,14 @@ body {
 }
 
 @layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  html.light {
+    color-scheme: light;
+  }
+
   body {
     background-color: var(--color-bg-primary);
     color: var(--color-text-primary);
@@ -29,7 +37,7 @@ body {
 
 @layer components {
   .btn-primary {
-    @apply bg-purple-gradient text-white font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors;
+    @apply bg-gradient-brand-button text-text-on-accent font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors;
   }
   
   .btn-secondary {
@@ -47,18 +55,18 @@ body {
     background-color: var(--color-bg-tertiary);
     color: var(--color-text-primary);
     border: 1px solid var(--color-border);
-    @apply w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent;
+    @apply w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-focus-ring focus:border-transparent;
   }
 
   .input-secondary {
     background-color: var(--color-bg-tertiary);
     color: var(--color-text-primary);
     border: 1px solid var(--color-border);
-    @apply px-3 py-2 rounded-lg focus:outline-none focus:border-purple-500;
+    @apply px-3 py-2 rounded-lg focus:outline-none focus:border-border-focus;
   }
 
   .purple-gradient {
-    @apply bg-purple-gradient;
+    @apply bg-gradient-brand-button;
   }
 
   .tooltip-container {
@@ -101,18 +109,18 @@ body {
 
   .resistance-input:focus {
     outline: none;
-    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.5);
+    box-shadow: 0 0 0 2px var(--color-border-focus);
   }
 }
 
 /* Custom Date Picker Styles */
 @layer utilities {
   .date-picker-dark {
-    color-scheme: dark;
+    color-scheme: inherit;
   }
   
   .date-picker-dark::-webkit-calendar-picker-indicator {
-    filter: invert(1);
+    filter: var(--date-picker-indicator-filter, invert(1));
     opacity: 0.7;
     cursor: pointer;
     transform: scale(1.2);
@@ -124,25 +132,25 @@ body {
   }
   
   .date-picker-dark::-webkit-datetime-edit {
-    color: #ffffff;
+    color: var(--color-text-primary);
   }
   
   .date-picker-dark::-webkit-datetime-edit-fields-wrapper {
-    color: #ffffff;
+    color: var(--color-text-primary);
   }
   
   .date-picker-dark::-webkit-datetime-edit-text {
-    color: #a3a3a3;
+    color: var(--color-text-tertiary);
   }
   
   .date-picker-dark::-webkit-datetime-edit-month-field,
   .date-picker-dark::-webkit-datetime-edit-day-field,
   .date-picker-dark::-webkit-datetime-edit-year-field {
-    color: #ffffff;
+    color: var(--color-text-primary);
   }
   
   .date-picker-dark:focus::-webkit-datetime-edit {
-    color: #ffffff;
+    color: var(--color-text-primary);
   }
 }
 
@@ -163,13 +171,13 @@ body {
 
 @keyframes set-highlight {
   0% {
-    box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.7);
+    box-shadow: 0 0 0 0 var(--color-border-focus);
   }
   70% {
-    box-shadow: 0 0 0 10px rgba(139, 92, 246, 0);
+    box-shadow: 0 0 0 10px rgba(84, 172, 191, 0);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(139, 92, 246, 0);
+    box-shadow: 0 0 0 0 rgba(84, 172, 191, 0);
   }
 }
 
@@ -208,7 +216,7 @@ body {
 }
 
 .inline-edit-tap:active {
-  background-color: rgba(139, 92, 246, 0.2);
+  background-color: var(--color-focus-bg);
 }
 
 @layer utilities {

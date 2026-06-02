@@ -42,7 +42,7 @@ const MultiActivityLogger: React.FC<MultiActivityLoggerProps> = ({
       name: 'Stretching & Flexibility',
       description: 'Static stretches, yoga, mobility',
       icon: '🧘‍♀️',
-      color: 'from-purple-500 to-purple-700',
+      color: 'from-primary-300 to-primary-500',
       fallback: 'Yoga, Static Stretches, PNF'
     },
     {
@@ -123,21 +123,21 @@ const MultiActivityLogger: React.FC<MultiActivityLoggerProps> = ({
   // Main activity type selection screen
   if (!selectedActivityType) {
     return (
-      <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50">
-        <div className="bg-[#1a1a1a] rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+      <div className="fixed inset-0 bg-bg-primary/90 flex items-center justify-center p-4 z-50">
+        <div className="bg-bg-secondary rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
           {/* Header */}
-          <div className="p-6 border-b border-white/10">
+          <div className="p-6 border-b border-border">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-bold text-white">Log Activity</h2>
-                <p className="text-gray-400 mt-1">Choose your activity type to get started</p>
+                <h2 className="text-2xl font-bold text-text-primary">Log Activity</h2>
+                <p className="text-text-tertiary mt-1">Choose your activity type to get started</p>
               </div>
               <button
                 onClick={onClose}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                className="p-2 hover:bg-hover-overlay rounded-lg transition-colors"
                 aria-label="Close"
               >
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6 text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -151,20 +151,20 @@ const MultiActivityLogger: React.FC<MultiActivityLoggerProps> = ({
                 <button
                   key={activity.type}
                   onClick={() => handleActivityTypeSelect(activity.type)}
-                  className="group p-6 rounded-xl border border-white/10 hover:border-white/20 transition-all duration-200 text-left bg-gradient-to-br from-transparent to-white/5 hover:to-white/10"
+                  className="group p-6 rounded-xl border border-border hover:border-border-hover transition-all duration-200 text-left bg-gradient-to-br from-transparent to-hover-overlay"
                 >
                   <div className="flex items-start space-x-4">
                     <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${activity.color} flex items-center justify-center text-2xl flex-shrink-0`}>
                       {activity.icon}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-semibold text-white group-hover:text-blue-400 transition-colors">
+                      <h3 className="text-lg font-semibold text-text-primary group-hover:text-accent-secondary transition-colors">
                         {activity.name}
                       </h3>
-                      <p className="text-sm text-gray-400 mt-1">
+                      <p className="text-sm text-text-tertiary mt-1">
                         {activity.description}
                       </p>
-                      <p className="text-xs text-gray-500 mt-2 min-h-[1.25rem]">
+                      <p className="text-xs text-text-muted mt-2 min-h-[1.25rem]">
                         {(() => {
                           const preview = previews[activity.type];
                           if (!preview || preview.status === 'loading') return 'Loading…';
@@ -182,8 +182,8 @@ const MultiActivityLogger: React.FC<MultiActivityLoggerProps> = ({
           </div>
 
           {/* Footer */}
-          <div className="p-6 border-t border-white/10">
-            <p className="text-sm text-gray-400 text-center">
+          <div className="p-6 border-t border-border">
+            <p className="text-sm text-text-tertiary text-center">
               Select an activity type to access specialized logging features and databases
             </p>
           </div>

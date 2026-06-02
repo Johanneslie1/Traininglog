@@ -50,7 +50,7 @@ interface LogOptionsProps {
 type ViewState = 'main' | 'setEditor' | 'programPicker' | 'copyPrevious' | 'stretching' | 'endurance' | 'other' | 'speedAgility' | 'resistance' | 'editExercise' | 'selectType';
 
 const helperCategories: Category[] = [
-  { id: 'programs', name: 'Add from Program', icon: '📋', bgColor: 'bg-bg-tertiary', iconBgColor: 'bg-purple-600', textColor: 'text-text-primary' },
+  { id: 'programs', name: 'Add from Program', icon: '📋', bgColor: 'bg-bg-tertiary', iconBgColor: 'bg-accent-primary', textColor: 'text-text-primary' },
   { id: 'copyPrevious', name: 'Copy from Previous', icon: '📝', bgColor: 'bg-bg-tertiary', iconBgColor: 'bg-blue-600', textColor: 'text-text-primary' },
 ];
 
@@ -70,7 +70,7 @@ const activityTypes = [
     name: 'Stretching & Flexibility',
     description: 'Static stretches, yoga, mobility',
     icon: '🧘‍♀️',
-    bgColor: 'bg-purple-600 dark:bg-purple-600',
+    bgColor: 'bg-accent-primary dark:bg-accent-primary',
     textColor: 'text-white',
     examples: 'Yoga, Static Stretches, PNF'
   },

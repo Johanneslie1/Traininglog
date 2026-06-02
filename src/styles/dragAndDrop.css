@@ -3,9 +3,9 @@
 /* Style for the draggable item when being dragged */
 .is-dragging {
   opacity: 0.8 !important;
-  background-color: #444 !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
-  border: 2px solid #666 !important;
+  background-color: var(--color-bg-quaternary) !important;
+  box-shadow: var(--shadow-lg) !important;
+  border: 2px solid var(--color-border-hover) !important;
 }
 
 /* Style for the drag handle to make it more obvious */
@@ -27,8 +27,8 @@
 /* Placeholder styling */
 [data-rbd-placeholder-context-id] {
   opacity: 0.5;
-  background-color: #333;
-  border: 1px dashed #666;
+  background-color: var(--color-bg-tertiary);
+  border: 1px dashed var(--color-border-hover);
   margin: 8px 0;
   border-radius: 8px;
 }
@@ -45,13 +45,13 @@
 
 @keyframes pulse {
   0% {
-    background-color: rgba(59, 130, 246, 0.05);
+    background-color: var(--color-focus-bg);
   }
   50% {
-    background-color: rgba(59, 130, 246, 0.1);
+    background-color: var(--color-active-overlay);
   }
   100% {
-    background-color: rgba(59, 130, 246, 0.05);
+    background-color: var(--color-focus-bg);
   }
 }
 
@@ -70,7 +70,7 @@
     content: '';
     position: absolute;
     inset: 0;
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: var(--color-active-overlay);
     border-radius: 8px;
     animation: feedback 0.3s ease;
   }

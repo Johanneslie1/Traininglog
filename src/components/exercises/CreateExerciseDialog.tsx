@@ -173,17 +173,17 @@ export const CreateExerciseDialog: React.FC<CreateExerciseDialogProps> = ({
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-        <div className="relative transform overflow-hidden rounded-lg bg-[#1a1a1a] px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+        <div className="relative transform overflow-hidden rounded-lg bg-bg-secondary px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-white/90">
+              <label htmlFor="name" className="block text-sm font-medium text-text-secondary">
                 Exercise Name
               </label>
               <input
                 type="text"
                 id="name"
                 required
-                className="mt-1 block w-full rounded-md border-gray-600 bg-[#2a2a2a] text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm placeholder-white/40"
+                className="mt-1 block w-full rounded-md border-border bg-bg-tertiary text-text-primary shadow-sm focus:border-accent-primary focus:ring-accent-primary sm:text-sm placeholder-text-muted"
                 value={exercise.name}
                 onChange={(e) => setExercise(prev => ({ ...prev, name: e.target.value }))}
               />
@@ -191,7 +191,7 @@ export const CreateExerciseDialog: React.FC<CreateExerciseDialogProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-white/90">Body Parts</label>
+              <label className="block text-sm font-medium text-text-secondary">Body Parts</label>
               <div className="mt-2 flex flex-wrap gap-2">
                 {bodyParts.map((part) => (
                   <button
@@ -199,8 +199,8 @@ export const CreateExerciseDialog: React.FC<CreateExerciseDialogProps> = ({
                     type="button"
                     className={`rounded-full px-3 py-1 text-sm ${
                       exercise.bodyParts.includes(part)
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-[#2a2a2a] text-white/70 hover:bg-[#3a3a3a]'
+                        ? 'bg-accent-primary text-text-on-accent'
+                        : 'bg-bg-tertiary text-text-secondary hover:bg-bg-quaternary'
                     }`}
                     onClick={() => handleBodyPartToggle(part)}
                   >
@@ -212,13 +212,13 @@ export const CreateExerciseDialog: React.FC<CreateExerciseDialogProps> = ({
             </div>
 
             <div>
-              <label htmlFor="type" className="block text-sm font-medium text-white/90">
+              <label htmlFor="type" className="block text-sm font-medium text-text-secondary">
                 Exercise Type
               </label>
               <select
                 id="type"
                 required
-                className="mt-1 block w-full rounded-md border-gray-600 bg-[#2a2a2a] text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                className="mt-1 block w-full rounded-md border-border bg-bg-tertiary text-text-primary shadow-sm focus:border-accent-primary focus:ring-accent-primary sm:text-sm"
                 value={exercise.type}
                 onChange={handleTypeChange}
               >
@@ -231,13 +231,13 @@ export const CreateExerciseDialog: React.FC<CreateExerciseDialogProps> = ({
             </div>
 
             <div>
-              <label htmlFor="category" className="block text-sm font-medium text-white/90">
+              <label htmlFor="category" className="block text-sm font-medium text-text-secondary">
                 Training Category
               </label>
               <select
                 id="category"
                 required
-                className="mt-1 block w-full rounded-md border-gray-600 bg-[#2a2a2a] text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                className="mt-1 block w-full rounded-md border-border bg-bg-tertiary text-text-primary shadow-sm focus:border-accent-primary focus:ring-accent-primary sm:text-sm"
                 value={exercise.trainingCategory}
                 onChange={(e) => handleCategoryChange(e.target.value as TrainingCategory)}
               >
@@ -250,13 +250,13 @@ export const CreateExerciseDialog: React.FC<CreateExerciseDialogProps> = ({
             </div>
 
             <div>
-              <label htmlFor="description" className="block text-sm font-medium text-white/90">
+              <label htmlFor="description" className="block text-sm font-medium text-text-secondary">
                 Description
               </label>
               <textarea
                 id="description"
                 rows={3}
-                className="mt-1 block w-full rounded-md border-gray-600 bg-[#2a2a2a] text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm placeholder-white/40"
+                className="mt-1 block w-full rounded-md border-border bg-bg-tertiary text-text-primary shadow-sm focus:border-accent-primary focus:ring-accent-primary sm:text-sm placeholder-text-muted"
                 value={exercise.description}
                 onChange={(e) => setExercise(prev => ({ ...prev, description: e.target.value }))}
               />
@@ -267,14 +267,14 @@ export const CreateExerciseDialog: React.FC<CreateExerciseDialogProps> = ({
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="inline-flex w-full justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:col-start-2 sm:text-sm disabled:opacity-50"
+                className="inline-flex w-full justify-center rounded-md border border-transparent bg-accent-primary px-4 py-2 text-base font-medium text-text-on-accent shadow-sm hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-focus-ring focus:ring-offset-2 sm:col-start-2 sm:text-sm disabled:opacity-50"
               >
                 {isSubmitting ? 'Creating...' : 'Create Exercise'}
               </button>
               <button
                 type="button"
                 onClick={onClose}
-                className="mt-3 inline-flex w-full justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:col-start-1 sm:mt-0 sm:text-sm"
+                className="mt-3 inline-flex w-full justify-center rounded-md border border-border bg-bg-tertiary px-4 py-2 text-base font-medium text-text-primary shadow-sm hover:bg-bg-quaternary focus:outline-none focus:ring-2 focus:ring-focus-ring focus:ring-offset-2 sm:col-start-1 sm:mt-0 sm:text-sm"
               >
                 Cancel
               </button>

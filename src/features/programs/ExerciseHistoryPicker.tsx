@@ -328,9 +328,9 @@ export const ExerciseHistoryPicker: React.FC<ExerciseHistoryPickerProps> = ({
   if (loading) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-[120]">
-        <div className="bg-[#23272F] p-8 rounded-lg">
+        <div className="bg-bg-secondary p-8 rounded-lg">
           <div className="flex items-center gap-3">
-            <div className="w-6 h-6 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+            <div className="w-6 h-6 border-2 border-border border-t-accent-primary rounded-full animate-spin"></div>
             <span className="text-white">Loading exercise history...</span>
           </div>
         </div>
@@ -341,14 +341,14 @@ export const ExerciseHistoryPicker: React.FC<ExerciseHistoryPickerProps> = ({
   if (error) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-[120]">
-        <div className="bg-[#23272F] p-6 rounded-lg max-w-md">
+        <div className="bg-bg-secondary p-6 rounded-lg max-w-md">
           <h2 className="text-xl font-bold text-red-400 mb-4">Error</h2>
           <p className="text-white mb-4">{error}</p>
           <div className="flex gap-2">
-            <button onClick={loadExerciseHistory} className="px-4 py-2 bg-blue-600 text-white rounded-lg">
+            <button onClick={loadExerciseHistory} className="px-4 py-2 bg-accent-primary text-text-on-accent rounded-lg">
               Retry
             </button>
-            <button onClick={onClose} className="px-4 py-2 bg-gray-600 text-white rounded-lg">
+            <button onClick={onClose} className="px-4 py-2 bg-bg-tertiary text-text-primary rounded-lg">
               Close
             </button>
           </div>
@@ -359,14 +359,14 @@ export const ExerciseHistoryPicker: React.FC<ExerciseHistoryPickerProps> = ({
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-[120]">
-      <div className="bg-[#23272F] rounded-lg w-full max-w-4xl h-5/6 flex flex-col shadow-xl">
+      <div className="bg-bg-secondary rounded-lg w-full max-w-4xl h-5/6 flex flex-col shadow-xl">
         {/* Header */}
         <div className="p-6 border-b border-white/10">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-white">Add Exercises from History</h2>
             <button 
               onClick={onClose}
-              className="text-gray-400 hover:text-white text-2xl"
+              className="text-text-tertiary hover:text-text-primary text-2xl"
             >
               ×
             </button>
@@ -375,13 +375,13 @@ export const ExerciseHistoryPicker: React.FC<ExerciseHistoryPickerProps> = ({
           {/* Search and Filters */}
           <div className="flex flex-col sm:flex-row gap-4 mb-4">
             <div className="flex-1 relative">
-              <SearchIcon className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+              <SearchIcon className="absolute left-3 top-3 w-4 h-4 text-text-tertiary" />
               <input
                 type="text"
                 placeholder="Search exercises..."
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-[#181A20] text-white rounded-lg border border-white/10 focus:border-blue-500 focus:outline-none"
+                className="w-full pl-10 pr-4 py-2 bg-bg-tertiary text-text-primary rounded-lg border border-border focus:border-accent-primary focus:outline-none"
               />
             </div>
 
@@ -389,7 +389,7 @@ export const ExerciseHistoryPicker: React.FC<ExerciseHistoryPickerProps> = ({
               <button
                 onClick={() => setShowCopyDay(!showCopyDay)}
                 className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
-                  showCopyDay ? 'bg-blue-600 text-white' : 'bg-[#181A20] text-gray-300 hover:bg-gray-700'
+                  showCopyDay ? 'bg-accent-primary text-text-on-accent' : 'bg-bg-tertiary text-text-secondary hover:bg-bg-quaternary'
                 }`}
               >
                 <DuplicateIcon className="w-4 h-4" />
@@ -400,13 +400,13 @@ export const ExerciseHistoryPicker: React.FC<ExerciseHistoryPickerProps> = ({
 
           {/* Copy Day Section */}
           {showCopyDay && (
-            <div className="mb-4 p-4 bg-[#181A20] rounded-lg border border-white/10">
+            <div className="mb-4 p-4 bg-bg-tertiary rounded-lg border border-border">
               <div className="flex items-center gap-4">
-                <CalendarIcon className="w-5 h-5 text-blue-400" />
+                <CalendarIcon className="w-5 h-5 text-accent-secondary" />
                 <select
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  className="flex-1 px-3 py-2 bg-[#23272F] text-white rounded border border-white/10"
+                  className="flex-1 px-3 py-2 bg-bg-secondary text-text-primary rounded border border-border"
                 >
                   <option value="">Select a date to copy...</option>
                   {availableDates.map(date => (
@@ -420,7 +420,7 @@ export const ExerciseHistoryPicker: React.FC<ExerciseHistoryPickerProps> = ({
                 <button
                   onClick={handleCopyDay}
                   disabled={!selectedDate}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-status-success text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Copy Day
                 </button>
@@ -441,8 +441,8 @@ export const ExerciseHistoryPicker: React.FC<ExerciseHistoryPickerProps> = ({
                 onClick={() => setSelectedFilter(key as FilterType)}
                 className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
                   selectedFilter === key 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-[#181A20] text-gray-300 hover:bg-gray-700'
+                    ? 'bg-accent-primary text-text-on-accent'
+                    : 'bg-bg-tertiary text-text-secondary hover:bg-bg-quaternary'
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -455,7 +455,7 @@ export const ExerciseHistoryPicker: React.FC<ExerciseHistoryPickerProps> = ({
         {/* Exercise List */}
         <div className="flex-1 overflow-y-auto p-6">
           {filteredExercises.length === 0 ? (
-            <div className="text-center text-gray-400 py-8">
+            <div className="text-center text-text-tertiary py-8">
               <p>No exercises found matching your criteria.</p>
             </div>
           ) : (
@@ -464,11 +464,11 @@ export const ExerciseHistoryPicker: React.FC<ExerciseHistoryPickerProps> = ({
               <div className="flex items-center justify-between py-2 border-b border-white/10">
                 <button
                   onClick={handleSelectAll}
-                  className="text-blue-400 hover:text-blue-300"
+                  className="text-accent-secondary hover:text-accent-primary"
                 >
                   {selectedExercises.size === filteredExercises.length ? 'Deselect All' : 'Select All'}
                 </button>
-                <span className="text-gray-400 text-sm">
+                <span className="text-text-tertiary text-sm">
                   {selectedExercises.size} of {filteredExercises.length} selected
                 </span>
               </div>
@@ -478,8 +478,8 @@ export const ExerciseHistoryPicker: React.FC<ExerciseHistoryPickerProps> = ({
                   key={stat.name}
                   className={`p-4 rounded-lg border cursor-pointer transition-all ${
                     selectedExercises.has(stat.name)
-                      ? 'bg-blue-900/30 border-blue-500'
-                      : 'bg-[#181A20] border-white/10 hover:border-white/20'
+                      ? 'bg-focus-bg border-accent-primary'
+                      : 'bg-bg-tertiary border-border hover:border-border-hover'
                   }`}
                   onClick={() => toggleExerciseSelection(stat.name)}
                 >
@@ -502,14 +502,14 @@ export const ExerciseHistoryPicker: React.FC<ExerciseHistoryPickerProps> = ({
                             toggleFavorite(stat.name);
                           }}
                           className={`p-1 rounded ${
-                            stat.isFavorite ? 'text-red-500' : 'text-gray-400 hover:text-red-400'
+                            stat.isFavorite ? 'text-error-text' : 'text-text-tertiary hover:text-error-text'
                           }`}
                         >
                           <HeartIcon className={`w-4 h-4 ${stat.isFavorite ? 'fill-current' : ''}`} />
                         </button>
                       </div>
                       
-                      <div className="flex items-center gap-4 text-sm text-gray-400">
+                      <div className="flex items-center gap-4 text-sm text-text-tertiary">
                         <span>Last: {formatDate(stat.lastPerformed)}</span>
                         <span>{stat.totalSessions} session{stat.totalSessions !== 1 ? 's' : ''}</span>
                         {stat.bestSet && (
@@ -529,20 +529,20 @@ export const ExerciseHistoryPicker: React.FC<ExerciseHistoryPickerProps> = ({
         {/* Footer */}
         <div className="p-6 border-t border-white/10">
           <div className="flex items-center justify-between">
-            <div className="text-gray-400 text-sm">
+            <div className="text-text-tertiary text-sm">
               {selectedExercises.size} exercise{selectedExercises.size !== 1 ? 's' : ''} selected
             </div>
             <div className="flex gap-3">
               <button 
                 onClick={onClose}
-                className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                className="px-6 py-2 bg-bg-tertiary text-text-primary rounded-lg hover:bg-bg-quaternary"
               >
                 Cancel
               </button>
               <button 
                 onClick={handleAddSelected}
                 disabled={selectedExercises.size === 0}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 py-2 bg-accent-primary text-text-on-accent rounded-lg hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Add {selectedExercises.size > 0 ? `${selectedExercises.size} ` : ''}Exercise{selectedExercises.size !== 1 ? 's' : ''}
               </button>

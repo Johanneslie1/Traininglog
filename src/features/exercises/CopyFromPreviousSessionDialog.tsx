@@ -194,7 +194,7 @@ const CopyFromPreviousSessionDialog: React.FC<Props> = ({
             <label className="block mb-2 text-sm font-medium text-text-secondary">Select a date:</label>
             <input
               type="date"
-              className="w-full md:w-64 px-4 py-2 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full md:w-64 px-4 py-2 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:ring-2 focus:ring-accent-primary focus:border-transparent"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
               max={new Date().toISOString().split('T')[0]}
@@ -210,7 +210,7 @@ const CopyFromPreviousSessionDialog: React.FC<Props> = ({
                   <input
                     type="text"
                     placeholder="Search exercises..."
-                    className="w-full pl-10 pr-4 py-2 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:ring-2 focus:ring-accent-primary focus:border-transparent"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
@@ -239,7 +239,7 @@ const CopyFromPreviousSessionDialog: React.FC<Props> = ({
           {/* Exercise List */}
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-accent-primary"></div>
             </div>
           ) : (
             <>
@@ -250,7 +250,7 @@ const CopyFromPreviousSessionDialog: React.FC<Props> = ({
                       key={ex.id}
                       className={`flex items-center p-4 rounded-lg cursor-pointer transition-colors ${
                         ex.id && selectedExercises.has(ex.id)
-                          ? 'bg-purple-500/20 border border-purple-500/50'
+                          ? 'bg-focus-bg border border-border-focus'
                           : 'hover:bg-white/5 border border-transparent'
                       }`}
                     >
@@ -263,7 +263,7 @@ const CopyFromPreviousSessionDialog: React.FC<Props> = ({
                       />
                       <div className={`w-6 h-6 flex items-center justify-center rounded-md border ${
                         ex.id && selectedExercises.has(ex.id)
-                          ? 'bg-purple-500 border-purple-500'
+                          ? 'bg-accent-primary border-accent-primary'
                           : 'border-border bg-bg-tertiary'
                       }`}>
                         {ex.id && selectedExercises.has(ex.id) && (
@@ -320,7 +320,7 @@ const CopyFromPreviousSessionDialog: React.FC<Props> = ({
               >
                 {copying ? 'Copying...' : 'Copy Selected'}
                 {selectedExercises.size > 0 && (
-                  <span className="bg-purple-700 px-2 py-0.5 rounded-full text-sm">
+                  <span className="bg-accent-primary text-text-on-accent px-2 py-0.5 rounded-full text-sm">
                     {selectedExercises.size}
                   </span>
                 )}

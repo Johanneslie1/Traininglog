@@ -268,7 +268,7 @@ const UniversalActivityLogger: React.FC<UniversalActivityLoggerProps> = ({
                   }
                 }
               }}
-              className="w-full p-3 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:outline-none focus:border-blue-500"
+              className="w-full p-3 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:outline-none focus:border-accent-primary"
               min={field.min}
               max={field.max}
               step={field.step}
@@ -305,7 +305,7 @@ const UniversalActivityLogger: React.FC<UniversalActivityLoggerProps> = ({
                   }
                 }
               }}
-              className="w-full p-3 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:outline-none focus:border-blue-500"
+              className="w-full p-3 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:outline-none focus:border-accent-primary"
               min={field.min}
               max={field.max}
               step={field.step}
@@ -345,7 +345,7 @@ const UniversalActivityLogger: React.FC<UniversalActivityLoggerProps> = ({
                   }
                 }
               }}
-              className="w-full p-3 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:outline-none focus:border-blue-500"
+              className="w-full p-3 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:outline-none focus:border-accent-primary"
               min={field.min}
               max={field.max}
               step={field.step}
@@ -390,7 +390,7 @@ const UniversalActivityLogger: React.FC<UniversalActivityLoggerProps> = ({
                 ...prev, 
                 [field.fieldId]: e.target.value 
               }))}
-              className="w-full p-3 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:outline-none focus:border-blue-500"
+              className="w-full p-3 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:outline-none focus:border-accent-primary"
               required={field.required}
             >
               {field.options?.map(option => (
@@ -412,7 +412,7 @@ const UniversalActivityLogger: React.FC<UniversalActivityLoggerProps> = ({
                 ...prev, 
                 [field.fieldId]: e.target.value 
               }))}
-              className="w-full p-3 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:outline-none focus:border-blue-500 min-h-[100px]"
+              className="w-full p-3 bg-bg-tertiary border border-border rounded-lg text-text-primary focus:outline-none focus:border-accent-primary min-h-[100px]"
               placeholder={field.placeholder}
               required={field.required}
             />
@@ -443,7 +443,7 @@ const UniversalActivityLogger: React.FC<UniversalActivityLoggerProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-bg-primary/90 flex items-center justify-center p-4 z-50">
       <div className="bg-bg-secondary rounded-xl w-full max-w-3xl max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="p-6 border-b border-border">
@@ -461,7 +461,7 @@ const UniversalActivityLogger: React.FC<UniversalActivityLoggerProps> = ({
               </button>
               <button
                 onClick={onClose}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                className="p-2 hover:bg-hover-overlay rounded-lg transition-colors"
               >
                 <span className="text-text-primary text-xl">×</span>
               </button>
@@ -522,7 +522,7 @@ const UniversalActivityLogger: React.FC<UniversalActivityLoggerProps> = ({
             <button
               onClick={handleAddSession}
               disabled={!currentSession.duration || (template.fields.some(f => f.required && !currentSession[f.fieldId]))}
-              className="w-full mt-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-bg-tertiary disabled:cursor-not-allowed text-text-primary rounded-lg font-medium transition-colors"
+              className="w-full mt-6 py-3 bg-accent-primary hover:bg-accent-hover disabled:bg-bg-tertiary disabled:cursor-not-allowed text-text-on-accent rounded-lg font-medium transition-colors"
             >
               Add Session
             </button>

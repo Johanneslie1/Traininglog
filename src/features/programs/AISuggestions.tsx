@@ -258,7 +258,7 @@ const AISuggestions: React.FC<AISuggestionsProps> = ({
   const getSuggestionTypeColor = (type: Suggestion['type']) => {
     switch (type) {
       case 'complementary': return 'bg-blue-600';
-      case 'progression': return 'bg-purple-600';
+      case 'progression': return 'bg-accent-primary';
       case 'recovery': return 'bg-green-600';
       default: return 'bg-bg-tertiary';
     }

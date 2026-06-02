@@ -34,12 +34,12 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 
   // Category colors
   const categoryColors: Record<TemplateCategory | 'all', string> = {
-    all: 'bg-gray-600',
-    strength: 'bg-red-600',
-    hypertrophy: 'bg-blue-600',
-    endurance: 'bg-green-600',
-    power: 'bg-yellow-600',
-    custom: 'bg-purple-600'
+    all: 'bg-bg-quaternary',
+    strength: 'bg-activity-resistance',
+    hypertrophy: 'bg-accent-primary',
+    endurance: 'bg-activity-endurance',
+    power: 'bg-status-warning',
+    custom: 'bg-accent-secondary'
   };
 
   // Load templates

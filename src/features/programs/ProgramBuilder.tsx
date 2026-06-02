@@ -360,7 +360,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
                   placeholder="e.g., Push/Pull/Legs, Upper/Lower Split"
                   value={programName}
                   onChange={(e) => setProgramName(e.target.value)}
-                  className="w-full px-4 py-3 bg-bg-secondary text-text-primary rounded-lg border border-border focus:border-blue-500 focus:outline-none text-lg"
+                  className="w-full px-4 py-3 bg-bg-secondary text-text-primary rounded-lg border border-border focus:border-accent-primary focus:outline-none text-lg"
                   autoFocus
                 />
               </div>
@@ -369,7 +369,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
                 <button
                   onClick={() => setShowSaveTemplate(true)}
                   disabled={sessions.length === 0}
-                  className="px-4 py-3 bg-green-600 text-text-primary rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+                  className="px-4 py-3 bg-status-success text-white rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
                 >
                   <BookmarkIcon className="w-4 h-4" />
                   Save as Template
@@ -384,7 +384,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
                   placeholder="Describe your program goals, frequency, and notes..."
                   value={programDescription}
                   onChange={(e) => setProgramDescription(e.target.value)}
-                  className="w-full px-4 py-3 bg-bg-secondary text-text-primary rounded-lg border border-border focus:border-blue-500 focus:outline-none resize-none"
+                  className="w-full px-4 py-3 bg-bg-secondary text-text-primary rounded-lg border border-border focus:border-accent-primary focus:outline-none resize-none"
                   rows={3}
                 />
               </div>
@@ -400,7 +400,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
                 <p className="text-text-tertiary mb-6">Create sessions like "Push Day", "Pull Day", "Leg Day" etc.</p>
                 <button
                   onClick={handleAddSession}
-                  className="px-8 py-4 bg-blue-600 text-text-primary rounded-lg hover:bg-blue-700 flex items-center gap-2 mx-auto text-lg font-medium transition-colors"
+                  className="px-8 py-4 bg-accent-primary text-text-on-accent rounded-lg hover:bg-accent-hover flex items-center gap-2 mx-auto text-lg font-medium transition-colors"
                 >
                   <PlusIcon className="w-5 h-5" />
                   Create First Session
@@ -419,7 +419,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
                     {lastAction && (
                       <button
                         onClick={handleUndo}
-                        className="px-3 py-1.5 bg-yellow-600 hover:bg-yellow-700 text-text-primary text-sm rounded-lg transition-colors flex items-center gap-2"
+                        className="px-3 py-1.5 bg-warning-bg hover:opacity-90 text-warning-text border border-warning-border text-sm rounded-lg transition-colors flex items-center gap-2"
                         title="Undo last action"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -438,7 +438,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
                         {...provided.droppableProps}
                         ref={provided.innerRef}
                         className={`space-y-3 transition-colors ${
-                          snapshot.isDraggingOver ? 'bg-blue-500/5 rounded-xl p-2' : ''
+                          snapshot.isDraggingOver ? 'bg-focus-bg rounded-xl p-2' : ''
                         }`}
                       >
                         {sessions.map((session, index) => (
@@ -449,7 +449,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
                                 {...provided.draggableProps}
                                 className={`bg-bg-secondary rounded-xl p-5 border transition-all ${
                                   snapshot.isDragging
-                                    ? 'border-blue-500 shadow-2xl shadow-blue-500/20 scale-102'
+                                    ? 'border-accent-primary shadow-2xl shadow-glow scale-102'
                                     : 'border-border hover:border-white/20'
                                 }`}
                               >
@@ -492,7 +492,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
                                     </button>
                                     <button
                                       onClick={() => handleEditSession(session)}
-                                      className="p-2 text-blue-400 hover:text-blue-300 transition-colors"
+                                      className="p-2 text-accent-secondary hover:text-accent-primary transition-colors"
                                       title="Edit session"
                                     >
                                       <PencilIcon className="w-4 h-4" />
@@ -525,7 +525,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
                                               {(session.supersets || []).map((superset) => (
                                                 <div
                                                   key={`${session.id}-superset-${superset.id}`}
-                                                  className="text-xs rounded-md border border-blue-500/30 bg-blue-500/10 px-2 py-1 text-blue-200"
+                                                  className="text-xs rounded-md border border-border-focus bg-focus-bg px-2 py-1 text-accent-secondary"
                                                 >
                                                   {buildSupersetDisplayTitle(superset, labelsByExerciseId)}
                                                 </div>
@@ -538,7 +538,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
                                               <div key={`${session.id}-exercise-${idx}-${exercise.name}`} className="text-sm text-text-secondary flex items-center gap-2">
                                                 <span className={`w-2 h-2 rounded-full flex-shrink-0 ${getActivityTypeInfo(exercise.activityType).color}`}></span>
                                                 {labelsByExerciseId[exercise.id]?.label && (
-                                                  <span className="px-1.5 py-0.5 text-xs rounded border border-blue-400/40 bg-blue-600/20 text-blue-200">
+                                                  <span className="px-1.5 py-0.5 text-xs rounded border border-border-focus bg-focus-bg text-accent-secondary">
                                                     {labelsByExerciseId[exercise.id].label}
                                                   </span>
                                                 )}
@@ -575,7 +575,7 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
                 <div className="mt-8 text-center">
                   <button
                     onClick={handleAddSession}
-                    className="px-8 py-4 bg-blue-600 text-text-primary rounded-lg hover:bg-blue-700 flex items-center gap-2 mx-auto text-lg font-medium transition-colors"
+                    className="px-8 py-4 bg-accent-primary text-text-on-accent rounded-lg hover:bg-accent-hover flex items-center gap-2 mx-auto text-lg font-medium transition-colors"
                   >
                     <PlusIcon className="w-5 h-5" />
                     Add Another Session
@@ -621,14 +621,14 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
               <div className="flex gap-3">
                 <button 
                   onClick={handleClose}
-                  className="px-6 py-3 bg-gray-600 text-text-primary rounded-lg hover:bg-bg-tertiary transition-colors"
+                  className="px-6 py-3 bg-bg-tertiary text-text-primary rounded-lg hover:bg-bg-quaternary transition-colors"
                 >
                   Cancel
                 </button>
                 <button 
                   onClick={handleSaveProgram}
                   disabled={sessions.length === 0 || !programName.trim()}
-                  className="px-6 py-3 bg-blue-600 text-text-primary rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                  className="px-6 py-3 bg-accent-primary text-text-on-accent rounded-lg hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
                 >
                   {initialProgram ? 'Update Program' : 'Save Program'}
                 </button>
@@ -662,13 +662,13 @@ const ProgramBuilder: React.FC<ProgramBuilderProps> = ({
             <div className="flex gap-3">
               <button
                 onClick={() => setShowSaveTemplate(false)}
-                className="flex-1 px-4 py-2 bg-gray-600 text-text-primary rounded hover:bg-bg-tertiary"
+                className="flex-1 px-4 py-2 bg-bg-tertiary text-text-primary rounded hover:bg-bg-quaternary"
               >
                 Cancel
               </button>
               <button
                 onClick={saveAsTemplate}
-                className="flex-1 px-4 py-2 bg-green-600 text-text-primary rounded hover:bg-green-700"
+                className="flex-1 px-4 py-2 bg-status-success text-white rounded hover:opacity-90"
               >
                 Save Template
               </button>

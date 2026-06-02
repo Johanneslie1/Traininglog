@@ -118,8 +118,8 @@ export const InlineEditableValue: React.FC<InlineEditableValueProps> = ({
         step={step}
         inputMode={type === 'number' ? 'decimal' : 'text'}
         className={`
-          w-full px-2 py-1 bg-bg-tertiary hover:opacity-90 border border-purple-500 rounded 
-          text-text-primary text-center focus:outline-none focus:ring-2 focus:ring-purple-500
+          w-full px-2 py-1 bg-bg-tertiary hover:opacity-90 border border-accent-primary rounded 
+          text-text-primary text-center focus:outline-none focus:ring-2 focus:ring-accent-primary
           ${inputClassName}
         `}
         onClick={(e) => e.stopPropagation()}

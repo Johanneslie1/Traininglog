@@ -38,10 +38,10 @@ export const getActivityTypeInfo = (activityType?: ActivityType) => {
     case ActivityType.STRETCHING:
       return { 
         label: 'Stretching', 
-        color: 'bg-purple-600', 
-        textColor: 'text-purple-100',
-        borderColor: 'border-purple-500',
-        bgLight: 'bg-purple-600/10',
+        color: 'bg-activity-stretching', 
+        textColor: 'text-text-on-accent',
+        borderColor: 'border-activity-stretching',
+        bgLight: 'bg-activity-stretching-bg',
         icon: '🧘'
       };
     case ActivityType.ENDURANCE:
@@ -206,7 +206,7 @@ const ActivityExerciseCard: React.FC<ActivityExerciseCardProps> = ({
               <span className="text-text-tertiary">×{(metrics as any).totalReps}</span>
             )}
             {(metrics as any).avgIntensity > 0 && (
-              <span className="text-purple-300">{Math.round((metrics as any).avgIntensity)}/10</span>
+              <span className="text-accent-secondary">{Math.round((metrics as any).avgIntensity)}/10</span>
             )}
           </div>
         );

@@ -71,7 +71,7 @@ export const CreateCustomExerciseModal: React.FC<CreateCustomExerciseModalProps>
               onChange={(e) => setName(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSave()}
               autoFocus
-              className="w-full px-3 py-2 border border-gray-600 rounded bg-gray-800 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-purple-500"
+              className="w-full px-3 py-2 border border-border rounded bg-bg-tertiary text-text-primary placeholder-text-muted text-sm focus:outline-none focus:border-accent-primary"
             />
           </div>
 
@@ -83,7 +83,7 @@ export const CreateCustomExerciseModal: React.FC<CreateCustomExerciseModalProps>
               placeholder="Add any details or notes about this exercise..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-600 rounded bg-gray-800 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-purple-500 h-20 resize-none"
+              className="w-full px-3 py-2 border border-border rounded bg-bg-tertiary text-text-primary placeholder-text-muted text-sm focus:outline-none focus:border-accent-primary h-20 resize-none"
             />
           </div>
         </div>

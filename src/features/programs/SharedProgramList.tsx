@@ -144,28 +144,28 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
     switch (status) {
       case 'not-started':
         return (
-          <div className="flex items-center bg-gray-700 text-gray-300 px-3 py-1 rounded-full text-sm">
+          <div className="flex items-center bg-bg-tertiary text-text-secondary px-3 py-1 rounded-full text-sm">
             <ClockIcon className="h-4 w-4 mr-1" />
             Not Started
           </div>
         );
       case 'in-progress':
         return (
-          <div className="flex items-center bg-yellow-900/30 text-yellow-400 px-3 py-1 rounded-full text-sm">
+          <div className="flex items-center bg-warning-bg text-warning-text px-3 py-1 rounded-full text-sm">
             <PlayIcon className="h-4 w-4 mr-1" />
             In Progress
           </div>
         );
       case 'completed':
         return (
-          <div className="flex items-center bg-green-900/30 text-green-400 px-3 py-1 rounded-full text-sm">
+          <div className="flex items-center bg-success-bg text-success-text px-3 py-1 rounded-full text-sm">
             <CheckCircleIcon className="h-4 w-4 mr-1" />
             Completed
           </div>
         );
       case 'copied':
         return (
-          <div className="flex items-center bg-blue-900/30 text-blue-400 px-3 py-1 rounded-full text-sm">
+          <div className="flex items-center bg-info-bg text-info-text px-3 py-1 rounded-full text-sm">
             <DocumentDuplicateIcon className="h-4 w-4 mr-1" />
             Copied
           </div>
@@ -215,24 +215,24 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
           ) : (
             <h1 className="text-3xl font-bold mb-2">Assigned Programs</h1>
           )}
-          <p className="text-gray-400">
+          <p className="text-text-tertiary">
             Programs shared with you by your coach
           </p>
         </div>
 
         {/* Error Message */}
         {error && (
-          <div className="bg-red-900/50 border border-red-500 text-red-100 p-4 rounded-lg mb-6">
+          <div className="bg-error-bg border border-error-border text-error-text p-4 rounded-lg mb-6">
             {error}
           </div>
         )}
 
         {/* Programs List */}
         {sharedPrograms.length === 0 ? (
-          <div className="bg-gray-900 border border-gray-800 rounded-lg p-8 text-center">
-            <CalendarIcon className="h-16 w-16 text-gray-600 mx-auto mb-4" />
+          <div className="bg-bg-secondary border border-border rounded-lg p-8 text-center">
+            <CalendarIcon className="h-16 w-16 text-text-muted mx-auto mb-4" />
             <h2 className="text-xl font-semibold mb-2">No Assigned Programs</h2>
-            <p className="text-gray-400">
+            <p className="text-text-tertiary">
               When your coach shares a program with you, it will appear here.
             </p>
           </div>
@@ -255,7 +255,7 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
               return (
                 <div
                   key={sharedProgram.id}
-                  className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden hover:border-primary-600 transition-colors"
+                  className="bg-bg-secondary border border-border rounded-lg overflow-hidden hover:border-accent-primary transition-colors"
                 >
                   {/* Coach Message (if exists) */}
                   {sharedProgram.coachMessage && (
@@ -266,7 +266,7 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
                           <p className="text-sm font-semibold text-primary-300 mb-1">
                             Message from your coach:
                           </p>
-                          <p className="text-gray-300 whitespace-pre-wrap">
+                          <p className="text-text-secondary whitespace-pre-wrap">
                             {sharedProgram.coachMessage}
                           </p>
                         </div>
@@ -280,11 +280,11 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
                       <div className="flex-1">
                         <h2 className="text-2xl font-bold mb-2">{program.name}</h2>
                         {program.description && (
-                          <p className="text-gray-400 mb-3">{program.description}</p>
+                          <p className="text-text-tertiary mb-3">{program.description}</p>
                         )}
                         
                         {/* Meta Info */}
-                        <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-gray-500">
+                        <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-text-muted">
                           <div className="flex items-center gap-2">
                             <div className="w-6 h-6 bg-primary-900/30 rounded-full flex items-center justify-center">
                               <span className="text-primary-400 text-xs font-semibold">
@@ -321,15 +321,15 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
                     {/* Sessions Preview */}
                     {program.sessions && program.sessions.length > 0 && (
                       <div className="mb-4">
-                        <h3 className="text-sm font-semibold text-gray-400 mb-2">Sessions:</h3>
+                        <h3 className="text-sm font-semibold text-text-tertiary mb-2">Sessions:</h3>
                         <div className="space-y-1">
                           {program.sessions.slice(0, 3).map((session, index) => (
-                            <div key={session.id} className="text-sm text-gray-300">
+                            <div key={session.id} className="text-sm text-text-secondary">
                               {index + 1}. {session.name} ({session.exercises?.length || 0} exercises)
                             </div>
                           ))}
                           {program.sessions.length > 3 && (
-                            <div className="text-sm text-gray-500">
+                            <div className="text-sm text-text-muted">
                               +{program.sessions.length - 3} more session{program.sessions.length - 3 !== 1 ? 's' : ''}
                             </div>
                           )}
@@ -345,7 +345,7 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
                         disabled={copyingProgramId === sharedProgram.id}
                         className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors ${
                           isCopied
-                            ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                            ? 'bg-bg-tertiary text-text-muted cursor-not-allowed'
                             : 'bg-primary-600 hover:bg-primary-700 text-white'
                         }`}
                       >
@@ -367,7 +367,7 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
                         <button
                           onClick={() => handleUpdateStatus(sharedProgram.assignmentId, 'in-progress', program.name)}
                           disabled={updatingStatusId === sharedProgram.assignmentId}
-                          className="flex items-center px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="flex items-center px-4 py-2 bg-warning-bg hover:opacity-90 text-warning-text border border-warning-border rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {updatingStatusId === sharedProgram.assignmentId ? (
                             <>
@@ -388,7 +388,7 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
                         <button
                           onClick={() => handleUpdateStatus(sharedProgram.assignmentId, 'completed', program.name)}
                           disabled={updatingStatusId === sharedProgram.assignmentId}
-                          className="flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="flex items-center px-4 py-2 bg-success-bg hover:opacity-90 text-success-text border border-success-border rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {updatingStatusId === sharedProgram.assignmentId ? (
                             <>
