@@ -1,5 +1,6 @@
 import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -225,6 +226,26 @@ export async function saveSportsLoadSession(
   await setDoc(ref, sessionData);
 
   return ref.id;
+}
+
+export async function deleteSportsLoadSession(sessionId: string): Promise<void> {
+  if (!sessionId) {
+    throw new Error('Sports load session id is required');
+  }
+
+  const userId = ensureAuth();
+  const ref = doc(db, 'users', userId, 'sportsLoadSessions', sessionId);
+  await deleteDoc(ref);
+}
+
+export async function deleteSrpeLog(date: string): Promise<void> {
+  if (!date) {
+    throw new Error('RPE date is required');
+  }
+
+  const userId = ensureAuth();
+  const ref = doc(db, 'users', userId, 'srpeLogs', date);
+  await deleteDoc(ref);
 }
 
 export async function getSrpeByDate(

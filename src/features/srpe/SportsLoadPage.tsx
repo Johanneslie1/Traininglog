@@ -4,6 +4,8 @@ import toast from 'react-hot-toast';
 import { RootState } from '@/store/store';
 import {
   calculateSessionLoad,
+  deleteSrpeLog,
+  deleteSportsLoadSession,
   getSportsLoadSessionsByDate,
   getSrpeByDate,
   saveSportsLoadSession,
@@ -11,6 +13,7 @@ import {
 import { SaveSrpeLogInput, SportsLoadSession, SrpeLog } from '@/types/srpe';
 import { DailyDateHeader } from '@/features/daily-entry/DailyDateHeader';
 import { useDailyDateNavigation } from '@/features/daily-entry/useDailyDateNavigation';
+import { ConfirmDialog } from '@/components/ui';
 
 const RPE_OPTIONS = Array.from({ length: 10 }, (_, i) => i + 1);
 
@@ -88,6 +91,10 @@ const SportsLoadPage: React.FC = () => {
   const [sessions, setSessions] = useState<SportsLoadSession[]>([]);
   const [dailyEntry, setDailyEntry] = useState<SrpeLog | null>(null);
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
+  const [pendingDeleteSession, setPendingDeleteSession] = useState<SportsLoadSession | null>(null);
+  const [pendingDeleteLegacyEntry, setPendingDeleteLegacyEntry] = useState<SrpeLog | null>(null);
+  const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
+  const [isDeletingLegacyEntry, setIsDeletingLegacyEntry] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -219,6 +226,47 @@ const SportsLoadPage: React.FC = () => {
       session.maxHeartRate ||
       session.notes
     ));
+  };
+
+  const handleDeleteSession = async () => {
+    if (!user?.id || !pendingDeleteSession) return;
+
+    const session = pendingDeleteSession;
+    const label = session.sessionName || session.sportName || 'this session';
+    setDeletingSessionId(session.id);
+
+    try {
+      await deleteSportsLoadSession(session.id);
+      toast.success(`${label} deleted`);
+      if (editingSessionId === session.id) {
+        resetForm();
+      }
+      setPendingDeleteSession(null);
+      await loadEntry();
+    } catch (err) {
+      console.error('Failed to delete sports load session:', err);
+      toast.error('Failed to delete - please try again');
+    } finally {
+      setDeletingSessionId(null);
+    }
+  };
+
+  const handleDeleteLegacyEntry = async () => {
+    if (!user?.id || !pendingDeleteLegacyEntry) return;
+
+    setIsDeletingLegacyEntry(true);
+
+    try {
+      await deleteSrpeLog(pendingDeleteLegacyEntry.date);
+      toast.success('Sports load entry deleted');
+      setPendingDeleteLegacyEntry(null);
+      await loadEntry();
+    } catch (err) {
+      console.error('Failed to delete legacy sports load entry:', err);
+      toast.error('Failed to delete - please try again');
+    } finally {
+      setIsDeletingLegacyEntry(false);
+    }
   };
 
   return (
@@ -580,53 +628,86 @@ const SportsLoadPage: React.FC = () => {
 
               {sessions.length > 0 ? (
                 <div className="space-y-2">
-                  {sessions.map((session) => (
-                    <button
-                      key={session.id}
-                      type="button"
-                      aria-label={`Edit ${session.sportName || 'Football'} session`}
-                      onClick={() => handleEditSession(session)}
-                      className={[
-                        'w-full rounded-xl border p-3 text-left transition-colors',
-                        editingSessionId === session.id
-                          ? 'border-accent-primary bg-bg-tertiary'
-                          : 'border-border bg-bg-primary hover:border-accent-primary',
-                      ].join(' ')}
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <p className="font-medium text-text-primary">{session.sportName || 'Football'}</p>
-                          <p className="text-xs text-text-secondary">
-                            {session.durationMinutes} min · RPE {session.rpe}
-                          </p>
-                          {(session.distanceMeters || session.calories || session.averageHeartRate || session.maxHeartRate) && (
-                            <p className="mt-1 text-[11px] text-text-tertiary">
-                              {[
-                                session.distanceMeters ? `${session.distanceMeters} m` : null,
-                                session.calories ? `${session.calories} kcal` : null,
-                                session.averageHeartRate ? `avg HR ${session.averageHeartRate}` : null,
-                                session.maxHeartRate ? `max HR ${session.maxHeartRate}` : null,
-                              ].filter(Boolean).join(' · ')}
+                  {sessions.map((session) => {
+                    const sessionLabel = session.sessionName || session.sportName || 'Football';
+
+                    return (
+                      <div
+                        key={session.id}
+                        className={[
+                          'w-full rounded-xl border p-3 text-left transition-colors',
+                          editingSessionId === session.id
+                            ? 'border-accent-primary bg-bg-tertiary'
+                            : 'border-border bg-bg-primary',
+                        ].join(' ')}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="font-medium text-text-primary">{sessionLabel}</p>
+                            <p className="text-xs text-text-secondary">
+                              {session.durationMinutes} min · RPE {session.rpe}
                             </p>
-                          )}
-                          {session.notes ? (
-                            <p className="mt-1 line-clamp-2 text-[11px] text-text-tertiary">{session.notes}</p>
-                          ) : null}
-                        </div>
-                        <div className="text-right">
-                          <p className="text-lg font-semibold text-text-primary">{session.sessionLoad}</p>
-                          <p className="text-[11px] text-text-tertiary">load</p>
+                            {(session.distanceMeters || session.calories || session.averageHeartRate || session.maxHeartRate) && (
+                              <p className="mt-1 text-[11px] text-text-tertiary">
+                                {[
+                                  session.distanceMeters ? `${session.distanceMeters} m` : null,
+                                  session.calories ? `${session.calories} kcal` : null,
+                                  session.averageHeartRate ? `avg HR ${session.averageHeartRate}` : null,
+                                  session.maxHeartRate ? `max HR ${session.maxHeartRate}` : null,
+                                ].filter(Boolean).join(' · ')}
+                              </p>
+                            )}
+                            {session.notes ? (
+                              <p className="mt-1 line-clamp-2 text-[11px] text-text-tertiary">{session.notes}</p>
+                            ) : null}
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                aria-label={`Edit ${sessionLabel} session`}
+                                onClick={() => handleEditSession(session)}
+                                className="rounded-full border border-border px-3 py-1 text-xs text-text-secondary hover:border-accent-primary hover:text-text-primary"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                aria-label={`Delete ${sessionLabel} session`}
+                                onClick={() => setPendingDeleteSession(session)}
+                                disabled={deletingSessionId === session.id}
+                                className="rounded-full border border-error-border px-3 py-1 text-xs text-error-text hover:bg-error-bg disabled:opacity-50"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </div>
+                          <div className="shrink-0 text-right">
+                            <p className="text-lg font-semibold text-text-primary">{session.sessionLoad}</p>
+                            <p className="text-[11px] text-text-tertiary">load</p>
+                          </div>
                         </div>
                       </div>
-                    </button>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : dailyEntry ? (
                 <div className="rounded-xl border border-border bg-bg-primary p-3">
-                  <p className="font-medium text-text-primary">{dailyEntry.sportName || 'Football'} legacy daily entry</p>
-                  <p className="text-xs text-text-secondary">
-                    {dailyEntry.durationMinutes} min · RPE {dailyEntry.rpe} · load {dailyEntry.sessionLoad}
-                  </p>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium text-text-primary">{dailyEntry.sportName || 'Football'} legacy daily entry</p>
+                      <p className="text-xs text-text-secondary">
+                        {dailyEntry.durationMinutes} min · RPE {dailyEntry.rpe} · load {dailyEntry.sessionLoad}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      aria-label="Delete sports load entry"
+                      onClick={() => setPendingDeleteLegacyEntry(dailyEntry)}
+                      disabled={isDeletingLegacyEntry}
+                      className="shrink-0 rounded-full border border-error-border px-3 py-1 text-xs text-error-text hover:bg-error-bg disabled:opacity-50"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <p className="rounded-xl border border-dashed border-border bg-bg-primary p-4 text-center text-sm text-text-secondary">
@@ -637,6 +718,38 @@ const SportsLoadPage: React.FC = () => {
           </>
         )}
       </div>
+
+      <ConfirmDialog
+        isOpen={pendingDeleteSession !== null}
+        title="Delete sports load session?"
+        description={`This will delete "${pendingDeleteSession?.sessionName || pendingDeleteSession?.sportName || 'this session'}" from the selected day. This action cannot be undone.`}
+        confirmLabel="Delete session"
+        isConfirming={deletingSessionId !== null}
+        onCancel={() => {
+          if (!deletingSessionId) {
+            setPendingDeleteSession(null);
+          }
+        }}
+        onConfirm={() => {
+          void handleDeleteSession();
+        }}
+      />
+
+      <ConfirmDialog
+        isOpen={pendingDeleteLegacyEntry !== null}
+        title="Delete sports load entry?"
+        description="This will delete the sports load entry from the selected day. This action cannot be undone."
+        confirmLabel="Delete entry"
+        isConfirming={isDeletingLegacyEntry}
+        onCancel={() => {
+          if (!isDeletingLegacyEntry) {
+            setPendingDeleteLegacyEntry(null);
+          }
+        }}
+        onConfirm={() => {
+          void handleDeleteLegacyEntry();
+        }}
+      />
     </div>
   );
 };

@@ -20,9 +20,13 @@ const saveSportsLoadSessionMock = jest.fn<(
   input: SaveSrpeLogInput,
   existingSessionId?: string
 ) => Promise<string>>();
+const deleteSrpeLogMock = jest.fn<(date: string) => Promise<void>>();
+const deleteSportsLoadSessionMock = jest.fn<(sessionId: string) => Promise<void>>();
 
 jest.mock('@/services/srpeService', () => ({
   calculateSessionLoad: ({ rpe, durationMinutes }: { rpe: number; durationMinutes: number }) => rpe * durationMinutes,
+  deleteSrpeLog: (date: string) => deleteSrpeLogMock(date),
+  deleteSportsLoadSession: (sessionId: string) => deleteSportsLoadSessionMock(sessionId),
   getSrpeByDate: (userId: string, date: string) => getSrpeByDateMock(userId, date),
   getSportsLoadSessionsByDate: (userId: string, date: string) =>
     getSportsLoadSessionsByDateMock(userId, date),
@@ -75,6 +79,8 @@ describe('SportsLoadPage', () => {
     getSrpeByDateMock.mockResolvedValue(null);
     getSportsLoadSessionsByDateMock.mockResolvedValue([]);
     saveSportsLoadSessionMock.mockResolvedValue('session-new');
+    deleteSrpeLogMock.mockResolvedValue();
+    deleteSportsLoadSessionMock.mockResolvedValue();
   });
 
   afterEach(() => {
@@ -230,6 +236,86 @@ describe('SportsLoadPage', () => {
       }),
       'session-2'
     ));
+  });
+
+  it('deletes a selected sports load session and reloads the daily aggregate', async () => {
+    getSportsLoadSessionsByDateMock
+      .mockResolvedValueOnce([
+        {
+          id: 'session-1',
+          userId: 'user-42',
+          date: '2026-03-15',
+          dateEpochDay: 20527,
+          rpe: 7,
+          durationMinutes: 60,
+          sessionLoad: 420,
+          sportType: 'football',
+          sportName: 'Football',
+          sessionName: 'Morning football',
+          timestamp: new Date('2026-03-15T10:00:00'),
+        },
+      ])
+      .mockResolvedValueOnce([]);
+    getSrpeByDateMock
+      .mockResolvedValueOnce({
+        id: '2026-03-15',
+        userId: 'user-42',
+        date: '2026-03-15',
+        dateEpochDay: 20527,
+        timestamp: new Date('2026-03-15T10:00:00'),
+        rpe: 7,
+        durationMinutes: 60,
+        sessionLoad: 420,
+        sportType: 'football',
+        sportName: 'Football',
+        sessionName: 'Morning football',
+        sessionCount: 1,
+      })
+      .mockResolvedValueOnce(null);
+
+    renderPage();
+
+    expect(await screen.findByText('Morning football')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Morning football session' }));
+    expect(screen.getByText('Delete sports load session?')).toBeTruthy();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Delete session' }));
+    });
+
+    await waitFor(() => expect(deleteSportsLoadSessionMock).toHaveBeenCalledWith('session-1'));
+    await waitFor(() => expect(getSportsLoadSessionsByDateMock).toHaveBeenCalledTimes(2));
+  });
+
+  it('deletes a legacy daily sports load entry', async () => {
+    getSrpeByDateMock
+      .mockResolvedValueOnce({
+        id: '2026-03-15',
+        userId: 'user-42',
+        date: '2026-03-15',
+        dateEpochDay: 20527,
+        timestamp: new Date('2026-03-15T10:00:00'),
+        rpe: 6,
+        durationMinutes: 50,
+        sessionLoad: 300,
+        sportType: 'football',
+        sportName: 'Football',
+        sessionCount: 1,
+      })
+      .mockResolvedValueOnce(null);
+
+    renderPage();
+
+    expect(await screen.findByText('Football legacy daily entry')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Delete sports load entry' }));
+    expect(screen.getByText('Delete sports load entry?')).toBeTruthy();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Delete entry' }));
+    });
+
+    await waitFor(() => expect(deleteSrpeLogMock).toHaveBeenCalledWith('2026-03-15'));
+    await waitFor(() => expect(getSrpeByDateMock).toHaveBeenCalledTimes(2));
   });
 
   it('blocks future-date sports load logging', async () => {
