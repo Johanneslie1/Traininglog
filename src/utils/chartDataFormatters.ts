@@ -1,17 +1,17 @@
 import { VolumeDataPoint, MuscleVolumeData, TrainingFrequencyData, HeatmapCell, IntensityLevel, ChartDataset } from '@/types/analytics';
 
 /**
- * Default chart color palette (vibrant, dark-theme optimized)
+ * Default chart color palette (navy/aqua theme optimized)
  */
 export const DEFAULT_CHART_COLORS = [
-  '#3b82f6', // Blue
-  '#10b981', // Green
+  '#54acbf', // Aqua brand
+  '#a7ebf2', // Light aqua
+  '#26658c', // Deep blue
+  '#10b981', // Success green
   '#f59e0b', // Amber
-  '#ef4444', // Red
-  '#54acbf', // Blue-teal (brand)
-  '#ec4899', // Pink
-  '#14b8a6', // Teal
-  '#f97316', // Orange
+  '#7bd4e0', // Soft cyan
+  '#8b5cf6', // Violet contrast
+  '#ef4444', // Error red
 ];
 
 /**
@@ -87,24 +87,24 @@ export function formatVolumeChartDataForRecharts(dataPoints: VolumeDataPoint[]):
  * Muscle group colors for consistency across charts
  */
 export const MUSCLE_COLORS: Record<string, string> = {
-  chest: '#FF6B6B',
-  back: '#4ECDC4',
-  quadriceps: '#95E1D3',
-  hip_flexors: '#8DD3C7',
-  hamstrings: '#A8E6CF',
-  calves: '#B5E7A0',
-  legs: '#95E1D3',
-  shoulders: '#F38181',
-  biceps: '#AA96DA',
-  triceps: '#FCBAD3',
-  arms: '#AA96DA',
-  forearms: '#C7A8D8',
-  core: '#FFD3B6',
-  traps: '#98D8C8',
-  lats: '#6EC1E4',
-  lower_back: '#8FA9B0',
-  glutes: '#D4A5A5',
-  full_body: '#A8E6CF',
+  chest: '#54acbf',
+  back: '#a7ebf2',
+  quadriceps: '#10b981',
+  hip_flexors: '#7bd4e0',
+  hamstrings: '#95e1d3',
+  calves: '#b5e7a0',
+  legs: '#10b981',
+  shoulders: '#26658c',
+  biceps: '#8b5cf6',
+  triceps: '#c084fc',
+  arms: '#8b5cf6',
+  forearms: '#7bd4e0',
+  core: '#f59e0b',
+  traps: '#54acbf',
+  lats: '#6ec1e4',
+  lower_back: '#8fa9b0',
+  glutes: '#f97316',
+  full_body: '#a7ebf2',
 };
 
 /**
@@ -194,11 +194,11 @@ export function groupHeatmapByWeek(cells: HeatmapCell[]): HeatmapCell[][] {
  */
 export function getIntensityColor(intensity: IntensityLevel): string {
   const colors = {
-    [IntensityLevel.REST]: '#1f2937',         // gray-800
-    [IntensityLevel.LIGHT]: '#064e3b',        // green-900
-    [IntensityLevel.MODERATE]: '#065f46',     // green-800
-    [IntensityLevel.HIGH]: '#059669',         // green-600
-    [IntensityLevel.VERY_HIGH]: '#10b981',    // green-500
+    [IntensityLevel.REST]: '#011c40',
+    [IntensityLevel.LIGHT]: '#023859',
+    [IntensityLevel.MODERATE]: '#26658c',
+    [IntensityLevel.HIGH]: '#54acbf',
+    [IntensityLevel.VERY_HIGH]: '#a7ebf2',
   };
   
   return colors[intensity] || colors[IntensityLevel.REST];
@@ -266,6 +266,11 @@ export function formatVolume(volume: number, unit: 'kg' | 'lbs' = 'kg'): string 
     return `${(volume / 1000).toFixed(1)}k ${unit}`;
   }
   return `${Math.round(volume)} ${unit}`;
+}
+
+export function formatChartTooltipValue(label: string, value: number, unit = ''): string {
+  const formattedValue = value >= 1000 ? value.toLocaleString() : value.toFixed(value % 1 === 0 ? 0 : 1);
+  return `${label}: ${formattedValue}${unit ? ` ${unit}` : ''}`;
 }
 
 /**

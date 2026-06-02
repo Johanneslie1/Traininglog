@@ -7,6 +7,8 @@ import { formatPrescription } from '@/utils/prescriptionUtils';
 import { ClockIcon, CheckCircleIcon, UserIcon } from '@heroicons/react/outline';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { EmptyState, MetricChip, SectionDivider, Skeleton } from '@/components/ui';
+import { formatRelativeDate } from '@/utils/displayFormatters';
 
 interface SharedSessionsListProps {
   embedded?: boolean;
@@ -160,7 +162,7 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
   const getStatusHelperText = (assignment: SharedSessionAssignment) => {
     if (assignment.status === 'completed') {
       return assignment.completedAt
-        ? `Completed ${formatDate(assignment.completedAt)}`
+        ? `Completed ${formatRelativeDate(assignment.completedAt)}`
         : 'Completed based on your logged session progress';
     }
 
@@ -171,25 +173,12 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
     return 'Start this assigned session when you are ready';
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays} days ago`;
-    
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  };
-
   if (loading) {
     return (
-      <div className={`flex items-center justify-center ${embedded ? 'py-10' : 'min-h-screen bg-bg-primary'}`}>
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600 mx-auto mb-4"></div>
-          <p className="text-text-secondary">Loading shared sessions...</p>
+      <div className={`${embedded ? 'py-4' : 'min-h-screen bg-bg-primary p-4'}`}>
+        <div className="mx-auto max-w-4xl space-y-4">
+          <Skeleton variant="rectangular" height="90px" className="rounded-2xl" />
+          <Skeleton variant="card" count={3} />
         </div>
       </div>
     );
@@ -219,17 +208,16 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
       {/* Main Content */}
       <main className={`max-w-4xl mx-auto ${embedded ? '' : 'p-4 pb-20'}`}>
         {assignments.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-bg-tertiary/50 flex items-center justify-center">
-              <UserIcon className="w-8 h-8 text-text-tertiary" />
-            </div>
-            <h3 className="text-lg font-medium text-text-primary mb-2">No shared sessions yet</h3>
-            <p className="text-text-tertiary text-sm">
-              Your coach will assign training sessions here
-            </p>
+          <div className="rounded-2xl border border-border bg-bg-secondary">
+            <EmptyState
+              icon={<UserIcon className="h-8 w-8" />}
+              title="No shared sessions yet"
+              description="Your coach will assign training sessions here."
+            />
           </div>
         ) : (
           <div className="space-y-4">
+            <SectionDivider label="Assigned" count={assignments.length} />
             {assignments.map(assignment => {
               const session = assignment.sessionData;
               const isExpanded = expandedSessions.has(assignment.id);
@@ -239,7 +227,7 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
               return (
                 <div
                   key={assignment.id}
-                  className="bg-bg-secondary rounded-xl border border-border hover:border-border-hover transition-all overflow-hidden"
+                  className="overflow-hidden rounded-2xl border border-border bg-bg-secondary shadow-md transition-all hover:-translate-y-0.5 hover:border-accent-primary hover:shadow-glow"
                 >
                   {/* Session Header */}
                   <div className="p-4 border-b border-border">
@@ -256,17 +244,12 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
                           )}
                           <span className="flex items-center gap-1">
                             <ClockIcon className="w-4 h-4" />
-                            {formatDate(assignment.assignedAt)}
+                            {formatRelativeDate(assignment.assignedAt)}
                           </span>
-                          <span>•</span>
-                          <span>{session.exercises.length} exercises</span>
-                          <span>•</span>
-                          <span className="text-text-secondary">Coach: {getCoachDisplayName(assignment)}</span>
+                          <MetricChip label="Exercises" value={session.exercises.length} />
+                          <MetricChip label="Coach" value={getCoachDisplayName(assignment)} />
                           {guidedExerciseCount > 0 && (
-                            <>
-                              <span>•</span>
-                              <span className="text-accent-primary">{guidedExerciseCount} guided</span>
-                            </>
+                            <MetricChip label="Guided" value={guidedExerciseCount} tone="accent" />
                           )}
                         </div>
                       </div>
@@ -288,7 +271,7 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
                     <div className="flex gap-2 flex-wrap">
                       <button
                         onClick={() => handleLogSession(assignment)}
-                        className="flex-1 min-w-[140px] px-4 py-2 bg-accent-primary hover:bg-accent-hover text-text-on-accent rounded-lg font-medium transition-colors"
+                        className="min-h-[44px] flex-1 min-w-[140px] rounded-xl bg-accent-primary px-4 py-2 font-semibold text-text-on-accent transition-all hover:bg-accent-hover hover:shadow-glow"
                       >
                         {assignment.status === 'completed'
                           ? 'Log Again'
@@ -298,14 +281,14 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
                       </button>
                       <button
                         onClick={() => toggleExpand(assignment.id)}
-                        className="flex-1 min-w-[140px] px-4 py-2 bg-bg-tertiary hover:bg-bg-quaternary text-text-primary rounded-lg font-medium transition-colors"
+                        className="min-h-[44px] flex-1 min-w-[140px] rounded-xl border border-border bg-bg-tertiary px-4 py-2 font-semibold text-text-primary transition-colors hover:bg-bg-quaternary"
                       >
                         {isExpanded ? 'Hide' : 'View'} Details
                       </button>
                       {assignment.status === 'not-started' && (
                         <button
                           onClick={() => handleStatusUpdate(assignment.id, 'in-progress')}
-                          className="px-4 py-2 bg-status-info hover:opacity-90 text-text-on-accent rounded-lg font-medium transition-colors"
+                          className="min-h-[44px] rounded-xl bg-status-info px-4 py-2 font-semibold text-text-on-accent transition-colors hover:opacity-90"
                         >
                           Start
                         </button>
@@ -313,7 +296,7 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
                       {assignment.status === 'in-progress' && (
                         <button
                           onClick={() => handleStatusUpdate(assignment.id, 'completed')}
-                          className="px-4 py-2 bg-status-success hover:opacity-90 text-text-on-accent rounded-lg font-medium transition-colors flex items-center gap-2"
+                          className="flex min-h-[44px] items-center gap-2 rounded-xl bg-status-success px-4 py-2 font-semibold text-text-on-accent transition-colors hover:opacity-90"
                         >
                           <CheckCircleIcon className="w-4 h-4" />
                           Complete

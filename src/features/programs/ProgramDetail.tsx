@@ -13,6 +13,7 @@ import { auth } from '@/services/firebase/config';
 import { signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import SideMenu from '@/components/SideMenu';
+import { EmptyState, MetricChip, StickyBottomActions } from '@/components/ui';
 
 interface Props {
   program: Program;
@@ -36,6 +37,13 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [sharingSession, setSharingSession] = useState<ProgramSession | null>(null);
   const { updateSessionInProgram: updateSession, deleteProgram, updateProgram, duplicateSession } = usePrograms();
+  const totalExercises = sessions.reduce((count, session) => count + (session.exercises?.length || 0), 0);
+  const guidedExercises = sessions.reduce((count, session) => (
+    count + (session.exercises || []).filter((exercise) => (
+      (!!exercise.prescription && exercise.instructionMode === 'structured') ||
+      (!!exercise.instructions && exercise.instructionMode === 'freeform')
+    )).length
+  ), 0);
 
   // Helper function to get activity type display info
   const getActivityTypeInfo = (activityType?: ActivityType) => {
@@ -310,7 +318,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
       </div>
 
       {/* Header */}
-      <header className="flex items-start justify-between p-3 sm:p-4 bg-bg-secondary border-b border-border flex-shrink-0 gap-3">
+      <header className="flex flex-shrink-0 items-start justify-between gap-3 border-b border-border bg-bg-secondary/95 p-3 shadow-lg backdrop-blur sm:p-4">
         <div className="flex items-start space-x-2 sm:space-x-3 flex-1 min-w-0">
           <button
             onClick={onBack}
@@ -343,6 +351,11 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                 {program.description && (
                   <p className="text-xs sm:text-sm text-text-tertiary mt-0.5 break-words">{program.description}</p>
                 )}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <MetricChip label="Sessions" value={sessions.length} tone="accent" />
+                  <MetricChip label="Exercises" value={totalExercises} />
+                  {guidedExercises > 0 && <MetricChip label="Guided" value={guidedExercises} tone="info" />}
+                </div>
               </div>
             )}
           </div>
@@ -418,15 +431,20 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
         <div className="space-y-3 max-w-4xl mx-auto">
         {sessions.length > 0 ? (
           sessions.map((session) => (
-            <div key={session.id} className="bg-bg-secondary rounded-2xl overflow-hidden border border-border hover:border-border-hover transition-all duration-200">
+              <div key={session.id} className="overflow-hidden rounded-2xl border border-border bg-bg-secondary shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-primary hover:shadow-glow">
               {/* Session Header */}
               <div className="px-4 sm:px-5 py-3 sm:py-4 flex items-center justify-between border-b border-border gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                     <h3 className="text-lg font-semibold text-text-primary">{session.name}</h3>
-                    <span className="text-xs font-medium text-text-tertiary bg-bg-tertiary/60 px-2.5 py-1 rounded-full">
+                    <span className="rounded-full border border-border bg-bg-tertiary/80 px-2.5 py-1 text-xs font-medium text-text-secondary">
                       {session.exercises.length} exercises
                     </span>
+                    {session.isWarmupSession && (
+                      <span className="rounded-full border border-info-border bg-info-bg px-2.5 py-1 text-xs font-medium text-info-text">
+                        Warm-up
+                      </span>
+                    )}
                   </div>
                 </div>
                 
@@ -435,7 +453,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                     <>
                       <button
                         onClick={() => setSharingSession(session)}
-                        className="p-1.5 sm:p-2 hover:bg-bg-tertiary/60 rounded-xl transition-all duration-200 text-green-400 hover:text-green-300"
+                        className="min-h-[40px] min-w-[40px] rounded-xl p-2 text-success-text transition-all duration-200 hover:bg-success-bg"
                         title="Share session"
                         aria-label="Share session"
                       >
@@ -444,7 +462,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                       <button
                         onClick={(e) => handleDuplicateSession(session.id, session.name, e)}
                         disabled={duplicatingSessionId === session.id}
-                        className="p-1.5 sm:p-2 hover:bg-bg-tertiary/60 rounded-xl transition-all duration-200 text-blue-400 hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="min-h-[40px] min-w-[40px] rounded-xl p-2 text-accent-primary transition-all duration-200 hover:bg-bg-tertiary/60 disabled:cursor-not-allowed disabled:opacity-50"
                         title="Duplicate session"
                         aria-label="Duplicate session"
                       >
@@ -456,7 +474,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                       </button>
                       <button
                         onClick={() => handleSessionEdit(session)}
-                        className="p-1.5 sm:p-2 hover:bg-bg-tertiary/60 rounded-xl transition-all duration-200 text-blue-400 hover:text-blue-300"
+                        className="min-h-[40px] min-w-[40px] rounded-xl p-2 text-accent-primary transition-all duration-200 hover:bg-bg-tertiary/60"
                         title="Edit session"
                         aria-label="Edit session"
                       >
@@ -464,7 +482,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                       </button>
                       <button
                         onClick={() => handleDeleteSession(session.id)}
-                        className="p-1.5 sm:p-2 hover:bg-bg-tertiary/60 rounded-xl transition-all duration-200 text-red-400 hover:text-red-300"
+                        className="min-h-[40px] min-w-[40px] rounded-xl p-2 text-error-text transition-all duration-200 hover:bg-error-bg"
                         title="Delete session"
                         aria-label="Delete session"
                       >
@@ -474,7 +492,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                   )}
                   <button
                     onClick={() => toggleSession(session.id)}
-                    className="p-1.5 sm:p-2 hover:bg-bg-tertiary/60 rounded-xl transition-all duration-200"
+                    className="min-h-[40px] min-w-[40px] rounded-xl p-2 transition-all duration-200 hover:bg-bg-tertiary/60"
                     title={expandedSessions.includes(session.id) ? "Collapse session" : "Expand session"}
                     aria-label={expandedSessions.includes(session.id) ? "Collapse session" : "Expand session"}
                   >
@@ -493,7 +511,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                   {session.exercises.map((exercise, index) => (
                     <div 
                       key={exercise.id}
-                      className={`px-4 py-3 hover:bg-bg-tertiary/40 transition-all duration-200 rounded-xl mx-1 ${
+                      className={`mx-1 rounded-xl border border-transparent px-4 py-3 transition-all duration-200 hover:border-border-focus hover:bg-bg-tertiary/60 hover:shadow-glow ${
                         index !== session.exercises.length - 1 ? 'mb-1' : ''
                       }`}
                     >
@@ -527,30 +545,30 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
             </div>
           ))
         ) : (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-bg-tertiary/50 flex items-center justify-center">
-              <svg className="w-8 h-8 text-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-medium text-text-primary mb-2">No sessions yet</h3>
-            <p className="text-text-tertiary text-sm mb-6">Create your first training session to get started</p>
+          <div className="rounded-2xl border border-border bg-bg-secondary">
+            <EmptyState
+              illustration="workout"
+              title="No sessions yet"
+              description="Create your first training session to start building this program."
+            />
           </div>
         )}
         
         {!selectionMode && (
-          <button 
-            onClick={() => {
-              setEditingSession(null);
-              setShowSessionBuilder(true);
-            }} 
-            className="w-full py-4 bg-gradient-brand-button text-text-on-accent rounded-2xl hover:opacity-95 transition-all duration-200 flex items-center justify-center gap-3 font-medium shadow-lg hover:shadow-xl border border-border-focus"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Add New Session
-          </button>
+          <StickyBottomActions>
+            <button 
+              onClick={() => {
+                setEditingSession(null);
+                setShowSessionBuilder(true);
+              }} 
+              className="flex min-h-[52px] w-full items-center justify-center gap-3 rounded-2xl border border-border-focus bg-gradient-brand-button py-4 font-semibold text-text-on-accent shadow-lg transition-all duration-200 hover:opacity-95 hover:shadow-glow"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Add New Session
+            </button>
+          </StickyBottomActions>
         )}
         </div>
       </main>

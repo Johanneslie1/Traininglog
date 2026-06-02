@@ -12,6 +12,8 @@ import {
   ChatAltIcon
 } from '@heroicons/react/outline';
 import toast from 'react-hot-toast';
+import { EmptyState, MetricChip, SectionDivider, Skeleton } from '@/components/ui';
+import { formatRelativeDate } from '@/utils/displayFormatters';
 
 interface SharedProgramData {
   id: string;
@@ -127,19 +129,6 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
     }
   };
 
-  const getTimeAgo = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return '1 day ago';
-    if (diffDays < 7) return `${diffDays} days ago`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)} week${Math.floor(diffDays / 7) !== 1 ? 's' : ''} ago`;
-    return `${Math.floor(diffDays / 30)} month${Math.floor(diffDays / 30) !== 1 ? 's' : ''} ago`;
-  };
-
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'not-started':
@@ -190,15 +179,17 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
 
   if (loading) {
     return (
-      <div className={`flex items-center justify-center ${embedded ? 'py-10' : 'min-h-screen bg-black'}`}>
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
-        <div className="ml-3 text-white">Loading shared programs...</div>
+      <div className={`${embedded ? 'py-4' : 'min-h-screen bg-bg-primary p-4'}`}>
+        <div className="mx-auto max-w-4xl space-y-4">
+          <Skeleton variant="rectangular" height="90px" className="rounded-2xl" />
+          <Skeleton variant="card" count={3} />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className={`${embedded ? '' : 'min-h-screen bg-black text-white p-4'}`}>
+    <div className={`${embedded ? '' : 'min-h-screen bg-bg-primary p-4 text-text-primary'}`}>
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-6">
@@ -229,15 +220,16 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
 
         {/* Programs List */}
         {sharedPrograms.length === 0 ? (
-          <div className="bg-bg-secondary border border-border rounded-lg p-8 text-center">
-            <CalendarIcon className="h-16 w-16 text-text-muted mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">No Assigned Programs</h2>
-            <p className="text-text-tertiary">
-              When your coach shares a program with you, it will appear here.
-            </p>
+          <div className="rounded-2xl border border-border bg-bg-secondary">
+            <EmptyState
+              icon={<CalendarIcon className="h-8 w-8" />}
+              title="No assigned programs"
+              description="When your coach shares a program with you, it will appear here."
+            />
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-4">
+            <SectionDivider label="Assigned" count={sharedPrograms.length} />
             {sharedPrograms.map((sharedProgram) => {
               const program = sharedProgram.originalProgram;
               const isCopied = sharedProgram.assignmentStatus === 'copied';
@@ -255,7 +247,7 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
               return (
                 <div
                   key={sharedProgram.id}
-                  className="bg-bg-secondary border border-border rounded-lg overflow-hidden hover:border-accent-primary transition-colors"
+                  className="overflow-hidden rounded-2xl border border-border bg-bg-secondary shadow-md transition-all hover:-translate-y-0.5 hover:border-accent-primary hover:shadow-glow"
                 >
                   {/* Coach Message (if exists) */}
                   {sharedProgram.coachMessage && (
@@ -274,7 +266,7 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
                     </div>
                   )}
 
-                  <div className="p-6">
+                  <div className="p-5 sm:p-6">
                     {/* Program Header */}
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex-1">
@@ -284,7 +276,7 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
                         )}
                         
                         {/* Meta Info */}
-                        <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-text-muted">
+                        <div className="flex flex-wrap gap-2 text-sm text-text-muted">
                           <div className="flex items-center gap-2">
                             <div className="w-6 h-6 bg-primary-900/30 rounded-full flex items-center justify-center">
                               <span className="text-primary-400 text-xs font-semibold">
@@ -297,17 +289,11 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
                           </div>
                           <div className="flex items-center">
                             <CalendarIcon className="h-4 w-4 mr-1" />
-                            Assigned {getTimeAgo(sharedProgram.assignedAt)}
+                            Assigned {formatRelativeDate(sharedProgram.assignedAt)}
                           </div>
-                          <div className="flex items-center">
-                            <CalendarIcon className="h-4 w-4 mr-1" />
-                            {program.sessions?.length || 0} session{program.sessions?.length !== 1 ? 's' : ''}
-                          </div>
+                          <MetricChip label="Sessions" value={program.sessions?.length || 0} />
                           {guidedExercises > 0 && (
-                            <div className="flex items-center text-primary-300">
-                              <CheckCircleIcon className="h-4 w-4 mr-1" />
-                              {guidedExercises} guided exercise{guidedExercises !== 1 ? 's' : ''}
-                            </div>
+                            <MetricChip label="Guided" value={guidedExercises} tone="accent" />
                           )}
                         </div>
                       </div>
@@ -324,7 +310,7 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
                         <h3 className="text-sm font-semibold text-text-tertiary mb-2">Sessions:</h3>
                         <div className="space-y-1">
                           {program.sessions.slice(0, 3).map((session, index) => (
-                            <div key={session.id} className="text-sm text-text-secondary">
+                            <div key={session.id} className="rounded-xl border border-border bg-bg-tertiary/60 px-3 py-2 text-sm text-text-secondary">
                               {index + 1}. {session.name} ({session.exercises?.length || 0} exercises)
                             </div>
                           ))}
@@ -343,10 +329,10 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
                       <button
                         onClick={() => handleCopyProgram(sharedProgram.id, program.name)}
                         disabled={copyingProgramId === sharedProgram.id}
-                        className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors ${
+                        className={`flex min-h-[44px] items-center rounded-xl px-4 py-2 font-semibold transition-all ${
                           isCopied
                             ? 'bg-bg-tertiary text-text-muted cursor-not-allowed'
-                            : 'bg-primary-600 hover:bg-primary-700 text-white'
+                            : 'bg-accent-primary text-text-on-accent hover:bg-accent-hover hover:shadow-glow'
                         }`}
                       >
                         {copyingProgramId === sharedProgram.id ? (
@@ -367,7 +353,7 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
                         <button
                           onClick={() => handleUpdateStatus(sharedProgram.assignmentId, 'in-progress', program.name)}
                           disabled={updatingStatusId === sharedProgram.assignmentId}
-                          className="flex items-center px-4 py-2 bg-warning-bg hover:opacity-90 text-warning-text border border-warning-border rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="flex min-h-[44px] items-center rounded-xl border border-warning-border bg-warning-bg px-4 py-2 font-semibold text-warning-text transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {updatingStatusId === sharedProgram.assignmentId ? (
                             <>
@@ -388,7 +374,7 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
                         <button
                           onClick={() => handleUpdateStatus(sharedProgram.assignmentId, 'completed', program.name)}
                           disabled={updatingStatusId === sharedProgram.assignmentId}
-                          className="flex items-center px-4 py-2 bg-success-bg hover:opacity-90 text-success-text border border-success-border rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="flex min-h-[44px] items-center rounded-xl border border-success-border bg-success-bg px-4 py-2 font-semibold text-success-text transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {updatingStatusId === sharedProgram.assignmentId ? (
                             <>

@@ -60,7 +60,7 @@ const SideMenu: React.FC<SideMenuProps> = ({
               <AppLogo className="h-11 w-11" />
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-text-tertiary">Navigation</p>
-                <h2 className="text-text-primary text-xl font-semibold">Gym Keeper</h2>
+                <h2 className="text-text-primary text-xl font-semibold">TrainingLog</h2>
               </div>
             </div>
             <button

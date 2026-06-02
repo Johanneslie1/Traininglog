@@ -13,6 +13,7 @@ import ExerciseCard from './ExerciseCard';
 import SupersetActionsButton from './SupersetActionsButton';
 import toast from 'react-hot-toast';
 import { buildSupersetDisplayTitle, buildSupersetLabels } from '@/utils/supersetUtils';
+import { EmptyState } from '@/components/ui';
 
 // Haptic feedback utility
 const triggerHapticFeedback = (intensity: 'light' | 'medium' | 'heavy' = 'light') => {
@@ -252,8 +253,12 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
 
   if (exercises.length === 0) {
     return (
-      <div className="text-center py-8 text-text-tertiary">
-        <p>No exercises logged yet. Start by adding your first exercise!</p>
+      <div className="rounded-2xl border border-border bg-bg-secondary">
+        <EmptyState
+          illustration="workout"
+          title="No exercises logged yet"
+          description="Start by adding your first exercise."
+        />
       </div>
     );
   }  return (
@@ -263,7 +268,7 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
         <div className="fixed bottom-app-floating left-1/2 -translate-x-1/2 z-50 animate-fade-in">
           <button
             onClick={handleUndo}
-            className="flex items-center gap-2 px-4 py-2 bg-bg-secondary border border-border text-text-primary rounded-full shadow-lg hover:bg-bg-tertiary transition-all"
+            className="flex min-h-[44px] items-center gap-2 rounded-full border border-border-focus bg-bg-secondary px-4 py-2 text-text-primary shadow-glow transition-all hover:bg-bg-tertiary"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
@@ -283,8 +288,8 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
             <div 
               {...provided.droppableProps}
               ref={provided.innerRef}
-              className={`space-y-6 transition-colors duration-200 ${
-                droppableSnapshot.isDraggingOver ? 'bg-accent-primary/5 rounded-lg' : ''
+              className={`space-y-6 rounded-2xl transition-all duration-200 ${
+                droppableSnapshot.isDraggingOver ? 'bg-accent-primary/10 p-2 shadow-glow ring-2 ring-accent-primary/40' : ''
               }`}
             >
               {groupedExercises.map((group, groupIndex) => {
@@ -303,9 +308,9 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
                         {...provided.draggableProps}
                         className={`transition-all duration-200 ${
                           snapshot.isDragging 
-                            ? 'scale-105 shadow-2xl z-50 rotate-1' 
+                            ? 'z-50 scale-105 rotate-1 rounded-2xl shadow-glow-lg ring-2 ring-accent-primary' 
                             : isDropTarget 
-                              ? 'border-t-2 border-accent-primary pt-2' 
+                              ? 'rounded-2xl border-t-2 border-accent-primary bg-accent-primary/10 pt-2 shadow-glow' 
                               : ''
                         }`}
                       >
@@ -316,19 +321,19 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
                           aria-label={`Hold and drag to reorder exercise ${groupIndex + 1}`}
                         >
                           <div className={`w-10 h-1 rounded-full transition-colors ${
-                            snapshot.isDragging ? 'bg-accent-primary' : 'bg-gray-500'
+                            snapshot.isDragging ? 'bg-accent-primary shadow-glow' : 'bg-border-hover'
                           }`} />
                         </div>
                         
                         {group.superset ? (
                           // More integrated superset styling
-                          <div className="relative bg-bg-secondary border-l-4 border-[#2196F3] rounded-lg p-3 shadow-md mb-4">
+                          <div className="relative mb-4 rounded-2xl border border-border border-l-4 border-l-accent-primary bg-bg-secondary p-3 shadow-md">
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                <div className="h-2 w-2 rounded-full bg-accent-primary shadow-glow"></div>
                                 <h3 className="text-sm font-medium text-text-primary flex items-center">
-                                  <span className="text-[#2196F3]">{buildSupersetDisplayTitle(group.superset, labelsByExerciseId)}</span>
-                                  <span className="ml-2 text-xs text-[#2196F3]/70">
+                                  <span className="text-accent-primary">{buildSupersetDisplayTitle(group.superset, labelsByExerciseId)}</span>
+                                  <span className="ml-2 text-xs text-text-tertiary">
                                     ({group.exercises.length})
                                   </span>
                                 </h3>
@@ -345,7 +350,7 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
                                 <div key={exercise.id || exerciseIndex} className="relative">
                                   {/* Simpler connection line */}
                                   {exerciseIndex < group.exercises.length - 1 && (
-                                    <div className="absolute -bottom-2 left-4 h-3 w-0.5 bg-blue-500/40"></div>
+                                    <div className="absolute -bottom-2 left-4 h-3 w-0.5 bg-accent-primary/50"></div>
                                   )}
                                   
                                   <div className="transition-all duration-200 hover:bg-black/20 rounded-lg">
@@ -366,7 +371,7 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
                           </div>
                         ) : (
                           // Individual exercise with simpler styling
-                          <div className="border-l-4 border-border rounded-lg shadow-sm mb-4">
+                          <div className="mb-4 rounded-2xl border border-border border-l-4 border-l-border-hover shadow-sm transition-colors hover:border-l-accent-primary">
                             <ExerciseCard
                               exercise={group.exercises[0]}
                               exerciseNumber={groupIndex + 1}

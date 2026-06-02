@@ -52,7 +52,7 @@ const Register = () => {
         <div className="rounded-3xl border border-border bg-bg-secondary p-6 shadow-2xl shadow-black/30 sm:p-8">
           <div className="mb-8 text-center">
             <AppLogo className="mx-auto h-16 w-16" />
-            <p className="mt-5 text-xs font-semibold uppercase tracking-[0.25em] text-text-tertiary">Gym Keeper</p>
+            <p className="mt-5 text-xs font-semibold uppercase tracking-[0.25em] text-text-tertiary">TrainingLog</p>
             <h1 className="mt-2 text-3xl font-bold text-text-primary">Create your account</h1>
             <p className="mt-2 text-sm text-text-secondary">Start with an athlete workspace. Coach tools can be enabled when your role is upgraded.</p>
           </div>

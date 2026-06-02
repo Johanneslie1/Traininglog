@@ -18,13 +18,13 @@ const Card: React.FC<CardProps> = ({
   const baseStyles = 'transition-all duration-200';
   
   const variantStyles = {
-    flat: 'bg-bg-secondary border border-border rounded-lg',
-    raised: 'bg-bg-secondary rounded-xl shadow-md',
-    elevated: 'bg-bg-tertiary rounded-xl shadow-xl',
+    flat: 'bg-bg-secondary border border-border rounded-xl',
+    raised: 'bg-bg-secondary rounded-2xl border border-border shadow-md',
+    elevated: 'bg-bg-tertiary rounded-2xl border border-border-focus shadow-xl shadow-accent-primary/10',
   };
   
   const interactiveStyles = interactive || onClick
-    ? 'cursor-pointer hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]'
+    ? 'cursor-pointer hover:-translate-y-0.5 hover:border-accent-primary hover:shadow-glow active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-accent-primary'
     : '';
   
   return (
@@ -51,7 +51,7 @@ export const CardHeader: React.FC<{ children: React.ReactNode; className?: strin
   children, 
   className = '' 
 }) => (
-  <div className={`p-4 border-b border-border ${className}`}>
+  <div className={`border-b border-border bg-bg-tertiary/40 p-4 ${className}`}>
     {children}
   </div>
 );
@@ -69,7 +69,7 @@ export const CardFooter: React.FC<{ children: React.ReactNode; className?: strin
   children, 
   className = '' 
 }) => (
-  <div className={`p-4 border-t border-border ${className}`}>
+  <div className={`border-t border-border bg-bg-tertiary/30 p-4 ${className}`}>
     {children}
   </div>
 );

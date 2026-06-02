@@ -31,7 +31,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
     closeOnBackdrop={!isConfirming}
     closeOnEscape={!isConfirming}
   >
-    <div className="w-full max-w-md rounded-3xl border border-border bg-bg-secondary p-6 shadow-2xl">
+    <div className="w-full max-w-md rounded-3xl border border-border-focus bg-bg-secondary p-6 shadow-2xl shadow-accent-primary/20">
       <div className="mb-5">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-error-text">Please confirm</p>
         <h2 className="mt-2 text-2xl font-bold text-text-primary">{title}</h2>

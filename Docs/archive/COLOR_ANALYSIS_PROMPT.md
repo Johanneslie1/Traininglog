@@ -72,8 +72,8 @@ primary: {
   700: '#6d28d9',
 }
 
-// Gymkeeper specific
-gymkeeper: {
+// Brand specific
+brand: {
   dark: '#1a1a1a',
   light: '#2d2d2d',
   'purple-darker': '#2a1f42',

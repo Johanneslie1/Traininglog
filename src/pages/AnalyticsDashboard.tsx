@@ -183,8 +183,8 @@ const VolumeAreaChart: React.FC<AreaChartProps> = ({ dataPoints }) => {
       >
         <defs>
           <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--color-accent-primary, #6366f1)" stopOpacity="0.35" />
-            <stop offset="100%" stopColor="var(--color-accent-primary, #6366f1)" stopOpacity="0" />
+            <stop offset="0%" stopColor="var(--color-accent-primary, #54acbf)" stopOpacity="0.4" />
+            <stop offset="100%" stopColor="var(--color-accent-primary, #54acbf)" stopOpacity="0" />
           </linearGradient>
         </defs>
 
@@ -222,7 +222,7 @@ const VolumeAreaChart: React.FC<AreaChartProps> = ({ dataPoints }) => {
         <path
           d={linePath}
           fill="none"
-          stroke="var(--color-accent-primary, #6366f1)"
+          stroke="var(--color-accent-primary, #54acbf)"
           strokeWidth={2}
           strokeLinejoin="round"
           strokeLinecap="round"
@@ -235,8 +235,11 @@ const VolumeAreaChart: React.FC<AreaChartProps> = ({ dataPoints }) => {
             cx={toX(i)}
             cy={toY(p.volume)}
             r={3}
-            fill="var(--color-accent-primary, #6366f1)"
-          />
+            fill="var(--color-accent-primary, #54acbf)"
+            className="drop-shadow"
+          >
+            <title>{`${format(new Date(p.date), 'MMM d')}: ${formatMetric(Math.round(p.volume))} kg volume`}</title>
+          </circle>
         ))}
 
         {/* X-axis labels */}
@@ -255,6 +258,13 @@ const VolumeAreaChart: React.FC<AreaChartProps> = ({ dataPoints }) => {
           </text>
         ))}
       </svg>
+      <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-text-secondary">
+        <span className="inline-flex items-center gap-2">
+          <span className="h-2.5 w-2.5 rounded-full bg-accent-primary shadow-glow" />
+          Daily volume
+        </span>
+        <span>Tooltips show exact date and volume.</span>
+      </div>
     </div>
   );
 };

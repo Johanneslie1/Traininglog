@@ -176,7 +176,7 @@ spacing: {
 ```tsx
 // Recommended Structure
 ┌─────────────────────────────────────┐
-│  [☰]  GYM KEEPER        [🗓️] [⚙️]  │ ← Sticky header (56px)
+│  [☰]  TrainingLog       [🗓️] [⚙️]  │ ← Sticky header (56px)
 ├─────────────────────────────────────┤
 │  ◄  M  T  W  T  F  S  S  ►         │ ← Calendar (collapsible on scroll)
 └─────────────────────────────────────┘

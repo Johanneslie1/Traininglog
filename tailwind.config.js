@@ -22,8 +22,8 @@ export default {
           900: '#011c40',
           DEFAULT: '#54acbf',
         },
-        // Gymkeeper specific colors - available for all color utilities (bg, text, border, ring)
-        gymkeeper: {
+        // Brand colors - available for all color utilities (bg, text, border, ring)
+        brand: {
           dark: '#011c40',
           light: '#023859',
           'purple-darker': '#011c40',
@@ -226,14 +226,14 @@ export default {
   plugins: [],
   // Safelist specifically required classes
   safelist: [
-    'bg-gymkeeper-dark',
-    'bg-gymkeeper-light',
-    'bg-gymkeeper-purple',
-    'bg-gymkeeper-purple-light',
-    'bg-gymkeeper-purple-darker',
-    'text-gymkeeper-purple',
-    'ring-gymkeeper-purple',
-    'focus:ring-gymkeeper-purple',
+    'bg-brand-dark',
+    'bg-brand-light',
+    'bg-brand-purple',
+    'bg-brand-purple-light',
+    'bg-brand-purple-darker',
+    'text-brand-purple',
+    'ring-brand-purple',
+    'focus:ring-brand-purple',
     // Activity type colors
     'bg-activity-resistance',
     'bg-activity-sport',

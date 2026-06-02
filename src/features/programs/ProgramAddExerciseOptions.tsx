@@ -33,13 +33,13 @@ const helperCategories: Category[] = [
 ];
 
 const muscleGroups: Category[] = [
-  { id: 'chest', name: 'Chest', icon: '💪', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-green-600', textColor: 'text-text-primary' },
-  { id: 'back', name: 'Back', icon: '🔙', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-blue-600', textColor: 'text-text-primary' },
-  { id: 'legs', name: 'Legs', icon: '🦵', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-yellow-600', textColor: 'text-text-primary' },
-  { id: 'shoulders', name: 'Shoulders', icon: '🎯', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-cyan-600', textColor: 'text-text-primary' },
-  { id: 'arms', name: 'Arms', icon: '💪', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-red-600', textColor: 'text-text-primary' },
-  { id: 'core', name: 'Core', icon: '⭕', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-primary-600', textColor: 'text-text-primary' },
-  { id: 'fullBody', name: 'Full-Body', icon: '👤', bgColor: 'bg-gymkeeper-light', iconBgColor: 'bg-orange-600', textColor: 'text-text-primary' },
+  { id: 'chest', name: 'Chest', icon: '💪', bgColor: 'bg-brand-light', iconBgColor: 'bg-green-600', textColor: 'text-text-primary' },
+  { id: 'back', name: 'Back', icon: '🔙', bgColor: 'bg-brand-light', iconBgColor: 'bg-blue-600', textColor: 'text-text-primary' },
+  { id: 'legs', name: 'Legs', icon: '🦵', bgColor: 'bg-brand-light', iconBgColor: 'bg-yellow-600', textColor: 'text-text-primary' },
+  { id: 'shoulders', name: 'Shoulders', icon: '🎯', bgColor: 'bg-brand-light', iconBgColor: 'bg-cyan-600', textColor: 'text-text-primary' },
+  { id: 'arms', name: 'Arms', icon: '💪', bgColor: 'bg-brand-light', iconBgColor: 'bg-red-600', textColor: 'text-text-primary' },
+  { id: 'core', name: 'Core', icon: '⭕', bgColor: 'bg-brand-light', iconBgColor: 'bg-primary-600', textColor: 'text-text-primary' },
+  { id: 'fullBody', name: 'Full-Body', icon: '👤', bgColor: 'bg-brand-light', iconBgColor: 'bg-orange-600', textColor: 'text-text-primary' },
 ];
 
 const activityTypes = [

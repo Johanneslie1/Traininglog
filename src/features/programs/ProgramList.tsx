@@ -5,7 +5,10 @@ import CreateNewProgram from './CreateNewProgram';
 import { Program } from '@/types/program';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { TrashIcon, PlusIcon, DuplicateIcon } from '@heroicons/react/outline';
-import { Button, ConfirmDialog, EmptyState } from '@/components/ui';
+import { Button, ConfirmDialog, EmptyState, MetricChip, ViewToggle } from '@/components/ui';
+import { formatRelativeDate } from '@/utils/displayFormatters';
+
+type ProgramViewMode = 'compact' | 'detailed';
 
 const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onSelect }) => {
   const navigate = useNavigate();
@@ -15,6 +18,7 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
   const [deletingProgramId, setDeletingProgramId] = useState<string | null>(null);
   const [duplicatingProgramId, setDuplicatingProgramId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
+  const [viewMode, setViewMode] = useState<ProgramViewMode>('compact');
 
   // No need for useEffect to refresh - ProgramsContext handles this automatically
 
@@ -100,6 +104,16 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {programs.length > 0 && (
+            <ViewToggle<ProgramViewMode>
+              value={viewMode}
+              onChange={setViewMode}
+              options={[
+                { value: 'compact', label: 'Compact' },
+                { value: 'detailed', label: 'Detailed' },
+              ]}
+            />
+          )}
           <Button variant="secondary" onClick={() => navigate('/teams?tab=programs')}>
             Assigned
           </Button>
@@ -131,7 +145,7 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
           />
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className={viewMode === 'compact' ? 'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3' : 'space-y-4'}>
           {programs.map((program: Program) => (
             <div
               key={program.id}
@@ -143,23 +157,29 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
                   onSelect ? onSelect(program.id) : navigate(`/programs/${program.id}`);
                 }
               }}
-              className="relative flex min-h-[168px] cursor-pointer flex-col justify-between rounded-2xl border border-border bg-bg-secondary p-5 transition-all duration-200 hover:border-accent-primary hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+              className={`relative flex cursor-pointer flex-col justify-between rounded-2xl border border-border bg-bg-secondary p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-primary hover:shadow-glow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring ${viewMode === 'compact' ? 'min-h-[178px]' : 'min-h-[140px]'}`}
               onClick={() => (onSelect ? onSelect(program.id) : navigate(`/programs/${program.id}`))}
             >
               <div className="flex h-full flex-col justify-between">
                 <div>
-                  <h3 className="font-semibold text-lg text-text-primary mb-2">{program.name}</h3>
+                  <div className="mb-3 flex items-start justify-between gap-3">
+                    <h3 className="text-lg font-semibold text-text-primary">{program.name}</h3>
+                    <span className="rounded-full border border-border-focus bg-accent-100 px-2.5 py-1 text-xs font-semibold text-accent-700">
+                      {program.sessions?.length || 0} sessions
+                    </span>
+                  </div>
                   {program.description && (
-                    <p className="text-sm text-text-tertiary mb-3 line-clamp-2">{program.description}</p>
+                    <p className={`text-sm text-text-tertiary ${viewMode === 'compact' ? 'line-clamp-2' : ''}`}>{program.description}</p>
                   )}
                 </div>
                 
-                <div className="flex items-center justify-between">
-                  {program.sessions && program.sessions.length > 0 && (
-                    <span className="text-text-tertiary text-xs font-medium">
-                      {program.sessions.length} session{program.sessions.length !== 1 ? 's' : ''}
-                    </span>
-                  )}
+                <div className="mt-4 flex items-center justify-between gap-3">
+                  <div className="flex flex-wrap gap-2">
+                    <MetricChip label="Exercises" value={(program.sessions || []).reduce((count, session) => count + (session.exercises?.length || 0), 0)} />
+                    {viewMode === 'detailed' && (
+                      <MetricChip label="Updated" value={formatRelativeDate(program.updatedAt || program.createdAt)} tone="info" />
+                    )}
+                  </div>
                   <div className="flex gap-2">
                     <button
                       onClick={(e) => handleDuplicateProgram(program.id, program.name, e)}
