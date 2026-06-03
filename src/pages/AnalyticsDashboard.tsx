@@ -11,17 +11,29 @@ import { ActivityAnalytics, MuscleGroupAnalytics, PRType, VolumeDataPoint } from
 import { Exercise } from '@/types/exercise';
 import { SrpeLog } from '@/types/srpe';
 import { WellnessLog } from '@/types/wellness';
-import { addDays, toLocalDateString } from '@/utils/dateUtils';
+import { addDays, dateKeyToLocalDate, endOfDay, startOfDay, startOfLocalWeek, toLocalDateString } from '@/utils/dateUtils';
 import type { CoachRatingsDashboardData } from '@/types/coachRatings';
 import { EmptyState, DashboardSection, MetricChip } from '@/components/ui';
 import { formatNumberCompact, formatTrainingVolume } from '@/utils/displayFormatters';
 import { formatMuscleName } from '@/utils/chartDataFormatters';
+import { calculateAverageReps, calculateAverageWeight, calculateTotalVolume } from '@/utils/volumeCalculations';
 
 type Timeframe = 'day' | 'week' | 'month' | 'year';
 
 interface DateRange {
   startDate: Date;
   endDate: Date;
+}
+
+type LoadChartResolution = 'day' | 'week' | 'month';
+
+interface LoadChartPoint extends VolumeDataPoint {
+  periodStartDate: string;
+  periodEndDate: string;
+  label: string;
+  isPartial?: boolean;
+  daysIncluded: number;
+  expectedDays: number;
 }
 
 const timeframeOptions: Array<{ value: Timeframe; label: string }> = [
@@ -33,24 +45,19 @@ const timeframeOptions: Array<{ value: Timeframe; label: string }> = [
 
 const getRangeFromTimeframe = (timeframe: Timeframe): DateRange => {
   const now = new Date();
-  const endDate = new Date(now);
-  endDate.setHours(23, 59, 59, 999);
+  const endDate = endOfDay(now);
 
-  const startDate = new Date(now);
+  let startDate = startOfDay(now);
 
   switch (timeframe) {
     case 'day':
-      startDate.setHours(0, 0, 0, 0);
       break;
     case 'week': {
-      const dayOfWeek = startDate.getDay(); // 0 = Sunday
-      startDate.setDate(startDate.getDate() - dayOfWeek);
-      startDate.setHours(0, 0, 0, 0);
+      startDate = startOfDay(addDays(endDate, -4));
       break;
     }
     case 'month':
-      startDate.setDate(1);
-      startDate.setHours(0, 0, 0, 0);
+      startDate = startOfLocalWeek(addDays(endDate, -27));
       break;
     case 'year':
       startDate.setMonth(0, 1);
@@ -63,6 +70,182 @@ const getRangeFromTimeframe = (timeframe: Timeframe): DateRange => {
   }
 
   return { startDate, endDate };
+};
+
+const getLoadChartResolution = (timeframe: Timeframe): LoadChartResolution => {
+  if (timeframe === 'month') return 'week';
+  if (timeframe === 'year') return 'month';
+  return 'day';
+};
+
+const normaliseDurationMinutes = (value?: number): number => {
+  if (!value || value <= 0) return 0;
+  return value > 240 ? Math.round((value / 60) * 10) / 10 : value;
+};
+
+const getExerciseLoad = (exercise: UnifiedExerciseData): number => {
+  const sets = exercise.sets || [];
+  const volume = calculateTotalVolume(sets);
+  const totalReps = sets.reduce((sum, set) => sum + (set.reps || 0), 0);
+  const totalDuration = sets.reduce((sum, set) => sum + normaliseDurationMinutes(set.duration), 0);
+  const effortValues = sets
+    .map((set) => set.rpe || set.intensity || 0)
+    .filter((effort) => effort > 0);
+  const averageEffort = effortValues.length > 0
+    ? effortValues.reduce((sum, effort) => sum + effort, 0) / effortValues.length
+    : 0;
+  const durationLoad = totalDuration > 0 && averageEffort > 0 ? totalDuration * averageEffort : 0;
+  const repLoad = totalReps > 0 && averageEffort > 0 ? totalReps * averageEffort : 0;
+
+  return Math.round(Math.max(volume, durationLoad, repLoad) * 10) / 10;
+};
+
+const getDateKeysInRange = (startDate: Date, endDate: Date): string[] => {
+  const keys: string[] = [];
+  const current = startOfDay(startDate);
+  const end = startOfDay(endDate);
+
+  while (current <= end) {
+    keys.push(toLocalDateString(current));
+    current.setDate(current.getDate() + 1);
+  }
+
+  return keys;
+};
+
+const buildDailyLoadPoints = (
+  exercises: UnifiedExerciseData[],
+  srpeLogs: SrpeLog[],
+  range: DateRange
+): LoadChartPoint[] => {
+  const pointsByDate = new Map<string, LoadChartPoint>();
+
+  const ensurePoint = (date: string): LoadChartPoint => {
+    if (!pointsByDate.has(date)) {
+      pointsByDate.set(date, {
+        date,
+        periodStartDate: date,
+        periodEndDate: date,
+        label: format(dateKeyToLocalDate(date) || new Date(date), 'MMM d'),
+        volume: 0,
+        totalSets: 0,
+        averageWeight: 0,
+        averageReps: 0,
+        exerciseName: 'Training load',
+        exerciseCount: 0,
+        daysIncluded: 1,
+        expectedDays: 1,
+      });
+    }
+
+    return pointsByDate.get(date)!;
+  };
+
+  getDateKeysInRange(range.startDate, range.endDate).forEach(ensurePoint);
+
+  exercises
+    .filter((exercise) => !exercise.isWarmup)
+    .forEach((exercise) => {
+      const date = toLocalDateString(exercise.timestamp);
+      const point = ensurePoint(date);
+      const sets = exercise.sets || [];
+      const allWeights = sets.filter((set) => (set.weight || 0) > 0);
+
+      point.volume += getExerciseLoad(exercise);
+      point.totalSets += sets.length;
+      point.exerciseCount = (point.exerciseCount || 0) + 1;
+      point.averageWeight += allWeights.length > 0 ? calculateAverageWeight(sets) : 0;
+      point.averageReps += sets.length > 0 ? calculateAverageReps(sets) : 0;
+    });
+
+  srpeLogs.forEach((log) => {
+    const point = ensurePoint(log.date);
+    point.volume += log.sessionLoad || 0;
+    point.exerciseCount = (point.exerciseCount || 0) + (log.sessionCount || 1);
+  });
+
+  return Array.from(pointsByDate.values())
+    .map((point) => {
+      const divisor = point.exerciseCount || 1;
+
+      return {
+        ...point,
+        volume: Math.round(point.volume),
+        averageWeight: Math.round((point.averageWeight / divisor) * 10) / 10,
+        averageReps: Math.round((point.averageReps / divisor) * 10) / 10,
+      };
+    })
+    .sort((a, b) => a.date.localeCompare(b.date));
+};
+
+const aggregateLoadPoints = (
+  dailyPoints: LoadChartPoint[],
+  resolution: LoadChartResolution
+): LoadChartPoint[] => {
+  if (resolution === 'day') return dailyPoints;
+
+  const groups = new Map<string, LoadChartPoint[]>();
+
+  dailyPoints.forEach((point) => {
+    const pointDate = dateKeyToLocalDate(point.date);
+    if (!pointDate) return;
+
+    const groupKey = resolution === 'week'
+      ? toLocalDateString(startOfLocalWeek(pointDate))
+      : point.date.slice(0, 7);
+    const existing = groups.get(groupKey) || [];
+    groups.set(groupKey, [...existing, point]);
+  });
+
+  return Array.from(groups.entries())
+    .map(([groupKey, points]): LoadChartPoint => {
+      const firstPoint = points[0];
+      const lastPoint = points[points.length - 1];
+      const totalLoad = points.reduce((sum, point) => sum + point.volume, 0);
+      const totalSets = points.reduce((sum, point) => sum + point.totalSets, 0);
+      const totalExerciseCount = points.reduce((sum, point) => sum + (point.exerciseCount || 0), 0);
+      const expectedDays = resolution === 'week'
+        ? 7
+        : new Date(Number(groupKey.slice(0, 4)), Number(groupKey.slice(5, 7)), 0).getDate();
+      const daysIncluded = points.length;
+      const isPartial = daysIncluded < expectedDays;
+      const startDate = firstPoint.date;
+      const endDate = lastPoint.date;
+      const start = dateKeyToLocalDate(startDate) || new Date(startDate);
+      const end = dateKeyToLocalDate(endDate) || new Date(endDate);
+      const label = resolution === 'week'
+        ? `${format(start, 'MMM d')} - ${format(end, 'MMM d')}`
+        : format(start, 'MMM');
+
+      return {
+        date: startDate,
+        periodStartDate: startDate,
+        periodEndDate: endDate,
+        label,
+        volume: Math.round(totalLoad),
+        totalSets,
+        averageWeight: 0,
+        averageReps: 0,
+        exerciseName: resolution === 'week' ? 'Weekly load' : 'Monthly load',
+        exerciseCount: totalExerciseCount,
+        isPartial,
+        daysIncluded,
+        expectedDays,
+      };
+    })
+    .sort((a, b) => a.date.localeCompare(b.date));
+};
+
+const getLoadChartTitle = (timeframe: Timeframe): string => {
+  if (timeframe === 'month') return 'Weekly Load';
+  if (timeframe === 'year') return 'Monthly Load';
+  return 'Daily Load';
+};
+
+const getLoadChartLegend = (timeframe: Timeframe): string => {
+  if (timeframe === 'month') return 'Weekly total load';
+  if (timeframe === 'year') return 'Monthly total load';
+  return 'Daily load';
 };
 
 const getPreviousRange = (range: DateRange): DateRange => {
@@ -126,10 +309,11 @@ const getStatusClass = (status: MuscleGroupAnalytics['status']): string => {
 
 // ── SVG area chart for daily training volume ──────────────────────────────────
 interface AreaChartProps {
-  dataPoints: VolumeDataPoint[];
+  dataPoints: LoadChartPoint[];
+  legendLabel: string;
 }
 
-const VolumeAreaChart: React.FC<AreaChartProps> = ({ dataPoints }) => {
+const VolumeAreaChart: React.FC<AreaChartProps> = ({ dataPoints, legendLabel }) => {
   const W = 600;
   const H = 120;
   const PADDING = { top: 8, right: 8, bottom: 28, left: 44 };
@@ -170,7 +354,7 @@ const VolumeAreaChart: React.FC<AreaChartProps> = ({ dataPoints }) => {
         viewBox={`0 0 ${W} ${H}`}
         className="min-w-[520px] w-full"
         role="img"
-        aria-label="Daily volume area chart"
+        aria-label={`${legendLabel} area chart`}
       >
         <defs>
           <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
@@ -225,11 +409,15 @@ const VolumeAreaChart: React.FC<AreaChartProps> = ({ dataPoints }) => {
             key={p.date}
             cx={toX(i)}
             cy={toY(p.volume)}
-            r={3}
-            fill="var(--color-accent-primary, #54acbf)"
+            r={p.isPartial ? 4 : 3}
+            fill={p.isPartial ? 'var(--color-bg-secondary, #e9f6f8)' : 'var(--color-accent-primary, #54acbf)'}
+            stroke="var(--color-accent-primary, #54acbf)"
+            strokeWidth={p.isPartial ? 2 : 0}
             className="drop-shadow"
           >
-            <title>{`${format(new Date(p.date), 'MMM d')}: ${formatTrainingVolume(p.volume)} volume, ${p.totalSets} sets, avg ${formatNumberCompact(Math.round(p.averageWeight))} kg`}</title>
+            <title>
+              {`${p.label}: ${formatTrainingVolume(p.volume)} load, ${p.totalSets} sets${p.exerciseCount ? `, ${p.exerciseCount} entries` : ''}${p.isPartial ? `, partial (${p.daysIncluded}/${p.expectedDays} days)` : ''}`}
+            </title>
           </circle>
         ))}
 
@@ -245,16 +433,23 @@ const VolumeAreaChart: React.FC<AreaChartProps> = ({ dataPoints }) => {
             className="text-text-secondary"
             fillOpacity={0.9}
           >
-            {format(new Date(dataPoints[i].date), 'MMM d')}
+            {dataPoints[i].label}
+            {dataPoints[i].isPartial ? '*' : ''}
           </text>
         ))}
       </svg>
       <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-text-secondary">
         <span className="inline-flex items-center gap-2">
           <span className="h-2.5 w-2.5 rounded-full bg-accent-primary shadow-glow" />
-          Daily volume
+          {legendLabel}
         </span>
-        <span>Point tooltips include exact date, volume, sets, and average weight.</span>
+        {dataPoints.some((point) => point.isPartial) && (
+          <span className="inline-flex items-center gap-2 text-warning-text">
+            <span className="h-2.5 w-2.5 rounded-full border-2 border-accent-primary bg-bg-secondary" />
+            * Partial period
+          </span>
+        )}
+        <span>Point tooltips include period, total load, sets, and entries.</span>
       </div>
     </div>
   );
@@ -337,10 +532,14 @@ const AnalyticsDashboard: React.FC = () => {
     void loadAnalytics();
   }, [range, user?.id]);
 
-  const dailyVolume = useMemo(
-    () => AnalyticsService.calculateDailyVolumes(currentExercises, 'day'),
-    [currentExercises]
-  );
+  const loadChartResolution = useMemo(() => getLoadChartResolution(timeframe), [timeframe]);
+  const loadChartData = useMemo(() => {
+    const dailyLoadPoints = buildDailyLoadPoints(currentExercises, currentSrpeLogs, range);
+    return aggregateLoadPoints(dailyLoadPoints, loadChartResolution);
+  }, [currentExercises, currentSrpeLogs, loadChartResolution, range]);
+  const hasLoadChartData = loadChartData.some((point) => point.volume > 0);
+  const loadChartTitle = useMemo(() => getLoadChartTitle(timeframe), [timeframe]);
+  const loadChartLegend = useMemo(() => getLoadChartLegend(timeframe), [timeframe]);
 
   const summary = useMemo(() => {
     if (!user?.id) return null;
@@ -483,17 +682,17 @@ const AnalyticsDashboard: React.FC = () => {
           </section>
 
           <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            <DashboardSection title="Daily Volume" className="lg:col-span-2">
-              {dailyVolume.length === 0 ? (
+            <DashboardSection title={loadChartTitle} className="lg:col-span-2">
+              {!hasLoadChartData ? (
                 <div className="mt-4 rounded-xl border border-border bg-bg-tertiary p-4">
                   <EmptyState
-                    title="No volume data"
-                    description="Log resistance sets with weight and reps in this period to populate the volume chart."
+                    title="No load data"
+                    description="Log sets, activity effort, or sports load in this period to populate the load chart."
                     illustration="chart"
                   />
                 </div>
               ) : (
-                <VolumeAreaChart dataPoints={dailyVolume} />
+                <VolumeAreaChart dataPoints={loadChartData} legendLabel={loadChartLegend} />
               )}
             </DashboardSection>
 

@@ -62,8 +62,7 @@ const activityTypes = [
     description: 'Weight lifting, strength training',
     icon: '🏋️‍♂️',
     accentTextColor: 'text-activity-resistance',
-    iconBgColor: 'bg-activity-resistance-bg',
-    examples: 'Squats, Deadlifts, Bench Press'
+    iconBgColor: 'bg-activity-resistance-bg'
   },
   {
     id: 'stretching',
@@ -71,8 +70,7 @@ const activityTypes = [
     description: 'Static stretches, yoga, mobility',
     icon: '🧘‍♀️',
     accentTextColor: 'text-activity-stretching',
-    iconBgColor: 'bg-activity-stretching-bg',
-    examples: 'Yoga, Static Stretches, PNF'
+    iconBgColor: 'bg-activity-stretching-bg'
   },
   {
     id: 'endurance',
@@ -80,8 +78,7 @@ const activityTypes = [
     description: 'Cardio, running, cycling',
     icon: '🏃‍♂️',
     accentTextColor: 'text-activity-endurance',
-    iconBgColor: 'bg-activity-endurance-bg',
-    examples: 'Running, Cycling, Swimming'
+    iconBgColor: 'bg-activity-endurance-bg'
   },
   {
     id: 'speedAgility',
@@ -89,8 +86,7 @@ const activityTypes = [
     description: 'Sprints, jumps, plyometrics, change of direction',
     icon: '⚡',
     accentTextColor: 'text-activity-speed',
-    iconBgColor: 'bg-activity-speed-bg',
-    examples: 'Plyometrics, Ladder, Sprints, Jumps'
+    iconBgColor: 'bg-activity-speed-bg'
   },
   {
     id: 'other',
@@ -98,8 +94,7 @@ const activityTypes = [
     description: 'Custom activities and tracking',
     icon: '🎯',
     accentTextColor: 'text-activity-other',
-    iconBgColor: 'bg-activity-other-bg',
-    examples: 'Meditation, Therapy, Custom'
+    iconBgColor: 'bg-activity-other-bg'
   }
 ];
 
@@ -759,9 +754,6 @@ export const LogOptions = ({
           <h2 className="text-xl font-bold text-text-primary">
             {editingExercise ? 'Edit Exercise' : 'Add Exercise'}
           </h2>
-          <p className="mt-1 text-sm text-text-tertiary">
-            Choose how you want to add training to this session.
-          </p>
         </div>
         <button 
           onClick={onClose}
@@ -794,16 +786,13 @@ export const LogOptions = ({
                       setView('copyPrevious');
                     }
                   }}
-                  className="group flex min-h-[88px] items-center gap-4 rounded-2xl border border-border bg-bg-secondary p-4 text-left text-text-primary transition-colors hover:border-border-hover hover:bg-hover-overlay active:bg-active-overlay focus:outline-none focus:ring-2 focus:ring-focus-ring"
+                  className="group flex min-h-[72px] items-center gap-4 rounded-2xl border border-border bg-bg-secondary p-4 text-left text-text-primary transition-colors hover:border-border-hover hover:bg-hover-overlay active:bg-active-overlay focus:outline-none focus:ring-2 focus:ring-focus-ring"
                 >
                   <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-accent-primary text-2xl text-text-on-accent shadow-sm transition-transform group-active:scale-95">
                     {category.icon}
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block font-semibold">{category.name}</span>
-                    <span className="mt-1 block text-sm text-text-tertiary">
-                      {category.id === 'programs' ? 'Pick exercises from a plan' : 'Repeat sets from history'}
-                    </span>
                   </span>
                   <svg className="h-5 w-5 shrink-0 text-text-tertiary transition-transform group-hover:translate-x-0.5 group-hover:text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -811,28 +800,12 @@ export const LogOptions = ({
                 </button>
               ))}
             </div>
-            <div className="w-full rounded-2xl border border-border bg-bg-secondary px-4 py-3 text-text-primary">
-              <div className="flex items-start gap-3">
-                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-info-bg text-info-text">
-                  <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                    <path fillRule="evenodd" d="M18 10A8 8 0 112 10a8 8 0 0116 0zM9 9a1 1 0 000 2v4a1 1 0 102 0v-4a1 1 0 00-1-1H9zm1-4a1.25 1.25 0 100 2.5A1.25 1.25 0 0010 5z" clipRule="evenodd" />
-                  </svg>
-                </span>
-                <div>
-                  <div className="font-semibold">
-                    Saving to {effectiveSessionType === 'warmup' ? 'Warm-up session' : 'Session'}
-                  </div>
-                  <div className="text-sm text-text-secondary">Session type follows the selected item in the session switcher.</div>
-                </div>
-              </div>
-            </div>
           </section>
 
           {/* Activity Types Section */}
           <section className="space-y-3 md:space-y-4">
             <div>
               <h3 className="text-sm font-semibold uppercase tracking-wide text-text-tertiary">Choose Activity Type</h3>
-              <p className="mt-1 text-sm text-text-secondary">Start a new log with the right fields for the activity.</p>
             </div>
             <div className="grid grid-cols-1 gap-3">
               {activityTypes.map(activityType => (
@@ -852,9 +825,6 @@ export const LogOptions = ({
                       </h4>
                       <p className="mt-0.5 text-sm text-text-secondary">
                         {activityType.description}
-                      </p>
-                      <p className="mt-1 text-xs text-text-tertiary">
-                        {activityType.examples}
                       </p>
                     </div>
                     <div className="text-text-tertiary transition-transform group-hover:translate-x-0.5 group-hover:text-text-secondary">

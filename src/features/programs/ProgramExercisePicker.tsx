@@ -6,7 +6,6 @@ import { ActivityType } from '@/types/activityTypes';
 import { normalizeActivityType } from '@/types/activityLog';
 import { formatPrescriptionBadge } from '@/utils/prescriptionUtils';
 import { resolveActivityTypeFromExerciseLike } from '@/utils/activityTypeResolver';
-import ProgramCard from './ProgramCard';
 import { usePrograms } from '@/context/ProgramsContext';
 import UniversalExercisePicker from '@/components/activities/UniversalExercisePicker';
 import { getMergedExercisesByAllActivityTypes } from '@/services/exerciseDatabaseService';
@@ -63,6 +62,16 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
   const [libraryExercises, setLibraryExercises] = React.useState<Exercise[]>([]);
   const [librarySelectedMap, setLibrarySelectedMap] = React.useState<Record<string, boolean>>({});
   const [isLibraryLoading, setIsLibraryLoading] = React.useState(false);
+
+  const getProgramSummary = React.useCallback((program: Program) => {
+    const sessions = program.sessions || [];
+    const exerciseCount = sessions.reduce((total, session) => total + (session.exercises?.length || 0), 0);
+
+    return {
+      sessionCount: sessions.length,
+      exerciseCount,
+    };
+  }, []);
 
   const libraryEnriched = React.useMemo(
     () => libraryExercises.map((exercise) => ({ ...exercise, tags: Array.isArray(exercise.tags) ? exercise.tags : [] })),
@@ -413,14 +422,49 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
           <div className="p-4 md:p-6 space-y-4">
             {step === 'programs' && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-                {programs.map(program => (
-                  <ProgramCard
-                    key={program.id}
-                    program={program}
-                    onClick={() => handleProgramSelect(program)}
-                  />
-                ))}
+              <div className="space-y-2">
+                {programs.map(program => {
+                  const summary = getProgramSummary(program);
+
+                  return (
+                    <button
+                      key={program.id}
+                      onClick={() => handleProgramSelect(program)}
+                      className="group flex w-full items-center gap-3 rounded-2xl border border-border bg-bg-tertiary px-4 py-3 text-left transition-colors hover:border-border-hover hover:bg-hover-overlay active:bg-active-overlay focus:outline-none focus:ring-2 focus:ring-focus-ring"
+                    >
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-bg-secondary text-lg text-accent-primary">
+                        📋
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-semibold text-text-primary">
+                          {program.name}
+                        </span>
+                        <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-text-tertiary">
+                          <span>
+                            {summary.sessionCount} sessions
+                          </span>
+                          <span aria-hidden="true">•</span>
+                          <span>
+                            {summary.exerciseCount} exercises
+                          </span>
+                          {program.tags?.slice(0, 2).map(tag => (
+                            <span key={tag} className="rounded-full bg-bg-secondary px-2 py-0.5 text-xs text-text-secondary">
+                              {tag}
+                            </span>
+                          ))}
+                        </span>
+                        {program.description && (
+                          <span className="mt-1 block truncate text-sm text-text-secondary">
+                            {program.description}
+                          </span>
+                        )}
+                      </span>
+                      <svg className="h-5 w-5 shrink-0 text-text-tertiary transition-transform group-hover:translate-x-0.5 group-hover:text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  );
+                })}
               </div>
             )}
 

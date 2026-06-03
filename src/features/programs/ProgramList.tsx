@@ -5,7 +5,7 @@ import CreateNewProgram from './CreateNewProgram';
 import { Program } from '@/types/program';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { TrashIcon, PlusIcon, DuplicateIcon } from '@heroicons/react/outline';
-import { Button, ConfirmDialog, EmptyState, MetricChip, ViewToggle } from '@/components/ui';
+import { Button, ConfirmDialog, EmptyState, ViewToggle } from '@/components/ui';
 import { formatRelativeDate } from '@/utils/displayFormatters';
 
 type ProgramViewMode = 'compact' | 'detailed';
@@ -21,6 +21,16 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
   const [viewMode, setViewMode] = useState<ProgramViewMode>('compact');
 
   // No need for useEffect to refresh - ProgramsContext handles this automatically
+
+  const getProgramSummary = (program: Program) => {
+    const sessions = program.sessions || [];
+    const exerciseCount = sessions.reduce((total, session) => total + (session.exercises?.length || 0), 0);
+
+    return {
+      sessionCount: sessions.length,
+      exerciseCount,
+    };
+  };
 
   const handleCreateNewSave = async (program: Omit<Program, 'id' | 'userId'>) => {
     try {
@@ -145,73 +155,89 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
           />
         </div>
       ) : (
-        <div className={viewMode === 'compact' ? 'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3' : 'space-y-4'}>
-          {programs.map((program: Program) => (
-            <div
-              key={program.id}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' || event.key === ' ') {
-                  event.preventDefault();
-                  onSelect ? onSelect(program.id) : navigate(`/programs/${program.id}`);
-                }
-              }}
-              className={`relative flex cursor-pointer flex-col justify-between rounded-2xl border border-border bg-bg-secondary p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-primary hover:shadow-glow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring ${viewMode === 'compact' ? 'min-h-[178px]' : 'min-h-[140px]'}`}
-              onClick={() => (onSelect ? onSelect(program.id) : navigate(`/programs/${program.id}`))}
-            >
-              <div className="flex h-full flex-col justify-between">
-                <div>
-                  <div className="mb-3 flex items-start justify-between gap-3">
-                    <h3 className="text-lg font-semibold text-text-primary">{program.name}</h3>
-                    <span className="rounded-full border border-border-focus bg-accent-100 px-2.5 py-1 text-xs font-semibold text-accent-700">
-                      {program.sessions?.length || 0} sessions
-                    </span>
+        <div className="space-y-2">
+          {programs.map((program: Program) => {
+            const summary = getProgramSummary(program);
+
+            return (
+              <div
+                key={program.id}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    onSelect ? onSelect(program.id) : navigate(`/programs/${program.id}`);
+                  }
+                }}
+                className="group flex cursor-pointer items-center gap-3 rounded-2xl border border-border bg-bg-secondary px-4 py-3 text-left transition-colors hover:border-border-hover hover:bg-hover-overlay active:bg-active-overlay focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+                onClick={() => (onSelect ? onSelect(program.id) : navigate(`/programs/${program.id}`))}
+              >
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-bg-tertiary text-lg text-accent-primary">
+                  📋
+                </span>
+
+                <div className="min-w-0 flex-1">
+                  <h3 className="truncate font-semibold text-text-primary">{program.name}</h3>
+
+                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-text-tertiary">
+                    <span>{summary.sessionCount} sessions</span>
+                    <span aria-hidden="true">•</span>
+                    <span>{summary.exerciseCount} exercises</span>
+                    {viewMode === 'detailed' && (
+                      <>
+                        <span aria-hidden="true">•</span>
+                        <span>Updated {formatRelativeDate(program.updatedAt || program.createdAt)}</span>
+                      </>
+                    )}
+                    {program.tags?.slice(0, viewMode === 'detailed' ? 3 : 2).map(tag => (
+                      <span key={tag} className="rounded-full bg-bg-tertiary px-2 py-0.5 text-xs text-text-secondary">
+                        {tag}
+                      </span>
+                    ))}
                   </div>
+
                   {program.description && (
-                    <p className={`text-sm text-text-tertiary ${viewMode === 'compact' ? 'line-clamp-2' : ''}`}>{program.description}</p>
+                    <p className={`mt-1 text-sm text-text-secondary ${viewMode === 'compact' ? 'truncate' : 'line-clamp-2'}`}>
+                      {program.description}
+                    </p>
                   )}
                 </div>
-                
-                <div className="mt-4 flex items-center justify-between gap-3">
-                  <div className="flex flex-wrap gap-2">
-                    <MetricChip label="Exercises" value={(program.sessions || []).reduce((count, session) => count + (session.exercises?.length || 0), 0)} />
-                    {viewMode === 'detailed' && (
-                      <MetricChip label="Updated" value={formatRelativeDate(program.updatedAt || program.createdAt)} tone="info" />
+
+                <div className="flex shrink-0 items-center gap-2">
+                  <button
+                    onClick={(e) => handleDuplicateProgram(program.id, program.name, e)}
+                    disabled={duplicatingProgramId === program.id}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-bg-tertiary text-text-primary transition-colors hover:border-accent-primary hover:text-accent-primary disabled:cursor-not-allowed disabled:opacity-50"
+                    title="Duplicate program"
+                    aria-label={`Duplicate program ${program.name}`}
+                  >
+                    {duplicatingProgramId === program.id ? (
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    ) : (
+                      <DuplicateIcon className="h-4 w-4" />
                     )}
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={(e) => handleDuplicateProgram(program.id, program.name, e)}
-                      disabled={duplicatingProgramId === program.id}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-bg-tertiary text-text-primary transition-colors hover:border-accent-primary hover:text-accent-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Duplicate program"
-                      aria-label={`Duplicate program ${program.name}`}
-                    >
-                      {duplicatingProgramId === program.id ? (
-                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                      ) : (
-                        <DuplicateIcon className="w-4 h-4" />
-                      )}
-                    </button>
-                    <button
-                      onClick={(e) => handleDeleteProgram(program.id, program.name, e)}
-                      disabled={deletingProgramId === program.id}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-error-border bg-error-bg text-error-text transition-colors hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Delete program"
-                      aria-label={`Delete program ${program.name}`}
-                    >
-                      {deletingProgramId === program.id ? (
-                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                      ) : (
-                        <TrashIcon className="w-4 h-4" />
-                      )}
-                    </button>
-                  </div>
+                  </button>
+                  <button
+                    onClick={(e) => handleDeleteProgram(program.id, program.name, e)}
+                    disabled={deletingProgramId === program.id}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-error-border bg-error-bg text-error-text transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                    title="Delete program"
+                    aria-label={`Delete program ${program.name}`}
+                  >
+                    {deletingProgramId === program.id ? (
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    ) : (
+                      <TrashIcon className="h-4 w-4" />
+                    )}
+                  </button>
+                  <svg className="hidden h-5 w-5 text-text-tertiary transition-transform group-hover:translate-x-0.5 group-hover:text-text-secondary sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
       
