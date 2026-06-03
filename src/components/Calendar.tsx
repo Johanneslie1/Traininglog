@@ -9,6 +9,22 @@ interface CalendarProps {
   selectedDate?: Date;
 }
 
+const getSessionCountClass = (sessionCount: number): string => {
+  if (sessionCount >= 4) {
+    return 'bg-accent-primary text-white shadow-lg shadow-accent-primary/30 hover:brightness-110';
+  }
+  if (sessionCount === 3) {
+    return 'bg-status-warning text-white shadow-lg shadow-status-warning/30 hover:brightness-110';
+  }
+  if (sessionCount === 2) {
+    return 'bg-status-success text-white shadow-lg shadow-status-success/30 hover:brightness-110';
+  }
+  if (sessionCount === 1) {
+    return 'bg-status-info text-white shadow-lg shadow-status-info/25 hover:brightness-110';
+  }
+  return 'text-text-tertiary hover:bg-bg-tertiary hover:text-text-secondary';
+};
+
 const Calendar: React.FC<CalendarProps> = ({ onDayClick, selectedDate }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [calendarDays, setCalendarDays] = useState<CalendarDaySummary[]>([]);
@@ -102,7 +118,15 @@ const Calendar: React.FC<CalendarProps> = ({ onDayClick, selectedDate }) => {
         </div>
         <div className="inline-flex items-center gap-2 rounded-full bg-bg-tertiary px-3 py-1.5">
           <span className="h-3.5 w-3.5 rounded-full bg-status-success shadow-sm shadow-status-success/30" aria-hidden="true"></span>
-          <span>2+ sessions</span>
+          <span>2 sessions</span>
+        </div>
+        <div className="inline-flex items-center gap-2 rounded-full bg-bg-tertiary px-3 py-1.5">
+          <span className="h-3.5 w-3.5 rounded-full bg-status-warning shadow-sm shadow-status-warning/30" aria-hidden="true"></span>
+          <span>3 sessions</span>
+        </div>
+        <div className="inline-flex items-center gap-2 rounded-full bg-bg-tertiary px-3 py-1.5">
+          <span className="h-3.5 w-3.5 rounded-full bg-accent-primary shadow-sm shadow-accent-primary/30" aria-hidden="true"></span>
+          <span>4+ sessions</span>
         </div>
       </div>
 
@@ -121,11 +145,7 @@ const Calendar: React.FC<CalendarProps> = ({ onDayClick, selectedDate }) => {
           const hasSessions = sessionCount > 0;
           const isSelected = selectedDate && isSameDay(selectedDate, day);
           const isTodayDay = isToday(day);
-          const sessionStateClass = sessionCount >= 2
-            ? 'bg-status-success text-white shadow-lg shadow-status-success/30 hover:brightness-110'
-            : sessionCount === 1
-              ? 'bg-status-info text-white shadow-lg shadow-status-info/25 hover:brightness-110'
-              : 'text-text-tertiary hover:bg-bg-tertiary hover:text-text-secondary';
+          const sessionStateClass = getSessionCountClass(sessionCount);
           const selectedStateClass = isSelected
             ? hasSessions
               ? 'scale-[1.03] -translate-y-0.5 shadow-xl'

@@ -120,9 +120,10 @@ const getSessionDisplayName = (sessionType: unknown, sessionNumberInDay: unknown
   const number = typeof sessionNumberInDay === 'number' && sessionNumberInDay > 0
     ? sessionNumberInDay
     : 1;
-  return normalizeSessionType(sessionType) === 'warmup'
-    ? `Warm-up ${number}`
-    : `Session ${number}`;
+  const normalizedType = normalizeSessionType(sessionType);
+  if (normalizedType === 'warmup') return `Warm-up ${number}`;
+  if (normalizedType === 'srpe') return `sRPE ${number}`;
+  return `Session ${number}`;
 };
 
 const readLegacySupersetDataForDate = (dateKey: string): { supersets: SupersetGroup[]; exerciseOrder: string[] } => {

@@ -337,12 +337,13 @@ export class AnalyticsService {
 
       srpeLogs.forEach((log) => {
         const acc = getOrCreate('sportsLoad', 'Sports load', ActivityType.SPORT);
-        acc.sessionCount += 1;
-        acc.exerciseCount += 1;
+        const sessionCount = log.sessionCount || 1;
+        acc.sessionCount += sessionCount;
+        acc.exerciseCount += sessionCount;
         acc.totalDurationMinutes += log.durationMinutes || 0;
         acc.totalLoad += log.sessionLoad || 0;
-        acc.rpeTotal += log.rpe || 0;
-        acc.rpeCount += log.rpe ? 1 : 0;
+        acc.rpeTotal += (log.rpe || 0) * sessionCount;
+        acc.rpeCount += log.rpe ? sessionCount : 0;
         acc.exerciseLoads.set(log.sportName || 'Sports load', (acc.exerciseLoads.get(log.sportName || 'Sports load') || 0) + (log.sessionLoad || 0));
       });
 

@@ -10,9 +10,9 @@ import { UnifiedExerciseData } from '@/utils/unifiedExerciseUtils';
 import { ActivityAnalytics, MuscleGroupAnalytics, PRType, VolumeDataPoint } from '@/types/analytics';
 import { Exercise } from '@/types/exercise';
 import { SrpeLog } from '@/types/srpe';
-import { WellnessLog } from '@/types/wellness';
+import { WELLNESS_METRICS, WellnessLog } from '@/types/wellness';
 import { addDays, dateKeyToLocalDate, endOfDay, startOfDay, startOfLocalWeek, toLocalDateString } from '@/utils/dateUtils';
-import type { CoachRatingsDashboardData } from '@/types/coachRatings';
+import type { CoachRatingStatus, CoachRatingsDashboardData, CoachRatingsRow } from '@/types/coachRatings';
 import { EmptyState, DashboardSection, MetricChip } from '@/components/ui';
 import { formatNumberCompact, formatTrainingVolume } from '@/utils/displayFormatters';
 import { formatMuscleName } from '@/utils/chartDataFormatters';
@@ -455,6 +455,180 @@ const VolumeAreaChart: React.FC<AreaChartProps> = ({ dataPoints, legendLabel }) 
   );
 };
 
+const compactStatusClass: Record<CoachRatingStatus, string> = {
+  good: 'border-success-border bg-success-bg text-success-text',
+  watch: 'border-warning-border bg-warning-bg text-warning-text',
+  outlier: 'border-error-border bg-error-bg text-error-text',
+  missing: 'border-border bg-bg-tertiary text-text-tertiary',
+};
+
+const getCompactMetricValue = (value: React.ReactNode, fallback = '-'): React.ReactNode => (
+  value === null || value === undefined || value === '' ? fallback : value
+);
+
+interface DailyMetricRowProps {
+  summary: ReturnType<typeof AnalyticsService.calculateAnalyticsSummary>;
+  healthRow: CoachRatingsRow | null;
+  selectedLoad: number;
+}
+
+const DailyMetricRow: React.FC<DailyMetricRowProps> = ({ summary, healthRow, selectedLoad }) => {
+  const readiness = healthRow?.wellnessSnapshot.metricValues.readiness;
+  const duration = healthRow?.dailySrpe.submitted ? healthRow.dailySrpe.durationMinutes : 0;
+  const averageRpe = healthRow?.dailySrpe.rpe;
+  const metrics = [
+    { label: 'Load', value: formatTrainingVolume(selectedLoad) },
+    { label: 'Workouts', value: summary.totalWorkouts },
+    { label: 'Sets', value: summary.totalSets },
+    { label: 'Duration', value: duration > 0 ? `${duration} min` : '-' },
+    { label: 'Readiness', value: readiness ? `${readiness}/5` : '-' },
+    { label: 'RPE', value: averageRpe ?? '-' },
+  ];
+
+  return (
+    <section className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
+      {metrics.map((metric) => (
+        <div key={metric.label} className="rounded-xl border border-border bg-bg-secondary px-3 py-3">
+          <p className="text-[11px] uppercase tracking-wide text-text-tertiary">{metric.label}</p>
+          <p className="mt-1 truncate text-xl font-bold text-text-primary">{getCompactMetricValue(metric.value)}</p>
+        </div>
+      ))}
+    </section>
+  );
+};
+
+interface WellnessStripProps {
+  healthRow: CoachRatingsRow | null;
+}
+
+const WellnessStrip: React.FC<WellnessStripProps> = ({ healthRow }) => (
+  <section className="rounded-xl border border-border bg-bg-secondary p-3">
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <p className="text-sm font-semibold text-text-primary">Wellness</p>
+        <p className="text-xs text-text-secondary">
+          {healthRow?.wellnessSnapshot.submitted ? 'Selected-day check-in' : 'No wellness check-in for this day'}
+        </p>
+      </div>
+      <span className={`w-fit rounded-full border px-2.5 py-1 text-xs font-medium ${compactStatusClass[healthRow?.status ?? 'missing']}`}>
+        {healthRow?.status ?? 'missing'}
+      </span>
+    </div>
+
+    <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+      {WELLNESS_METRICS.map((metric) => {
+        const value = healthRow?.wellnessSnapshot.metricValues[metric.key];
+        const status = healthRow?.wellnessSnapshot.metrics.find((item) => item.key === metric.key)?.status ?? 'missing';
+
+        return (
+          <div
+            key={metric.key}
+            className={`rounded-lg border px-2.5 py-2 ${compactStatusClass[status]}`}
+            title={metric.description}
+          >
+            <p className="truncate text-[11px] uppercase tracking-wide opacity-80">{metric.label}</p>
+            <p className="mt-0.5 text-base font-semibold">{value ? `${value}/5` : '-'}</p>
+          </div>
+        );
+      })}
+    </div>
+  </section>
+);
+
+interface SevenDayLoadStripProps {
+  dataPoints: LoadChartPoint[];
+}
+
+const SevenDayLoadStrip: React.FC<SevenDayLoadStripProps> = ({ dataPoints }) => {
+  const maxLoad = Math.max(...dataPoints.map((point) => point.volume), 1);
+  const hasLoad = dataPoints.some((point) => point.volume > 0);
+
+  return (
+    <DashboardSection title="7-Day Load Context" className="h-full">
+      {hasLoad ? (
+        <div className="mt-4 grid grid-cols-7 items-end gap-2">
+          {dataPoints.map((point) => {
+            const height = Math.max(10, Math.round((point.volume / maxLoad) * 92));
+
+            return (
+              <div key={point.date} className="flex min-w-0 flex-col items-center gap-2">
+                <div className="flex h-24 w-full items-end justify-center rounded-lg bg-bg-tertiary px-1.5 py-2">
+                  <div
+                    className="w-full max-w-7 rounded-t-md bg-accent-primary"
+                    style={{ height: `${height}%` }}
+                    title={`${point.label}: ${formatTrainingVolume(point.volume)} load`}
+                  />
+                </div>
+                <div className="min-w-0 text-center">
+                  <p className="truncate text-[11px] font-medium text-text-primary">{point.label}</p>
+                  <p className="text-[10px] text-text-tertiary">{formatNumberCompact(point.volume)}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <p className="mt-3 rounded-xl border border-border bg-bg-tertiary p-3 text-sm text-text-secondary">
+          No load logged in the last 7 days.
+        </p>
+      )}
+    </DashboardSection>
+  );
+};
+
+interface DailyTrainingCompositionProps {
+  activityAnalytics: ActivityAnalytics[];
+  summary: ReturnType<typeof AnalyticsService.calculateAnalyticsSummary>;
+  healthRow: CoachRatingsRow | null;
+}
+
+const DailyTrainingComposition: React.FC<DailyTrainingCompositionProps> = ({ activityAnalytics, summary, healthRow }) => {
+  const hasTraining = summary.totalWorkouts > 0 || activityAnalytics.length > 0 || Boolean(healthRow?.dailySrpe.submitted);
+
+  return (
+    <DashboardSection title="Today's Training">
+      {hasTraining ? (
+        <div className="mt-3 space-y-2">
+          {activityAnalytics.slice(0, 4).map((row) => (
+            <div key={row.activityKey} className="rounded-lg border border-border bg-bg-tertiary px-3 py-2 text-sm">
+              <div className="flex items-center justify-between gap-3">
+                <span className="font-medium text-text-primary">{row.label}</span>
+                <span className="font-semibold text-text-primary">{formatNumberCompact(row.totalLoad)} load</span>
+              </div>
+              <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-text-secondary">
+                <span>{row.sessionCount} sessions</span>
+                {row.totalSets > 0 && <span>{row.totalSets} sets</span>}
+                {row.totalDurationMinutes > 0 && <span>{row.totalDurationMinutes} min</span>}
+                {row.averageRpe > 0 && <span>RPE {row.averageRpe}</span>}
+              </div>
+            </div>
+          ))}
+
+          {healthRow?.dailySrpe.submitted ? (
+            <div className="rounded-lg border border-border bg-bg-tertiary px-3 py-2 text-sm">
+              <div className="flex items-center justify-between gap-3">
+                <span className="font-medium text-text-primary">Sports load</span>
+                <span className="font-semibold text-text-primary">
+                  {formatNumberCompact(healthRow.dailySrpe.sessionLoad ?? 0)} load
+                </span>
+              </div>
+              <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-text-secondary">
+                <span>{healthRow.dailySrpe.durationMinutes} min</span>
+                <span>RPE {healthRow.dailySrpe.rpe ?? '-'}</span>
+                <span>ACWR {healthRow.acwr.ratio?.toFixed(2) ?? '-'}</span>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      ) : (
+        <p className="mt-3 rounded-xl border border-border bg-bg-tertiary p-3 text-sm text-text-secondary">
+          No training logged for this day.
+        </p>
+      )}
+    </DashboardSection>
+  );
+};
+
 const AnalyticsDashboard: React.FC = () => {
   const { user } = useAuth();
   const [timeframe, setTimeframe] = useState<Timeframe>('month');
@@ -464,6 +638,8 @@ const AnalyticsDashboard: React.FC = () => {
   const [previousExercises, setPreviousExercises] = useState<UnifiedExerciseData[]>([]);
   const [currentSrpeLogs, setCurrentSrpeLogs] = useState<SrpeLog[]>([]);
   const [previousSrpeLogs, setPreviousSrpeLogs] = useState<SrpeLog[]>([]);
+  const [loadContextExercises, setLoadContextExercises] = useState<UnifiedExerciseData[]>([]);
+  const [loadContextSrpeLogs, setLoadContextSrpeLogs] = useState<SrpeLog[]>([]);
   const [currentWellnessLogs, setCurrentWellnessLogs] = useState<WellnessLog[]>([]);
   const [healthDashboard, setHealthDashboard] = useState<CoachRatingsDashboardData | null>(null);
 
@@ -489,19 +665,23 @@ const AnalyticsDashboard: React.FC = () => {
         const currentEnd = toLocalDateString(range.endDate);
         const previousStart = toLocalDateString(previousRange.startDate);
         const previousEnd = toLocalDateString(previousRange.endDate);
+        const loadContextStartDate = timeframe === 'day' ? startOfDay(addDays(range.endDate, -6)) : range.startDate;
+        const loadContextStart = toLocalDateString(loadContextStartDate);
         const wellnessBaselineStart = toLocalDateString(addDays(range.endDate, -28));
         const srpeBaselineStart = toLocalDateString(addDays(range.endDate, -27));
         const healthWellnessStart = currentStart < wellnessBaselineStart ? currentStart : wellnessBaselineStart;
-        const healthSrpeStart = currentStart < srpeBaselineStart ? currentStart : srpeBaselineStart;
+        const healthSrpeStart = loadContextStart < srpeBaselineStart ? loadContextStart : srpeBaselineStart;
 
-        const [current, previous, previousSrpe, healthWellness, healthSrpe] = await Promise.all([
+        const [current, previous, previousSrpe, contextExercises, healthWellness, healthSrpe] = await Promise.all([
           AnalyticsService.getExercisesByDateRange(user.id, range.startDate, range.endDate),
           AnalyticsService.getExercisesByDateRange(user.id, previousRange.startDate, previousRange.endDate),
           getSrpeByDateRange(user.id, previousStart, previousEnd),
+          AnalyticsService.getExercisesByDateRange(user.id, loadContextStartDate, range.endDate),
           getWellnessByDateRange(user.id, healthWellnessStart, currentEnd),
           getSrpeByDateRange(user.id, healthSrpeStart, currentEnd),
         ]);
         const currentSrpe = healthSrpe.filter((log) => log.date >= currentStart && log.date <= currentEnd);
+        const contextSrpe = healthSrpe.filter((log) => log.date >= loadContextStart && log.date <= currentEnd);
         const currentWellness = healthWellness.filter((log) => log.date >= currentStart && log.date <= currentEnd);
         const nextHealthDashboard = buildSingleAthleteHealthDashboardData({
           athleteId: user.id,
@@ -519,6 +699,8 @@ const AnalyticsDashboard: React.FC = () => {
         setPreviousExercises(previous);
         setCurrentSrpeLogs(currentSrpe);
         setPreviousSrpeLogs(previousSrpe);
+        setLoadContextExercises(contextExercises);
+        setLoadContextSrpeLogs(contextSrpe);
         setCurrentWellnessLogs(currentWellness);
         setHealthDashboard(nextHealthDashboard);
       } catch (loadError) {
@@ -530,13 +712,23 @@ const AnalyticsDashboard: React.FC = () => {
     };
 
     void loadAnalytics();
-  }, [range, user?.id]);
+  }, [range, timeframe, user?.email, user?.firstName, user?.id, user?.lastName]);
 
   const loadChartResolution = useMemo(() => getLoadChartResolution(timeframe), [timeframe]);
   const loadChartData = useMemo(() => {
     const dailyLoadPoints = buildDailyLoadPoints(currentExercises, currentSrpeLogs, range);
     return aggregateLoadPoints(dailyLoadPoints, loadChartResolution);
   }, [currentExercises, currentSrpeLogs, loadChartResolution, range]);
+  const sevenDayLoadData = useMemo(() => {
+    if (timeframe !== 'day') return loadChartData;
+
+    const contextRange = {
+      startDate: startOfDay(addDays(range.endDate, -6)),
+      endDate: range.endDate,
+    };
+
+    return buildDailyLoadPoints(loadContextExercises, loadContextSrpeLogs, contextRange);
+  }, [loadChartData, loadContextExercises, loadContextSrpeLogs, range.endDate, timeframe]);
   const hasLoadChartData = loadChartData.some((point) => point.volume > 0);
   const loadChartTitle = useMemo(() => getLoadChartTitle(timeframe), [timeframe]);
   const loadChartLegend = useMemo(() => getLoadChartLegend(timeframe), [timeframe]);
@@ -582,6 +774,7 @@ const AnalyticsDashboard: React.FC = () => {
   );
 
   const healthRow = healthDashboard?.rows[0] ?? null;
+  const selectedDayLoad = loadChartData[loadChartData.length - 1]?.volume ?? 0;
 
   const hasAnalyticsData =
     currentExercises.length > 0 || currentSrpeLogs.length > 0 || currentWellnessLogs.length > 0;
@@ -642,6 +835,63 @@ const AnalyticsDashboard: React.FC = () => {
 
       {!isLoading && !error && user?.id && hasAnalyticsData && summary && (
         <>
+          {timeframe === 'day' ? (
+            <>
+              <DailyMetricRow summary={summary} healthRow={healthRow} selectedLoad={selectedDayLoad} />
+              <WellnessStrip healthRow={healthRow} />
+
+              <section className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+                <div className="lg:col-span-3">
+                  <SevenDayLoadStrip dataPoints={sevenDayLoadData} />
+                </div>
+                <div className="lg:col-span-2">
+                  <DailyTrainingComposition
+                    activityAnalytics={activityAnalytics}
+                    summary={summary}
+                    healthRow={healthRow}
+                  />
+                </div>
+              </section>
+
+              {(recentPRs.length > 0 || muscleGroupAnalytics.length > 0) && (
+                <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                  {recentPRs.length > 0 && (
+                    <DashboardSection title="Recent PRs">
+                      <div className="mt-3 space-y-2">
+                        {recentPRs.slice(0, 4).map((record) => (
+                          <div key={record.id} className="rounded-lg border border-border bg-bg-tertiary px-3 py-2">
+                            <p className="text-sm font-medium text-text-primary">{record.exerciseName}</p>
+                            <p className="text-xs text-text-secondary">
+                              {record.recordType === PRType.ONE_REP_MAX ? 'Estimated 1RM' : record.recordType}: {Math.round(record.value)}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </DashboardSection>
+                  )}
+
+                  {muscleGroupAnalytics.length > 0 && (
+                    <DashboardSection title="Muscle Groups">
+                      <div className="mt-3 space-y-2">
+                        {muscleGroupAnalytics.slice(0, 5).map((row) => (
+                          <div key={row.muscleGroup} className="rounded-lg border border-border bg-bg-tertiary px-3 py-2 text-sm">
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="font-medium text-text-primary">{formatMuscleName(row.muscleGroup)}</span>
+                              <span className="text-text-secondary">{row.totalSets} sets</span>
+                            </div>
+                            <p className="mt-1 truncate text-xs text-text-secondary">
+                              {row.topExercises.length > 0 ? row.topExercises.join(', ') : 'No contributors'}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </DashboardSection>
+                  )}
+                </section>
+              )}
+            </>
+          ) : (
+            <>
           <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
             <div className="rounded-xl border border-border bg-bg-secondary p-4">
               <p className="text-xs text-text-tertiary uppercase tracking-wide">Workouts</p>
@@ -798,6 +1048,8 @@ const AnalyticsDashboard: React.FC = () => {
               </div>
             )}
           </DashboardSection>
+            </>
+          )}
         </>
       )}
     </div>

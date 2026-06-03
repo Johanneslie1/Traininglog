@@ -120,7 +120,7 @@ const SideMenu: React.FC<SideMenuProps> = ({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2l2.5 5.5L20 10l-5.5 2.5L12 18l-2.5-5.5L4 10l5.5-2.5L12 2z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 21h14" />
               </svg>
-              Sports Load
+              sRPE
             </button>
           </div>
 

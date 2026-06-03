@@ -74,13 +74,14 @@ describe('Calendar monthly session states', () => {
 
     expect(screen.getByText('Today')).not.toBeNull();
     expect(screen.getByText('1 session')).not.toBeNull();
-    expect(screen.getByText('2+ sessions')).not.toBeNull();
+    expect(screen.getByText('3 sessions')).not.toBeNull();
+    expect(screen.getByText('4+ sessions')).not.toBeNull();
     expect(todayButton.getAttribute('data-is-today')).toBe('true');
     expect(todayButton.getAttribute('data-is-selected')).toBe('true');
     expect(todayButton.getAttribute('data-session-count')).toBe('1');
     expect(todayButton.className).toContain('ring-2');
     expect(todayButton.className).toContain('bg-status-info');
     expect(busyDayButton.getAttribute('data-session-count')).toBe('3');
-    expect(busyDayButton.className).toContain('bg-status-success');
+    expect(busyDayButton.className).toContain('bg-status-warning');
   });
 });

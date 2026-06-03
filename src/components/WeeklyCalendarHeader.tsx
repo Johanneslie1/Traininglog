@@ -11,6 +11,22 @@ interface WeeklyCalendarHeaderProps {
   onMenuClick?: () => void;
 }
 
+const getSessionCountClass = (sessionCount: number): string => {
+  if (sessionCount >= 4) {
+    return 'bg-accent-primary text-white shadow-md shadow-accent-primary/25';
+  }
+  if (sessionCount === 3) {
+    return 'bg-status-warning text-white shadow-md shadow-status-warning/25';
+  }
+  if (sessionCount === 2) {
+    return 'bg-status-success text-white shadow-md shadow-status-success/20';
+  }
+  if (sessionCount === 1) {
+    return 'bg-status-info text-white shadow-md shadow-status-info/25';
+  }
+  return 'text-text-tertiary';
+};
+
 const WeeklyCalendarHeader: React.FC<WeeklyCalendarHeaderProps> = ({
   selectedDate,
   onDateSelect,
@@ -132,12 +148,7 @@ const WeeklyCalendarHeader: React.FC<WeeklyCalendarHeaderProps> = ({
             const isTodayDay = isToday(day);
             const isSelected = isSameDay(selectedDate, day);
 
-            // Three-state styling based on session count
-            const sessionStateClass = sessionCount >= 2
-              ? 'bg-status-success text-white shadow-md shadow-status-success/20'
-              : sessionCount === 1
-                ? 'bg-status-info text-white shadow-md shadow-status-info/25'
-                : 'text-text-tertiary';
+            const sessionStateClass = getSessionCountClass(sessionCount);
 
             const todayRingClass = isTodayDay ? 'ring-2 ring-accent-primary' : '';
             const selectedScaleClass = isSelected && !isTodayDay ? 'scale-105 ring-2 ring-accent-primary' : '';

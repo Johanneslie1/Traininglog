@@ -12,7 +12,8 @@ import {
 import { getAuth } from 'firebase/auth';
 import { db } from '@/services/firebase/config';
 import { SaveSrpeLogInput, SportsLoadSession, SrpeLog } from '@/types/srpe';
-import { getDateEpochDay, toLocalDateString } from '@/utils/dateUtils';
+import { dateKeyToLocalDate, getDateEpochDay, toLocalDateString } from '@/utils/dateUtils';
+import { deleteSession, ensureSessionContextForLog } from '@/services/firebase/sessionTrackingService';
 
 function ensureAuth(): string {
   const auth = getAuth();
@@ -83,6 +84,10 @@ function mapSportsLoadSession(id: string, data: Omit<SportsLoadSession, 'id'>): 
   };
 }
 
+function getSessionDate(date: string): Date {
+  return dateKeyToLocalDate(date) || new Date(`${date}T12:00:00`);
+}
+
 function roundOne(value: number): number {
   return Math.round(value * 10) / 10;
 }
@@ -114,6 +119,7 @@ function aggregateSportsLoadSessions(
   return {
     id: date,
     userId,
+    ...(sessions.length === 1 && firstSession.sessionId ? { sessionId: firstSession.sessionId } : {}),
     date,
     dateEpochDay: firstSession.dateEpochDay,
     timestamp: firstSession.timestamp,
@@ -193,8 +199,32 @@ export async function saveSportsLoadSession(
   const sportType = input.sportType?.trim() || 'football';
   const sportName = input.sportName?.trim() || 'Football';
   const sessionName = input.sessionName?.trim() || sportName;
+  const existingSessionSnap = existingSessionId ? await getDoc(ref) : null;
+  const existingSessionData = existingSessionSnap?.exists()
+    ? existingSessionSnap.data() as Partial<SportsLoadSession>
+    : null;
+  const sessionContext = await ensureSessionContextForLog(userId, getSessionDate(date), {
+    requestedSessionId: existingSessionData?.sessionId,
+    requestedSessionType: 'srpe',
+    forceNewSession: !existingSessionData?.sessionId,
+    sessionName,
+  });
+  await setDoc(
+    doc(db, 'users', userId, 'sessions', sessionContext.sessionId),
+    {
+      name: sessionName,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true }
+  );
   const sessionData: Record<string, unknown> = {
     userId,
+    sessionId: sessionContext.sessionId,
+    sessionType: sessionContext.sessionType,
+    sessionDateKey: sessionContext.sessionDateKey,
+    sessionWeekKey: sessionContext.sessionWeekKey,
+    sessionNumberInDay: sessionContext.sessionNumberInDay,
+    sessionNumberInWeek: sessionContext.sessionNumberInWeek,
     date,
     dateEpochDay,
     rpe: input.rpe,
@@ -228,6 +258,46 @@ export async function saveSportsLoadSession(
   return ref.id;
 }
 
+export async function ensureSrpeSessionContextsForDate(
+  userId: string,
+  date: string
+): Promise<number> {
+  const effectiveUserId = ensureAuth();
+  if (userId && userId !== effectiveUserId) {
+    throw new Error('Cannot backfill sRPE sessions for another user');
+  }
+
+  const sessions = await getSportsLoadSessionsByDate(effectiveUserId, date);
+  const unlinkedSessions = sessions.filter((session) => !session.sessionId);
+  let backfilledCount = 0;
+
+  for (const session of unlinkedSessions) {
+    const sessionName = session.sessionName?.trim() || session.sportName?.trim() || 'sRPE';
+    const sessionContext = await ensureSessionContextForLog(effectiveUserId, getSessionDate(date), {
+      requestedSessionType: 'srpe',
+      forceNewSession: true,
+      sessionName,
+    });
+
+    await setDoc(
+      doc(db, 'users', effectiveUserId, 'sportsLoadSessions', session.id),
+      {
+        sessionId: sessionContext.sessionId,
+        sessionType: sessionContext.sessionType,
+        sessionDateKey: sessionContext.sessionDateKey,
+        sessionWeekKey: sessionContext.sessionWeekKey,
+        sessionNumberInDay: sessionContext.sessionNumberInDay,
+        sessionNumberInWeek: sessionContext.sessionNumberInWeek,
+      },
+      { merge: true }
+    );
+
+    backfilledCount += 1;
+  }
+
+  return backfilledCount;
+}
+
 export async function deleteSportsLoadSession(sessionId: string): Promise<void> {
   if (!sessionId) {
     throw new Error('Sports load session id is required');
@@ -235,6 +305,21 @@ export async function deleteSportsLoadSession(sessionId: string): Promise<void> 
 
   const userId = ensureAuth();
   const ref = doc(db, 'users', userId, 'sportsLoadSessions', sessionId);
+  const snap = await getDoc(ref);
+  const data = snap.exists() ? snap.data() as Partial<SportsLoadSession> : null;
+  const canonicalSessionId = data?.sessionId;
+
+  if (canonicalSessionId) {
+    const sessionRef = doc(db, 'users', userId, 'sessions', canonicalSessionId);
+    const sessionSnap = await getDoc(sessionRef);
+    const sessionData = sessionSnap.exists() ? sessionSnap.data() as { sessionType?: unknown } : null;
+
+    if (sessionData?.sessionType === 'srpe') {
+      await deleteSession(userId, canonicalSessionId);
+      return;
+    }
+  }
+
   await deleteDoc(ref);
 }
 

@@ -68,6 +68,11 @@ jest.mock('@/services/exercisePrescriptionAssistantService', () => ({
   generateExercisePrescriptionAssistant: jest.fn(),
 }));
 
+jest.mock('@/services/srpeService', () => ({
+  ensureSrpeSessionContextsForDate: jest.fn(async () => 0),
+  getSportsLoadSessionsByDate: jest.fn(async () => []),
+}));
+
 const getAllExercisesByDateMock = jest.fn(async () => [
   {
     id: 'ex-main-1',
@@ -142,6 +147,7 @@ jest.mock('../components/ui', () => ({
   ),
   EmptyState: ({ title }: { title: string }) => <div>{title}</div>,
   ExerciseListSkeleton: () => <div>Loading...</div>,
+  ConfirmDialog: () => null,
 }));
 
 jest.mock('../components/DraggableExerciseDisplay', () => ({

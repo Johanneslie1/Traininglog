@@ -1,11 +1,15 @@
-export type SessionType = 'main' | 'warmup';
+export type SessionType = 'main' | 'warmup' | 'srpe';
 
 export const DEFAULT_SESSION_TYPE: SessionType = 'main';
 
 export const normalizeSessionType = (value: unknown): SessionType => {
-  return value === 'warmup' ? 'warmup' : 'main';
+  if (value === 'warmup') return 'warmup';
+  if (value === 'srpe') return 'srpe';
+  return 'main';
 };
 
 export const getSessionTypeLabel = (sessionType: SessionType): string => {
-  return sessionType === 'warmup' ? 'Warm-up' : 'Session';
+  if (sessionType === 'warmup') return 'Warm-up';
+  if (sessionType === 'srpe') return 'sRPE';
+  return 'Session';
 };

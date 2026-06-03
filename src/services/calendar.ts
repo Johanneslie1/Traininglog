@@ -18,6 +18,60 @@ const getCurrentUserId = (): string | null => {
   return auth.currentUser?.uid || null;
 };
 
+const getSessionCountsByDate = async (
+  userId: string,
+  startDateKey: string,
+  endDateKey: string
+): Promise<Map<string, number>> => {
+  const sessionsQuery = query(
+    collection(db, 'users', userId, 'sessions'),
+    where('sessionDateKey', '>=', startDateKey),
+    where('sessionDateKey', '<=', endDateKey)
+  );
+  const snapshot = await getDocs(sessionsQuery);
+  const sessionCounts = new Map<string, number>();
+  const countedSessionIds = new Set<string>();
+
+  snapshot.docs.forEach((sessionDoc) => {
+    const sessionData = sessionDoc.data() as { sessionDateKey?: unknown; sessionType?: unknown; isWarmup?: unknown };
+    if (sessionData.sessionType === 'warmup' || sessionData.isWarmup === true) {
+      return;
+    }
+
+    const sessionDateKey = sessionData.sessionDateKey;
+    if (typeof sessionDateKey !== 'string' || sessionDateKey.length === 0) {
+      return;
+    }
+
+    countedSessionIds.add(sessionDoc.id);
+    sessionCounts.set(sessionDateKey, (sessionCounts.get(sessionDateKey) || 0) + 1);
+  });
+
+  const sportsLoadQuery = query(
+    collection(db, 'users', userId, 'sportsLoadSessions'),
+    where('date', '>=', startDateKey),
+    where('date', '<=', endDateKey)
+  );
+  const sportsLoadSnapshot = await getDocs(sportsLoadQuery);
+
+  sportsLoadSnapshot.docs.forEach((sessionDoc) => {
+    const sessionData = sessionDoc.data() as { date?: unknown; sessionId?: unknown };
+    const sessionId = typeof sessionData.sessionId === 'string' ? sessionData.sessionId : '';
+    if (sessionId && countedSessionIds.has(sessionId)) {
+      return;
+    }
+
+    const sessionDateKey = sessionData.date;
+    if (typeof sessionDateKey !== 'string' || sessionDateKey.length === 0) {
+      return;
+    }
+
+    sessionCounts.set(sessionDateKey, (sessionCounts.get(sessionDateKey) || 0) + 1);
+  });
+
+  return sessionCounts;
+};
+
 export const getMonthSessionSummaries = async (month: Date): Promise<CalendarDaySummary[]> => {
   const userId = getCurrentUserId();
   const startDate = startOfMonth(month);
@@ -36,27 +90,7 @@ export const getMonthSessionSummaries = async (month: Date): Promise<CalendarDay
   try {
     const startDateKey = toLocalDateString(startDate);
     const endDateKey = toLocalDateString(endDate);
-    const sessionsQuery = query(
-      collection(db, 'users', userId, 'sessions'),
-      where('sessionDateKey', '>=', startDateKey),
-      where('sessionDateKey', '<=', endDateKey)
-    );
-    const snapshot = await getDocs(sessionsQuery);
-    const sessionCounts = new Map<string, number>();
-
-    snapshot.docs.forEach((sessionDoc) => {
-      const sessionData = sessionDoc.data() as { sessionDateKey?: unknown; sessionType?: unknown; isWarmup?: unknown };
-      if (sessionData.sessionType === 'warmup' || sessionData.isWarmup === true) {
-        return;
-      }
-
-      const sessionDateKey = sessionData.sessionDateKey;
-      if (typeof sessionDateKey !== 'string' || sessionDateKey.length === 0) {
-        return;
-      }
-
-      sessionCounts.set(sessionDateKey, (sessionCounts.get(sessionDateKey) || 0) + 1);
-    });
+    const sessionCounts = await getSessionCountsByDate(userId, startDateKey, endDateKey);
 
     return monthDays.map((date) => {
       const sessionDateKey = toLocalDateString(date);
@@ -98,27 +132,7 @@ export const getWeekSessionSummaries = async (weekStart: Date): Promise<Calendar
   try {
     const startDateKey = toLocalDateString(startDate);
     const endDateKey = toLocalDateString(endDate);
-    const sessionsQuery = query(
-      collection(db, 'users', userId, 'sessions'),
-      where('sessionDateKey', '>=', startDateKey),
-      where('sessionDateKey', '<=', endDateKey)
-    );
-    const snapshot = await getDocs(sessionsQuery);
-    const sessionCounts = new Map<string, number>();
-
-    snapshot.docs.forEach((sessionDoc) => {
-      const sessionData = sessionDoc.data() as { sessionDateKey?: unknown; sessionType?: unknown; isWarmup?: unknown };
-      if (sessionData.sessionType === 'warmup' || sessionData.isWarmup === true) {
-        return;
-      }
-
-      const sessionDateKey = sessionData.sessionDateKey;
-      if (typeof sessionDateKey !== 'string' || sessionDateKey.length === 0) {
-        return;
-      }
-
-      sessionCounts.set(sessionDateKey, (sessionCounts.get(sessionDateKey) || 0) + 1);
-    });
+    const sessionCounts = await getSessionCountsByDate(userId, startDateKey, endDateKey);
 
     return weekDays.map((date) => {
       const sessionDateKey = toLocalDateString(date);

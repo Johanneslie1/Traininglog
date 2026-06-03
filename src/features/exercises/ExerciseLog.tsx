@@ -37,6 +37,8 @@ import { SupersetGroup } from '@/types/session';
 import { useExerciseLogCalendar } from '@/context/ExerciseLogCalendarContext';
 import { isExerciseLogMainView } from '@/features/exercises/exerciseLogViewState';
 import { getSessionTypeLabel, SessionType } from '@/types/sessionType';
+import { ensureSrpeSessionContextsForDate, getSportsLoadSessionsByDate } from '@/services/srpeService';
+import { SportsLoadSession } from '@/types/srpe';
 
 interface ExerciseLogProps {}
 
@@ -112,6 +114,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   const [exercises, setExercises] = useState<UnifiedExerciseData[]>([]);
   const [loading, setLoading] = useState(false);
   const [availableSessions, setAvailableSessions] = useState<SessionInfo[]>([]);
+  const [srpeSessionsBySessionId, setSrpeSessionsBySessionId] = useState<Record<string, SportsLoadSession>>({});
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [sessionsLoading, setSessionsLoading] = useState(false);
   const [creatingSessionType, setCreatingSessionType] = useState<SessionType | null>(null);
@@ -525,9 +528,15 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   };
 
   const openLogOptions = useCallback(() => {
+    if (currentSessionType === 'srpe') {
+      toast('Open sRPE to edit this session load.', { icon: 'ℹ️' });
+      navigate('/sports');
+      return;
+    }
+
     setEditingExercise(null);
     updateUiState('showLogOptions', true);
-  }, [updateUiState]);
+  }, [currentSessionType, navigate, updateUiState]);
 
   // Handle exercise reordering with persistence
   const handleReorderExercises = useCallback(async (reorderedExercises: ExerciseData[]) => {
@@ -600,13 +609,30 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   const sessionFilteredExercises = selectedSessionId
     ? exercises.filter((ex) => ex.sessionId === selectedSessionId)
     : exercises;
+  const selectedSessionInfo = selectedSessionId
+    ? availableSessions.find((session) => session.sessionId === selectedSessionId)
+    : undefined;
+  const selectedSrpeSession = selectedSessionId
+    ? srpeSessionsBySessionId[selectedSessionId]
+    : undefined;
 
   const loadSessionsForDate = useCallback(async (date: Date) => {
     if (!user?.id) return;
     setSessionsLoading(true);
     try {
-      const sessions = await getSessionsForDate(user.id, date);
+      await ensureSrpeSessionContextsForDate(user.id, getDateKey(date));
+      const [sessions, srpeSessions] = await Promise.all([
+        getSessionsForDate(user.id, date),
+        getSportsLoadSessionsByDate(user.id, getDateKey(date)),
+      ]);
+      const srpeSessionMap = srpeSessions.reduce<Record<string, SportsLoadSession>>((acc, session) => {
+        if (session.sessionId) {
+          acc[session.sessionId] = session;
+        }
+        return acc;
+      }, {});
       setAvailableSessions(sessions);
+      setSrpeSessionsBySessionId(srpeSessionMap);
       if (sessions.length > 0) {
         const newestFirst = [...sessions].reverse();
         const preferredMainSession =
@@ -1151,6 +1177,77 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
 
             {loading ? (
               <ExerciseListSkeleton count={3} />
+            ) : selectedSessionInfo?.sessionType === 'srpe' ? (
+              <div className="rounded-2xl border border-border bg-bg-secondary p-5 text-sm text-text-secondary">
+                <p className="text-base font-semibold text-text-primary">
+                  {selectedSessionInfo.name || `sRPE ${selectedSessionInfo.sessionNumberInDay}`}
+                </p>
+                {selectedSrpeSession ? (
+                  <>
+                    <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                      <div className="rounded-xl bg-bg-primary p-3">
+                        <p className="text-xs uppercase tracking-wide text-text-tertiary">RPE</p>
+                        <p className="mt-1 text-xl font-bold text-text-primary">{selectedSrpeSession.rpe}</p>
+                      </div>
+                      <div className="rounded-xl bg-bg-primary p-3">
+                        <p className="text-xs uppercase tracking-wide text-text-tertiary">Duration</p>
+                        <p className="mt-1 text-xl font-bold text-text-primary">{selectedSrpeSession.durationMinutes} min</p>
+                      </div>
+                      <div className="rounded-xl bg-bg-primary p-3">
+                        <p className="text-xs uppercase tracking-wide text-text-tertiary">Load</p>
+                        <p className="mt-1 text-xl font-bold text-text-primary">{selectedSrpeSession.sessionLoad}</p>
+                      </div>
+                      <div className="rounded-xl bg-bg-primary p-3">
+                        <p className="text-xs uppercase tracking-wide text-text-tertiary">Sport</p>
+                        <p className="mt-1 text-xl font-bold text-text-primary">{selectedSrpeSession.sportName || 'Sport'}</p>
+                      </div>
+                    </div>
+
+                    {(selectedSrpeSession.distanceMeters ||
+                      selectedSrpeSession.calories ||
+                      selectedSrpeSession.averageHeartRate ||
+                      selectedSrpeSession.maxHeartRate) && (
+                      <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                        {selectedSrpeSession.distanceMeters && (
+                          <span className="rounded-full bg-bg-primary px-3 py-1.5 text-text-secondary">
+                            Distance {selectedSrpeSession.distanceMeters} m
+                          </span>
+                        )}
+                        {selectedSrpeSession.calories && (
+                          <span className="rounded-full bg-bg-primary px-3 py-1.5 text-text-secondary">
+                            {selectedSrpeSession.calories} kcal
+                          </span>
+                        )}
+                        {selectedSrpeSession.averageHeartRate && (
+                          <span className="rounded-full bg-bg-primary px-3 py-1.5 text-text-secondary">
+                            Avg HR {selectedSrpeSession.averageHeartRate}
+                          </span>
+                        )}
+                        {selectedSrpeSession.maxHeartRate && (
+                          <span className="rounded-full bg-bg-primary px-3 py-1.5 text-text-secondary">
+                            Max HR {selectedSrpeSession.maxHeartRate}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {selectedSrpeSession.notes && (
+                      <p className="mt-3 rounded-xl bg-bg-primary p-3 text-sm text-text-secondary">
+                        {selectedSrpeSession.notes}
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <p className="mt-3 text-text-secondary">sRPE session stats are loading.</p>
+                )}
+                <button
+                  type="button"
+                  onClick={() => navigate('/sports')}
+                  className="mt-4 inline-flex min-h-10 items-center rounded-xl bg-accent-primary px-4 py-2 text-sm font-semibold text-text-on-accent transition-colors hover:bg-accent-hover"
+                >
+                  Open sRPE
+                </button>
+              </div>
             ) : exercises.length === 0 ? (
               <EmptyState
                 illustration="workout"
@@ -1161,6 +1258,10 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
                   onClick: () => updateUiState('showLogOptions', true)
                 }}
               />
+            ) : selectedSessionId && sessionFilteredExercises.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-border bg-bg-secondary p-5 text-sm text-text-secondary">
+                No exercises logged in this session yet.
+              </div>
             ) : (
               <div className="space-y-4">
                 <section className="space-y-2">

@@ -221,9 +221,10 @@ const getSessionDisplayName = (
     typeof sessionNumberInDay === 'number' && sessionNumberInDay > 0
       ? sessionNumberInDay
       : 1;
-  return normalizeSessionType(sessionType) === 'warmup'
-    ? `Warm-up ${number}`
-    : `Session ${number}`;
+  const normalizedType = normalizeSessionType(sessionType);
+  if (normalizedType === 'warmup') return `Warm-up ${number}`;
+  if (normalizedType === 'srpe') return `sRPE ${number}`;
+  return `Session ${number}`;
 };
 
 const loadSessionNamesById = async (
@@ -734,7 +735,7 @@ const addFootballLoadRowsForAthlete = async (
       sportsLoadRows.push({
         athlete_id: session.userId || athleteId,
         athlete_name: athleteName,
-        session_id: session.id,
+        session_id: session.sessionId || session.id,
         session_name: session.sessionName || session.sportName || 'Football',
         logged_date: session.date,
         sport_type: session.sportType || 'football',

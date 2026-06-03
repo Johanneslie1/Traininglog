@@ -85,7 +85,7 @@ const getDefaultSessionDocId = (sessionDateKey: string, sessionType: SessionType
 };
 
 const hasLogsForSession = async (userId: string, sessionId: string): Promise<boolean> => {
-  const LOG_COLLECTIONS = ['exercises', 'activities', 'strengthExercises'] as const;
+  const LOG_COLLECTIONS = ['exercises', 'activities', 'strengthExercises', 'sportsLoadSessions'] as const;
 
   for (const collName of LOG_COLLECTIONS) {
     const snap = await getDocs(
@@ -246,13 +246,13 @@ export const ensureSessionContextForLog = async (
   };
 };
 
-/** Deletes a session doc and all log documents (exercises/activities) that belonged to it. */
+/** Deletes a session doc and all log documents that belonged to it. */
 export const deleteSession = async (userId: string, sessionId: string): Promise<void> => {
   const sessionRef = doc(db, 'users', userId, 'sessions', sessionId);
   const sessionSnap = await getDoc(sessionRef);
   if (!sessionSnap.exists()) return;
 
-  const LOG_COLLECTIONS = ['exercises', 'activities', 'strengthExercises'] as const;
+  const LOG_COLLECTIONS = ['exercises', 'activities', 'strengthExercises', 'sportsLoadSessions'] as const;
   const logRefs: ReturnType<typeof doc>[] = [];
   for (const collName of LOG_COLLECTIONS) {
     const q = query(

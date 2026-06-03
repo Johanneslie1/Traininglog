@@ -3,6 +3,8 @@ import { Timestamp } from 'firebase/firestore';
 export interface SrpeLog {
   id: string;
   userId: string;
+  /** Canonical training session id used for session counting/export joins. */
+  sessionId?: string;
   /** Local calendar date key - YYYY-MM-DD */
   date: string;
   /** Epoch day derived from date key (UTC midnight days since Unix epoch). */
@@ -59,6 +61,8 @@ export interface SaveSrpeLogInput {
 export interface SportsLoadSession extends SaveSrpeLogInput {
   id: string;
   userId: string;
+  /** Canonical training session id used for session counting/export joins. */
+  sessionId?: string;
   /** Local calendar date key - YYYY-MM-DD */
   date: string;
   /** Epoch day derived from date key (UTC midnight days since Unix epoch). */

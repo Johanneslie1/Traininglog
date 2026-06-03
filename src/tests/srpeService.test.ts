@@ -10,6 +10,7 @@ const queryMock = jest.fn();
 const whereMock = jest.fn();
 const setDocMock = jest.fn();
 const serverTimestampMock = jest.fn();
+const ensureSessionContextForLogMock = jest.fn();
 
 jest.mock('firebase/auth', () => ({
   getAuth: jest.fn(() => ({ currentUser: { uid: 'user-42' } })),
@@ -30,8 +31,14 @@ jest.mock('@/services/firebase/config', () => ({
   db: {},
 }));
 
+jest.mock('@/services/firebase/sessionTrackingService', () => ({
+  deleteSession: jest.fn(),
+  ensureSessionContextForLog: (...args: unknown[]) => ensureSessionContextForLogMock(...args),
+}));
+
 import {
   calculateSessionLoad,
+  ensureSrpeSessionContextsForDate,
   getSportsLoadSessionsByDate,
   getSrpeByDate,
   getSrpeByDateRange,
@@ -91,6 +98,15 @@ describe('srpeService', () => {
     });
     getDocsMock.mockResolvedValue({ empty: true, docs: [] });
     serverTimestampMock.mockReturnValue({ __serverTimestamp: true });
+    ensureSessionContextForLogMock.mockResolvedValue({
+      sessionId: 'canonical-srpe-session',
+      sessionType: 'srpe',
+      sessionDateKey: '2026-03-10',
+      sessionWeekKey: '2026-W11',
+      sessionNumberInDay: 1,
+      sessionNumberInWeek: 1,
+      name: 'Football',
+    });
   });
 
   afterEach(() => {
@@ -115,6 +131,12 @@ describe('srpeService', () => {
       }),
       expect.objectContaining({
         userId: 'user-42',
+        sessionId: 'canonical-srpe-session',
+        sessionType: 'srpe',
+        sessionDateKey: '2026-03-10',
+        sessionWeekKey: '2026-W11',
+        sessionNumberInDay: 1,
+        sessionNumberInWeek: 1,
         date: '2026-03-10',
         dateEpochDay: 20522,
         rpe: 8,
@@ -317,6 +339,62 @@ describe('srpeService', () => {
         sessionLoad: 420,
       },
     ]);
+  });
+
+  it('backfills canonical session ids onto existing unlinked sports load sessions', async () => {
+    getDocsMock.mockResolvedValueOnce({
+      docs: [
+        {
+          id: 'legacy-sports-load-1',
+          data: () => ({
+            userId: 'user-42',
+            date: '2026-03-10',
+            dateEpochDay: 20522,
+            rpe: 7,
+            durationMinutes: 60,
+            sessionLoad: 420,
+            sportType: 'football',
+            sportName: 'Football',
+            sessionName: 'Morning football',
+            timestamp: new Date('2026-03-10T10:00:00'),
+          }),
+        },
+      ],
+    });
+    ensureSessionContextForLogMock.mockResolvedValueOnce({
+      sessionId: 'canonical-srpe-session-1',
+      sessionType: 'srpe',
+      sessionDateKey: '2026-03-10',
+      sessionWeekKey: '2026-W11',
+      sessionNumberInDay: 1,
+      sessionNumberInWeek: 3,
+      name: 'Morning football',
+    });
+
+    await expect(ensureSrpeSessionContextsForDate('user-42', '2026-03-10')).resolves.toBe(1);
+    expect(ensureSessionContextForLogMock).toHaveBeenCalledWith(
+      'user-42',
+      expect.any(Date),
+      expect.objectContaining({
+        requestedSessionType: 'srpe',
+        forceNewSession: true,
+        sessionName: 'Morning football',
+      })
+    );
+    expect(setDocMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: 'users/user-42/sportsLoadSessions/legacy-sports-load-1',
+      }),
+      expect.objectContaining({
+        sessionId: 'canonical-srpe-session-1',
+        sessionType: 'srpe',
+        sessionDateKey: '2026-03-10',
+        sessionWeekKey: '2026-W11',
+        sessionNumberInDay: 1,
+        sessionNumberInWeek: 3,
+      }),
+      { merge: true }
+    );
   });
 
   it('returns one aggregate row per date and falls back to legacy rows without sessions', async () => {
