@@ -5,6 +5,7 @@ import { getAuth } from 'firebase/auth';
 import { db } from '@/services/firebase/config';
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
 import { toLocalDateString } from '@/utils/dateUtils';
+import { getAllExercisesByDate } from '@/utils/unifiedExerciseUtils';
 
 export interface CalendarDaySummary {
   date: Date;
@@ -157,12 +158,34 @@ export const getWeekSessionSummaries = async (weekStart: Date): Promise<Calendar
 };
 
 export const getWorkoutsByDate = async (date: Date): Promise<ExerciseLog[]> => {
+  const userId = getCurrentUserId();
+  if (!userId) {
+    return [];
+  }
+
   try {
-    const logs = await getExerciseLogsByDate(date);
-    // Filter out logs without IDs and ensure all required properties are present
-    return logs.filter((log): log is ExerciseLog => {
-      return !!log.id && !!log.exerciseName && !!log.sets && !!log.timestamp;
-    });
+    const logs = await getAllExercisesByDate(date, userId);
+    return logs
+      .filter((log) => Boolean(log.id) && Boolean(log.exerciseName) && Array.isArray(log.sets) && Boolean(log.timestamp))
+      .map((log) => ({
+        id: log.id!,
+        exerciseName: log.exerciseName,
+        sets: log.sets,
+        timestamp: log.timestamp,
+        deviceId: log.deviceId,
+        userId: log.userId,
+        activityType: log.activityType,
+        supersetId: log.supersetId,
+        supersetLabel: log.supersetLabel,
+        supersetName: log.supersetName,
+        isWarmup: log.isWarmup,
+        sessionId: log.sessionId,
+        sessionType: log.sessionType,
+        sessionDateKey: log.sessionDateKey,
+        sessionWeekKey: log.sessionWeekKey,
+        sessionNumberInDay: log.sessionNumberInDay,
+        sessionNumberInWeek: log.sessionNumberInWeek,
+      }));
   } catch (error) {
     console.error('Error getting workouts by date:', error);
     return [];

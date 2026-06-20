@@ -1,8 +1,10 @@
-import React, { createContext, useContext, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 
 interface ExerciseLogCalendarContextValue {
   isExerciseLogMainView: boolean;
   setIsExerciseLogMainView: (value: boolean) => void;
+  calendarRefreshKey: number;
+  refreshExerciseLogCalendar: () => void;
 }
 
 const ExerciseLogCalendarContext = createContext<ExerciseLogCalendarContextValue | undefined>(undefined);
@@ -13,13 +15,20 @@ interface ExerciseLogCalendarProviderProps {
 
 export const ExerciseLogCalendarProvider: React.FC<ExerciseLogCalendarProviderProps> = ({ children }) => {
   const [isExerciseLogMainView, setIsExerciseLogMainView] = useState(true);
+  const [calendarRefreshKey, setCalendarRefreshKey] = useState(0);
+
+  const refreshExerciseLogCalendar = useCallback(() => {
+    setCalendarRefreshKey((key) => key + 1);
+  }, []);
 
   const value = useMemo(
     () => ({
       isExerciseLogMainView,
       setIsExerciseLogMainView,
+      calendarRefreshKey,
+      refreshExerciseLogCalendar,
     }),
-    [isExerciseLogMainView]
+    [isExerciseLogMainView, calendarRefreshKey, refreshExerciseLogCalendar]
   );
 
   return (

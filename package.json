@@ -28,6 +28,7 @@
     "migrate:wellness-scale:dry": "tsx scripts/migrateWellnessScale.ts",
     "migrate:wellness-scale:apply": "tsx scripts/migrateWellnessScale.ts --apply",
     "fix-exercises": "node scripts/fixExerciseTypes.js",
+    "import-exercises": "node scripts/processExerciseCSV.cjs",
     "user-role:set": "tsx scripts/setUserRole.ts",
     "coach-access:rebuild:dry": "tsx scripts/rebuildCoachAthleteAccess.ts --dry-run",
     "coach-access:rebuild": "tsx scripts/rebuildCoachAthleteAccess.ts --apply",

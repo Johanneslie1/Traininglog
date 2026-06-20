@@ -1,6 +1,6 @@
 /** @jest-environment jsdom */
 
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { eachDayOfInterval, endOfMonth, startOfMonth } from 'date-fns';
 
@@ -57,7 +57,7 @@ const buildMonthSummaries = (month: Date) => {
 describe('Calendar monthly session states', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    getMonthSessionSummariesMock.mockResolvedValue(buildMonthSummaries(new Date('2026-04-15T09:00:00.000Z')));
+    getMonthSessionSummariesMock.mockImplementation(async (month: Date) => buildMonthSummaries(month));
     getWorkoutsByDateMock.mockResolvedValue([]);
   });
 
@@ -83,5 +83,42 @@ describe('Calendar monthly session states', () => {
     expect(todayButton.className).toContain('bg-status-info');
     expect(busyDayButton.getAttribute('data-session-count')).toBe('3');
     expect(busyDayButton.className).toContain('bg-status-warning');
+  });
+
+  it('keeps user-driven month navigation instead of snapping back to the selected date month', async () => {
+    render(<Calendar selectedDate={new Date('2026-06-04T09:00:00.000Z')} />);
+
+    expect(await screen.findByRole('heading', { name: /June 2026/i })).not.toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: /Next month/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /July 2026/i })).not.toBeNull();
+    });
+
+    expect(screen.queryByRole('heading', { name: /June 2026/i })).toBeNull();
+  });
+
+  it('can suppress selected-day workout details for picker-only modal usage', async () => {
+    getWorkoutsByDateMock.mockResolvedValue([
+      {
+        id: 'workout-1',
+        exerciseName: 'Push-Ups',
+        sets: [{ reps: 10 }, { reps: 12 }] as any,
+        timestamp: new Date('2026-04-15T09:00:00.000Z'),
+        userId: 'user-1',
+      },
+    ]);
+
+    render(<Calendar selectedDate={new Date('2026-04-15T09:00:00.000Z')} showSelectedWorkouts={false} />);
+
+    expect(await screen.findByRole('button', { name: /April 15, 2026, today, 1 session/i })).not.toBeNull();
+
+    await waitFor(() => {
+      expect(getWorkoutsByDateMock).toHaveBeenCalled();
+    });
+
+    expect(screen.queryByText('April 15, 2026 Workouts')).toBeNull();
+    expect(screen.queryByText('Push-Ups')).toBeNull();
   });
 });

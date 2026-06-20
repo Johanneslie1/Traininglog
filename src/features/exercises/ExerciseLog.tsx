@@ -68,7 +68,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const { state, removeExerciseFromSuperset, loadSupersetsForDate, saveSupersetsForDate, updateExerciseOrder } = useSupersets();
   const { selectedDate, normalizeDate } = useDate();
-  const { setIsExerciseLogMainView } = useExerciseLogCalendar();
+  const { setIsExerciseLogMainView, refreshExerciseLogCalendar } = useExerciseLogCalendar();
   
   // Date utility functions
   const areDatesEqual = useCallback((date1: Date, date2: Date): boolean => {
@@ -381,7 +381,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
           instructionMode: selectedExerciseWithMeta.instructionMode,
           instructions: selectedExerciseWithMeta.instructions,
           prescriptionAssistant: metadata?.prescriptionAssistant || selectedExerciseWithMeta.prescriptionAssistant,
-          isWarmup: selectedExerciseWithMeta.isWarmup,
+          isWarmup: false,
           ...(selectedExerciseWithMeta.sharedSessionAssignmentId && {
             sharedSessionAssignmentId: selectedExerciseWithMeta.sharedSessionAssignmentId
           }),
@@ -400,7 +400,9 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
           ...((selectedSessionId || selectedExerciseWithMeta.sessionId) && {
             sessionId: selectedSessionId || selectedExerciseWithMeta.sessionId
           }),
-          sessionType: selectedExerciseWithMeta.sessionType || currentSessionType,
+          sessionType: selectedExerciseWithMeta.sessionType === 'warmup'
+            ? 'main'
+            : selectedExerciseWithMeta.sessionType || currentSessionType,
           ...(selectedExerciseWithMeta.sessionDateKey && {
             sessionDateKey: selectedExerciseWithMeta.sessionDateKey
           }),
@@ -432,11 +434,13 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
       handleCloseSetLogger();
       await loadExercises(selectedDate);
       const sessionsAfterSave = await getSessionsForDate(user.id, selectedDate);
-      setAvailableSessions(sessionsAfterSave);
+      const visibleSessionsAfterSave = sessionsAfterSave.filter((session) => session.sessionType !== 'warmup');
+      setAvailableSessions(visibleSessionsAfterSave);
+      refreshExerciseLogCalendar();
       if (shouldPromptForFirstSessionName) {
         const firstMainSession =
-          sessionsAfterSave.find((session) => session.sessionType === 'main' && session.sessionNumberInDay === 1) ||
-          sessionsAfterSave.find((session) => session.sessionType === 'main');
+          visibleSessionsAfterSave.find((session) => session.sessionType === 'main' && session.sessionNumberInDay === 1) ||
+          visibleSessionsAfterSave.find((session) => session.sessionType === 'main');
         if (firstMainSession) {
           setSelectedSessionId(firstMainSession.sessionId);
           const fallbackName = `${getSessionTypeLabel(firstMainSession.sessionType)} ${firstMainSession.sessionNumberInDay}`;
@@ -451,7 +455,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
       console.error('❌ Error saving exercise sets:', error);
       toast.error('Failed to save exercise sets. Please try again.');
     }
-  }, [selectedExercise, user, selectedDate, exercises, state.supersets, handleCloseSetLogger, loadExercises, hasMeaningfulSetData, syncSharedAssignmentCompletion, getDateKey, currentSessionType, selectedSessionId, availableSessions]);
+  }, [selectedExercise, user, selectedDate, exercises, state.supersets, handleCloseSetLogger, loadExercises, hasMeaningfulSetData, syncSharedAssignmentCompletion, getDateKey, currentSessionType, selectedSessionId, availableSessions, refreshExerciseLogCalendar]);
 
   const handleDeleteExercise = (exercise: UnifiedExerciseData) => {
     if (!user?.id) {
@@ -497,6 +501,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
         
         // Reload exercises to ensure UI is in sync
         await loadExercises(selectedDate);
+        refreshExerciseLogCalendar();
       } else {
         throw new Error('Delete operation returned false');
       }
@@ -570,7 +575,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
                 supersetId: exercise.supersetId,
                 supersetLabel: exercise.supersetLabel,
                 supersetName: exercise.supersetName,
-                isWarmup: exercise.isWarmup,
+                isWarmup: false,
                 sharedSessionAssignmentId: exercise.sharedSessionAssignmentId,
                 sharedSessionId: exercise.sharedSessionId,
                 sharedSessionExerciseId: exercise.sharedSessionExerciseId,
@@ -625,21 +630,22 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
         getSessionsForDate(user.id, date),
         getSportsLoadSessionsByDate(user.id, getDateKey(date)),
       ]);
+      const visibleSessions = sessions.filter((session) => session.sessionType !== 'warmup');
       const srpeSessionMap = srpeSessions.reduce<Record<string, SportsLoadSession>>((acc, session) => {
         if (session.sessionId) {
           acc[session.sessionId] = session;
         }
         return acc;
       }, {});
-      setAvailableSessions(sessions);
+      setAvailableSessions(visibleSessions);
       setSrpeSessionsBySessionId(srpeSessionMap);
-      if (sessions.length > 0) {
-        const newestFirst = [...sessions].reverse();
+      if (visibleSessions.length > 0) {
+        const newestFirst = [...visibleSessions].reverse();
         const preferredMainSession =
           newestFirst.find((s) => s.sessionType === 'main' && s.status === 'active') ||
           newestFirst.find((s) => s.sessionType === 'main') ||
           newestFirst.find((s) => s.status === 'active') ||
-          sessions[0];
+          visibleSessions[0];
 
         setSelectedSessionId(preferredMainSession.sessionId);
       } else {
@@ -669,19 +675,21 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
       toast.success(`${label} deleted`);
       setPendingDeleteSession(null);
       const sessions = await getSessionsForDate(user.id, selectedDate);
-      setAvailableSessions(sessions);
+      const visibleSessions = sessions.filter((session) => session.sessionType !== 'warmup');
+      setAvailableSessions(visibleSessions);
       if (selectedSessionId === sessionId) {
-        const nextSession = sessions.find((s) => s.sessionId !== sessionId) ?? sessions[0] ?? null;
+        const nextSession = visibleSessions.find((s) => s.sessionId !== sessionId) ?? visibleSessions[0] ?? null;
         setSelectedSessionId(nextSession?.sessionId ?? null);
       }
       await loadExercises(selectedDate);
+      refreshExerciseLogCalendar();
     } catch (error) {
       console.error('Failed to delete session:', error);
       toast.error('Could not delete session. Please try again.');
     } finally {
       setDeletingSessionId(null);
     }
-  }, [user?.id, pendingDeleteSession, selectedDate, selectedSessionId, loadExercises]);
+  }, [user?.id, pendingDeleteSession, selectedDate, selectedSessionId, loadExercises, refreshExerciseLogCalendar]);
 
   const handleRenameCommit = useCallback(async () => {
     if (!user?.id || !renamingSessionId) { setRenamingSessionId(null); return; }
@@ -741,6 +749,11 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
       return;
     }
 
+    if (sessionType === 'warmup') {
+      toast.error('Warm-up sessions are temporarily unavailable.');
+      return;
+    }
+
     try {
       setCreatingSessionType(sessionType);
 
@@ -769,6 +782,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
       const sessionContext = await createNewSessionForDate(user.id, selectedDate, sessionType);
       toast.success(`Started ${getSessionTypeLabel(sessionType)} ${sessionContext.sessionNumberInDay}`);
       await Promise.all([loadExercises(selectedDate), loadSessionsForDate(selectedDate)]);
+      refreshExerciseLogCalendar();
       setSelectedSessionId(sessionContext.sessionId);
       const fallbackName = `${getSessionTypeLabel(sessionContext.sessionType)} ${sessionContext.sessionNumberInDay}`;
       setNamePrompt({
@@ -784,7 +798,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     } finally {
       setCreatingSessionType(null);
     }
-  }, [user?.id, selectedDate, loadExercises, loadSessionsForDate, openLogOptions, creatingSessionType, sessionsLoading, getDateKey, availableSessions, exercises]);
+  }, [user?.id, selectedDate, loadExercises, loadSessionsForDate, openLogOptions, creatingSessionType, sessionsLoading, getDateKey, availableSessions, exercises, refreshExerciseLogCalendar]);
 
   // Load exercises and sessions when date or user changes
   useEffect(() => {
@@ -876,8 +890,8 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
 
         for (const [index, exercise] of sourceExercises.entries()) {
           const activityType = normalizeActivityType(exercise.activityType);
-          const isWarmup = sharedSessionAssignment.sessionData.isWarmupSession === true;
-          const sessionType: SessionType = isWarmup ? 'warmup' : 'main';
+          const isWarmup = false;
+          const sessionType: SessionType = 'main';
           const sets: ExerciseSet[] = [];
           const sourceSupersetMeta = sourceSupersetByExerciseId.get(exercise.id);
           const supersetId = exercise.supersetId ?? sourceSupersetMeta?.supersetId;
@@ -893,7 +907,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
             userId: user.id,
             sessionContext: {
               date: dateKey,
-              warmupDone: true
+              warmupDone: false
             }
           });
 
@@ -1067,6 +1081,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
         await syncSharedAssignmentCompletion(sharedSessionAssignment, user.id, dateKey);
 
         await loadExercises(selectedDate);
+        refreshExerciseLogCalendar();
         toast.success('Assigned session added to your log');
       } catch (error) {
         console.error('Error adding assigned session to log:', error);
@@ -1078,7 +1093,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     };
 
     addAssignedSessionToLog();
-  }, [location.state, location.pathname, location.key, navigate, loadExercises, selectedDate, user?.id, getDateKey, getPersistedSupersetStateForDate, syncSharedAssignmentCompletion, loadSupersetsForDate, updateExerciseOrder]);
+  }, [location.state, location.pathname, location.key, navigate, loadExercises, selectedDate, user?.id, getDateKey, getPersistedSupersetStateForDate, syncSharedAssignmentCompletion, loadSupersetsForDate, updateExerciseOrder, refreshExerciseLogCalendar]);
 
   return (
     <div className="relative min-h-[100dvh] bg-bg-primary">
@@ -1090,7 +1105,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-xs uppercase tracking-wide text-text-tertiary">Session</p>
-                  <p className="text-sm text-text-secondary">Organize today into main work and warm-up blocks.</p>
+                  <p className="text-sm text-text-secondary">Organize today into one or more training sessions.</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <button
@@ -1101,15 +1116,6 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
                     aria-label="Add session"
                   >
                     Add Session
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { void handleCreateNewSession('warmup'); }}
-                    disabled={sessionsLoading || creatingSessionType !== null}
-                    className="inline-flex min-h-10 items-center justify-center rounded-xl border border-border bg-bg-tertiary px-3 py-2 text-xs font-medium text-text-primary transition-colors hover:border-accent-primary hover:text-accent-primary disabled:opacity-50"
-                    aria-label="Add warm-up"
-                  >
-                    Add Warm-up
                   </button>
                 </div>
               </div>
@@ -1310,6 +1316,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
                 loadExercises(selectedDate),
                 loadSessionsForDate(selectedDate),
               ]);
+              refreshExerciseLogCalendar();
               if (details?.selectedSessionId) {
                 setSelectedSessionId(details.selectedSessionId);
               }

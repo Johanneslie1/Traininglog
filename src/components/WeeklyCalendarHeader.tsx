@@ -9,6 +9,7 @@ interface WeeklyCalendarHeaderProps {
   onDateSelect: (date: Date) => void;
   onCalendarIconClick: () => void;
   onMenuClick?: () => void;
+  refreshKey?: number;
 }
 
 const getSessionCountClass = (sessionCount: number): string => {
@@ -31,10 +32,11 @@ const WeeklyCalendarHeader: React.FC<WeeklyCalendarHeaderProps> = ({
   selectedDate,
   onDateSelect,
   onCalendarIconClick,
-  onMenuClick
+  onMenuClick,
+  refreshKey = 0
 }) => {
   const [currentWeekStart, setCurrentWeekStart] = useState(
-    startOfWeek(new Date(), { weekStartsOn: 1 })
+    startOfWeek(selectedDate, { weekStartsOn: 1 })
   );
   const [weekDaySummaries, setWeekDaySummaries] = useState<CalendarDaySummary[]>([]);
   const { isCollapsed } = useScrollCollapse(80);
@@ -53,7 +55,11 @@ const WeeklyCalendarHeader: React.FC<WeeklyCalendarHeaderProps> = ({
       setWeekDaySummaries(summaries);
     };
     loadWeekSessionSummaries();
-  }, [currentWeekStart]);
+  }, [currentWeekStart, refreshKey]);
+
+  useEffect(() => {
+    setCurrentWeekStart(startOfWeek(selectedDate, { weekStartsOn: 1 }));
+  }, [selectedDate]);
 
   // Create map for quick lookup of day summaries
   const daySummaryMap = useMemo(() => {
@@ -101,7 +107,7 @@ const WeeklyCalendarHeader: React.FC<WeeklyCalendarHeaderProps> = ({
 
         {/* Title/Date */}
         <h1 className="text-text-primary text-base font-medium">
-          {format(selectedDate, 'MMMM yyyy')}
+          {format(currentWeekStart, 'MMMM yyyy')}
         </h1>
 
         {/* Calendar Icon Button */}

@@ -1,7 +1,7 @@
 /** @jest-environment jsdom */
 
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 
 jest.mock('react-hot-toast', () => ({
@@ -36,7 +36,10 @@ jest.mock('../context/DateContext', () => ({
 }));
 
 jest.mock('@/context/ExerciseLogCalendarContext', () => ({
-  useExerciseLogCalendar: () => ({ setIsExerciseLogMainView: jest.fn() }),
+  useExerciseLogCalendar: () => ({
+    setIsExerciseLogMainView: jest.fn(),
+    refreshExerciseLogCalendar: jest.fn(),
+  }),
 }));
 
 jest.mock('@/features/exercises/exerciseLogViewState', () => ({
@@ -180,19 +183,13 @@ describe('ExerciseLog session type filtering', () => {
     });
   });
 
-  it('shows only exercises from selected session item', async () => {
+  it('hides legacy warm-up sessions and exercises from the active session UI', async () => {
     render(<ExerciseLog />);
 
     await waitFor(() => {
       expect(screen.getByText('Bench Press')).toBeTruthy();
       expect(screen.queryByText('Bike Warm-up')).toBeNull();
-    });
-
-    fireEvent.click(screen.getByText('Warm-up 1'));
-
-    await waitFor(() => {
-      expect(screen.getByText('Bike Warm-up')).toBeTruthy();
-      expect(screen.queryByText('Bench Press')).toBeNull();
+      expect(screen.queryByText('Warm-up 1')).toBeNull();
     });
   });
 
@@ -201,28 +198,18 @@ describe('ExerciseLog session type filtering', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Session 1')).toBeTruthy();
-      expect(screen.getByText('Warm-up 1')).toBeTruthy();
+      expect(screen.queryByText('Warm-up 1')).toBeNull();
     });
   });
 
-  it('creates exactly one warm-up session per Add Warm-up click', async () => {
+  it('does not expose warm-up session creation', async () => {
     render(<ExerciseLog />);
 
-    const addWarmupButton = await screen.findByLabelText('Add warm-up');
-
     await waitFor(() => {
-      expect((addWarmupButton as HTMLButtonElement).disabled).toBe(false);
+      expect(screen.queryByLabelText('Add warm-up')).toBeNull();
+      expect(screen.queryByText('Add Warm-up')).toBeNull();
     });
 
-    fireEvent.click(addWarmupButton);
-
-    await waitFor(() => {
-      expect(sessionTrackingServiceMock.createNewSessionForDate).toHaveBeenCalledTimes(1);
-      expect(sessionTrackingServiceMock.createNewSessionForDate).toHaveBeenCalledWith(
-        'user-1',
-        expect.any(Date),
-        'warmup'
-      );
-    });
+    expect(sessionTrackingServiceMock.createNewSessionForDate).not.toHaveBeenCalled();
   });
 });

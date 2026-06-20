@@ -113,8 +113,13 @@ export const LogOptions = ({
   const user = useSelector((state: RootState) => state.auth.user);
   const { state: supersetState, addSuperset } = useSupersets();
 
-  const effectiveSessionType: SessionType = editingExercise?.sessionType || selectedSessionType;
-  const isWarmupMode = effectiveSessionType === 'warmup';
+  const effectiveSessionType: SessionType =
+    editingExercise?.sessionType === 'warmup'
+      ? 'main'
+      : selectedSessionType === 'warmup'
+        ? 'main'
+        : editingExercise?.sessionType || selectedSessionType;
+  const isWarmupMode = false;
 
   // If we're editing an exercise, go directly to edit view
   useEffect(() => {
@@ -220,14 +225,13 @@ export const LogOptions = ({
       const existingSessions = await getSessionsForDate(userId, importDate);
       const sessionCountByType = new Map<SessionType, number>([
         ['main', existingSessions.filter((session) => session.sessionType === 'main').length],
-        ['warmup', existingSessions.filter((session) => session.sessionType === 'warmup').length],
       ]);
       const sessionContextByGroup = new Map<string, SessionContext>();
       let sessionToSelectAfterImport: string | undefined;
 
       for (const [groupKey, selections] of groupedSelections.entries()) {
         const firstSelection = selections[0];
-        const sessionType: SessionType = firstSelection.sourceIsWarmup ? 'warmup' : effectiveSessionType;
+        const sessionType: SessionType = effectiveSessionType;
         const sourceSessionName = firstSelection.sourceSessionName?.trim();
         const sourceProgramName = firstSelection.sourceProgramName?.trim();
         const sessionName = sourceSessionName || sourceProgramName || undefined;
@@ -291,7 +295,7 @@ export const LogOptions = ({
           userId,
           sessionContext: {
             date: (selectedDate || new Date()).toISOString().slice(0, 10),
-            warmupDone: true
+            warmupDone: false
           }
         });
 
@@ -301,7 +305,7 @@ export const LogOptions = ({
             userId,
             sets: sets,
             activityType: resolvedActivityType,
-            isWarmup: isWarmupMode || Boolean(selection.sourceIsWarmup),
+            isWarmup: false,
             sessionId: sessionContext?.sessionId || selectedSessionId || undefined,
             sessionType: sessionContext?.sessionType || effectiveSessionType,
             sessionDateKey: sessionContext?.sessionDateKey,
@@ -335,7 +339,7 @@ export const LogOptions = ({
           sets,
           timestamp: selectedDate || new Date(),
           activityType: resolvedActivityType,
-          isWarmup: isWarmupMode || Boolean(selection.sourceIsWarmup),
+          isWarmup: false,
           sessionId: sessionContext?.sessionId || selectedSessionId || undefined,
           sessionType: sessionContext?.sessionType || effectiveSessionType,
           sessionDateKey: sessionContext?.sessionDateKey,
@@ -425,7 +429,7 @@ export const LogOptions = ({
           userId: user.id,
           sets: exercise.sets || [],
           activityType: resolvedActivityType,
-          isWarmup: isWarmupMode || Boolean((exercise as any).isWarmup),
+          isWarmup: false,
           sessionId: selectedSessionId || undefined,
           sessionType: effectiveSessionType,
         };
@@ -601,7 +605,7 @@ export const LogOptions = ({
               userId: user.id,
               sets: sets,
               activityType: selectedExercise.activityType,
-              isWarmup: isWarmupMode,
+              isWarmup: false,
               sessionId: selectedSessionId || undefined,
               sessionType: effectiveSessionType,
               prescription: selectedExercise.prescription,
@@ -709,9 +713,9 @@ export const LogOptions = ({
                 ...editingExercise,
                 sets: (sets || []) as unknown as Array<Record<string, unknown>>,
               }),
-              isWarmup: isWarmupMode,
+              isWarmup: false,
               sessionId: editingExercise.sessionId || selectedSessionId || undefined,
-              sessionType: editingExercise.sessionType || effectiveSessionType,
+              sessionType: editingExercise.sessionType === 'warmup' ? effectiveSessionType : editingExercise.sessionType || effectiveSessionType,
               prescription: editingExercise.prescription,
               instructionMode: editingExercise.instructionMode,
               instructions: normalizedInstructions || undefined,

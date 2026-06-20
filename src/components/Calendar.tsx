@@ -7,6 +7,8 @@ import { toLocalDateString } from '@/utils/dateUtils';
 interface CalendarProps {
   onDayClick?: (date: Date) => void;
   selectedDate?: Date;
+  refreshKey?: number;
+  showSelectedWorkouts?: boolean;
 }
 
 const getSessionCountClass = (sessionCount: number): string => {
@@ -25,7 +27,12 @@ const getSessionCountClass = (sessionCount: number): string => {
   return 'text-text-tertiary hover:bg-bg-tertiary hover:text-text-secondary';
 };
 
-const Calendar: React.FC<CalendarProps> = ({ onDayClick, selectedDate }) => {
+const Calendar: React.FC<CalendarProps> = ({
+  onDayClick,
+  selectedDate,
+  refreshKey = 0,
+  showSelectedWorkouts = true,
+}) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [calendarDays, setCalendarDays] = useState<CalendarDaySummary[]>([]);
   const [selectedWorkout, setSelectedWorkout] = useState<ExerciseLog[]>([]);
@@ -37,7 +44,7 @@ const Calendar: React.FC<CalendarProps> = ({ onDayClick, selectedDate }) => {
     };
 
     loadCalendarDays();
-  }, [currentMonth]);
+  }, [currentMonth, refreshKey]);
 
   useEffect(() => {
     const loadSelectedDayWorkouts = async () => {
@@ -49,9 +56,13 @@ const Calendar: React.FC<CalendarProps> = ({ onDayClick, selectedDate }) => {
   }, [selectedDate]);
 
   useEffect(() => {
-    if (selectedDate && !isSameMonth(selectedDate, currentMonth)) {
-      setCurrentMonth(selectedDate);
+    if (!selectedDate) {
+      return;
     }
+
+    setCurrentMonth((visibleMonth) =>
+      isSameMonth(selectedDate, visibleMonth) ? visibleMonth : selectedDate
+    );
   }, [selectedDate]);
 
   const calendarDayMap = useMemo(() => {
@@ -202,7 +213,7 @@ const Calendar: React.FC<CalendarProps> = ({ onDayClick, selectedDate }) => {
       </div>
 
       {/* Selected Day Workouts */}
-      {selectedWorkout.length > 0 && (
+      {showSelectedWorkouts && selectedWorkout.length > 0 && (
         <div className="mt-6 border-t border-border pt-6">
           <h3 className="text-text-primary font-semibold text-lg mb-3">
             {format(selectedDate!, 'MMMM d, yyyy')} Workouts

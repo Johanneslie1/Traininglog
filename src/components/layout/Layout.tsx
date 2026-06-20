@@ -30,7 +30,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
-  const { isExerciseLogMainView } = useExerciseLogCalendar();
+  const { isExerciseLogMainView, calendarRefreshKey } = useExerciseLogCalendar();
   
   const isDarkBackground = ['/'].includes(location.pathname);
   
@@ -65,6 +65,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           onDateSelect={setSelectedDate}
           onCalendarIconClick={() => setShowMonthlyCalendar(true)}
           onMenuClick={() => setShowMenu(true)}
+          refreshKey={calendarRefreshKey}
         />
       )}
 
@@ -103,10 +104,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <AppOverlayComponent
           isOpen={showMonthlyCalendar}
           onClose={() => setShowMonthlyCalendar(false)}
-          className="z-[70] flex items-center justify-center p-4"
+          className="z-[70] flex items-start justify-center overflow-y-auto overscroll-contain p-4"
           ariaLabel="Monthly calendar"
         >
-          <div className="relative max-w-2xl w-full" onMouseDown={(event) => event.stopPropagation()}>
+          <div
+            className="relative my-auto w-full max-w-2xl max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
             <button
               onClick={() => setShowMonthlyCalendar(false)}
               className="absolute -top-4 -right-4 z-10 p-2 bg-bg-secondary hover:bg-bg-tertiary rounded-full shadow-lg transition-colors"
@@ -118,6 +122,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </button>
             <CalendarComponent
               selectedDate={selectedDate}
+              refreshKey={calendarRefreshKey}
+              showSelectedWorkouts={false}
               onDayClick={(date) => {
                 setSelectedDate(date);
                 setShowMonthlyCalendar(false);
