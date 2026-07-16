@@ -41,6 +41,7 @@ describe('resolveProgramExerciseSelections', () => {
         {
           id: 'session-1',
           name: 'Day 1',
+          userId: 'test-user',
           exercises: [squatA, squatB, bench],
         },
       ],
@@ -76,6 +77,7 @@ describe('resolveProgramExerciseSelections', () => {
         {
           id: 'session-a',
           name: 'Only one',
+          userId: 'test-user',
           exercises: [makeExercise('ex-1', 'Row')],
         },
       ],
