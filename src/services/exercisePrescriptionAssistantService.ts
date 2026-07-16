@@ -483,6 +483,35 @@ const fetchRecentHistory = async (userId: string, exerciseName: string): Promise
   }
 };
 
+/**
+ * Local-only prescription guide (no Firestore history / LLM).
+ * Use for bulk program import so adding many exercises stays fast.
+ */
+export const generateLocalExercisePrescriptionAssistant = (
+  params: AssistantGenerateParams
+): ExercisePrescriptionAssistantData => {
+  const activityType = normalizeActivityType(params.exercise.activityType);
+  const sessionDate = params.sessionContext?.date || new Date().toISOString().slice(0, 10);
+
+  return buildFallbackSuggestion({
+    exercise: {
+      ...params.exercise,
+      activityType,
+    },
+    userContext: {
+      recentHistory: params.userContext?.recentHistory ? [...params.userContext.recentHistory] : [],
+      oneRepMax: params.userContext?.oneRepMax,
+      typicalRPE: params.userContext?.typicalRPE,
+      trainingPhase: params.userContext?.trainingPhase,
+      goals: params.userContext?.goals,
+    },
+    sessionContext: {
+      date: sessionDate,
+      warmupDone: params.sessionContext?.warmupDone ?? true,
+    },
+  });
+};
+
 export const generateExercisePrescriptionAssistant = async (
   params: AssistantGenerateParams
 ): Promise<ExercisePrescriptionAssistantData> => {

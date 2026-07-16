@@ -1,16 +1,20 @@
 import React from 'react';
 import { Program, ProgramSession } from '@/types/program';
 import { Exercise } from '@/types/exercise';
-import { ExerciseSet } from '@/types/sets';
 import { ActivityType } from '@/types/activityTypes';
 import { normalizeActivityType } from '@/types/activityLog';
 import { formatPrescriptionBadge } from '@/utils/prescriptionUtils';
-import { resolveActivityTypeFromExerciseLike } from '@/utils/activityTypeResolver';
 import { usePrograms } from '@/context/ProgramsContext';
 import UniversalExercisePicker from '@/components/activities/UniversalExercisePicker';
 import { getMergedExercisesByAllActivityTypes } from '@/services/exerciseDatabaseService';
 import AppOverlay from '@/components/ui/AppOverlay';
 import { useAuth } from '@/hooks/useAuth';
+import {
+  buildSelectAllKeysForSession,
+  ProgramExerciseSelectionKey,
+  resolveProgramExerciseSelections,
+  type ResolvedProgramExerciseSelection,
+} from '@/utils/programExerciseSelection';
 
 const mapActivityTypeToExerciseType = (activityType: ActivityType): Exercise['type'] => {
   switch (activityType) {
@@ -35,19 +39,7 @@ interface ProgramExercisePickerProps {
   onSelectExercises: (exercises: ProgramExerciseSelection[]) => void;
 }
 
-export interface ProgramExerciseSelection {
-  exercise: Exercise;
-  sets: ExerciseSet[];
-  sourceProgramId?: string;
-  sourceProgramName?: string;
-  sourceSessionId?: string;
-  sourceSessionName?: string;
-  sourceIsWarmup?: boolean;
-  sourceProgramExerciseId?: string;
-  sourceProgramSupersetId?: string;
-  sourceProgramSupersetLabel?: string;
-  sourceProgramSupersetName?: string;
-}
+export type ProgramExerciseSelection = ResolvedProgramExerciseSelection;
 
 export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
   onClose,
@@ -58,7 +50,7 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
   const [step, setStep] = React.useState<'programs' | 'sessions' | 'exercises' | 'library'>('programs');
   const [selectedProgram, setSelectedProgram] = React.useState<Program | null>(null);
   const [expandedSessions, setExpandedSessions] = React.useState<string[]>([]);
-  const [selectedExercises, setSelectedExercises] = React.useState<{ sessionId: string; exerciseId: string }[]>([]);
+  const [selectedExercises, setSelectedExercises] = React.useState<ProgramExerciseSelectionKey[]>([]);
   const [libraryExercises, setLibraryExercises] = React.useState<Exercise[]>([]);
   const [librarySelectedMap, setLibrarySelectedMap] = React.useState<Record<string, boolean>>({});
   const [isLibraryLoading, setIsLibraryLoading] = React.useState(false);
@@ -138,94 +130,47 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
     );
   };
 
-  const isExerciseSelected = (sessionId: string, exerciseId: string) => {
-    return selectedExercises.some(sel => 
-      sel.sessionId === sessionId && sel.exerciseId === exerciseId
+  const isExerciseSelected = (sessionId: string, exerciseIndex: number) => {
+    return selectedExercises.some(
+      (sel) => sel.sessionId === sessionId && sel.exerciseIndex === exerciseIndex
     );
   };
 
-  const handleExerciseToggle = (sessionId: string, exerciseId: string) => {
-    setSelectedExercises(prev => {
-      const isSelected = isExerciseSelected(sessionId, exerciseId);
+  const handleExerciseToggle = (sessionId: string, exerciseIndex: number) => {
+    setSelectedExercises((prev) => {
+      const isSelected = isExerciseSelected(sessionId, exerciseIndex);
       if (isSelected) {
-        return prev.filter(sel => 
-          !(sel.sessionId === sessionId && sel.exerciseId === exerciseId)
+        return prev.filter(
+          (sel) => !(sel.sessionId === sessionId && sel.exerciseIndex === exerciseIndex)
         );
-      } else {
-        return [...prev, { sessionId, exerciseId }];
       }
+      return [...prev, { sessionId, exerciseIndex }];
     });
   };
 
   const handleSelectAllInSession = (sessionId: string, exercises: ProgramSession['exercises']) => {
-    setSelectedExercises(prev => {
-      const currentSessionSelections = prev.filter(sel => sel.sessionId === sessionId);
+    setSelectedExercises((prev) => {
+      const currentSessionSelections = prev.filter((sel) => sel.sessionId === sessionId);
       if (currentSessionSelections.length === exercises.length) {
-        // Deselect all in this session
-        return prev.filter(sel => sel.sessionId !== sessionId);
-      } else {
-        // Select all in this session
-        const sessionExercises = exercises.map(ex => ({
-          sessionId,
-          exerciseId: ex.id
-        }));
-        return [...prev.filter(sel => sel.sessionId !== sessionId), ...sessionExercises];
+        return prev.filter((sel) => sel.sessionId !== sessionId);
       }
+      const sessionExercises = buildSelectAllKeysForSession(sessionId, exercises);
+      return [...prev.filter((sel) => sel.sessionId !== sessionId), ...sessionExercises];
     });
   };
 
   const handleAddSelected = () => {
     if (!selectedProgram) return;
-    
-    const exercisesToAdd = selectedExercises.map((sel): ProgramExerciseSelection | null => {
-      const session = selectedProgram.sessions?.find(s => s.id === sel.sessionId);
-      const exercise = session?.exercises.find(e => e.id === sel.exerciseId);
-      
-      if (!exercise) return null;
 
-      // Keep logger fast: import with a single editable default row from logger initialization.
-      // Prescription and assistant metadata stay on exercise for guide/hints.
-      const sets: ExerciseSet[] = [];
+    const selectedCount = selectedExercises.length;
+    const exercisesToAdd = resolveProgramExerciseSelections(selectedProgram, selectedExercises);
 
-      const activityType = resolveActivityTypeFromExerciseLike(exercise, { fallback: ActivityType.RESISTANCE });
-      const isResistance = activityType === ActivityType.RESISTANCE;
-
-      return {
-        exercise: {
-          id: exercise.id,
-          name: exercise.name,
-          type: mapActivityTypeToExerciseType(activityType),
-          category: 'compound' as const,
-          primaryMuscles: [],
-          secondaryMuscles: [],
-          instructions: exercise.instructions ? [exercise.instructions] : [],
-          description: exercise.notes || '',
-          defaultUnit: isResistance ? ('kg' as const) : ('time' as const),
-          metrics: {
-            trackWeight: isResistance,
-            trackReps: isResistance,
-            trackTime: !isResistance,
-          },
-          activityType,
-          // Include prescription data for logger components
-          prescription: exercise.prescription,
-          instructionMode: exercise.instructionMode,
-          supersetId: exercise.supersetId,
-          supersetLabel: exercise.supersetLabel,
-          supersetName: exercise.supersetName,
-        },
-        sets,
-        sourceProgramId: selectedProgram.id,
-        sourceProgramName: selectedProgram.name,
-        sourceSessionId: session?.id,
-        sourceSessionName: session?.name,
-        sourceIsWarmup: session?.isWarmupSession === true,
-        sourceProgramExerciseId: exercise.id,
-        sourceProgramSupersetId: exercise.supersetId,
-        sourceProgramSupersetLabel: exercise.supersetLabel,
-        sourceProgramSupersetName: exercise.supersetName,
-      };
-    }).filter((ex): ex is ProgramExerciseSelection => ex !== null);
+    if (exercisesToAdd.length !== selectedCount) {
+      console.warn('ProgramExercisePicker: some selections could not be resolved', {
+        selectedCount,
+        resolvedCount: exercisesToAdd.length,
+      });
+    }
 
     onSelectExercises(exercisesToAdd);
     onClose();
@@ -521,15 +466,15 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
                       <div className="border-t border-border">
                         {session.exercises.map((exercise, index) => (
                           <div
-                            key={exercise.id}
+                            key={`${session.id}-${index}`}
                             className={`flex items-start gap-3 md:gap-4 p-3 md:p-4 hover:bg-bg-tertiary transition-colors ${
                               index !== session.exercises.length - 1 ? 'border-b border-border' : ''
                             }`}
                           >
                             <input
                               type="checkbox"
-                              checked={isExerciseSelected(session.id, exercise.id)}
-                              onChange={() => handleExerciseToggle(session.id, exercise.id)}
+                              checked={isExerciseSelected(session.id, index)}
+                              onChange={() => handleExerciseToggle(session.id, index)}
                               className="mt-1 w-5 h-5 rounded border-white/20 bg-bg-secondary checked:bg-accent-primary focus:ring-accent-primary"
                             />
                             <div className="flex-1 min-w-0">

@@ -237,7 +237,13 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   }, [getImportedSharedSessionExerciseDocs, hasMeaningfulSetData]);
 
   // Handle exercise data loading
-  const loadExercises = useCallback(async (date: Date) => {
+  const loadExercises = useCallback(async (
+    date: Date,
+    options?: { showSkeleton?: boolean; runRepairs?: boolean }
+  ) => {
+    const showSkeleton = options?.showSkeleton !== false;
+    const runRepairs = options?.runRepairs !== false;
+
     // Guard against null user
     const userId = auth.currentUser?.uid || user?.id;
     if (!userId) {
@@ -249,8 +255,10 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     // Normalize the target date
     const loadedDate = normalizeDate(date);
     
-    // Set loading state
-    setLoading(true);
+    // Soft refresh keeps the current list visible (no skeleton flash after add/save).
+    if (showSkeleton) {
+      setLoading(true);
+    }
 
     // Load supersets for this date
     const dateString = toLocalDateString(loadedDate);
@@ -266,49 +274,51 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
         return 0;
       });
 
-      try {
-        const repairedCount = await repairExerciseLogActivityTypes(
-          userId,
-          combinedExercises
-            .filter((exercise) => Boolean(exercise.id))
-            .map((exercise) => ({
-              id: exercise.id,
-              exerciseName: exercise.exerciseName,
-              sets: exercise.sets,
-              activityType: exercise.activityType,
-            }))
-        );
-
-        if (repairedCount > 0) {
-          console.log(`🔧 Repaired activityType on ${repairedCount} exercise log(s)`);
-        }
-      } catch (repairError) {
-        console.warn('⚠️ ActivityType repair pass failed (continuing without blocking UI):', repairError);
-      }
-
-      try {
-        const { supersets: persistedSupersets, exerciseOrder: persistedExerciseOrder } =
-          getPersistedSupersetStateForDate(dateString);
-
-        if (persistedSupersets.length > 0) {
-          const repairedSupersetCount = await backfillExerciseLogSupersetMetadata(
+      if (runRepairs) {
+        try {
+          const repairedCount = await repairExerciseLogActivityTypes(
             userId,
-            combinedExercises.map((exercise) => ({
-              id: exercise.id,
-              supersetId: exercise.supersetId,
-              supersetLabel: exercise.supersetLabel,
-              supersetName: exercise.supersetName,
-            })),
-            persistedSupersets,
-            persistedExerciseOrder
+            combinedExercises
+              .filter((exercise) => Boolean(exercise.id))
+              .map((exercise) => ({
+                id: exercise.id,
+                exerciseName: exercise.exerciseName,
+                sets: exercise.sets,
+                activityType: exercise.activityType,
+              }))
           );
 
-          if (repairedSupersetCount > 0) {
-            console.log(`🔧 Backfilled superset metadata on ${repairedSupersetCount} exercise log(s)`);
+          if (repairedCount > 0) {
+            console.log(`🔧 Repaired activityType on ${repairedCount} exercise log(s)`);
           }
+        } catch (repairError) {
+          console.warn('⚠️ ActivityType repair pass failed (continuing without blocking UI):', repairError);
         }
-      } catch (supersetRepairError) {
-        console.warn('⚠️ Superset metadata backfill failed (continuing without blocking UI):', supersetRepairError);
+
+        try {
+          const { supersets: persistedSupersets, exerciseOrder: persistedExerciseOrder } =
+            getPersistedSupersetStateForDate(dateString);
+
+          if (persistedSupersets.length > 0) {
+            const repairedSupersetCount = await backfillExerciseLogSupersetMetadata(
+              userId,
+              combinedExercises.map((exercise) => ({
+                id: exercise.id,
+                supersetId: exercise.supersetId,
+                supersetLabel: exercise.supersetLabel,
+                supersetName: exercise.supersetName,
+              })),
+              persistedSupersets,
+              persistedExerciseOrder
+            );
+
+            if (repairedSupersetCount > 0) {
+              console.log(`🔧 Backfilled superset metadata on ${repairedSupersetCount} exercise log(s)`);
+            }
+          }
+        } catch (supersetRepairError) {
+          console.warn('⚠️ Superset metadata backfill failed (continuing without blocking UI):', supersetRepairError);
+        }
       }
 
       setExercises(combinedExercises);
@@ -1312,13 +1322,25 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
           }}
           onExerciseAdded={(details) => {
             void (async () => {
-              await Promise.all([
-                loadExercises(selectedDate),
-                loadSessionsForDate(selectedDate),
-              ]);
+              const softReloadOptions = { showSkeleton: false, runRepairs: false } as const;
+              const targetSessionId = details?.selectedSessionId;
+              const sessionAlreadyKnown = Boolean(
+                targetSessionId &&
+                availableSessions.some((session) => session.sessionId === targetSessionId)
+              );
+              const shouldReloadSessions = details?.sessionsChanged === true || !sessionAlreadyKnown;
+
+              const refreshTasks: Promise<unknown>[] = [
+                loadExercises(selectedDate, softReloadOptions),
+              ];
+              if (shouldReloadSessions) {
+                refreshTasks.push(loadSessionsForDate(selectedDate));
+              }
+
+              await Promise.all(refreshTasks);
               refreshExerciseLogCalendar();
-              if (details?.selectedSessionId) {
-                setSelectedSessionId(details.selectedSessionId);
+              if (targetSessionId) {
+                setSelectedSessionId(targetSessionId);
               }
             })();
             setEditingExercise(null); // Clear editing state after saving

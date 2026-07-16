@@ -24,7 +24,7 @@ import { ActivityType } from '@/types/activityTypes';
 import { ExerciseData } from '@/services/exerciseDataService';
 import { auth } from '@/services/firebase/config';
 import { saveExerciseLog } from '@/utils/localStorageUtils';
-import { generateExercisePrescriptionAssistant } from '@/services/exercisePrescriptionAssistantService';
+import { generateLocalExercisePrescriptionAssistant } from '@/services/exercisePrescriptionAssistantService';
 import { ExercisePrescriptionAssistantData } from '@/types/exercise';
 import { resolveActivityTypeFromExerciseLike } from '@/utils/activityTypeResolver';
 import { useSupersets } from '@/context/SupersetContext';
@@ -38,9 +38,33 @@ import {
   SessionContext,
 } from '@/services/firebase/sessionTrackingService';
 
+const PROGRAM_IMPORT_WRITE_CONCURRENCY = 4;
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  mapper: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let nextIndex = 0;
+
+  const workers = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+    while (nextIndex < items.length) {
+      const currentIndex = nextIndex;
+      nextIndex += 1;
+      results[currentIndex] = await mapper(items[currentIndex], currentIndex);
+    }
+  });
+
+  await Promise.all(workers);
+  return results;
+}
 interface LogOptionsProps {
   onClose: () => void;
-  onExerciseAdded?: (details?: { selectedSessionId?: string }) => void;
+  onExerciseAdded?: (details?: {
+    selectedSessionId?: string;
+    sessionsChanged?: boolean;
+  }) => void;
   selectedDate?: Date;
   editingExercise?: UnifiedExerciseData | null; // Add editing exercise prop
   selectedSessionId?: string | null;
@@ -211,6 +235,7 @@ export const LogOptions = ({
       };
 
       const importDate = selectedDate || new Date();
+      const importDateKey = importDate.toISOString().slice(0, 10);
       const sourceGroupKeyForSelection = (selection: ProgramExerciseSelection, index: number): string =>
         selection.sourceSessionId
           ? `program-session:${selection.sourceProgramId || 'program'}:${selection.sourceSessionId}`
@@ -228,6 +253,8 @@ export const LogOptions = ({
       ]);
       const sessionContextByGroup = new Map<string, SessionContext>();
       let sessionToSelectAfterImport: string | undefined;
+      let createdSessionCount = 0;
+      let sessionsChanged = false;
 
       for (const [groupKey, selections] of groupedSelections.entries()) {
         const firstSelection = selections[0];
@@ -251,20 +278,41 @@ export const LogOptions = ({
 
         sessionContextByGroup.set(groupKey, sessionContext);
         sessionCountByType.set(sessionType, (sessionCountByType.get(sessionType) || 0) + 1);
-        sessionToSelectAfterImport = sessionContext.sessionId;
+        createdSessionCount += 1;
+        if (forceNewSession || !existingSessions.some((s) => s.sessionId === sessionContext.sessionId)) {
+          sessionsChanged = true;
+        }
+        // Prefer the first imported group so Select All from the first session stays visible.
+        if (!sessionToSelectAfterImport) {
+          sessionToSelectAfterImport = sessionContext.sessionId;
+        }
       }
 
-      // Check if any exercises have pre-filled sets (from prescriptions)
       const hasPrefilledSets = exercises.some(ex => ex.sets && ex.sets.length > 0);
-      let savedCount = 0;
       const runtimeSupersetIdBySourceKey = new Map<string, string>();
       const importedSupersetGroupsById = new Map<string, { name?: string; exerciseIds: string[] }>();
-      
-      for (const [selectionIndex, selection] of exercises.entries()) {
+
+      type PreparedImport = {
+        selection: ProgramExerciseSelection;
+        selectionIndex: number;
+        sets: ExerciseSet[];
+        resolvedActivityType: ActivityType;
+        sessionContext: SessionContext | undefined;
+        runtimeSupersetId?: string;
+        runtimeSupersetLabel?: string;
+        runtimeSupersetName?: string;
+        prescriptionAssistant: ExercisePrescriptionAssistantData;
+      };
+
+      const preparedImports: PreparedImport[] = exercises.map((selection, selectionIndex) => {
         const { exercise } = selection;
         const sets: ExerciseSet[] = [];
-        const resolvedActivityType = resolveActivityTypeFromExerciseLike(exercise, { fallback: ActivityType.RESISTANCE });
-        const sessionContext = sessionContextByGroup.get(sourceGroupKeyForSelection(selection, selectionIndex));
+        const resolvedActivityType = resolveActivityTypeFromExerciseLike(exercise, {
+          fallback: ActivityType.RESISTANCE,
+        });
+        const sessionContext = sessionContextByGroup.get(
+          sourceGroupKeyForSelection(selection, selectionIndex)
+        );
 
         const sourceSupersetToken =
           selection.sourceProgramSupersetId ||
@@ -285,25 +333,87 @@ export const LogOptions = ({
         const runtimeSupersetLabel = selection.sourceProgramSupersetLabel || exercise.supersetLabel;
         const runtimeSupersetName = selection.sourceProgramSupersetName || exercise.supersetName;
 
-        const prescriptionAssistant = await generateExercisePrescriptionAssistant({
+        const prescriptionAssistant = generateLocalExercisePrescriptionAssistant({
           exercise: {
             id: exercise.id,
             name: exercise.name,
             activityType: resolvedActivityType,
-            prescription: exercise.prescription
+            prescription: exercise.prescription,
           },
-          userId,
           sessionContext: {
-            date: (selectedDate || new Date()).toISOString().slice(0, 10),
-            warmupDone: false
-          }
+            date: importDateKey,
+            warmupDone: false,
+          },
         });
 
-        const createdId = await addExerciseLog(
-          {
+        return {
+          selection,
+          selectionIndex,
+          sets,
+          resolvedActivityType,
+          sessionContext,
+          runtimeSupersetId,
+          runtimeSupersetLabel,
+          runtimeSupersetName,
+          prescriptionAssistant,
+        };
+      });
+
+      const createdIds = await mapWithConcurrency(
+        preparedImports,
+        PROGRAM_IMPORT_WRITE_CONCURRENCY,
+        async (prepared) => {
+          const {
+            selection,
+            sets,
+            resolvedActivityType,
+            sessionContext,
+            runtimeSupersetId,
+            runtimeSupersetLabel,
+            runtimeSupersetName,
+            prescriptionAssistant,
+          } = prepared;
+          const { exercise } = selection;
+
+          const createdId = await addExerciseLog(
+            {
+              exerciseName: exercise.name,
+              userId,
+              sets,
+              activityType: resolvedActivityType,
+              isWarmup: false,
+              sessionId: sessionContext?.sessionId || selectedSessionId || undefined,
+              sessionType: sessionContext?.sessionType || effectiveSessionType,
+              sessionDateKey: sessionContext?.sessionDateKey,
+              sessionWeekKey: sessionContext?.sessionWeekKey,
+              sessionNumberInDay: sessionContext?.sessionNumberInDay,
+              sessionNumberInWeek: sessionContext?.sessionNumberInWeek,
+              prescription: exercise.prescription,
+              instructionMode: exercise.instructionMode,
+              sourceProgramId: selection.sourceProgramId,
+              sourceProgramName: selection.sourceProgramName,
+              sourceProgramSessionId: selection.sourceSessionId,
+              sourceProgramSessionName: selection.sourceSessionName,
+              sourceProgramExerciseId: selection.sourceProgramExerciseId,
+              supersetId: runtimeSupersetId,
+              supersetLabel: runtimeSupersetLabel,
+              supersetName: runtimeSupersetName,
+              instructions: typeof exercise.instructions === 'string'
+                ? exercise.instructions
+                : Array.isArray(exercise.instructions)
+                  ? exercise.instructions[0]
+                  : undefined,
+              prescriptionAssistant,
+            },
+            importDate
+          );
+
+          saveExerciseLog({
+            id: createdId,
             exerciseName: exercise.name,
             userId,
-            sets: sets,
+            sets,
+            timestamp: importDate,
             activityType: resolvedActivityType,
             isWarmup: false,
             sessionId: sessionContext?.sessionId || selectedSessionId || undefined,
@@ -312,70 +422,41 @@ export const LogOptions = ({
             sessionWeekKey: sessionContext?.sessionWeekKey,
             sessionNumberInDay: sessionContext?.sessionNumberInDay,
             sessionNumberInWeek: sessionContext?.sessionNumberInWeek,
-            prescription: exercise.prescription,
-            instructionMode: exercise.instructionMode,
+            supersetId: runtimeSupersetId,
+            supersetLabel: runtimeSupersetLabel,
+            supersetName: runtimeSupersetName,
             sourceProgramId: selection.sourceProgramId,
             sourceProgramName: selection.sourceProgramName,
             sourceProgramSessionId: selection.sourceSessionId,
             sourceProgramSessionName: selection.sourceSessionName,
             sourceProgramExerciseId: selection.sourceProgramExerciseId,
-            supersetId: runtimeSupersetId,
-            supersetLabel: runtimeSupersetLabel,
-            supersetName: runtimeSupersetName,
+            prescription: exercise.prescription,
+            instructionMode: exercise.instructionMode,
             instructions: typeof exercise.instructions === 'string'
               ? exercise.instructions
               : Array.isArray(exercise.instructions)
                 ? exercise.instructions[0]
                 : undefined,
             prescriptionAssistant,
-          },
-          selectedDate || new Date()
-        );
+          });
 
-        saveExerciseLog({
-          id: createdId,
-          exerciseName: exercise.name,
-          userId,
-          sets,
-          timestamp: selectedDate || new Date(),
-          activityType: resolvedActivityType,
-          isWarmup: false,
-          sessionId: sessionContext?.sessionId || selectedSessionId || undefined,
-          sessionType: sessionContext?.sessionType || effectiveSessionType,
-          sessionDateKey: sessionContext?.sessionDateKey,
-          sessionWeekKey: sessionContext?.sessionWeekKey,
-          sessionNumberInDay: sessionContext?.sessionNumberInDay,
-          sessionNumberInWeek: sessionContext?.sessionNumberInWeek,
-          supersetId: runtimeSupersetId,
-          supersetLabel: runtimeSupersetLabel,
-          supersetName: runtimeSupersetName,
-          sourceProgramId: selection.sourceProgramId,
-          sourceProgramName: selection.sourceProgramName,
-          sourceProgramSessionId: selection.sourceSessionId,
-          sourceProgramSessionName: selection.sourceSessionName,
-          sourceProgramExerciseId: selection.sourceProgramExerciseId,
-          prescription: exercise.prescription,
-          instructionMode: exercise.instructionMode,
-          instructions: typeof exercise.instructions === 'string'
-            ? exercise.instructions
-            : Array.isArray(exercise.instructions)
-              ? exercise.instructions[0]
-              : undefined,
-          prescriptionAssistant
-        });
-
-        if (runtimeSupersetId) {
-          const group = importedSupersetGroupsById.get(runtimeSupersetId) || {
-            name: runtimeSupersetName,
-            exerciseIds: []
-          };
-          group.name = group.name || runtimeSupersetName;
-          group.exerciseIds.push(createdId);
-          importedSupersetGroupsById.set(runtimeSupersetId, group);
+          return createdId;
         }
+      );
 
-        savedCount += 1;
-      }
+      preparedImports.forEach((prepared, index) => {
+        const createdId = createdIds[index];
+        if (!prepared.runtimeSupersetId || !createdId) return;
+        const group = importedSupersetGroupsById.get(prepared.runtimeSupersetId) || {
+          name: prepared.runtimeSupersetName,
+          exerciseIds: [],
+        };
+        group.name = group.name || prepared.runtimeSupersetName;
+        group.exerciseIds.push(createdId);
+        importedSupersetGroupsById.set(prepared.runtimeSupersetId, group);
+      });
+
+      const savedCount = createdIds.length;
 
       const nextOrderStart = supersetState.supersets.length;
       Array.from(importedSupersetGroupsById.entries())
@@ -390,11 +471,17 @@ export const LogOptions = ({
           addSuperset(nextSuperset);
         });
 
-      onExerciseAdded?.({ selectedSessionId: sessionToSelectAfterImport });
+      onExerciseAdded?.({
+        selectedSessionId: sessionToSelectAfterImport,
+        sessionsChanged,
+      });
       onClose();
-      
-      // Show appropriate toast message
-      if (hasPrefilledSets) {
+
+      if (createdSessionCount > 1) {
+        toast.success(
+          `Added ${savedCount} exercise${savedCount !== 1 ? 's' : ''} across ${createdSessionCount} sessions`
+        );
+      } else if (hasPrefilledSets) {
         toast.success(`Added ${savedCount} exercise${savedCount !== 1 ? 's' : ''} with program values`);
       } else {
         toast.success(`Added ${savedCount} exercise${savedCount !== 1 ? 's' : ''} from program`);
