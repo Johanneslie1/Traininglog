@@ -13,6 +13,7 @@ jest.mock('react-redux', () => ({
 jest.mock('@/hooks/useExerciseHistory', () => ({
   useExerciseHistory: () => ({
     history: [],
+    lastWorkingSets: [],
     isLoading: false,
     error: null,
     copyLastValues: () => [],

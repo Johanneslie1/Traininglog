@@ -179,7 +179,6 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
   // Prescription state
   const [followPrescription, setFollowPrescription] = useState<boolean>(true);
   const [showPrescriptionGuide, setShowPrescriptionGuide] = useState(false);
-  const [showRecentHistory, setShowRecentHistory] = useState(false);
   const prescriptionApplied = false;
   
   // Fetch exercise history for progressive overload context
@@ -958,42 +957,15 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
           <p className="mt-2 text-xs text-primary-300">Generating prescription guidance...</p>
         )}
         
-        {/* Exercise History Summary - helps with progressive overload */}
-        {!isEditing && (
-          <div className="mt-3">
-            <button
-              type="button"
-              onClick={() => setShowRecentHistory((current) => !current)}
-              className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-border bg-bg-tertiary text-left"
-              aria-expanded={showRecentHistory}
-              aria-controls="universal-recent-history-section"
-            >
-              <span className="text-sm font-semibold text-text-primary">Recent history</span>
-              <span className="text-xs text-text-tertiary flex items-center gap-2">
-                {showRecentHistory ? 'Hide' : 'Show'}
-                <svg
-                  className={`w-4 h-4 transition-transform ${showRecentHistory ? 'rotate-180' : ''}`}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </span>
-            </button>
-
-            {showRecentHistory && (
-              <div id="universal-recent-history-section" className="mt-2">
-                <ExerciseHistorySummary
-                  exerciseName={exercise.name}
-                  historyData={exerciseHistory}
-                  onCopyLastValues={handleCopyLastHistoryValues}
-                  compact={false}
-                />
-              </div>
-            )}
-          </div>
-        )}
+        {/* Always-visible last/best for progressive overload */}
+        <div className="mt-3">
+          <ExerciseHistorySummary
+            exerciseName={exercise.name}
+            historyData={exerciseHistory}
+            onCopyLastValues={handleCopyLastHistoryValues}
+            compact
+          />
+        </div>
 
       </div>
 
