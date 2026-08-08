@@ -27,10 +27,20 @@ function dedupeExercises(exercises) {
   return deduped;
 }
 
+function loadImportedExercises() {
+  const partsDir = path.join(root, 'src/data/generatedExercises');
+  const partFiles = fs
+    .readdirSync(partsDir)
+    .filter((file) => /^part\d+\.json$/.test(file))
+    .sort((a, b) => Number(a.match(/\d+/)[0]) - Number(b.match(/\d+/)[0]));
+
+  return partFiles.flatMap((file) => JSON.parse(fs.readFileSync(path.join(partsDir, file), 'utf8')));
+}
+
 function loadCuratedNames() {
   const resistance = JSON.parse(fs.readFileSync(path.join(root, 'src/data/exercises/resistance.json'), 'utf8'));
   const exercisesTs = fs.readFileSync(path.join(root, 'src/data/exercises.ts'), 'utf8');
-  const imported = JSON.parse(fs.readFileSync(path.join(root, 'src/data/generatedExercises.json'), 'utf8'));
+  const imported = loadImportedExercises();
 
   const curated = [];
   for (const match of exercisesTs.matchAll(/name:\s*['"]([^'"]+)['"]/g)) {
@@ -47,12 +57,13 @@ function loadCuratedNames() {
   return {
     curatedCount: merged.length,
     curatedNames: new Set(merged.map((item) => normalizeName(item.name))),
+    importedCount: imported.length,
   };
 }
 
 function simulateAppLoad() {
   const resistance = JSON.parse(fs.readFileSync(path.join(root, 'src/data/exercises/resistance.json'), 'utf8'));
-  const imported = JSON.parse(fs.readFileSync(path.join(root, 'src/data/generatedExercises.json'), 'utf8'));
+  const imported = loadImportedExercises();
   const exercisesTs = fs.readFileSync(path.join(root, 'src/data/exercises.ts'), 'utf8');
 
   const curatedFromTs = [];
@@ -63,7 +74,7 @@ function simulateAppLoad() {
   const all = [
     ...curatedFromTs,
     ...resistance.map((exercise) => ({ ...exercise, activityType: exercise.activityType || 'resistance', source: 'resistance.json' })),
-    ...imported.map((exercise) => ({ ...exercise, activityType: exercise.activityType || 'resistance', source: 'generatedExercises.json' })),
+    ...imported.map((exercise) => ({ ...exercise, activityType: exercise.activityType || 'resistance', source: 'generatedExercises' })),
   ];
 
   const deduped = dedupeExercises(all);
@@ -87,14 +98,14 @@ const app = simulateAppLoad();
 console.log('=== Exercise availability report ===');
 console.log(`CSV unique exercises: ${csvExercises.length}`);
 console.log(`Curated (exercises.ts + resistance.json, deduped): ${curatedCount}`);
-console.log(`Imported file (generatedExercises.json): ${app.importedFileCount}`);
+console.log(`Imported file (generatedExercises parts): ${app.importedFileCount}`);
 console.log(`Total resistance exercises loaded in app logic: ${app.totalLoadedResistance}`);
 console.log(`Imported exercises present after runtime merge/dedupe: ${app.loadedFromImportFile}/${app.importedFileCount}`);
 console.log(`Imported exercises dropped at runtime: ${app.missingFromImportFile}`);
 console.log(`Smith machine exercises available in app: ${app.smithLoaded}`);
 
 if (app.missingFromImportFile > 0) {
-  const imported = JSON.parse(fs.readFileSync(path.join(root, 'src/data/generatedExercises.json'), 'utf8'));
+  const imported = loadImportedExercises();
   const resistance = JSON.parse(fs.readFileSync(path.join(root, 'src/data/exercises/resistance.json'), 'utf8'));
   const exercisesTs = fs.readFileSync(path.join(root, 'src/data/exercises.ts'), 'utf8');
   const curatedFromTs = [];

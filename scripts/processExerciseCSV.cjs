@@ -3,10 +3,12 @@ const path = require('path');
 const { parseOvelsesCsv, normalizeName } = require('./parseOvelsesCsv.cjs');
 
 const csvFilePath = path.join(__dirname, '../Øvelsesdatabase.csv');
-const jsonOutputPath = path.join(__dirname, '../src/data/generatedExercises.json');
+const jsonPartsDir = path.join(__dirname, '../src/data/generatedExercises');
+const legacyJsonOutputPath = path.join(__dirname, '../src/data/generatedExercises.json');
 const tsOutputPath = path.join(__dirname, '../src/data/importedExercises.ts');
 const manifestPath = path.join(__dirname, '../docs/imported-exercises-manifest.json');
 const listPath = path.join(__dirname, '../docs/newly-imported-exercises.txt');
+const IMPORTED_PART_COUNT = 5;
 
 function loadExistingNames() {
   const names = new Set();
@@ -47,8 +49,23 @@ function processCSV() {
 
   fs.mkdirSync(path.dirname(manifestPath), { recursive: true });
 
-  fs.writeFileSync(jsonOutputPath, JSON.stringify(results, null, 2), 'utf8');
-  console.log(`JSON data written to: ${jsonOutputPath}`);
+  // Write compact shards so each Vite chunk stays under the bundle budget.
+  fs.mkdirSync(jsonPartsDir, { recursive: true });
+  const partSize = Math.ceil(results.length / IMPORTED_PART_COUNT);
+  const partImports = [];
+
+  for (let partIndex = 0; partIndex < IMPORTED_PART_COUNT; partIndex += 1) {
+    const part = results.slice(partIndex * partSize, (partIndex + 1) * partSize);
+    const partPath = path.join(jsonPartsDir, `part${partIndex}.json`);
+    fs.writeFileSync(partPath, JSON.stringify(part), 'utf8');
+    partImports.push(`import part${partIndex} from './generatedExercises/part${partIndex}.json';`);
+    console.log(`JSON part written to: ${partPath} (${part.length} exercises)`);
+  }
+
+  if (fs.existsSync(legacyJsonOutputPath)) {
+    fs.unlinkSync(legacyJsonOutputPath);
+    console.log(`Removed legacy monolith: ${legacyJsonOutputPath}`);
+  }
 
   const sortedNames = results.map((exercise) => exercise.name).sort((a, b) => a.localeCompare(b));
   fs.writeFileSync(listPath, sortedNames.join('\n'), 'utf8');
@@ -63,6 +80,7 @@ function processCSV() {
         importedCount: results.length,
         skippedDuplicateCount: skipped.length,
         smithMachineCount: smithCount,
+        partCount: IMPORTED_PART_COUNT,
         skippedDuplicates: skipped.map((exercise) => exercise.name).sort((a, b) => a.localeCompare(b)),
         importedExercises: sortedNames,
       },
@@ -73,11 +91,18 @@ function processCSV() {
   );
   console.log(`Manifest written to: ${manifestPath}`);
 
-  const tsContent = `// Auto-generated wrapper — run \`npm run import-exercises\` to refresh generatedExercises.json
-import { Exercise } from '../types/exercise';
-import generatedExercises from './generatedExercises.json';
+  const spreadLines = Array.from(
+    { length: IMPORTED_PART_COUNT },
+    (_, index) => `  ...(part${index} as Exercise[]),`
+  ).join('\n');
 
-export const importedExercises: Exercise[] = generatedExercises as Exercise[];
+  const tsContent = `// Auto-generated wrapper — run \`npm run import-exercises\` to refresh generatedExercises parts
+import { Exercise } from '../types/exercise';
+${partImports.join('\n')}
+
+export const importedExercises: Exercise[] = [
+${spreadLines}
+];
 `;
 
   fs.writeFileSync(tsOutputPath, tsContent, 'utf8');

@@ -30,7 +30,13 @@ const budget = {
   namedChunkMaxKb: {
     'firebase-firestore-vendor': 330,
     'firebase-core-vendor': 220,
-    'exercise-data-legacy': 360,
+    'exercise-data-legacy': 120,
+    'exercise-data-imported-index': 40,
+    'exercise-data-imported-0': 360,
+    'exercise-data-imported-1': 360,
+    'exercise-data-imported-2': 360,
+    'exercise-data-imported-3': 360,
+    'exercise-data-imported-4': 360,
     'exercise-data-activities': 240,
     'exercise-db-core': 100,
     'CreateUniversalExerciseDialog': 60,
@@ -61,16 +67,27 @@ if (!indexChunk) {
 }
 
 for (const [prefix, maxKb] of Object.entries(budget.namedChunkMaxKb)) {
-  const match = fileStats.find((stat) => stat.file.startsWith(`${prefix}-`));
-  if (!match) {
-    continue;
-  }
+  // Prefer the longest matching named prefix so part chunks are not
+  // accidentally scored against a shorter parent prefix.
+  const matches = fileStats
+    .filter((stat) => stat.file.startsWith(`${prefix}-`))
+    .filter((stat) => {
+      const longerPrefix = Object.keys(budget.namedChunkMaxKb).some(
+        (otherPrefix) =>
+          otherPrefix !== prefix &&
+          otherPrefix.startsWith(prefix) &&
+          stat.file.startsWith(`${otherPrefix}-`)
+      );
+      return !longerPrefix;
+    });
 
-  const sizeKb = bytesToKb(match.size);
-  if (sizeKb > maxKb) {
-    violations.push(
-      `${match.file} is ${sizeKb.toFixed(2)} KB (max allowed for ${prefix}: ${maxKb} KB)`
-    );
+  for (const match of matches) {
+    const sizeKb = bytesToKb(match.size);
+    if (sizeKb > maxKb) {
+      violations.push(
+        `${match.file} is ${sizeKb.toFixed(2)} KB (max allowed for ${prefix}: ${maxKb} KB)`
+      );
+    }
   }
 }
 

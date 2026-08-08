@@ -219,11 +219,21 @@ export default defineConfig(({ mode }) => {
               return 'exercise-data-activities';
             }
 
-            if (
-              normalizedId.includes('/src/data/exercises.ts') ||
-              normalizedId.includes('/src/data/importedExercises.ts')
-            ) {
+            // Keep curated legacy exercises separate from the large imported CSV dataset.
+            if (normalizedId.includes('/src/data/exercises.ts')) {
               return 'exercise-data-legacy';
+            }
+
+            // Split imported exercise JSON shards so each stays under the bundle budget.
+            const importedPartMatch = normalizedId.match(
+              /\/src\/data\/generatedExercises\/part(\d+)\.json$/
+            );
+            if (importedPartMatch) {
+              return `exercise-data-imported-${importedPartMatch[1]}`;
+            }
+
+            if (normalizedId.includes('/src/data/importedExercises.ts')) {
+              return 'exercise-data-imported-index';
             }
 
             return undefined;
