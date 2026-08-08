@@ -116,6 +116,11 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   const [availableSessions, setAvailableSessions] = useState<SessionInfo[]>([]);
   const [srpeSessionsBySessionId, setSrpeSessionsBySessionId] = useState<Record<string, SportsLoadSession>>({});
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  /** Explicit session context for LogOptions add-flow so sRPE chips never pollute gym logging. */
+  const [loggingTarget, setLoggingTarget] = useState<{
+    sessionId: string | null;
+    sessionType: SessionType;
+  } | null>(null);
   const [sessionsLoading, setSessionsLoading] = useState(false);
   const [creatingSessionType, setCreatingSessionType] = useState<SessionType | null>(null);
   const [renamingSessionId, setRenamingSessionId] = useState<string | null>(null);
@@ -148,6 +153,29 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     }
     return 'main';
   }, [availableSessions, selectedSessionId]);
+
+  const preferredMainSessionId = useMemo(() => {
+    const newestFirst = [...availableSessions].reverse();
+    const preferredMain =
+      newestFirst.find((session) => session.sessionType === 'main' && session.status === 'active') ||
+      newestFirst.find((session) => session.sessionType === 'main') ||
+      null;
+    return preferredMain?.sessionId ?? null;
+  }, [availableSessions]);
+
+  const logOptionsSessionId = editingExercise
+    ? (editingExercise.sessionId ?? selectedSessionId)
+    : loggingTarget
+      ? loggingTarget.sessionId
+      : (currentSessionType === 'srpe' ? preferredMainSessionId : selectedSessionId);
+
+  const logOptionsSessionType: SessionType = editingExercise
+    ? (editingExercise.sessionType === 'warmup' || editingExercise.sessionType === 'srpe'
+        ? 'main'
+        : (editingExercise.sessionType || 'main'))
+    : loggingTarget
+      ? loggingTarget.sessionType
+      : (currentSessionType === 'srpe' ? 'main' : currentSessionType);
 
   const getDateKey = useCallback((date: Date): string => {
     return toLocalDateString(normalizeDate(date));
@@ -538,20 +566,36 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   const handleEditExercise = (exercise: ExerciseData) => {
     // Always use LogOptions for editing to provide consistent experience
     const unifiedExercise = exercise as UnifiedExerciseData;
+    setLoggingTarget(null);
     setEditingExercise(unifiedExercise);
     updateUiState('showLogOptions', true);
   };
 
-  const openLogOptions = useCallback(() => {
-    if (currentSessionType === 'srpe') {
-      toast('Open sRPE to edit this session load.', { icon: 'ℹ️' });
-      navigate('/sports');
-      return;
+  const openLogOptions = useCallback((options?: { sessionId: string | null }) => {
+    setEditingExercise(null);
+
+    const hasExplicitMainTarget = Boolean(options && 'sessionId' in options);
+    const useMainContext =
+      hasExplicitMainTarget ||
+      currentSessionType === 'srpe' ||
+      currentSessionType === 'warmup';
+
+    const mainSessionId = hasExplicitMainTarget
+      ? options!.sessionId
+      : preferredMainSessionId;
+
+    if (useMainContext) {
+      setSelectedSessionId(mainSessionId);
+      setLoggingTarget({ sessionId: mainSessionId, sessionType: 'main' });
+    } else {
+      setLoggingTarget({
+        sessionId: selectedSessionId,
+        sessionType: currentSessionType,
+      });
     }
 
-    setEditingExercise(null);
     updateUiState('showLogOptions', true);
-  }, [currentSessionType, navigate, updateUiState]);
+  }, [currentSessionType, preferredMainSessionId, selectedSessionId, updateUiState]);
 
   // Handle exercise reordering with persistence
   const handleReorderExercises = useCallback(async (reorderedExercises: ExerciseData[]) => {
@@ -776,8 +820,10 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
         .filter((session) => session.sessionType === sessionType)
         .sort((a, b) => a.sessionNumberInDay - b.sessionNumberInDay);
 
+      // First gym session of the day: open exercise picker as main (do not create empty main via API).
       if (sessionType === 'main' && existingSessionsOfType.length === 0) {
-        throw new Error('Log your first exercise before creating another session.');
+        openLogOptions({ sessionId: null });
+        return;
       }
 
       if (existingSessionsOfType.length > 0) {
@@ -800,7 +846,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
         defaultName: fallbackName,
         value: sessionContext.name || fallbackName,
       });
-      openLogOptions();
+      openLogOptions({ sessionId: sessionContext.sessionId });
     } catch (error) {
       console.error('Failed to create new session:', error);
       const message = error instanceof Error ? error.message : 'Could not start a new session. Please try again.';
@@ -1271,7 +1317,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
                 description="Start logging to see your progress, track PRs, and build consistency"
                 primaryAction={{
                   label: 'Log First Exercise',
-                  onClick: () => updateUiState('showLogOptions', true)
+                  onClick: () => openLogOptions()
                 }}
               />
             ) : selectedSessionId && sessionFilteredExercises.length === 0 ? (
@@ -1297,7 +1343,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
 
       {/* Floating Action Button */}
       <FloatingActionButton
-        onClick={openLogOptions}
+        onClick={() => openLogOptions()}
         label="Add Exercise"
         position="bottom-right"
       />
@@ -1318,7 +1364,8 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
         <LogOptions 
           onClose={() => {
             updateUiState('showLogOptions', false);
-            setEditingExercise(null); // Clear editing state when closing
+            setEditingExercise(null);
+            setLoggingTarget(null);
           }}
           onExerciseAdded={(details) => {
             void (async () => {
@@ -1343,12 +1390,13 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
                 setSelectedSessionId(targetSessionId);
               }
             })();
-            setEditingExercise(null); // Clear editing state after saving
+            setEditingExercise(null);
+            setLoggingTarget(null);
           }}
           selectedDate={selectedDate}
-          editingExercise={editingExercise} // Pass editing exercise
-          selectedSessionId={selectedSessionId}
-          selectedSessionType={currentSessionType}
+          editingExercise={editingExercise}
+          selectedSessionId={logOptionsSessionId}
+          selectedSessionType={logOptionsSessionType}
         />
       )}
 

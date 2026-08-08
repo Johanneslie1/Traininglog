@@ -138,9 +138,9 @@ export const LogOptions = ({
   const { state: supersetState, addSuperset } = useSupersets();
 
   const effectiveSessionType: SessionType =
-    editingExercise?.sessionType === 'warmup'
+    editingExercise?.sessionType === 'warmup' || editingExercise?.sessionType === 'srpe'
       ? 'main'
-      : selectedSessionType === 'warmup'
+      : selectedSessionType === 'warmup' || selectedSessionType === 'srpe'
         ? 'main'
         : editingExercise?.sessionType || selectedSessionType;
   const isWarmupMode = false;
