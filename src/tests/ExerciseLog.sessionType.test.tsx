@@ -77,7 +77,7 @@ const getSportsLoadSessionsByDateMock = jest.fn(async () => [] as unknown[]);
 
 jest.mock('@/services/srpeService', () => ({
   ensureSrpeSessionContextsForDate: jest.fn(async () => 0),
-  getSportsLoadSessionsByDate: (...args: unknown[]) => getSportsLoadSessionsByDateMock(...args),
+  getSportsLoadSessionsByDate: getSportsLoadSessionsByDateMock,
 }));
 
 const getAllExercisesByDateMock = jest.fn(async () => [
@@ -136,7 +136,7 @@ jest.mock('@/services/firebase/sessionTrackingService', () => ({
   createNewSessionForDate: jest.fn(),
   deleteSession: jest.fn(),
   renameSession: jest.fn(),
-  getSessionsForDate: (...args: unknown[]) => getSessionsForDateMock(...args),
+  getSessionsForDate: getSessionsForDateMock,
 }));
 
 jest.mock('../components/ErrorBoundary', () => ({
