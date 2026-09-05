@@ -3,6 +3,13 @@ import { toast } from 'react-hot-toast';
 import { collection, orderBy, query, QueryConstraint, where } from 'firebase/firestore';
 import { ActivityType } from '@/types/activityTypes';
 import type { Exercise } from '@/types/exercise';
+import {
+  LATERALITY_LABELS,
+  MOVEMENT_PATTERN_LABELS,
+  MOVEMENT_PATTERNS,
+  type ExerciseLaterality,
+  type MovementPattern
+} from '@/data/movementPatterns';
 import { useAuth } from '@/hooks/useAuth';
 import { useCollection } from '@/hooks/useCollection';
 import { db } from '@/services/firebase/config';
@@ -138,6 +145,9 @@ interface UniversalExerciseFormData {
   flexibilityType?: FlexibilityType;
   instructions: string;
   tips: string;
+  laterality?: ExerciseLaterality | '';
+  primaryMovementPattern?: MovementPattern | '';
+  secondaryMovementPattern?: MovementPattern | '';
 }
 
 interface FormErrors {
@@ -156,7 +166,10 @@ const getFormFromExercise = (exercise?: Exercise, fallbackName = ''): UniversalE
       equipment: [],
       difficulty: 'Beginner',
       instructions: '',
-      tips: ''
+      tips: '',
+      laterality: '',
+      primaryMovementPattern: '',
+      secondaryMovementPattern: ''
     };
   }
 
@@ -175,7 +188,10 @@ const getFormFromExercise = (exercise?: Exercise, fallbackName = ''): UniversalE
     sportType: exercise.sportType as SportType | undefined,
     enduranceCategory: (exercise.category as EnduranceCategory) ?? undefined,
     drillType: exercise.drillType as DrillType | undefined,
-    flexibilityType: (exercise.category as FlexibilityType) ?? undefined
+    flexibilityType: (exercise.category as FlexibilityType) ?? undefined,
+    laterality: exercise.laterality ?? '',
+    primaryMovementPattern: exercise.primaryMovementPattern ?? '',
+    secondaryMovementPattern: exercise.secondaryMovementPattern ?? ''
   };
 };
 
@@ -790,6 +806,78 @@ export const CreateUniversalExerciseDialog: React.FC<CreateUniversalExerciseDial
                   </div>
                 </div>
 
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div>
+                    <label htmlFor="laterality" className="block text-sm font-medium text-text-primary">
+                      Laterality
+                    </label>
+                    <select
+                      id="laterality"
+                      className="mt-1 block w-full rounded-lg border border-border bg-bg-primary px-3 py-2 text-text-primary focus:border-accent-primary focus:outline-none"
+                      value={exercise.laterality || ''}
+                      onChange={(event) =>
+                        setExercise((prev) => ({
+                          ...prev,
+                          laterality: event.target.value as ExerciseLaterality | ''
+                        }))
+                      }
+                    >
+                      <option value="">Not set</option>
+                      {(Object.keys(LATERALITY_LABELS) as ExerciseLaterality[]).map((value) => (
+                        <option key={value} value={value}>
+                          {LATERALITY_LABELS[value]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="primaryMovementPattern" className="block text-sm font-medium text-text-primary">
+                      Primary pattern
+                    </label>
+                    <select
+                      id="primaryMovementPattern"
+                      className="mt-1 block w-full rounded-lg border border-border bg-bg-primary px-3 py-2 text-text-primary focus:border-accent-primary focus:outline-none"
+                      value={exercise.primaryMovementPattern || ''}
+                      onChange={(event) =>
+                        setExercise((prev) => ({
+                          ...prev,
+                          primaryMovementPattern: event.target.value as MovementPattern | ''
+                        }))
+                      }
+                    >
+                      <option value="">Not set</option>
+                      {MOVEMENT_PATTERNS.map((pattern) => (
+                        <option key={pattern} value={pattern}>
+                          {MOVEMENT_PATTERN_LABELS[pattern]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="secondaryMovementPattern" className="block text-sm font-medium text-text-primary">
+                      Secondary pattern
+                    </label>
+                    <select
+                      id="secondaryMovementPattern"
+                      className="mt-1 block w-full rounded-lg border border-border bg-bg-primary px-3 py-2 text-text-primary focus:border-accent-primary focus:outline-none"
+                      value={exercise.secondaryMovementPattern || ''}
+                      onChange={(event) =>
+                        setExercise((prev) => ({
+                          ...prev,
+                          secondaryMovementPattern: event.target.value as MovementPattern | ''
+                        }))
+                      }
+                    >
+                      <option value="">Not set</option>
+                      {MOVEMENT_PATTERNS.map((pattern) => (
+                        <option key={pattern} value={pattern}>
+                          {MOVEMENT_PATTERN_LABELS[pattern]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
                 <div>
                   <label htmlFor="instructions" className="block text-sm font-medium text-text-primary">
                     Instructions *
@@ -861,6 +949,15 @@ export const CreateUniversalExerciseDialog: React.FC<CreateUniversalExerciseDial
                     </li>
                     <li>
                       <span className="text-text-primary">Equipment:</span> {exercise.equipment.join(', ') || 'None selected'}
+                    </li>
+                    <li>
+                      <span className="text-text-primary">Pattern:</span>{' '}
+                      {exercise.primaryMovementPattern
+                        ? MOVEMENT_PATTERN_LABELS[exercise.primaryMovementPattern]
+                        : 'Not set'}
+                      {exercise.secondaryMovementPattern
+                        ? ` / ${MOVEMENT_PATTERN_LABELS[exercise.secondaryMovementPattern]}`
+                        : ''}
                     </li>
                   </ul>
                 </div>

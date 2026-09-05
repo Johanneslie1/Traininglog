@@ -5,7 +5,19 @@ import { ProgramExercise } from '@/types/program';
 
 export type ExerciseSnapshot = Pick<
   Exercise,
-  'id' | 'name' | 'activityType' | 'category' | 'type' | 'defaultUnit' | 'metrics' | 'primaryMuscles' | 'secondaryMuscles' | 'equipment'
+  | 'id'
+  | 'name'
+  | 'activityType'
+  | 'category'
+  | 'type'
+  | 'defaultUnit'
+  | 'metrics'
+  | 'primaryMuscles'
+  | 'secondaryMuscles'
+  | 'equipment'
+  | 'laterality'
+  | 'primaryMovementPattern'
+  | 'secondaryMovementPattern'
 >;
 
 const toExerciseSnapshot = (id: string, data: any): ExerciseSnapshot => ({
@@ -18,7 +30,10 @@ const toExerciseSnapshot = (id: string, data: any): ExerciseSnapshot => ({
   metrics: data?.metrics,
   primaryMuscles: Array.isArray(data?.primaryMuscles) ? data.primaryMuscles : [],
   secondaryMuscles: Array.isArray(data?.secondaryMuscles) ? data.secondaryMuscles : [],
-  equipment: Array.isArray(data?.equipment) ? data.equipment : []
+  equipment: Array.isArray(data?.equipment) ? data.equipment : [],
+  laterality: data?.laterality,
+  primaryMovementPattern: data?.primaryMovementPattern,
+  secondaryMovementPattern: data?.secondaryMovementPattern
 });
 
 const getExerciseDocById = async (exerciseId: string) => {

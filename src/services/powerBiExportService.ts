@@ -42,6 +42,14 @@ import {
   inferExerciseFactorCategory,
   type ExerciseFactorCategory,
 } from '@/data/exerciseFactors';
+import { getMergedExercisesForExport } from '@/services/exerciseDatabaseService';
+import {
+  mapCatalogExerciseToDimRow,
+  mapLoggedExerciseToDimRow,
+  mergeDimExerciseRows,
+  normalizeExerciseDisplayName,
+  toExerciseId,
+} from '@/utils/powerBiExerciseDim';
 
 // ---------------------------------------------------------------------------
 // Public interface
@@ -123,24 +131,12 @@ const dateStringToWeekKey = (dateStr: string): string => {
   return `${tmp.getUTCFullYear()}-W${String(weekNum).padStart(2, '0')}`;
 };
 
-/** Lowercase snake_case slug used as exercise_id. */
-const toSlug = (name: string): string =>
-  name
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '');
-
 const toIdToken = (value: string): string =>
   value
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9-]+/g, '-')
     .replace(/^-+|-+$/g, '') || 'unknown';
-
-const DISPLAY_NAME_FIXES = new Map<string, string>([
-  ['uprigth row', 'Upright Row'],
-]);
 
 const SPORT_EXPORT_NAMES = new Set([
   'basketball',
@@ -154,19 +150,6 @@ const OTHER_EXPORT_NAMES = new Set([
   'meditation',
   'meditation session',
 ]);
-
-const normalizeExerciseDisplayName = (name: string): string => {
-  const trimmed = name.trim();
-  return DISPLAY_NAME_FIXES.get(trimmed.toLowerCase()) ?? trimmed;
-};
-
-const toExerciseId = (name: string, activityType: string): string => {
-  const base = toSlug(name);
-  const type = toSlug(activityType || 'unknown');
-  // Keying by name + exported activity type avoids collapsing historical rows
-  // where the same label was stored under different activity families.
-  return type ? `${base}__${type}` : base;
-};
 
 const isSpeedAgilityName = (name: string): boolean =>
   /\b(box jump|jump|jumps|skip|skips|sprint|agility|ladder|hurdle|plyo|plyometric|shuffle)\b/i
@@ -345,6 +328,7 @@ const buildActivityRow = (
     session_type: sessionType,
     session_name: sessionNamesById.get(sessionId) || getSessionDisplayName(sessionType, s.sessionNumberInDay),
     exercise_log_id: String(s.exerciseLogId ?? ''),
+    exercise_id: toExerciseId(exerciseName, activityType),
     exercise_name: exerciseName,
     activity_type: activityType,
     source_program_id: String(s.sourceProgramId ?? ''),
@@ -379,25 +363,29 @@ const buildActivityRow = (
 // Dim builders
 // ---------------------------------------------------------------------------
 
-const buildDimExercise = (allRawSets: Record<string, unknown>[]): DimExerciseRow[] => {
-  const seen = new Map<string, DimExerciseRow>();
-  allRawSets.forEach((s) => {
+const buildDimExercise = (
+  allRawSets: Record<string, unknown>[],
+  catalogExercises: Awaited<ReturnType<typeof getMergedExercisesForExport>>
+): DimExerciseRow[] => {
+  const catalogRows = catalogExercises
+    .filter((exercise) => Boolean(exercise.name?.trim()))
+    .map(mapCatalogExerciseToDimRow);
+
+  const loggedRows = allRawSets.flatMap((s) => {
     const name = normalizeExerciseDisplayName(String(s.exerciseName ?? ''));
-    if (!name) return;
-    const activityType = resolvePowerBiActivityType(s);
-    const id = toExerciseId(name, activityType);
-    if (!seen.has(id)) {
-      seen.set(id, {
-        exercise_id: id,
-        exercise_name: name,
-        exercise_type: String(s.exerciseType ?? s.collectionType ?? ''),
-        activity_type: activityType,
-      });
+    if (!name) {
+      return [];
     }
+    return [
+      mapLoggedExerciseToDimRow({
+        name,
+        activityType: resolvePowerBiActivityType(s),
+        exerciseType: String(s.exerciseType ?? s.collectionType ?? ''),
+      }),
+    ];
   });
-  return Array.from(seen.values()).sort((a, b) =>
-    a.exercise_name.localeCompare(b.exercise_name)
-  );
+
+  return mergeDimExerciseRows(catalogRows, loggedRows);
 };
 
 // ---------------------------------------------------------------------------
@@ -1030,7 +1018,9 @@ export const buildPowerBiFiles = async (
   });
 
   // ---- Build dimension and session tables ----
-  const dimExercise = buildDimExercise(allRawSets);
+  const catalogUserIds = Array.from(new Set([currentUser.id, ...targets.map((target) => target.id)]));
+  const catalogExercises = await getMergedExercisesForExport(catalogUserIds);
+  const dimExercise = buildDimExercise(allRawSets, catalogExercises);
   const sessionRows = buildFactSessions(gymSets, activityRows, sportsLoadRows);
 
   const meta: ExportMeta = {
@@ -1053,7 +1043,7 @@ export const buildPowerBiFiles = async (
 
   const activityHeaders: (keyof FactActivityRow)[] = [
     'athlete_id', 'athlete_name', 'session_id', 'session_type', 'session_name', 'exercise_log_id',
-    'exercise_name', 'activity_type', 'logged_date', 'exercise_order', 'set_number',
+    'exercise_id', 'exercise_name', 'activity_type', 'logged_date', 'exercise_order', 'set_number',
     'reps', 'duration_sec', 'distance_meters', 'avg_hr', 'max_hr',
     'hr_zone1', 'hr_zone2', 'hr_zone3', 'hr_zone4', 'hr_zone5',
     'calories', 'rpe', 'is_warmup', 'hold_time', 'intensity', 'height', 'notes',
@@ -1076,6 +1066,9 @@ export const buildPowerBiFiles = async (
 
   const dimExerciseHeaders: (keyof DimExerciseRow)[] = [
     'exercise_id', 'exercise_name', 'exercise_type', 'activity_type',
+    'catalog_id', 'is_custom', 'in_catalog', 'category', 'difficulty',
+    'primary_muscles', 'secondary_muscles', 'equipment', 'laterality',
+    'exercise_factor_category', 'primary_movement_pattern', 'secondary_movement_pattern',
   ];
 
   const dimAthleteHeaders: (keyof DimAthleteRow)[] = [

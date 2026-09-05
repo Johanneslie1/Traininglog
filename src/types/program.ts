@@ -69,7 +69,7 @@ export interface ProgramExercise {
   supersetLabel?: string;
   supersetName?: string;
   activityType?: ActivityType; // Cached activity type (synced from exercise database)
-  exerciseSnapshot?: Pick<Exercise, 'id' | 'name' | 'activityType' | 'category' | 'type' | 'defaultUnit' | 'metrics' | 'primaryMuscles' | 'secondaryMuscles' | 'equipment'>;
+  exerciseSnapshot?: Pick<Exercise, 'id' | 'name' | 'activityType' | 'category' | 'type' | 'defaultUnit' | 'metrics' | 'primaryMuscles' | 'secondaryMuscles' | 'equipment' | 'laterality' | 'primaryMovementPattern' | 'secondaryMovementPattern'>;
   
   // Prescription system - what the coach prescribes (not actual logged data)
   instructionMode?: 'structured' | 'freeform';

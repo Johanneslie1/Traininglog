@@ -48,7 +48,13 @@ jest.mock('@/services/srpeService', () => ({
   getSportsLoadSessionsByDateRange: jest.fn(async () => []),
 }));
 
+jest.mock('@/services/exerciseDatabaseService', () => ({
+  getMergedExercisesForExport: jest.fn(async () => []),
+}));
+
 import { buildPowerBiFiles } from '@/services/powerBiExportService';
+import { ActivityType } from '@/types/activityTypes';
+import type { Exercise } from '@/types/exercise';
 
 const mockedExportService = jest.requireMock('@/services/exportService') as {
   exportData: any;
@@ -64,6 +70,9 @@ const mockedCoachService = jest.requireMock('@/services/coachService') as {
 const mockedSrpeService = jest.requireMock('@/services/srpeService') as {
   getSrpeByDateRange: any;
   getSportsLoadSessionsByDateRange: any;
+};
+const mockedExerciseDatabaseService = jest.requireMock('@/services/exerciseDatabaseService') as {
+  getMergedExercisesForExport: any;
 };
 
 const currentAthlete = {
@@ -87,6 +96,7 @@ describe('powerBiExportService wellness export', () => {
     mockedCoachService.verifyCoachAthleteRelationship.mockResolvedValue(true);
     mockedSrpeService.getSrpeByDateRange.mockResolvedValue([]);
     mockedSrpeService.getSportsLoadSessionsByDateRange.mockResolvedValue([]);
+    mockedExerciseDatabaseService.getMergedExercisesForExport.mockResolvedValue([]);
     firestoreGetDocsMock.mockResolvedValue({ docs: [] });
   });
 
@@ -425,12 +435,117 @@ describe('powerBiExportService wellness export', () => {
     const gymCsv = getFileContent(result, 'fact_gym_sets.csv');
     const dimExerciseCsv = getFileContent(result, 'dim_exercise.csv');
 
-    expect(activityCsv).toContain('Basketball,sport');
-    expect(activityCsv).toContain('High Plyometric Box Jump,speedAgility');
-    expect(activityCsv).toContain('Soccer,sport');
+    expect(activityCsv).toContain('basketball__sport,Basketball,sport');
+    expect(activityCsv).toContain('high_plyometric_box_jump__speedagility,High Plyometric Box Jump,speedAgility');
+    expect(activityCsv).toContain('soccer__sport,Soccer,sport');
     expect(gymCsv).toContain('upright_row__resistance,Upright Row');
     expect(dimExerciseCsv).toContain('basketball__sport,Basketball,strength,sport');
     expect(dimExerciseCsv).toContain('soccer__sport,Soccer,endurance,sport');
+  });
+
+  it('includes unused catalog exercises and unmatched logged names in dim_exercise', async () => {
+    mockedExerciseDatabaseService.getMergedExercisesForExport.mockResolvedValue([
+      {
+        id: 'bench-press-1',
+        name: 'Bench Press',
+        description: 'A compound chest exercise performed on a flat bench.',
+        category: 'compound',
+        type: 'strength',
+        activityType: ActivityType.RESISTANCE,
+        difficulty: 'intermediate',
+        equipment: ['barbell', 'bench'],
+        instructions: [],
+        primaryMuscles: ['chest'],
+        secondaryMuscles: ['shoulders', 'triceps'],
+        isDefault: true,
+      },
+      {
+        id: 'unused-rdl',
+        name: 'Romanian Deadlift',
+        description: 'Hip hinge',
+        category: 'compound',
+        type: 'strength',
+        activityType: ActivityType.RESISTANCE,
+        difficulty: 'intermediate',
+        equipment: ['barbell'],
+        instructions: [],
+        primaryMuscles: ['hamstrings', 'glutes'],
+        secondaryMuscles: ['lower_back'],
+        isDefault: true,
+      },
+    ] satisfies Exercise[]);
+
+    mockedExportService.exportData.mockResolvedValue({
+      sessions: [],
+      exerciseLogs: [],
+      sets: [
+        {
+          exerciseLogId: 'bench-log',
+          exerciseName: 'Bench Press',
+          exerciseType: 'strength',
+          activityType: 'resistance',
+          loggedDate: '2026-03-10',
+          reps: 5,
+          weight: 100,
+        },
+        {
+          exerciseLogId: 'mystery-log',
+          exerciseName: 'Mystery Curl',
+          exerciseType: 'strength',
+          activityType: 'resistance',
+          loggedDate: '2026-03-10',
+          reps: 12,
+          weight: 15,
+        },
+      ],
+    });
+
+    const result = await buildPowerBiFiles({ scope: 'self' }, currentAthlete);
+    const dimExerciseCsv = getFileContent(result, 'dim_exercise.csv');
+    const gymCsv = getFileContent(result, 'fact_gym_sets.csv');
+    const header = dimExerciseCsv.split('\n')[0];
+
+    expect(header).toBe(
+      'exercise_id,exercise_name,exercise_type,activity_type,catalog_id,is_custom,in_catalog,category,difficulty,primary_muscles,secondary_muscles,equipment,laterality,exercise_factor_category,primary_movement_pattern,secondary_movement_pattern'
+    );
+    expect(dimExerciseCsv).toContain(
+      'bench_press__resistance,Bench Press,strength,resistance,bench-press-1,false,true,compound,intermediate,chest,shoulders|triceps,barbell|bench,bilateral,bilateral_compound,horizontal_push,'
+    );
+    expect(dimExerciseCsv).toContain(
+      'romanian_deadlift__resistance,Romanian Deadlift,strength,resistance,unused-rdl,false,true,compound,intermediate,hamstrings|glutes,lower_back,barbell,bilateral,bilateral_compound,hinge,'
+    );
+    expect(dimExerciseCsv).toContain(
+      'mystery_curl__resistance,Mystery Curl,strength,resistance,,false,false,,,,,,unknown,isolation_accessory,,'
+    );
+    expect(gymCsv).toContain('bench_press__resistance,Bench Press');
+    expect(gymCsv).not.toContain('romanian_deadlift__resistance');
+  });
+
+  it('joins activity facts to dim_exercise on exercise_id', async () => {
+    mockedExportService.exportData.mockResolvedValue({
+      sessions: [],
+      exerciseLogs: [],
+      sets: [
+        {
+          exerciseLogId: 'jump-log',
+          exerciseName: 'High Plyometric Box Jump',
+          exerciseType: 'strength',
+          activityType: 'resistance',
+          loggedDate: '2026-03-11',
+          reps: 5,
+          height: 60,
+        },
+      ],
+    });
+
+    const result = await buildPowerBiFiles({ scope: 'self' }, currentAthlete);
+    const activityCsv = getFileContent(result, 'fact_activity.csv');
+    const dimExerciseCsv = getFileContent(result, 'dim_exercise.csv');
+
+    expect(activityCsv.split('\n')[0]).toContain('exercise_log_id,exercise_id,exercise_name,activity_type');
+    expect(activityCsv).toContain('high_plyometric_box_jump__speedagility,High Plyometric Box Jump,speedAgility');
+    expect(dimExerciseCsv).toContain('high_plyometric_box_jump__speedagility,High Plyometric Box Jump');
+    expect(dimExerciseCsv).toContain('squat');
   });
 
   it('includes wellness rows for a selected coach athlete', async () => {
