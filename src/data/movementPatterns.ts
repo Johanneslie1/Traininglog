@@ -55,6 +55,8 @@ export interface MovementPatternInferenceInput {
   laterality?: ExerciseLaterality | string;
   primaryMovementPattern?: MovementPattern | string;
   secondaryMovementPattern?: MovementPattern | string;
+  primaryMuscles?: readonly string[];
+  secondaryMuscles?: readonly string[];
 }
 
 export interface InferredMovementPatterns {
@@ -105,6 +107,9 @@ const shouldInferFromName = (activityType: string): boolean => {
     type === '' ||
     type === 'resistance' ||
     type === 'strength' ||
+    type === 'bodyweight' ||
+    type === 'plyometric' ||
+    type === 'plyometrics' ||
     type === 'speedagility' ||
     type === 'speed_agility'
   );
@@ -117,23 +122,27 @@ const inferFromName = (
     return { primary: '', secondary: '' };
   }
 
-  if (/turkish get-?up|\btgu\b|get-?up|bear crawl|lizard crawl|animal crawl/.test(name)) {
+  if (/turkish get-?up|\btgu\b|get-?up|bear crawl|lizard crawl|animal crawl|alligator crawl|spider crawl|crawl/.test(name)) {
     return { primary: 'ground_work', secondary: '' };
   }
 
-  if (/side plank|side bridge|suiter|copenhagen|side bend/.test(name)) {
+  if (/side plank|side bridge|copenhagen|side bend/.test(name)) {
     return { primary: 'anti_lateral_flexion', secondary: '' };
   }
 
-  if (/pallof|anti.?rotation/.test(name)) {
+  if (/pallof|anti.?rotation|shoulder tap/.test(name)) {
     return { primary: 'anti_rotation', secondary: '' };
   }
 
-  if (/wood.?chop|russian twist|rotational|landmine twist|med(?:icine)? ball twist/.test(name)) {
+  if (
+    /wood.?chop|russian twist|rotational|landmine twist|med(?:icine)? ball twist|seated twist|oblique|heel-?touch|bicycle|windmill/.test(
+      name
+    )
+  ) {
     return { primary: 'rotation', secondary: '' };
   }
 
-  if (/farmer|carry|yoke|waiter walk/.test(name)) {
+  if (/farmer|carry|yoke|waiter walk|\bdrag\b/.test(name)) {
     const secondary: MovementPattern | '' = /suitcase/.test(name) ? 'anti_lateral_flexion' : '';
     return { primary: 'carry', secondary };
   }
@@ -142,47 +151,138 @@ const inferFromName = (
     return { primary: 'anti_lateral_flexion', secondary: '' };
   }
 
-  if (/dead bug|ab wheel|hollow|bird dog|roll.?out|\bplank\b/.test(name)) {
+  if (
+    /dead bug|ab wheel|ab roller|hollow|bird dog|roll.?out|\bplank\b|sit-?up|crunch|v-?up|flutter|toes?-to-bar|hanging (leg|knee|toes)|leg (raise|lift|tuck)|knee (raise|tuck)|decline abs/.test(
+      name
+    )
+  ) {
     return { primary: 'anti_extension', secondary: '' };
   }
 
   const unilateralLower = UNILATERAL_NAME.test(name);
 
-  if (/face pull|inverted row|seal row|\brow\b/.test(name) && !/upright row/.test(name)) {
-    return {
-      primary: 'horizontal_pull',
-      secondary: unilateralLower ? 'unilateral_lower_body' : '',
-    };
-  }
-
-  if (/upright row|pull.?up|chin.?up|lat pull|pull.?down|pulldown/.test(name)) {
-    return { primary: 'vertical_pull', secondary: '' };
-  }
-
-  if (/overhead|ohp|military press|push press|shoulder press|jerk|pike push/.test(name)) {
-    return { primary: 'vertical_push', secondary: '' };
-  }
-
-  if (/bench|push.?up|pushup|\bdip\b|chest press|floor press/.test(name)) {
-    return { primary: 'horizontal_push', secondary: '' };
-  }
-
-  if (/deadlift|rdl|romanian|hip thrust|good morning|swing|back extension|hip hinge|nordic/.test(name)) {
+  if (/glute.?ham|ghr|back extension|hyper.?extension|rack pull|good morning|hip thrust|hip hinge|nordic|atlas stone/.test(name)) {
     return {
       primary: 'hinge',
       secondary: unilateralLower ? 'unilateral_lower_body' : '',
     };
   }
 
-  if (/squat|leg press|hack squat|sissy|box jump|jump squat|\blunge/.test(name)) {
+  if (/deadlift|rdl|romanian|\bswing\b|clean|snatch|med(?:icine)? ball slam/.test(name)) {
+    return {
+      primary: 'hinge',
+      secondary: unilateralLower ? 'unilateral_lower_body' : '',
+    };
+  }
+
+  if (/face pull|inverted row|seal row|\brow\b|pull.?over|pull apart|rear delt|reverse fly/.test(name) && !/upright row/.test(name)) {
+    return {
+      primary: 'horizontal_pull',
+      secondary: unilateralLower ? 'unilateral_lower_body' : '',
+    };
+  }
+
+  if (/upright row|pull.?up|chin.?up|lat pull|pull.?down|pulldown/.test(name) && !/push-?down/.test(name)) {
+    return { primary: 'vertical_pull', secondary: '' };
+  }
+
+  if (/\bshrug\b/.test(name)) {
+    return { primary: 'vertical_pull', secondary: '' };
+  }
+
+  if (/\bcurl\b|bicep/.test(name) && !/leg curl/.test(name)) {
+    return { primary: 'horizontal_pull', secondary: '' };
+  }
+
+  if (/leg curl/.test(name)) {
+    return { primary: 'hinge', secondary: '' };
+  }
+
+  if (/overhead|ohp|arnold|military press|push-?press|shoulder press|jerk|pike push|behind-?the-?head press|standing barbell press/.test(name)) {
+    return { primary: 'vertical_push', secondary: '' };
+  }
+
+  if (/front raise|lateral raise|side raise|delt raise/.test(name)) {
+    return { primary: 'vertical_push', secondary: '' };
+  }
+
+  if (/skull.?crusher|kick-?back|push-?down|pushdown|tricep|overhead extension/.test(name)) {
+    return { primary: 'horizontal_push', secondary: '' };
+  }
+
+  if (/bench|push-?up|pushup|dips?|chest press|floor press|pec dec|peck deck|chest fly|cable fly|dumbbell fly|machine fly/.test(name)) {
+    return { primary: 'horizontal_push', secondary: '' };
+  }
+
+  if (/\bpress\b/.test(name) && !/sit-?up/.test(name)) {
+    return { primary: 'horizontal_push', secondary: '' };
+  }
+
+  if (/calf raise|tibialis/.test(name)) {
+    return { primary: 'squat', secondary: '' };
+  }
+
+  if (/squat|leg press|hack squat|sissy|box jump|jump squat|\blunge|jump|hop|bound|skip/.test(name)) {
     return {
       primary: 'squat',
       secondary: unilateralLower ? 'unilateral_lower_body' : '',
     };
   }
 
+  if (/abduct|adduct|clam|monster walk|hip airplane/.test(name)) {
+    return {
+      primary: 'squat',
+      secondary: 'unilateral_lower_body',
+    };
+  }
+
   if (unilateralLower && /leg|lunge|step/.test(name)) {
     return { primary: 'unilateral_lower_body', secondary: '' };
+  }
+
+  return { primary: '', secondary: '' };
+};
+
+const MUSCLE_PATTERN_FALLBACK: Record<string, MovementPattern> = {
+  chest: 'horizontal_push',
+  pectorals: 'horizontal_push',
+  shoulders: 'vertical_push',
+  deltoids: 'vertical_push',
+  triceps: 'horizontal_push',
+  back: 'horizontal_pull',
+  lats: 'vertical_pull',
+  traps: 'vertical_pull',
+  middle_back: 'horizontal_pull',
+  biceps: 'horizontal_pull',
+  forearms: 'horizontal_pull',
+  quadriceps: 'squat',
+  quads: 'squat',
+  hip_flexors: 'squat',
+  calves: 'squat',
+  hamstrings: 'hinge',
+  glutes: 'hinge',
+  lower_back: 'hinge',
+  core: 'anti_extension',
+  abs: 'anti_extension',
+  abdominals: 'anti_extension',
+  obliques: 'rotation',
+  abductors: 'squat',
+  adductors: 'squat',
+};
+
+const inferFromMuscles = (
+  primaryMuscles?: readonly string[],
+  secondaryMuscles?: readonly string[]
+): { primary: MovementPattern | ''; secondary: MovementPattern | '' } => {
+  const muscles = [...(primaryMuscles ?? []), ...(secondaryMuscles ?? [])]
+    .map((muscle) => normalize(muscle).replace(/\s+/g, '_'))
+    .filter(Boolean);
+
+  for (const muscle of muscles) {
+    const pattern = MUSCLE_PATTERN_FALLBACK[muscle];
+    if (pattern) {
+      return { primary: pattern, secondary: '' };
+    }
   }
 
   return { primary: '', secondary: '' };
@@ -233,6 +333,12 @@ export const inferMovementPatterns = (
     const inferred = inferFromName(name);
     primary = inferred.primary;
     secondary = secondary || inferred.secondary;
+  }
+
+  if (!primary && (shouldInferFromName(activityType) || shouldInferFromName(input.type ?? ''))) {
+    const fromMuscles = inferFromMuscles(input.primaryMuscles, input.secondaryMuscles);
+    primary = fromMuscles.primary;
+    secondary = secondary || fromMuscles.secondary;
   }
 
   if (primary && secondary === primary) {

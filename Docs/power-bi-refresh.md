@@ -44,6 +44,8 @@ Multi-value fields (`primary_muscles`, `secondary_muscles`, `equipment`) use `|`
 
 Movement pattern slugs: `squat`, `hinge`, `horizontal_push`, `vertical_push`, `horizontal_pull`, `vertical_pull`, `unilateral_lower_body`, `carry`, `rotation`, `anti_rotation`, `anti_extension`, `anti_lateral_flexion`, `ground_work`.
 
+Resistance and speed/agility rows get a pattern from stored values, name inference (including accessories such as curls, raises, and generic presses), then a primary-muscle fallback. Stretching, endurance, sport, and other activities stay blank unless the name clearly maps. After an export, remaining empty pattern rows are expected for non-lifting activities or truly unclassifiable names.
+
 After the first export that adds these columns, refresh the CSV schema in Power BI Desktop (transform data → confirm new columns). Existing measures keep working because previous columns were not renamed or removed.
 
 ## One-Time App Setup

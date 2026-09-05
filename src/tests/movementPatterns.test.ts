@@ -58,8 +58,49 @@ describe('inferMovementPatterns', () => {
     });
   });
 
-  it('does not crash on unknown names', () => {
-    expect(inferMovementPatterns({ name: 'Mystery Curl', activityType: 'resistance' })).toEqual({
+  it('maps accessories and missed compounds onto the existing pattern list', () => {
+    expect(inferMovementPatterns({ name: 'Mystery Curl', activityType: 'resistance' }).primary).toBe(
+      'horizontal_pull'
+    );
+    expect(inferMovementPatterns({ name: 'EZ-Bar Skullcrusher', activityType: 'resistance' }).primary).toBe(
+      'horizontal_push'
+    );
+    expect(inferMovementPatterns({ name: 'Dumbbell Lateral Raise', activityType: 'resistance' }).primary).toBe(
+      'vertical_push'
+    );
+    expect(inferMovementPatterns({ name: 'Standing Calf Raise', activityType: 'resistance' }).primary).toBe('squat');
+    expect(inferMovementPatterns({ name: '3/4 sit-up', activityType: 'resistance' }).primary).toBe('anti_extension');
+    expect(
+      inferMovementPatterns({ name: '30 Chest 30-Degree Incline Dumbbell Press', activityType: 'resistance' }).primary
+    ).toBe('horizontal_push');
+    expect(inferMovementPatterns({ name: 'Arnold Press', activityType: 'resistance' }).primary).toBe('vertical_push');
+    expect(inferMovementPatterns({ name: 'Broad Jump', activityType: 'speedAgility' }).primary).toBe('squat');
+    expect(inferMovementPatterns({ name: 'Weighted Dips', activityType: 'resistance' }).primary).toBe('horizontal_push');
+    expect(inferMovementPatterns({ name: 'Barbell Rack Pull', activityType: 'resistance' }).primary).toBe('hinge');
+    expect(inferMovementPatterns({ name: 'Hanging Toes-To-Bar', activityType: 'resistance' }).primary).toBe(
+      'anti_extension'
+    );
+  });
+
+  it('falls back to primary muscles when the name is not recognizable', () => {
+    expect(
+      inferMovementPatterns({
+        name: 'Gethin Variation Foo',
+        activityType: 'resistance',
+        primaryMuscles: ['chest'],
+      }).primary
+    ).toBe('horizontal_push');
+    expect(
+      inferMovementPatterns({
+        name: 'Unknown Core Drill',
+        activityType: 'resistance',
+        primaryMuscles: ['core'],
+      }).primary
+    ).toBe('anti_extension');
+  });
+
+  it('does not crash on unknown names without muscles', () => {
+    expect(inferMovementPatterns({ name: 'Completely Novel Drill', activityType: 'resistance' })).toEqual({
       primary: '',
       secondary: '',
       laterality: 'unknown',
