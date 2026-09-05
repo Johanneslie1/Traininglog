@@ -84,6 +84,7 @@ export interface FactActivityRow {
   session_type: string;
   session_name: string;
   exercise_log_id: string;
+  exercise_id: string;
   exercise_name: string;
   activity_type: string;
   source_program_id?: string;
@@ -118,10 +119,22 @@ export interface FactActivityRow {
 // ---------------------------------------------------------------------------
 
 export interface DimExerciseRow {
-  exercise_id: string;    // slug derived from exercise name
+  exercise_id: string;    // slug derived from exercise name + activity type
   exercise_name: string;
   exercise_type: string;  // collectionType / exerciseType
   activity_type: string;
+  catalog_id: string;
+  is_custom: boolean;
+  in_catalog: boolean;
+  category: string;
+  difficulty: string;
+  primary_muscles: string;
+  secondary_muscles: string;
+  equipment: string;
+  laterality: string;
+  exercise_factor_category: string;
+  primary_movement_pattern: string;
+  secondary_movement_pattern: string;
 }
 
 // ---------------------------------------------------------------------------

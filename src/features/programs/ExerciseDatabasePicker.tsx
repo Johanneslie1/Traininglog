@@ -8,6 +8,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { SearchIcon, XIcon } from '@heroicons/react/outline';
 import AppOverlay from '@/components/ui/AppOverlay';
 import { getMergedExercisesByActivityType } from '@/services/exerciseDatabaseService';
+import { MovementPatternFilterChips } from '@/components/exercises/MovementPatternFilterChips';
+import type { MovementPattern } from '@/data/movementPatterns';
+import { exerciseMatchesMovementPattern } from '@/utils/exerciseMovementPattern';
 
 interface ExerciseDatabasePickerProps {
   onClose: () => void;
@@ -51,6 +54,7 @@ const ExerciseDatabasePicker: React.FC<ExerciseDatabasePickerProps> = ({
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [movementPattern, setMovementPattern] = useState<MovementPattern | ''>('');
   const [isLoading, setIsLoading] = useState(false);
   const [combinedExercises, setCombinedExercises] = useState<Exercise[]>([]);
   const [selectedExercises, setSelectedExercises] = useState<Set<string>>(new Set());
@@ -97,6 +101,10 @@ const ExerciseDatabasePicker: React.FC<ExerciseDatabasePickerProps> = ({
       primaryMuscles.some(m => 
         m.toLowerCase().includes(searchTerm.toLowerCase())
       );
+
+    if (!exerciseMatchesMovementPattern(exercise, movementPattern)) {
+      return false;
+    }
 
     if (!selectedCategory) return matchesSearch;
 
@@ -173,6 +181,10 @@ const ExerciseDatabasePicker: React.FC<ExerciseDatabasePickerProps> = ({
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-bg-tertiary text-text-primary rounded-lg border border-border focus:border-accent-primary focus:outline-none"
             />
+          </div>
+
+          <div className="mb-3">
+            <MovementPatternFilterChips selected={movementPattern} onSelect={setMovementPattern} />
           </div>
 
           {/* Category Filter */}

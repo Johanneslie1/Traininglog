@@ -298,8 +298,13 @@ const normalizeExerciseRecord = (
     tags: toArray(input?.tags),
     isDefault: input?.isDefault !== undefined ? Boolean(input?.isDefault) : true,
     createdBy: String(input?.createdBy || 'system'),
-    primaryMuscles: normalizeMuscles(input?.primaryMuscles),
+    primaryMuscles: normalizeMuscles(input?.primaryMuscles?.length ? input.primaryMuscles : input?.muscleGroups),
     secondaryMuscles: normalizeMuscles(input?.secondaryMuscles),
+    laterality: (input?.laterality || input?.lateralization) as Exercise['laterality'],
+    primaryMovementPattern: input?.primaryMovementPattern,
+    secondaryMovementPattern: input?.secondaryMovementPattern,
+    exerciseFactorCategory: input?.exerciseFactorCategory,
+    customExercise: Boolean(input?.customExercise),
     targetAreas: toArray(input?.targetAreas),
     primaryMetrics: toArray(input?.primaryMetrics),
     optionalMetrics: toArray(input?.optionalMetrics),
@@ -555,6 +560,18 @@ export async function getMergedExercisesByAllActivityTypes(userId?: string): Pro
   return getMergedExercisesByActivityTypes(ACTIVITY_TYPE_ORDER, userId);
 }
 
+export async function getMergedExercisesForExport(userIds: string[] = []): Promise<Exercise[]> {
+  const uniqueIds = Array.from(new Set(userIds.filter(Boolean)));
+  if (uniqueIds.length === 0) {
+    return getMergedExercisesByAllActivityTypes();
+  }
+
+  const catalogs = await Promise.all(
+    uniqueIds.map((userId) => getMergedExercisesByAllActivityTypes(userId))
+  );
+  return dedupeExercises(catalogs.flat());
+}
+
 export function getExercisesByCategory(activityType: ActivityType, category: string): Exercise[] {
   const exercises = getExercisesByActivityType(activityType);
   return exercises.filter((exercise) => exercise.category === category);
@@ -653,6 +670,7 @@ export default {
   getMergedExercisesByActivityType,
   getMergedExercisesByActivityTypes,
   getMergedExercisesByAllActivityTypes,
+  getMergedExercisesForExport,
   getExercisesByCategory,
   getExercisesByCategoryAsync,
   searchExercises,

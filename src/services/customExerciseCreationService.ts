@@ -2,6 +2,7 @@ import {
   addDoc,
   collection,
   deleteDoc,
+  deleteField,
   doc,
   getDoc,
   getDocs,
@@ -12,6 +13,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/services/firebase/config';
 import { ActivityType } from '@/types/activityTypes';
+import type { ExerciseLaterality, MovementPattern } from '@/data/movementPatterns';
 import { Exercise, MuscleGroup } from '@/types/exercise';
 
 export interface CreateCustomExerciseInput {
@@ -26,6 +28,9 @@ export interface CreateCustomExerciseInput {
   enduranceCategory?: string;
   drillType?: string;
   flexibilityType?: string;
+  laterality?: ExerciseLaterality | '';
+  primaryMovementPattern?: MovementPattern | '';
+  secondaryMovementPattern?: MovementPattern | '';
 }
 
 export class DuplicateExerciseNameError extends Error {
@@ -92,7 +97,12 @@ const getSanitizedBase = (
   customExercise: true,
   isDefault: false,
   createdBy: userId,
-  userId
+  userId,
+  ...(input.laterality ? { laterality: input.laterality } : {}),
+  ...(input.primaryMovementPattern ? { primaryMovementPattern: input.primaryMovementPattern } : {}),
+  ...(input.secondaryMovementPattern
+    ? { secondaryMovementPattern: input.secondaryMovementPattern }
+    : {})
 });
 
 const persistExercise = async (exercise: Omit<Exercise, 'id'>): Promise<string> => {
@@ -384,6 +394,9 @@ export const updateExerciseByActivityType = async (
   const { ref } = await resolveExerciseDocRef(exerciseId, userId);
   await updateDoc(ref, {
     ...base,
+    laterality: input.laterality || deleteField(),
+    primaryMovementPattern: input.primaryMovementPattern || deleteField(),
+    secondaryMovementPattern: input.secondaryMovementPattern || deleteField(),
     updatedAt: new Date(),
     userId
   });

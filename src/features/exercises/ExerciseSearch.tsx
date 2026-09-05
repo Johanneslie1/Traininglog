@@ -9,6 +9,9 @@ import { db } from '@/services/firebase/config';
 import { useAuth } from '@/hooks/useAuth';
 import { getMergedExercisesByActivityType } from '@/services/exerciseDatabaseService';
 import { EmptyState, LoadingState } from '@/components/ui';
+import { MovementPatternFilterChips } from '@/components/exercises/MovementPatternFilterChips';
+import type { MovementPattern } from '@/data/movementPatterns';
+import { exerciseMatchesMovementPattern } from '@/utils/exerciseMovementPattern';
 
 interface ExerciseSearchProps {
   onClose: () => void;
@@ -53,6 +56,7 @@ export const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
 }) => {
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
+  const [movementPattern, setMovementPattern] = useState<MovementPattern | ''>('');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [combinedExercises, setCombinedExercises] = useState<Exercise[]>([]);
@@ -89,6 +93,10 @@ export const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
       primaryMuscles.some(m => 
         m.toLowerCase().includes(searchTerm.toLowerCase())
       );
+
+    if (!exerciseMatchesMovementPattern(exercise, movementPattern)) {
+      return false;
+    }
 
     if (!category) return matchesSearch;
 
@@ -178,6 +186,9 @@ export const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
               className="w-full bg-bg-secondary text-text-primary px-4 py-3 rounded-xl border border-border focus:outline-none focus:border-accent-primary transition-colors"
             />
           </div>
+        </div>
+        <div className="px-4 pb-3">
+          <MovementPatternFilterChips selected={movementPattern} onSelect={setMovementPattern} />
         </div>
       </div>
 

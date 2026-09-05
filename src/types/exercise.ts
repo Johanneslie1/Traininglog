@@ -1,5 +1,6 @@
 import { ActivityType } from './activityTypes';
 import type { ExerciseFactorCategory } from '@/data/exerciseFactors';
+import type { ExerciseLaterality, MovementPattern } from '@/data/movementPatterns';
 import { Prescription } from './program';
 import { SuggestedPrescriptionSet } from './sets';
 import { SessionType } from './sessionType';
@@ -39,6 +40,9 @@ export interface Exercise {
   activityType?: ActivityType;
   category: string; // More flexible category system
   exerciseFactorCategory?: ExerciseFactorCategory;
+  primaryMovementPattern?: MovementPattern;
+  secondaryMovementPattern?: MovementPattern;
+  laterality?: ExerciseLaterality;
   difficulty?: 'beginner' | 'intermediate' | 'advanced';
   metricsConfig?: MetricsConfig; // NEW: metrics this exercise tracks
   

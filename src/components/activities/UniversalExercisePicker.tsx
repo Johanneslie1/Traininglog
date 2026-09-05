@@ -3,6 +3,7 @@ import { CreateUniversalExerciseDialog } from '@/components/exercises/CreateUniv
 import { ActivityType } from '@/types/activityTypes';
 import { useAuth } from '@/hooks/useAuth';
 import { getMergedExercisesByActivityType } from '@/services/exerciseDatabaseService';
+import { isMovementPattern, shortMovementPatternLabel } from '@/data/movementPatterns';
 
 // Move FilterBlock definition up so it's declared before use
 interface FilterBlockProps { title: string; values: string[]; selected: Set<string>; onToggle: (value: string) => void; }
@@ -18,8 +19,9 @@ const FilterBlock: React.FC<FilterBlockProps> = ({ title, values, selected, onTo
       <div className="flex flex-wrap gap-1">
         {uniqueValues.sort().map((v: string, index: number) => {
           const active = selected.has(v);
+          const label = isMovementPattern(v) ? shortMovementPatternLabel(v) : v;
             return (
-              <button key={`${title}-${v}-${index}`} onClick={() => onToggle(v)} className={`px-2 py-0.5 rounded border text-[10px] ${active ? 'bg-accent-primary border-accent-primary text-text-on-accent' : 'bg-bg-tertiary border-border text-text-secondary hover:border-accent-primary hover:text-text-primary'}`}>{v}</button>
+              <button key={`${title}-${v}-${index}`} onClick={() => onToggle(v)} className={`px-2 py-0.5 rounded border text-[10px] ${active ? 'bg-accent-primary border-accent-primary text-text-on-accent' : 'bg-bg-tertiary border-border text-text-secondary hover:border-accent-primary hover:text-text-primary'}`}>{label}</button>
             );
         })}
       </div>
@@ -64,6 +66,7 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
   const [lateralFilter, setLateralFilter] = useState<Set<string>>(new Set());
   const [equipmentFilter, setEquipmentFilter] = useState<Set<string>>(new Set());
   const [tagFilter, setTagFilter] = useState<Set<string>>(new Set());
+  const [movementPatternFilter, setMovementPatternFilter] = useState<Set<string>>(new Set());
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [selectedMap, setSelectedMap] = useState<Record<string, boolean>>(
     () => initialSelectedIds.reduce((acc, id) => { acc[id] = true; return acc; }, {} as Record<string, boolean>)
@@ -150,7 +153,7 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
   }, [mergedData, enrich]);
 
   const facets = useMemo(() => {
-    const empty = { type: new Set<string>(), lateralization: new Set<string>(), equipment: new Set<string>(), tags: new Set<string>() };
+    const empty = { type: new Set<string>(), lateralization: new Set<string>(), equipment: new Set<string>(), tags: new Set<string>(), movementPattern: new Set<string>() };
     try {
       const raw = typeof collectFacets === 'function' ? collectFacets(enriched) : null;
       if (!raw) return empty;
@@ -164,7 +167,8 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
         type: toSet(raw.type || raw.types),
         lateralization: toSet(raw.lateralization || raw.lateral || []),
         equipment: toSet(raw.equipment || []),
-        tags: toSet(raw.tags || [])
+        tags: toSet(raw.tags || []),
+        movementPattern: toSet(raw.movementPattern || raw.movementPatterns || [])
       };
     } catch (e) {
       console.error('UniversalExercisePicker: collectFacets error', e);
@@ -173,7 +177,7 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
   }, [enriched, collectFacets]);
 
   const advancedFiltered = useMemo(() => {
-    const f = { search, type: typeFilter, lateralization: lateralFilter, equipment: equipmentFilter, includeTags: tagFilter };
+    const f = { search, type: typeFilter, lateralization: lateralFilter, equipment: equipmentFilter, includeTags: tagFilter, movementPattern: movementPatternFilter };
     try {
       if (typeof applyFilters === 'function') {
         return applyFilters(enriched, f) ?? [];
@@ -200,7 +204,7 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
       console.error('UniversalExercisePicker: applyFilters error', e);
       return [];
     }
-  }, [search, typeFilter, lateralFilter, equipmentFilter, tagFilter, enriched, applyFilters]);
+  }, [search, typeFilter, lateralFilter, equipmentFilter, tagFilter, movementPatternFilter, enriched, applyFilters]);
 
   const selectedCount = multiSelect ? Object.values(selectedMap).filter(Boolean).length : 0;
   const selectedList = multiSelect ? enriched.filter(e => selectedMap[e.id]) : [];
@@ -229,7 +233,7 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
             aria-label="Search exercises"
           />
           <button
-            onClick={() => { setSearch(''); setTypeFilter(new Set()); setLateralFilter(new Set()); setEquipmentFilter(new Set()); setTagFilter(new Set()); }}
+            onClick={() => { setSearch(''); setTypeFilter(new Set()); setLateralFilter(new Set()); setEquipmentFilter(new Set()); setTagFilter(new Set()); setMovementPatternFilter(new Set()); }}
             className="px-3 py-2 text-xs font-medium bg-bg-tertiary border border-border rounded-md text-text-secondary hover:text-text-primary hover:border-accent-primary"
             aria-label="Reset filters"
           >Reset</button>
@@ -264,12 +268,25 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
               >{value}</button>
             );
           })}
+          {Array.from(facets.movementPattern).map(pattern => {
+            const value = String(pattern);
+            const active = movementPatternFilter.has(value);
+            const label = isMovementPattern(value) ? shortMovementPatternLabel(value) : value;
+            return (
+              <button
+                key={value}
+                onClick={() => toggle(setMovementPatternFilter, value)}
+                className={`px-3 py-1 rounded-full text-xs font-medium border transition ${active ? 'bg-accent-primary border-accent-primary text-text-on-accent' : 'bg-bg-tertiary border-border text-text-secondary hover:border-accent-primary hover:text-text-primary'}`}
+              >{label}</button>
+            );
+          })}
         </div>
         {showAdvanced && (
           <div id="advanced-filters" className="space-y-3">
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 text-[11px]">
               <FilterBlock title="Type" values={Array.from(facets.type)} selected={typeFilter} onToggle={v=>toggle(setTypeFilter,v)} />
               <FilterBlock title="Lateralization" values={Array.from(facets.lateralization)} selected={lateralFilter} onToggle={v=>toggle(setLateralFilter,v)} />
+              <FilterBlock title="Movement pattern" values={Array.from(facets.movementPattern)} selected={movementPatternFilter} onToggle={v=>toggle(setMovementPatternFilter,v)} />
               <FilterBlock title="Equipment" values={Array.from(facets.equipment)} selected={equipmentFilter} onToggle={v=>toggle(setEquipmentFilter,v)} />
               <FilterBlock title="Tags" values={Array.from(facets.tags)} selected={tagFilter} onToggle={v=>toggle(setTagFilter,v)} />
             </div>
