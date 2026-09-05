@@ -17,6 +17,8 @@ const resolvePatterns = (exercise: ResistanceExercise) =>
     laterality: (exercise as ResistanceExercise & { laterality?: string }).laterality,
     primaryMovementPattern: (exercise as ResistanceExercise & { primaryMovementPattern?: string }).primaryMovementPattern,
     secondaryMovementPattern: (exercise as ResistanceExercise & { secondaryMovementPattern?: string }).secondaryMovementPattern,
+    primaryMuscles: exercise.primaryMuscles,
+    secondaryMuscles: exercise.secondaryMuscles,
   });
 
 export function enrich(list: ResistanceExercise[]): ResistanceWithPattern[] {

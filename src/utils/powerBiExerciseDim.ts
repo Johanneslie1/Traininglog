@@ -81,6 +81,8 @@ export const mapCatalogExerciseToDimRow = (exercise: Exercise): DimExerciseRow =
     laterality: exercise.laterality,
     primaryMovementPattern: exercise.primaryMovementPattern,
     secondaryMovementPattern: exercise.secondaryMovementPattern,
+    primaryMuscles: exercise.primaryMuscles,
+    secondaryMuscles: exercise.secondaryMuscles,
   });
 
   return {

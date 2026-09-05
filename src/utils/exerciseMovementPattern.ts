@@ -10,6 +10,8 @@ export type ExerciseMovementPatternSource = Pick<
   | 'laterality'
   | 'primaryMovementPattern'
   | 'secondaryMovementPattern'
+  | 'primaryMuscles'
+  | 'secondaryMuscles'
 > & { id?: string };
 
 export const resolveExerciseMovementPattern = (
@@ -24,6 +26,8 @@ export const resolveExerciseMovementPattern = (
     laterality: exercise.laterality,
     primaryMovementPattern: exercise.primaryMovementPattern,
     secondaryMovementPattern: exercise.secondaryMovementPattern,
+    primaryMuscles: exercise.primaryMuscles,
+    secondaryMuscles: exercise.secondaryMuscles,
   }).primary;
 
 export const exerciseMatchesMovementPattern = (
@@ -43,6 +47,8 @@ export const exerciseMatchesMovementPattern = (
     laterality: exercise.laterality,
     primaryMovementPattern: exercise.primaryMovementPattern,
     secondaryMovementPattern: exercise.secondaryMovementPattern,
+    primaryMuscles: exercise.primaryMuscles,
+    secondaryMuscles: exercise.secondaryMuscles,
   });
 
   return resolved.primary === pattern || resolved.secondary === pattern;

@@ -515,7 +515,7 @@ describe('powerBiExportService wellness export', () => {
       'romanian_deadlift__resistance,Romanian Deadlift,strength,resistance,unused-rdl,false,true,compound,intermediate,hamstrings|glutes,lower_back,barbell,bilateral,bilateral_compound,hinge,'
     );
     expect(dimExerciseCsv).toContain(
-      'mystery_curl__resistance,Mystery Curl,strength,resistance,,false,false,,,,,,unknown,isolation_accessory,,'
+      'mystery_curl__resistance,Mystery Curl,strength,resistance,,false,false,,,,,,bilateral,isolation_accessory,horizontal_pull,'
     );
     expect(gymCsv).toContain('bench_press__resistance,Bench Press');
     expect(gymCsv).not.toContain('romanian_deadlift__resistance');

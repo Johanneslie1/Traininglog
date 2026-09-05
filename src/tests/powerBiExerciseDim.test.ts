@@ -50,7 +50,7 @@ describe('powerBiExerciseDim', () => {
     expect(row.catalog_id).toBe('');
     expect(row.primary_muscles).toBe('');
     expect(row.exercise_factor_category).toBe('isolation_accessory');
-    expect(row.primary_movement_pattern).toBe('');
+    expect(row.primary_movement_pattern).toBe('horizontal_pull');
   });
 
   it('enriches aliased logged names from the catalog without changing the slug', () => {
