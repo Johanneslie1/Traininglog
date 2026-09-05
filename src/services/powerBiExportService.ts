@@ -44,6 +44,8 @@ import {
 } from '@/data/exerciseFactors';
 import { getMergedExercisesForExport } from '@/services/exerciseDatabaseService';
 import {
+  findCatalogExercise,
+  indexCatalogExercises,
   mapCatalogExerciseToDimRow,
   mapLoggedExerciseToDimRow,
   mergeDimExerciseRows,
@@ -370,18 +372,23 @@ const buildDimExercise = (
   const catalogRows = catalogExercises
     .filter((exercise) => Boolean(exercise.name?.trim()))
     .map(mapCatalogExerciseToDimRow);
+  const catalogIndex = indexCatalogExercises(catalogExercises);
 
   const loggedRows = allRawSets.flatMap((s) => {
     const name = normalizeExerciseDisplayName(String(s.exerciseName ?? ''));
     if (!name) {
       return [];
     }
+    const activityType = resolvePowerBiActivityType(s);
     return [
-      mapLoggedExerciseToDimRow({
-        name,
-        activityType: resolvePowerBiActivityType(s),
-        exerciseType: String(s.exerciseType ?? s.collectionType ?? ''),
-      }),
+      mapLoggedExerciseToDimRow(
+        {
+          name,
+          activityType,
+          exerciseType: String(s.exerciseType ?? s.collectionType ?? ''),
+        },
+        findCatalogExercise(name, activityType, catalogIndex)
+      ),
     ];
   });
 

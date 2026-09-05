@@ -43,6 +43,9 @@ export const LATERALITY_LABELS: Record<ExerciseLaterality, string> = {
   unilateral: 'Unilateral',
 };
 
+export const shortMovementPatternLabel = (pattern: MovementPattern): string =>
+  MOVEMENT_PATTERN_LABELS[pattern].split(' / ')[0];
+
 export interface MovementPatternInferenceInput {
   name: string;
   catalogId?: string;

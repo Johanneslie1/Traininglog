@@ -521,6 +521,51 @@ describe('powerBiExportService wellness export', () => {
     expect(gymCsv).not.toContain('romanian_deadlift__resistance');
   });
 
+  it('enriches aliased logged names from the catalog while keeping the logged exercise_id', async () => {
+    mockedExerciseDatabaseService.getMergedExercisesForExport.mockResolvedValue([
+      {
+        id: 'squat-1',
+        name: 'Squats',
+        description: 'A fundamental compound exercise for lower body strength.',
+        category: 'compound',
+        type: 'strength',
+        activityType: ActivityType.RESISTANCE,
+        difficulty: 'intermediate',
+        equipment: ['barbell', 'rack'],
+        instructions: [],
+        primaryMuscles: ['quadriceps', 'glutes', 'hamstrings'],
+        secondaryMuscles: ['core'],
+        isDefault: true,
+      },
+    ] satisfies Exercise[]);
+
+    mockedExportService.exportData.mockResolvedValue({
+      sessions: [],
+      exerciseLogs: [],
+      sets: [
+        {
+          exerciseLogId: 'squat-log',
+          exerciseName: 'Squat',
+          exerciseType: 'strength',
+          activityType: 'resistance',
+          loggedDate: '2026-03-10',
+          reps: 5,
+          weight: 120,
+        },
+      ],
+    });
+
+    const result = await buildPowerBiFiles({ scope: 'self' }, currentAthlete);
+    const dimExerciseCsv = getFileContent(result, 'dim_exercise.csv');
+    const gymCsv = getFileContent(result, 'fact_gym_sets.csv');
+
+    expect(gymCsv).toContain('squat__resistance,Squat');
+    expect(dimExerciseCsv).toContain(
+      'squat__resistance,Squat,strength,resistance,squat-1,false,true,compound,intermediate,quadriceps|glutes|hamstrings,core,barbell|rack,bilateral,bilateral_compound,squat,'
+    );
+    expect(dimExerciseCsv).toContain('squats__resistance,Squats,strength,resistance,squat-1,false,true');
+  });
+
   it('joins activity facts to dim_exercise on exercise_id', async () => {
     mockedExportService.exportData.mockResolvedValue({
       sessions: [],

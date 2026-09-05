@@ -2,6 +2,8 @@ import { describe, expect, it } from '@jest/globals';
 import { ActivityType } from '@/types/activityTypes';
 import type { Exercise } from '@/types/exercise';
 import {
+  findCatalogExercise,
+  indexCatalogExercises,
   mapCatalogExerciseToDimRow,
   mapLoggedExerciseToDimRow,
   mergeDimExerciseRows,
@@ -49,6 +51,31 @@ describe('powerBiExerciseDim', () => {
     expect(row.primary_muscles).toBe('');
     expect(row.exercise_factor_category).toBe('isolation_accessory');
     expect(row.primary_movement_pattern).toBe('');
+  });
+
+  it('enriches aliased logged names from the catalog without changing the slug', () => {
+    const squats: Exercise = {
+      ...bench,
+      id: 'squat-1',
+      name: 'Squats',
+      primaryMuscles: ['quadriceps', 'glutes'],
+      secondaryMuscles: ['core'],
+      equipment: ['barbell'],
+    };
+    const index = indexCatalogExercises([squats]);
+    const match = findCatalogExercise('Squat', ActivityType.RESISTANCE, index);
+    const row = mapLoggedExerciseToDimRow(
+      { name: 'Squat', activityType: ActivityType.RESISTANCE, exerciseType: 'strength' },
+      match
+    );
+
+    expect(match?.id).toBe('squat-1');
+    expect(row.exercise_id).toBe(toExerciseId('Squat', ActivityType.RESISTANCE));
+    expect(row.exercise_name).toBe('Squat');
+    expect(row.catalog_id).toBe('squat-1');
+    expect(row.in_catalog).toBe(true);
+    expect(row.primary_muscles).toBe('quadriceps|glutes');
+    expect(row.primary_movement_pattern).toBe('squat');
   });
 
   it('prefers catalog rows over logged duplicates', () => {

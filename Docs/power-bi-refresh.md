@@ -31,6 +31,8 @@ Power BI reports should treat these filenames and columns as the stable reportin
 
 Join `fact_gym_sets.exercise_id` and `fact_activity.exercise_id` to `dim_exercise.exercise_id`. The key is a stable slug of `exercise_name + activity_type` (for example `bench_press__resistance`). Do not replace it with Firestore catalog ids.
 
+Logged names that do not exactly match the catalog can still pick up catalog attributes through a small curated alias list (for example `Squat` → `Squats`). The logged `exercise_id` stays unchanged so existing fact joins keep working. Unmatched names stay `in_catalog=false`. After an export, review those rows and empty `primary_movement_pattern` values before adding more aliases.
+
 Current columns:
 
 - Identity: `exercise_id`, `exercise_name`, `catalog_id`, `is_custom`, `in_catalog`

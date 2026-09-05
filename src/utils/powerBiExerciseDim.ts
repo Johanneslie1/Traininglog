@@ -2,6 +2,10 @@ import {
   inferExerciseFactorCategory,
   type ExerciseFactorCategory,
 } from '@/data/exerciseFactors';
+import {
+  normalizeExerciseLookupName,
+  resolveExerciseNameAlias,
+} from '@/data/exerciseNameAliases';
 import { inferMovementPatterns } from '@/data/movementPatterns';
 import type { Exercise } from '@/types/exercise';
 import type { DimExerciseRow } from '@/types/powerBiExport';
@@ -101,13 +105,56 @@ export const mapCatalogExerciseToDimRow = (exercise: Exercise): DimExerciseRow =
   };
 };
 
-export const mapLoggedExerciseToDimRow = (input: {
-  name: string;
-  activityType: string;
-  exerciseType?: string;
-}): DimExerciseRow => {
+export const catalogLookupKey = (name: string, activityType: string): string =>
+  `${String(activityType || 'unknown')}::${normalizeExerciseLookupName(name)}`;
+
+export const indexCatalogExercises = (exercises: Exercise[]): Map<string, Exercise> => {
+  const index = new Map<string, Exercise>();
+  exercises.forEach((exercise) => {
+    if (!exercise.name?.trim()) {
+      return;
+    }
+    const key = catalogLookupKey(exercise.name, String(exercise.activityType || 'unknown'));
+    if (!index.has(key)) {
+      index.set(key, exercise);
+    }
+  });
+  return index;
+};
+
+export const findCatalogExercise = (
+  name: string,
+  activityType: string,
+  catalogIndex: Map<string, Exercise>
+): Exercise | undefined => {
+  const lookupName = resolveExerciseNameAlias(name);
+  return (
+    catalogIndex.get(catalogLookupKey(lookupName, activityType)) ??
+    catalogIndex.get(catalogLookupKey(name, activityType))
+  );
+};
+
+export const mapLoggedExerciseToDimRow = (
+  input: {
+    name: string;
+    activityType: string;
+    exerciseType?: string;
+  },
+  catalogExercise?: Exercise
+): DimExerciseRow => {
   const name = normalizeExerciseDisplayName(input.name);
   const activityType = input.activityType || 'unknown';
+
+  if (catalogExercise) {
+    return {
+      ...mapCatalogExerciseToDimRow(catalogExercise),
+      exercise_id: toExerciseId(name, activityType),
+      exercise_name: name,
+      exercise_type: input.exerciseType || String(catalogExercise.type ?? ''),
+      activity_type: activityType,
+    };
+  }
+
   const patterns = inferMovementPatterns({
     name,
     activityType,
