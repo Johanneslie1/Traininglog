@@ -496,6 +496,11 @@ export const ProgramExercisePicker: React.FC<ProgramExercisePickerProps> = ({
                                   </span>
                                 )}
                               </div>
+                              {exercise.notes && (
+                                <p className="mt-2 whitespace-pre-wrap text-xs text-text-tertiary line-clamp-4">
+                                  {exercise.notes}
+                                </p>
+                              )}
                             </div>
                           </div>
                         ))}

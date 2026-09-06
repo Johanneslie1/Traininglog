@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getAuth } from 'firebase/auth';
 import { usePrograms } from '@/context/ProgramsContext';
 import CreateNewProgram from './CreateNewProgram';
 import { Program } from '@/types/program';
@@ -7,6 +8,10 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { TrashIcon, PlusIcon, DuplicateIcon } from '@heroicons/react/outline';
 import { Button, ConfirmDialog, EmptyState, ViewToggle } from '@/components/ui';
 import { formatRelativeDate } from '@/utils/displayFormatters';
+import {
+  createSpeedStrengthBlock1Program,
+  findSpeedStrengthBlock1Program,
+} from '@/services/starterProgramService';
 
 type ProgramViewMode = 'compact' | 'detailed';
 
@@ -19,6 +24,9 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
   const [duplicatingProgramId, setDuplicatingProgramId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
   const [viewMode, setViewMode] = useState<ProgramViewMode>('compact');
+  const [creatingStarter, setCreatingStarter] = useState(false);
+
+  const existingSpeedStrengthProgram = findSpeedStrengthBlock1Program(programs);
 
   // No need for useEffect to refresh - ProgramsContext handles this automatically
 
@@ -35,22 +43,41 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
   const handleCreateNewSave = async (program: Omit<Program, 'id' | 'userId'>) => {
     try {
       console.log('[ProgramList] Creating new program:', program);
-      await create(program);
+      const programId = await create(program);
       setShowCreateNew(false);
-      await refresh();
-      
-      // Navigate to the newly created program
-      const createdProgram = programs.find(p => 
-        p.name === program.name && 
-        p.createdBy === program.createdBy
-      );
-      if (createdProgram) {
-        navigate(`/programs/${createdProgram.id}`);
-      }
+      navigate(`/programs/${programId}`);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create program';
       console.error('Error creating program:', err);
       setError(errorMessage);
+    }
+  };
+
+  const handleCreateSpeedStrengthBlock = async () => {
+    if (existingSpeedStrengthProgram) {
+      navigate(`/programs/${existingSpeedStrengthProgram.id}`);
+      return;
+    }
+
+    const user = getAuth().currentUser;
+    if (!user) {
+      setError('You must be logged in to create a program');
+      return;
+    }
+
+    setCreatingStarter(true);
+    setError(null);
+
+    try {
+      const programId = await createSpeedStrengthBlock1Program(user.uid);
+      await refresh();
+      navigate(`/programs/${programId}`);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create program';
+      console.error('[ProgramList] Error creating Speed + Strength Blokk 1:', err);
+      setError(errorMessage);
+    } finally {
+      setCreatingStarter(false);
     }
   };
 
@@ -127,6 +154,17 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
           <Button variant="secondary" onClick={() => navigate('/teams?tab=programs')}>
             Assigned
           </Button>
+          {!existingSpeedStrengthProgram && (
+            <Button
+              variant="secondary"
+              onClick={() => {
+                void handleCreateSpeedStrengthBlock();
+              }}
+              disabled={creatingStarter}
+            >
+              {creatingStarter ? 'Adding block…' : 'Add Speed + Strength Blokk 1'}
+            </Button>
+          )}
           <Button
             leftIcon={<PlusIcon className="h-4 w-4" />}
             onClick={() => setShowCreateNew(true)}
@@ -151,6 +189,12 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
             primaryAction={{
               label: 'Create Program',
               onClick: () => setShowCreateNew(true)
+            }}
+            secondaryAction={{
+              label: creatingStarter ? 'Adding block…' : 'Add Speed + Strength Blokk 1',
+              onClick: () => {
+                void handleCreateSpeedStrengthBlock();
+              }
             }}
           />
         </div>

@@ -3,6 +3,7 @@ import { auth } from '@/services/firebase/config';
 import { Program } from '@/types/program';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import * as programService from '@/services/programService';
+import { ensureSpeedStrengthBlock1Program } from '@/services/starterProgramService';
 import { logger } from '@/utils/logger';
 
 interface ProgramsContextType {
@@ -10,7 +11,7 @@ interface ProgramsContextType {
   isLoading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
-  addProgram: (program: Omit<Program, 'id' | 'userId'>) => Promise<void>;
+  addProgram: (program: Omit<Program, 'id' | 'userId'>) => Promise<string>;
   updateProgram: (id: string, updated: Partial<Program>) => Promise<void>;
   updateSessionInProgram: (programId: string, sessionId: string, sessionData: Partial<Program['sessions'][number]> & { exercises: any[] }) => Promise<void>;
   deleteProgram: (id: string) => Promise<void>;
@@ -29,6 +30,7 @@ export const ProgramsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(auth.currentUser);
   const isFetchingRef = useRef(false);
+  const starterSeedUserRef = useRef<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -59,8 +61,21 @@ export const ProgramsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       logger.debug('[ProgramsContext] Fetching programs for user:', user.uid);
       // Load programs with their sessions
-      const loadedPrograms = await programService.getPrograms();
+      let loadedPrograms = await programService.getPrograms();
       logger.debug('[ProgramsContext] Fetched programs:', loadedPrograms.length);
+
+      if (starterSeedUserRef.current !== user.uid) {
+        try {
+          const seedResult = await ensureSpeedStrengthBlock1Program(loadedPrograms);
+          if (seedResult.created || seedResult.updated) {
+            loadedPrograms = await programService.getPrograms();
+          }
+          starterSeedUserRef.current = user.uid;
+        } catch (seedError) {
+          logger.debug('[ProgramsContext] Could not seed Speed + Strength Blokk 1:', seedError);
+        }
+      }
+
       setPrograms(loadedPrograms);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch programs';
@@ -79,6 +94,7 @@ export const ProgramsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setPrograms([]);
       setIsLoading(false);
       isFetchingRef.current = false;
+      starterSeedUserRef.current = null;
     }
   }, [user]); // Remove fetchPrograms from dependencies to prevent infinite loops
 
@@ -90,8 +106,9 @@ export const ProgramsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setError(null);
     
     try {
-      await programService.createProgram({ ...program, userId: user.uid });
+      const programId = await programService.createProgram({ ...program, userId: user.uid });
       await fetchPrograms(true); // Force refresh after creating
+      return programId;
     } catch (err) {
       let errorMessage = 'Failed to create program';
       

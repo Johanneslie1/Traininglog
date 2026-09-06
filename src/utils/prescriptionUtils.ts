@@ -241,6 +241,9 @@ export function formatPrescription(
       if (prescription.distance) {
         parts.push(`${formatNumberRange(prescription.distance)}m`);
       }
+      if (prescription.rest) {
+        parts.push(`${prescription.rest}s rest`);
+      }
       break;
 
     case ActivityType.OTHER:
@@ -297,9 +300,13 @@ export function formatPrescriptionBadge(
       return prescription.duration ? `${formatNumberRange(prescription.duration)}s hold` : '';
 
     case ActivityType.SPEED_AGILITY:
+      const setsSpeed = prescription.sets ? formatNumberRange(prescription.sets) : '';
       const repsSpeed = prescription.reps ? `${formatNumberRange(prescription.reps)}x` : '';
       const dist = prescription.distance ? `${formatNumberRange(prescription.distance)}m` : '';
-      return [repsSpeed, dist].filter(Boolean).join(' ');
+      if (setsSpeed && dist && !prescription.reps) {
+        return `${setsSpeed}× ${dist}`;
+      }
+      return [setsSpeed ? `${setsSpeed} sets` : '', repsSpeed, dist].filter(Boolean).join(' ');
 
     default:
       return formatPrescription(prescription, activityType);

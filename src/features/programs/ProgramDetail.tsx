@@ -512,6 +512,11 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                               Sets and reps will be logged during workout
                             </div>
                           )}
+                          {exercise.notes && (
+                            <p className="mt-2 whitespace-pre-wrap text-xs text-text-tertiary">
+                              {exercise.notes}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>

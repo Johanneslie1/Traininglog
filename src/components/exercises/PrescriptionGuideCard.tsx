@@ -72,6 +72,7 @@ const buildDetailRows = (prescription: Prescription | undefined, activityType: A
       if (distance) rows.push({ label: 'Distance', value: `${distance}m` });
       const duration = formatRange(prescription.duration);
       if (duration) rows.push({ label: 'Duration', value: `${duration}s` });
+      if (prescription.rest) rows.push({ label: 'Rest', value: `${prescription.rest}s` });
       break;
     }
     default:
