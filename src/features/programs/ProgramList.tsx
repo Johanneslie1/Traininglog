@@ -9,7 +9,9 @@ import { TrashIcon, PlusIcon, DuplicateIcon } from '@heroicons/react/outline';
 import { Button, ConfirmDialog, EmptyState, ViewToggle } from '@/components/ui';
 import { formatRelativeDate } from '@/utils/displayFormatters';
 import {
+  createHelesTrainingProgram,
   createSpeedStrengthBlock1Program,
+  findHelesTrainingProgram,
   findSpeedStrengthBlock1Program,
 } from '@/services/starterProgramService';
 
@@ -24,9 +26,10 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
   const [duplicatingProgramId, setDuplicatingProgramId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
   const [viewMode, setViewMode] = useState<ProgramViewMode>('compact');
-  const [creatingStarter, setCreatingStarter] = useState(false);
+  const [creatingStarter, setCreatingStarter] = useState<'speed' | 'heles' | null>(null);
 
   const existingSpeedStrengthProgram = findSpeedStrengthBlock1Program(programs);
+  const existingHelesProgram = findHelesTrainingProgram(programs);
 
   // No need for useEffect to refresh - ProgramsContext handles this automatically
 
@@ -53,9 +56,13 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
     }
   };
 
-  const handleCreateSpeedStrengthBlock = async () => {
-    if (existingSpeedStrengthProgram) {
-      navigate(`/programs/${existingSpeedStrengthProgram.id}`);
+  const handleCreateStarterProgram = async (
+    kind: 'speed' | 'heles',
+    existing: Program | undefined,
+    createProgram: (userId: string) => Promise<string>
+  ) => {
+    if (existing) {
+      navigate(`/programs/${existing.id}`);
       return;
     }
 
@@ -65,19 +72,19 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
       return;
     }
 
-    setCreatingStarter(true);
+    setCreatingStarter(kind);
     setError(null);
 
     try {
-      const programId = await createSpeedStrengthBlock1Program(user.uid);
+      const programId = await createProgram(user.uid);
       await refresh();
       navigate(`/programs/${programId}`);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create program';
-      console.error('[ProgramList] Error creating Speed + Strength Blokk 1:', err);
+      console.error('[ProgramList] Error creating starter program:', err);
       setError(errorMessage);
     } finally {
-      setCreatingStarter(false);
+      setCreatingStarter(null);
     }
   };
 
@@ -154,15 +161,26 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
           <Button variant="secondary" onClick={() => navigate('/teams?tab=programs')}>
             Assigned
           </Button>
+          {!existingHelesProgram && (
+            <Button
+              variant="secondary"
+              onClick={() => {
+                void handleCreateStarterProgram('heles', existingHelesProgram, createHelesTrainingProgram);
+              }}
+              disabled={creatingStarter !== null}
+            >
+              {creatingStarter === 'heles' ? 'Adding program…' : "Add Hele's Training Program"}
+            </Button>
+          )}
           {!existingSpeedStrengthProgram && (
             <Button
               variant="secondary"
               onClick={() => {
-                void handleCreateSpeedStrengthBlock();
+                void handleCreateStarterProgram('speed', existingSpeedStrengthProgram, createSpeedStrengthBlock1Program);
               }}
-              disabled={creatingStarter}
+              disabled={creatingStarter !== null}
             >
-              {creatingStarter ? 'Adding block…' : 'Add Speed + Strength Blokk 1'}
+              {creatingStarter === 'speed' ? 'Adding block…' : 'Add Speed + Strength Blokk 1'}
             </Button>
           )}
           <Button
@@ -191,9 +209,9 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
               onClick: () => setShowCreateNew(true)
             }}
             secondaryAction={{
-              label: creatingStarter ? 'Adding block…' : 'Add Speed + Strength Blokk 1',
+              label: creatingStarter === 'heles' ? 'Adding program…' : "Add Hele's Training Program",
               onClick: () => {
-                void handleCreateSpeedStrengthBlock();
+                void handleCreateStarterProgram('heles', existingHelesProgram, createHelesTrainingProgram);
               }
             }}
           />

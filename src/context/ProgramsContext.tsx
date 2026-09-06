@@ -3,7 +3,7 @@ import { auth } from '@/services/firebase/config';
 import { Program } from '@/types/program';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import * as programService from '@/services/programService';
-import { ensureSpeedStrengthBlock1Program } from '@/services/starterProgramService';
+import { ensureStarterPrograms } from '@/services/starterProgramService';
 import { logger } from '@/utils/logger';
 
 interface ProgramsContextType {
@@ -66,13 +66,13 @@ export const ProgramsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       if (starterSeedUserRef.current !== user.uid) {
         try {
-          const seedResult = await ensureSpeedStrengthBlock1Program(loadedPrograms);
+          const seedResult = await ensureStarterPrograms(loadedPrograms);
           if (seedResult.created || seedResult.updated) {
             loadedPrograms = await programService.getPrograms();
           }
           starterSeedUserRef.current = user.uid;
         } catch (seedError) {
-          logger.debug('[ProgramsContext] Could not seed Speed + Strength Blokk 1:', seedError);
+          logger.debug('[ProgramsContext] Could not seed starter programs:', seedError);
         }
       }
 

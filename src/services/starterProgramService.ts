@@ -7,39 +7,51 @@ import {
   isCurrentSpeedStrengthBlock1Revision,
   isSpeedStrengthBlock1Program,
 } from '@/data/programs/speedStrengthBlock1';
+import {
+  HELES_TRAINING_PROGRAM_NAME,
+  buildHelesTrainingProgram,
+  isCurrentHelesTrainingProgramRevision,
+  isHelesTrainingProgram,
+} from '@/data/programs/helesTrainingProgram';
 import { logger } from '@/utils/logger';
 
-export const findSpeedStrengthBlock1Program = (programs: Program[]): Program | undefined =>
-  programs.find((program) => program.name === SPEED_STRENGTH_BLOCK_1_NAME) ??
-  programs.find((program) => isSpeedStrengthBlock1Program(program) && !program.name.includes('(Copy)'));
+type StarterSeedResult = { created: boolean; updated: boolean; programId?: string };
 
-export const createSpeedStrengthBlock1Program = async (userId: string): Promise<string> => {
-  const program = buildSpeedStrengthBlock1Program(userId);
-  return createProgram(program);
-};
+const findNamedProgram = (
+  programs: Program[],
+  name: string,
+  isMatch: (program: Pick<Program, 'name' | 'tags'>) => boolean
+): Program | undefined =>
+  programs.find((program) => program.name === name) ??
+  programs.find((program) => isMatch(program) && !program.name.includes('(Copy)'));
 
-export const ensureSpeedStrengthBlock1Program = async (
-  existingPrograms?: Program[]
-): Promise<{ created: boolean; updated: boolean; programId?: string }> => {
+const seedProgram = async (
+  programs: Program[],
+  options: {
+    label: string;
+    find: (programs: Program[]) => Program | undefined;
+    isCurrent: (program: Pick<Program, 'name' | 'tags'>) => boolean;
+    build: (userId: string) => Omit<Program, 'id' | 'createdAt' | 'updatedAt'>;
+  }
+): Promise<StarterSeedResult> => {
   const user = auth.currentUser;
   if (!user?.uid) {
     return { created: false, updated: false };
   }
 
-  const programs = existingPrograms ?? await getPrograms();
-  const existing = findSpeedStrengthBlock1Program(programs);
+  const existing = options.find(programs);
   if (!existing) {
-    logger.debug('[starterProgramService] Creating Speed + Strength Blokk 1');
-    const programId = await createSpeedStrengthBlock1Program(user.uid);
+    logger.debug(`[starterProgramService] Creating ${options.label}`);
+    const programId = await createProgram(options.build(user.uid));
     return { created: true, updated: false, programId };
   }
 
-  if (isCurrentSpeedStrengthBlock1Revision(existing)) {
+  if (options.isCurrent(existing)) {
     return { created: false, updated: false, programId: existing.id };
   }
 
-  logger.debug('[starterProgramService] Updating Speed + Strength Blokk 1 to current revision');
-  const nextProgram = buildSpeedStrengthBlock1Program(user.uid);
+  logger.debug(`[starterProgramService] Updating ${options.label} to current revision`);
+  const nextProgram = options.build(user.uid);
   await replaceProgram(existing.id, {
     ...nextProgram,
     id: existing.id,
@@ -47,4 +59,57 @@ export const ensureSpeedStrengthBlock1Program = async (
     updatedAt: existing.updatedAt,
   });
   return { created: false, updated: true, programId: existing.id };
+};
+
+export const findSpeedStrengthBlock1Program = (programs: Program[]): Program | undefined =>
+  findNamedProgram(programs, SPEED_STRENGTH_BLOCK_1_NAME, isSpeedStrengthBlock1Program);
+
+export const findHelesTrainingProgram = (programs: Program[]): Program | undefined =>
+  findNamedProgram(programs, HELES_TRAINING_PROGRAM_NAME, isHelesTrainingProgram);
+
+export const createSpeedStrengthBlock1Program = async (userId: string): Promise<string> =>
+  createProgram(buildSpeedStrengthBlock1Program(userId));
+
+export const createHelesTrainingProgram = async (userId: string): Promise<string> =>
+  createProgram(buildHelesTrainingProgram(userId));
+
+export const ensureSpeedStrengthBlock1Program = async (
+  existingPrograms?: Program[]
+): Promise<StarterSeedResult> => {
+  const programs = existingPrograms ?? await getPrograms();
+  return seedProgram(programs, {
+    label: 'Speed + Strength Blokk 1',
+    find: findSpeedStrengthBlock1Program,
+    isCurrent: isCurrentSpeedStrengthBlock1Revision,
+    build: buildSpeedStrengthBlock1Program,
+  });
+};
+
+export const ensureHelesTrainingProgram = async (
+  existingPrograms?: Program[]
+): Promise<StarterSeedResult> => {
+  const programs = existingPrograms ?? await getPrograms();
+  return seedProgram(programs, {
+    label: "Hele's Training Program",
+    find: findHelesTrainingProgram,
+    isCurrent: isCurrentHelesTrainingProgramRevision,
+    build: buildHelesTrainingProgram,
+  });
+};
+
+export const ensureStarterPrograms = async (
+  existingPrograms?: Program[]
+): Promise<StarterSeedResult> => {
+  let programs = existingPrograms ?? await getPrograms();
+  const speedStrength = await ensureSpeedStrengthBlock1Program(programs);
+  if (speedStrength.created || speedStrength.updated) {
+    programs = await getPrograms();
+  }
+
+  const heles = await ensureHelesTrainingProgram(programs);
+  return {
+    created: speedStrength.created || heles.created,
+    updated: speedStrength.updated || heles.updated,
+    programId: heles.programId ?? speedStrength.programId,
+  };
 };
