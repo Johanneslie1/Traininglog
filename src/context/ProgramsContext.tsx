@@ -3,7 +3,6 @@ import { auth } from '@/services/firebase/config';
 import { Program } from '@/types/program';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import * as programService from '@/services/programService';
-import { ensureStarterPrograms } from '@/services/starterProgramService';
 import { logger } from '@/utils/logger';
 
 interface ProgramsContextType {
@@ -66,6 +65,7 @@ export const ProgramsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       if (starterSeedUserRef.current !== user.uid) {
         try {
+          const { ensureStarterPrograms } = await import('@/services/starterProgramService');
           const seedResult = await ensureStarterPrograms(loadedPrograms);
           if (seedResult.created || seedResult.updated) {
             loadedPrograms = await programService.getPrograms();

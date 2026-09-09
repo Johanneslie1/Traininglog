@@ -236,6 +236,13 @@ export default defineConfig(({ mode }) => {
               return 'exercise-data-imported-index';
             }
 
+            if (
+              normalizedId.includes('/src/data/programs/') ||
+              normalizedId.includes('/src/services/starterProgramService.ts')
+            ) {
+              return 'starter-programs';
+            }
+
             return undefined;
           }
         }

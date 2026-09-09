@@ -39,6 +39,7 @@ const budget = {
     'exercise-data-imported-4': 360,
     'exercise-data-activities': 240,
     'exercise-db-core': 100,
+    'starter-programs': 80,
     'CreateUniversalExerciseDialog': 60,
   },
 };
