@@ -208,6 +208,7 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
 
   const selectedCount = multiSelect ? Object.values(selectedMap).filter(Boolean).length : 0;
   const selectedList = multiSelect ? enriched.filter(e => selectedMap[e.id]) : [];
+  const extraFilterCount = movementPatternFilter.size + equipmentFilter.size + tagFilter.size;
 
   return (
     <div className="w-full h-full flex flex-col min-h-0">
@@ -239,10 +240,17 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
           >Reset</button>
           <button
             onClick={() => setShowAdvanced(s => !s)}
-            className="px-3 py-2 text-xs font-medium bg-bg-tertiary border border-border rounded-md text-text-secondary hover:text-text-primary hover:border-accent-primary"
+            className={`px-3 py-2 text-xs font-medium border rounded-md ${
+              showAdvanced || extraFilterCount > 0
+                ? 'bg-accent-primary/15 border-accent-primary text-accent-primary'
+                : 'bg-bg-tertiary border-border text-text-secondary hover:text-text-primary hover:border-accent-primary'
+            }`}
             aria-expanded={showAdvanced}
             aria-controls="advanced-filters"
-          >{showAdvanced ? 'Hide' : 'Filters'}</button>
+          >
+            {showAdvanced ? 'Hide' : 'Filters'}
+            {!showAdvanced && extraFilterCount > 0 ? ` (${extraFilterCount})` : ''}
+          </button>
         </div>
         {/* Quick Filter Chips */}
         <div className="flex flex-wrap gap-2">
@@ -268,16 +276,16 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
               >{value}</button>
             );
           })}
-          {Array.from(facets.movementPattern).map(pattern => {
+          {!showAdvanced && Array.from(movementPatternFilter).map((pattern) => {
             const value = String(pattern);
-            const active = movementPatternFilter.has(value);
             const label = isMovementPattern(value) ? shortMovementPatternLabel(value) : value;
             return (
               <button
                 key={value}
                 onClick={() => toggle(setMovementPatternFilter, value)}
-                className={`px-3 py-1 rounded-full text-xs font-medium border transition ${active ? 'bg-accent-primary border-accent-primary text-text-on-accent' : 'bg-bg-tertiary border-border text-text-secondary hover:border-accent-primary hover:text-text-primary'}`}
-              >{label}</button>
+                className="px-3 py-1 rounded-full text-xs font-medium border bg-accent-primary border-accent-primary text-text-on-accent"
+                aria-label={`Clear ${label} filter`}
+              >{label} ×</button>
             );
           })}
         </div>

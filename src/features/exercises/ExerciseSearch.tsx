@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useId } from 'react';
 import { Category } from './CategoryButton';
 import { CreateUniversalExerciseDialog } from '@/components/exercises/CreateUniversalExerciseDialog';
 import { Exercise, MuscleGroup } from '@/types/exercise';
@@ -9,7 +9,11 @@ import { db } from '@/services/firebase/config';
 import { useAuth } from '@/hooks/useAuth';
 import { getMergedExercisesByActivityType } from '@/services/exerciseDatabaseService';
 import { EmptyState, LoadingState } from '@/components/ui';
-import { MovementPatternFilterChips } from '@/components/exercises/MovementPatternFilterChips';
+import {
+  ActiveMovementPatternChip,
+  MovementPatternFilterChips,
+  MovementPatternFilterToggle,
+} from '@/components/exercises/MovementPatternFilterChips';
 import type { MovementPattern } from '@/data/movementPatterns';
 import { exerciseMatchesMovementPattern } from '@/utils/exerciseMovementPattern';
 
@@ -57,9 +61,11 @@ export const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [movementPattern, setMovementPattern] = useState<MovementPattern | ''>('');
+  const [showFilters, setShowFilters] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [combinedExercises, setCombinedExercises] = useState<Exercise[]>([]);
+  const filterPanelId = useId();
 
   // Load merged resistance exercises (built-in + global + user custom)
   useEffect(() => {
@@ -166,17 +172,17 @@ export const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
     <div className="fixed inset-0 bg-bg-primary flex flex-col">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-bg-primary border-b border-border">
-        <div className="flex items-center p-4">
+        <div className="flex items-center gap-2 p-4">
           <button
             onClick={onClose}
-            className="mr-4 p-2 rounded-full hover:bg-bg-tertiary transition-colors"
+            className="p-2 rounded-full hover:bg-bg-tertiary transition-colors"
             aria-label="Close search"
           >
             <svg className="w-6 h-6 text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <div className="flex-grow">
+          <div className="flex-grow min-w-0">
             <input
               autoFocus
               type="text"
@@ -186,10 +192,24 @@ export const ExerciseSearch: React.FC<ExerciseSearchProps> = ({
               className="w-full bg-bg-secondary text-text-primary px-4 py-3 rounded-xl border border-border focus:outline-none focus:border-accent-primary transition-colors"
             />
           </div>
+          <MovementPatternFilterToggle
+            open={showFilters}
+            onToggle={() => setShowFilters((open) => !open)}
+            panelId={filterPanelId}
+            activeCount={movementPattern ? 1 : 0}
+          />
         </div>
-        <div className="px-4 pb-3">
+        <div id={filterPanelId} hidden={!showFilters} className={showFilters ? 'px-4 pb-3' : undefined}>
           <MovementPatternFilterChips selected={movementPattern} onSelect={setMovementPattern} />
         </div>
+        {!showFilters && movementPattern && (
+          <div className="px-4 pb-3">
+            <ActiveMovementPatternChip
+              pattern={movementPattern}
+              onClear={() => setMovementPattern('')}
+            />
+          </div>
+        )}
       </div>
 
       {/* Exercise List */}

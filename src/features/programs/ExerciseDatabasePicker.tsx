@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useId } from 'react';
 import { Exercise, MuscleGroup } from '@/types/exercise';
 import { ExerciseSet } from '@/types/sets';
 import { DifficultyCategory } from '@/types/difficulty';
@@ -8,7 +8,11 @@ import { useAuth } from '@/hooks/useAuth';
 import { SearchIcon, XIcon } from '@heroicons/react/outline';
 import AppOverlay from '@/components/ui/AppOverlay';
 import { getMergedExercisesByActivityType } from '@/services/exerciseDatabaseService';
-import { MovementPatternFilterChips } from '@/components/exercises/MovementPatternFilterChips';
+import {
+  ActiveMovementPatternChip,
+  MovementPatternFilterChips,
+  MovementPatternFilterToggle,
+} from '@/components/exercises/MovementPatternFilterChips';
 import type { MovementPattern } from '@/data/movementPatterns';
 import { exerciseMatchesMovementPattern } from '@/utils/exerciseMovementPattern';
 
@@ -58,6 +62,8 @@ const ExerciseDatabasePicker: React.FC<ExerciseDatabasePickerProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [combinedExercises, setCombinedExercises] = useState<Exercise[]>([]);
   const [selectedExercises, setSelectedExercises] = useState<Set<string>>(new Set());
+  const [showFilters, setShowFilters] = useState(false);
+  const filterPanelId = useId();
 
   const categories = [
     { id: '', name: 'All', icon: '💪' },
@@ -172,20 +178,36 @@ const ExerciseDatabasePicker: React.FC<ExerciseDatabasePickerProps> = ({
           </div>
 
           {/* Search Bar */}
-          <div className="relative mb-4">
-            <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-tertiary w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Search exercises..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-bg-tertiary text-text-primary rounded-lg border border-border focus:border-accent-primary focus:outline-none"
+          <div className="flex items-center gap-2 mb-4">
+            <div className="relative flex-1 min-w-0">
+              <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-tertiary w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Search exercises..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-bg-tertiary text-text-primary rounded-lg border border-border focus:border-accent-primary focus:outline-none"
+              />
+            </div>
+            <MovementPatternFilterToggle
+              open={showFilters}
+              onToggle={() => setShowFilters((open) => !open)}
+              panelId={filterPanelId}
+              activeCount={movementPattern ? 1 : 0}
             />
           </div>
 
-          <div className="mb-3">
+          <div id={filterPanelId} hidden={!showFilters} className={showFilters ? 'mb-3' : undefined}>
             <MovementPatternFilterChips selected={movementPattern} onSelect={setMovementPattern} />
           </div>
+          {!showFilters && movementPattern && (
+            <div className="mb-3">
+              <ActiveMovementPatternChip
+                pattern={movementPattern}
+                onClear={() => setMovementPattern('')}
+              />
+            </div>
+          )}
 
           {/* Category Filter */}
           <div className="flex flex-wrap gap-2">
