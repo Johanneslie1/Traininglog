@@ -130,9 +130,9 @@ describe('powerBiExportService wellness export', () => {
     const csv = wellnessFile?.content.replace(/^\uFEFF/, '');
 
     expect(csv).toContain(
-      'athlete_id,athlete_name,logged_date,sleep_quality,fatigue,muscle_soreness,stress,mood,readiness,notes'
+      'athlete_id,athlete_name,date,logged_date,logged_at,sleep_quality,fatigue,muscle_soreness,stress,mood,readiness,notes'
     );
-    expect(csv).toContain('user-42,Test Athlete,2026-03-10,5,3,2,4,5,5,ready to push');
+    expect(csv).toContain('user-42,Test Athlete,2026-03-10,2026-03-10,,5,3,2,4,5,5,ready to push');
   });
 
   it('passes the selected start and end dates to training and wellness exports', async () => {
@@ -214,11 +214,11 @@ describe('powerBiExportService wellness export', () => {
     expect(result.gymSetCount).toBe(2);
     expect(result.sessionCount).toBe(1);
     expect(sessionCsv).toContain(
-      'user-42,Test Athlete,default-user-42-2026-03-10-main,Session 1,main,2026-03-10,2026-W11,resistance,false,,2,0,0,2,10,1025'
+      'user-42,Test Athlete,default-user-42-2026-03-10-main,Session 1,main,2026-03-10,2026-03-10,,2026-W11,resistance,false,,2,0,0,2,10,1025'
     );
   });
 
-  it('populates activity session duration and computed session load when available', async () => {
+  it('populates activity session duration without estimating Foster load from set RPE', async () => {
     mockedExportService.exportData.mockResolvedValue({
       sessions: [],
       exerciseLogs: [],
@@ -243,7 +243,7 @@ describe('powerBiExportService wellness export', () => {
     const sessionLines = getFileContent(result, 'fact_sessions.csv').split('\n');
 
     expect(sessionLines).toContain(
-      'user-42,Test Athlete,activity-session-1,Session 1,main,2026-03-10,2026-W11,endurance,false,30,0,1,0,1,,,5000,,,,,,,,,7,,,210'
+      'user-42,Test Athlete,activity-session-1,Session 1,main,2026-03-10,2026-03-10,,2026-W11,endurance,false,30,0,1,0,1,,,5000,,,,,,,,,7,,,'
     );
   });
 
@@ -290,17 +290,13 @@ describe('powerBiExportService wellness export', () => {
     const csv = footballLoadFile?.content.replace(/^\uFEFF/, '');
     const lines = csv?.split('\n') ?? [];
 
-    const sportsLoadFile = result.files.find((file) => file.name === 'fact_sports_load.csv');
-    const sportsCsv = sportsLoadFile?.content.replace(/^\uFEFF/, '');
-
-    expect(result.sportsLoadCount).toBe(2);
+    expect(result.files.some((file) => file.name === 'fact_sports_load.csv')).toBe(false);
     expect(result.footballLoadCount).toBe(2);
-    expect(sportsCsv).toBe(csv);
     expect(lines).toHaveLength(3);
-    expect(lines[0]).toBe('athlete_id,athlete_name,session_id,session_name,logged_date,sport_type,sport_name,rpe,duration_min,session_load,distance_meters,calories,avg_hr,max_hr,notes');
+    expect(lines[0]).toBe('athlete_id,athlete_name,session_id,session_name,date,logged_date,logged_at,sport_type,sport_name,rpe,duration_min,session_load,distance_meters,calories,avg_hr,max_hr,notes');
     expect(lines.filter((line) => line.includes(',2026-03-10,'))).toHaveLength(2);
-    expect(lines).toContain('user-42,Test Athlete,session-1,Basketball,2026-03-10,basketball,Basketball,8,75,600,9200,710,151,184,High tempo small-sided game');
-    expect(lines).toContain('user-42,Test Athlete,session-2,Football,2026-03-10,football,Football,6,30,180,,,,,');
+    expect(lines).toContain('user-42,Test Athlete,session-1,Basketball,2026-03-10,2026-03-10,,basketball,Basketball,8,75,600,9200,710,151,184,High tempo small-sided game');
+    expect(lines).toContain('user-42,Test Athlete,session-2,Football,2026-03-10,2026-03-10,,football,Football,6,30,180,,,,,');
   });
 
   it('exports legacy daily sRPE rows when no per-session sports load exists for that date', async () => {
@@ -336,10 +332,10 @@ describe('powerBiExportService wellness export', () => {
     const csv = footballLoadFile?.content.replace(/^\uFEFF/, '');
 
     expect(result.footballLoadCount).toBe(1);
-    expect(csv).toContain('user-42,Test Athlete,legacy-2026-03-12,Football,2026-03-12,football,Football,7,60,420,7800,640,146,181,Legacy daily entry');
+    expect(csv).toContain('user-42,Test Athlete,legacy-2026-03-12,Football,2026-03-12,2026-03-12,,football,Football,7,60,420,7800,640,146,181,Legacy daily entry');
   });
 
-  it('keeps sports-load metadata counts logical while emitting the compatibility alias', async () => {
+  it('emits football load without a duplicate sports-load file', async () => {
     mockedExportService.exportData.mockResolvedValue({
       sessions: [],
       exerciseLogs: [],
@@ -372,17 +368,17 @@ describe('powerBiExportService wellness export', () => {
     const result = await buildPowerBiFiles({ scope: 'self' }, currentAthlete);
     const meta = JSON.parse(getFileContent(result, 'export_meta.json')) as { row_count: number };
 
-    expect(result.files.some((file) => file.name === 'fact_sports_load.csv')).toBe(true);
+    expect(result.files.some((file) => file.name === 'fact_sports_load.csv')).toBe(false);
     expect(result.files.some((file) => file.name === 'fact_football_load.csv')).toBe(true);
     expect(result.activityCount).toBe(1);
     expect(result.gymSetCount).toBe(0);
-    expect(result.sportsLoadCount).toBe(1);
+    expect(result.footballLoadCount).toBe(1);
     expect(meta.row_count).toBe(
       result.gymSetCount +
         result.activityCount +
         result.sessionCount +
         result.wellnessCount +
-        result.sportsLoadCount
+        result.footballLoadCount
     );
   });
 
@@ -443,7 +439,7 @@ describe('powerBiExportService wellness export', () => {
     expect(dimExerciseCsv).toContain('soccer__sport,Soccer,endurance,sport');
   });
 
-  it('includes unused catalog exercises and unmatched logged names in dim_exercise', async () => {
+  it('excludes unused catalog exercises from dim_exercise and keeps unmatched logged names', async () => {
     mockedExerciseDatabaseService.getMergedExercisesForExport.mockResolvedValue([
       {
         id: 'bench-press-1',
@@ -511,9 +507,10 @@ describe('powerBiExportService wellness export', () => {
     expect(dimExerciseCsv).toContain(
       'bench_press__resistance,Bench Press,strength,resistance,bench-press-1,false,true,compound,intermediate,chest,shoulders|triceps,barbell|bench,bilateral,bilateral_compound,horizontal_push,'
     );
-    expect(dimExerciseCsv).toContain(
+    expect(dimExerciseCsv).not.toContain(
       'romanian_deadlift__resistance,Romanian Deadlift,strength,resistance,unused-rdl,false,true,compound,intermediate,hamstrings|glutes,lower_back,barbell,bilateral,bilateral_compound,hinge,'
     );
+    expect(dimExerciseCsv).not.toContain('romanian_deadlift__resistance');
     expect(dimExerciseCsv).toContain(
       'mystery_curl__resistance,Mystery Curl,strength,resistance,,false,false,,,,,,bilateral,isolation_accessory,horizontal_pull,'
     );
@@ -563,7 +560,7 @@ describe('powerBiExportService wellness export', () => {
     expect(dimExerciseCsv).toContain(
       'squat__resistance,Squat,strength,resistance,squat-1,false,true,compound,intermediate,quadriceps|glutes|hamstrings,core,barbell|rack,bilateral,bilateral_compound,squat,'
     );
-    expect(dimExerciseCsv).toContain('squats__resistance,Squats,strength,resistance,squat-1,false,true');
+    expect(dimExerciseCsv).not.toContain('squats__resistance,Squats,strength,resistance,squat-1,false,true');
   });
 
   it('joins activity facts to dim_exercise on exercise_id', async () => {
@@ -631,7 +628,7 @@ describe('powerBiExportService wellness export', () => {
       '2026-03-01',
       expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/)
     );
-    expect(csv).toContain('athlete-1,Ada Lovelace,2026-03-11,5,4,3,,5,4,');
+    expect(csv).toContain('athlete-1,Ada Lovelace,2026-03-11,2026-03-11,,5,4,3,,5,4,');
   });
 
   it('exports multiple selected coach athletes only', async () => {
@@ -698,5 +695,129 @@ describe('powerBiExportService wellness export', () => {
     expect(mockedExportService.exportData).not.toHaveBeenCalledWith('athlete-2', expect.any(Object));
     expect(mockedExportService.exportData).not.toHaveBeenCalledWith('athlete-3', expect.any(Object));
     expect(csv).toContain('athlete-1,Ada Lovelace,athlete,U19');
+  });
+
+  it('fills from_date and to_date from observed fact dates when All time is selected', async () => {
+    mockedExportService.exportData.mockResolvedValue({
+      sessions: [],
+      exerciseLogs: [],
+      sets: [
+        {
+          sessionId: 'gym-1',
+          sessionType: 'main',
+          exerciseLogId: 'bench-log',
+          exerciseName: 'Bench Press',
+          activityType: 'resistance',
+          loggedDate: '2026-03-08',
+          reps: 5,
+          weight: 100,
+        },
+      ],
+    });
+    mockedExportService.getWellnessExportRows.mockResolvedValue([
+      {
+        athleteId: 'user-42',
+        athleteName: 'Test Athlete',
+        loggedDate: '2026-03-20',
+        sleepQuality: 4,
+        fatigue: 3,
+        muscleSoreness: 2,
+        stress: 2,
+        mood: 4,
+        readiness: 4,
+        notes: '',
+      },
+    ]);
+
+    const result = await buildPowerBiFiles({ scope: 'self' }, currentAthlete);
+    const meta = JSON.parse(getFileContent(result, 'export_meta.json'));
+
+    expect(meta.from_date).toBe('2026-03-08');
+    expect(meta.to_date).toBe('2026-03-20');
+    expect(meta.files).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'fact_football_load.csv', grain: 'player-session' }),
+        expect.objectContaining({ name: 'fact_sessions.csv', grain: 'player-session' }),
+        expect.objectContaining({ name: 'fact_wellness.csv', grain: 'player-day' }),
+        expect.objectContaining({ name: 'fact_gym_sets.csv', grain: 'player-set' }),
+      ])
+    );
+    expect(meta.notes.join(' ')).toContain('Foster session load lives only in fact_football_load.csv');
+    expect(meta.columns.some((column: { name: string; files: string[] }) =>
+      column.name === 'sport_type' && column.files.includes('fact_football_load.csv')
+    )).toBe(true);
+  });
+
+  it('uses session clock duration for gym sessions and never exports gym session RPE', async () => {
+    mockedExportService.exportData.mockResolvedValue({
+      sessions: [
+        {
+          sessionId: 'gym-clock-1',
+          startTime: '2026-03-10T09:00:00',
+          endTime: '2026-03-10T10:15:00',
+        },
+      ],
+      exerciseLogs: [],
+      sets: [
+        {
+          sessionId: 'gym-clock-1',
+          sessionType: 'main',
+          exerciseLogId: 'bench-log',
+          exerciseName: 'Bench Press',
+          activityType: 'resistance',
+          loggedDate: '2026-03-10',
+          loggedTimestamp: '2026-03-10T09:05:00',
+          reps: 5,
+          weight: 100,
+          rpe: 8,
+        },
+      ],
+    });
+
+    const result = await buildPowerBiFiles({ scope: 'self' }, currentAthlete);
+    const gymHeader = getFileContent(result, 'fact_gym_sets.csv').split('\n')[0];
+    const sessionCsv = getFileContent(result, 'fact_sessions.csv');
+    const sessionHeader = sessionCsv.split('\n')[0].split(',');
+    const sessionCells = sessionCsv.split('\n')[1].split(',');
+
+    expect(gymHeader).not.toContain('session_rpe');
+    expect(gymHeader).toContain('date,logged_date,logged_at');
+    expect(sessionCells[sessionHeader.indexOf('session_id')]).toBe('gym-clock-1');
+    expect(sessionCells[sessionHeader.indexOf('duration_min')]).toBe('75');
+    expect(sessionCells[sessionHeader.indexOf('avg_set_rpe')]).toBe('8');
+    expect(sessionCells[sessionHeader.indexOf('reported_session_load')]).toBe('');
+    expect(sessionCells[sessionHeader.indexOf('estimated_session_load')]).toBe('');
+  });
+
+  it('keeps Foster load on fact_football_load only and does not copy it onto fact_sessions', async () => {
+    mockedSrpeService.getSportsLoadSessionsByDateRange.mockResolvedValue([
+      {
+        id: 'session-1',
+        sessionId: 'sports-1',
+        userId: 'user-42',
+        date: '2026-03-10',
+        sportType: 'basketball',
+        sportName: 'Basketball',
+        rpe: 8,
+        durationMinutes: 75,
+        sessionLoad: 600,
+      },
+    ]);
+
+    const result = await buildPowerBiFiles({ scope: 'self' }, currentAthlete);
+    const footballCsv = getFileContent(result, 'fact_football_load.csv');
+    const sessionCsv = getFileContent(result, 'fact_sessions.csv');
+    const sessionHeader = sessionCsv.split('\n')[0];
+    const sessionRow = sessionCsv.split('\n')[1];
+
+    expect(footballCsv).toContain('basketball,Basketball,8,75,600');
+    expect(sessionHeader).toContain('reported_session_load,estimated_session_load');
+    expect(sessionRow).toContain('sports-1');
+    const sessionHeaderCols = sessionHeader.split(',');
+    const sessionCells = sessionRow.split(',');
+    expect(sessionCells[sessionHeaderCols.indexOf('duration_min')]).toBe('75');
+    expect(sessionCells[sessionHeaderCols.indexOf('reported_session_load')]).toBe('');
+    expect(sessionCells[sessionHeaderCols.indexOf('estimated_session_load')]).toBe('');
+    expect(sessionCells[sessionHeaderCols.indexOf('avg_set_rpe')]).toBe('');
   });
 });

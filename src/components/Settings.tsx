@@ -243,7 +243,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
         }
       );
       toast.success(
-        `Export ready! ${result.athleteCount} athlete(s) · ${result.sessionCount} sessions · ${result.gymSetCount + result.activityCount} set/activity rows · ${result.wellnessCount} wellness rows · ${result.footballLoadCount} football load rows`
+        `Export ready! ${result.athleteCount} athlete(s) · ${result.sessionCount} sessions · ${result.gymSetCount + result.activityCount} set/activity rows · ${result.wellnessCount} wellness rows · ${result.footballLoadCount} sports load rows`
       );
     } catch (error) {
       console.error('Power BI export failed:', error);

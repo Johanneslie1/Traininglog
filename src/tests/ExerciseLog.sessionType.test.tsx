@@ -330,7 +330,7 @@ describe('ExerciseLog session type filtering', () => {
 
     await waitFor(() => {
       expect(screen.getAllByText('sRPE 1').length).toBeGreaterThan(0);
-      expect(screen.getByText('Open sRPE')).toBeTruthy();
+      expect(screen.getByText('Open Sports Load')).toBeTruthy();
     });
 
     fireEvent.click(screen.getByText('Add Exercise'));
@@ -361,7 +361,7 @@ describe('ExerciseLog session type filtering', () => {
     render(<ExerciseLog />);
 
     await waitFor(() => {
-      expect(screen.getByText('Open sRPE')).toBeTruthy();
+      expect(screen.getByText('Open Sports Load')).toBeTruthy();
       expect(screen.getByLabelText('Add session')).toBeTruthy();
     });
 

@@ -872,6 +872,7 @@ export interface WellnessExportRow {
   athleteId: string;
   athleteName?: string;
   loggedDate: string;
+  loggedAt?: string;
   sleepQuality: number | '';
   fatigue: number | '';
   muscleSoreness: number | '';
@@ -891,6 +892,7 @@ export const buildWellnessExportRows = (
       athleteId: identity.athleteId,
       athleteName: identity.athleteName,
       loggedDate: log.date,
+      loggedAt: safeDateToLocalTimestamp(log.timestamp),
       sleepQuality: log.sleepQuality ?? '',
       fatigue: log.fatigue ?? '',
       muscleSoreness: log.muscleSoreness ?? '',

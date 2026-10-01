@@ -1300,14 +1300,14 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
                     )}
                   </>
                 ) : (
-                  <p className="mt-3 text-text-secondary">sRPE session stats are loading.</p>
+                  <p className="mt-3 text-text-secondary">Sports Load session stats are loading.</p>
                 )}
                 <button
                   type="button"
                   onClick={() => navigate('/sports')}
                   className="mt-4 inline-flex min-h-10 items-center rounded-xl bg-accent-primary px-4 py-2 text-sm font-semibold text-text-on-accent transition-colors hover:bg-accent-hover"
                 >
-                  Open sRPE
+                  Open Sports Load
                 </button>
               </div>
             ) : exercises.length === 0 ? (

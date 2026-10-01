@@ -17,7 +17,6 @@ The Power BI export creates these files:
 - `fact_activity.csv`
 - `fact_sessions.csv`
 - `fact_wellness.csv`
-- `fact_sports_load.csv`
 - `fact_football_load.csv`
 - `dim_exercise.csv`
 - `dim_athlete.csv`
@@ -27,7 +26,7 @@ Power BI reports should treat these filenames and columns as the stable reportin
 
 ### `dim_exercise.csv`
 
-`dim_exercise` is a catalog-backed dimension. It includes every built-in, global, and relevant custom exercise, plus any logged names that are not in the catalog. Fact tables stay date-filtered; unused catalog rows in the dim are expected.
+`dim_exercise` includes only exercises referenced by the exported gym and activity facts, enriched from the catalog when a name matches. Unused catalogue rows are omitted.
 
 Join `fact_gym_sets.exercise_id` and `fact_activity.exercise_id` to `dim_exercise.exercise_id`. The key is a stable slug of `exercise_name + activity_type` (for example `bench_press__resistance`). Do not replace it with Firestore catalog ids.
 
@@ -83,7 +82,8 @@ For routine refreshes, use the same scope and date range so Power BI sees the sa
    - `athlete_id`
    - `session_id`
    - `exercise_id` from both `fact_gym_sets` and `fact_activity` to `dim_exercise`
-   - date fields such as `logged_date` and `date`
+   - `date` (calendar day). `logged_date` is an alias of the same value.
+   - Foster sports load lives only in `fact_football_load.csv` (`session_load = rpe × duration_min`). Do not sum it with `fact_sessions`. Rows can be any sport; football is the default.
 4. Publish the report to Power BI Service.
 5. In Power BI Service, open the semantic model settings.
 6. Configure data source credentials for OneDrive.

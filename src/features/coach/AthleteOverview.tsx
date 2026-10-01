@@ -340,7 +340,7 @@ const AthleteOverview: React.FC = () => {
       );
 
       toast.success(
-        `Export ready: ${result.athleteCount} athlete(s), ${result.sessionCount} sessions, ${result.gymSetCount + result.activityCount} set/activity rows, ${result.wellnessCount} wellness rows, ${result.footballLoadCount} football load rows`
+        `Export ready: ${result.athleteCount} athlete(s), ${result.sessionCount} sessions, ${result.gymSetCount + result.activityCount} set/activity rows, ${result.wellnessCount} wellness rows, ${result.footballLoadCount} sports load rows`
       );
     } catch (error) {
       console.error('Failed to export data:', error);
@@ -512,7 +512,7 @@ const AthleteOverview: React.FC = () => {
         <div className="bg-bg-secondary border border-border rounded-lg p-4 mb-8 space-y-4">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-base font-semibold">Export Data</h2>
-            <div className="text-xs text-text-tertiary">CSV ZIP includes sessions, sets, activities, wellness, football load, and athlete fields</div>
+            <div className="text-xs text-text-tertiary">CSV ZIP includes sessions, sets, activities, wellness, sports load, and athlete fields</div>
           </div>
 
           <div className="space-y-2">
@@ -670,7 +670,7 @@ const AthleteOverview: React.FC = () => {
           </button>
 
           <p className="text-xs text-text-tertiary">
-            Downloads one ZIP with analysis-ready CSV files for Excel or Power BI, including wellness and football load.
+            Downloads one ZIP with analysis-ready CSV files for Excel or Power BI, including wellness and sports load.
           </p>
         </div>
 

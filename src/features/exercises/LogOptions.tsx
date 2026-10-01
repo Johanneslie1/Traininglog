@@ -188,7 +188,7 @@ export const LogOptions = ({
         setView('speedAgility');
         break;
       case TrainingType.TEAM_SPORTS:
-        toast('Use sRPE from the sidemenu to log sport duration and RPE.', { icon: 'ℹ️' });
+        toast('Use Sports Load from the sidemenu to log sport duration and RPE.', { icon: 'ℹ️' });
         setView('main');
         break;
       case TrainingType.OTHER:
