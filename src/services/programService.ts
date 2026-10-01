@@ -2,6 +2,7 @@ import type { Program, ProgramSession } from '@/types/program';
 import { ActivityType } from '@/types/activityTypes';
 import { normalizeActivityType } from '@/types/activityLog';
 import { normalizeEnduranceDurationMinutes } from '@/utils/prescriptionUtils';
+import { mapStoredSessionRehabFields } from '@/utils/shoulderRehab';
 import { resolveActivityTypeFromExerciseLike } from '@/utils/activityTypeResolver';
 import { withExerciseSnapshots } from '@/services/exerciseSnapshotService';
 import speedAgilityExercises from '@/data/exercises/speedAgility.json';
@@ -233,7 +234,8 @@ export const getPrograms = async (): Promise<Program[]> => {
                   })
                   .sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0)),
                 userId: user.uid,
-                order: sessionData.order ?? 0
+                order: sessionData.order ?? 0,
+                ...mapStoredSessionRehabFields(sessionData as Record<string, unknown>)
               };
             })
             .sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0));
@@ -537,6 +539,10 @@ export const createSession = async (programId: string, session: {
   isWarmupSession?: boolean;
   notes?: string;
   order?: number;
+  week?: number;
+  sessionsPerWeek?: number;
+  sessionKind?: ProgramSession['sessionKind'];
+  checkpoint?: string[];
 }): Promise<string> => {
   try {
     const user = await ensureAuth();
@@ -600,6 +606,10 @@ export const createSession = async (programId: string, session: {
       isWarmupSession: session.isWarmupSession === true,
       notes: session.notes || '',
       order: session.order ?? 0,
+      week: session.week,
+      sessionsPerWeek: session.sessionsPerWeek,
+      sessionKind: session.sessionKind,
+      checkpoint: session.checkpoint,
       userId: user.uid,
       programId: programId,
       createdAt: serverTimestamp(),
@@ -864,7 +874,8 @@ export const duplicateProgram = async (programId: string): Promise<Program> => {
         })),
         notes: sessionData.notes || '',
         order: sessionData.order ?? 0,
-        userId: user.uid
+        userId: user.uid,
+        ...mapStoredSessionRehabFields(sessionData as Record<string, unknown>)
       };
     });
 
@@ -872,6 +883,8 @@ export const duplicateProgram = async (programId: string): Promise<Program> => {
     const duplicatedProgram = {
       name: `${programData.name} (Copy)`,
       description: programData.description || '',
+      rules: programData.rules,
+      stopSigns: programData.stopSigns,
       createdBy: user.uid,
       userId: user.uid,
       sessions,
@@ -960,7 +973,8 @@ export const duplicateSession = async (programId: string, sessionId: string): Pr
       exercises: duplicatedExercises,
       isWarmupSession: sessionData.isWarmupSession === true,
       notes: sessionData.notes || '',
-      order: maxOrder + 1
+      order: maxOrder + 1,
+      ...mapStoredSessionRehabFields(sessionData as Record<string, unknown>)
     };
 
     console.log('[programService] Creating duplicate session:', {
@@ -988,7 +1002,8 @@ export const duplicateSession = async (programId: string, sessionId: string): Pr
       exercises: newSessionDocData.exercises || [],
       notes: newSessionDocData.notes,
       order: newSessionDocData.order,
-      userId: user.uid
+      userId: user.uid,
+      ...mapStoredSessionRehabFields(newSessionDocData as Record<string, unknown>)
     };
 
     console.log('[programService] Session duplicated successfully:', duplicatedSession.id);

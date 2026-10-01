@@ -63,17 +63,15 @@ export const ProgramsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       let loadedPrograms = await programService.getPrograms();
       logger.debug('[ProgramsContext] Fetched programs:', loadedPrograms.length);
 
-      if (starterSeedUserRef.current !== user.uid) {
-        try {
-          const { ensureStarterPrograms } = await import('@/services/starterProgramService');
-          const seedResult = await ensureStarterPrograms(loadedPrograms);
-          if (seedResult.created || seedResult.updated) {
-            loadedPrograms = await programService.getPrograms();
-          }
-          starterSeedUserRef.current = user.uid;
-        } catch (seedError) {
-          logger.debug('[ProgramsContext] Could not seed starter programs:', seedError);
+      try {
+        const { ensureStarterPrograms } = await import('@/services/starterProgramService');
+        const seedResult = await ensureStarterPrograms(loadedPrograms);
+        if (seedResult.created || seedResult.updated) {
+          loadedPrograms = await programService.getPrograms();
         }
+        starterSeedUserRef.current = user.uid;
+      } catch (seedError) {
+        logger.debug('[ProgramsContext] Could not seed starter programs:', seedError);
       }
 
       setPrograms(loadedPrograms);

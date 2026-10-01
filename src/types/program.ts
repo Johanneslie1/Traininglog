@@ -43,7 +43,13 @@ export interface Program {
   sessions: ProgramSession[];
   isPublic?: boolean;
   tags?: string[];
+  /** Coaching rules shown with a program. Optional so existing programs stay unchanged. */
+  rules?: string[];
+  /** Safety warning shown with a program. */
+  stopSigns?: string;
 }
+
+export type ProgramSessionKind = 'daily-activation' | 'strength';
 
 export interface ProgramSession {
   id: string;
@@ -56,6 +62,13 @@ export interface ProgramSession {
   notes?: string;
   order?: number;
   userId: string;  // Add userId for permissions
+  /** Rehab week this session belongs to. Omitted for sessions available every week. */
+  week?: number;
+  /** How many times this session is planned in its week. */
+  sessionsPerWeek?: number;
+  sessionKind?: ProgramSessionKind;
+  /** Checklist the athlete confirms before the next week unlocks. */
+  checkpoint?: string[];
 }
 
 export interface ProgramExercise {

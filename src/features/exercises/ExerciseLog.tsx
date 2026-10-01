@@ -39,6 +39,8 @@ import { isExerciseLogMainView } from '@/features/exercises/exerciseLogViewState
 import { getSessionTypeLabel, SessionType } from '@/types/sessionType';
 import { ensureSrpeSessionContextsForDate, getSportsLoadSessionsByDate } from '@/services/srpeService';
 import { SportsLoadSession } from '@/types/srpe';
+import { RehabSessionNotice } from '@/types/rehabProgress';
+import { RehabLogBanner } from '@/features/programs/rehab/ShoulderRehabPanels';
 
 interface ExerciseLogProps {}
 
@@ -1151,12 +1153,15 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     addAssignedSessionToLog();
   }, [location.state, location.pathname, location.key, navigate, loadExercises, selectedDate, user?.id, getDateKey, getPersistedSupersetStateForDate, syncSharedAssignmentCompletion, loadSupersetsForDate, updateExerciseOrder, refreshExerciseLogCalendar]);
 
+  const rehabSessionNotice = (location.state as { rehabSessionNotice?: RehabSessionNotice } | null)?.rehabSessionNotice;
+
   return (
     <div className="relative min-h-[100dvh] bg-bg-primary">
       {/* Main Content */}
       <main className="px-4 pt-4 pb-app-content">
         <div className="relative flex flex-col h-full">
           <div className="flex-grow">
+            {rehabSessionNotice ? <RehabLogBanner notice={rehabSessionNotice} /> : null}
             <section className="mb-4 rounded-2xl border border-border bg-bg-secondary p-3">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>

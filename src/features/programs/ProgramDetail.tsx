@@ -13,6 +13,13 @@ import { signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import SideMenu from '@/components/SideMenu';
 import { ActivityBadge, Button, EmptyState, MetricChip, StickyBottomActions } from '@/components/ui';
+import toast from 'react-hot-toast';
+import { isShoulderRehabProgram } from '@/data/programs/shoulderRehab3Week';
+import { importProgramSessionToDate } from '@/services/programSessionImport';
+import { RehabRulesNotice, RehabSessionExtras, SymmetryPanel } from '@/features/programs/rehab/ShoulderRehabPanels';
+import { useRehabProgress } from '@/features/programs/rehab/useRehabProgress';
+import { rehabSessionKey } from '@/utils/shoulderRehab';
+import { RehabSessionNotice } from '@/types/rehabProgress';
 
 interface Props {
   program: Program;
@@ -35,6 +42,9 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
   const [showSideMenu, setShowSideMenu] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [sharingSession, setSharingSession] = useState<ProgramSession | null>(null);
+  const [loggingSessionId, setLoggingSessionId] = useState<string | null>(null);
+  const rehabActive = isShoulderRehabProgram(program);
+  const rehab = useRehabProgress(program.id, rehabActive);
   const { updateSessionInProgram: updateSession, deleteProgram, updateProgram, duplicateSession } = usePrograms();
   const totalExercises = sessions.reduce((count, session) => count + (session.exercises?.length || 0), 0);
   const guidedExercises = sessions.reduce((count, session) => (
@@ -254,6 +264,38 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
 
   const navigate = useNavigate();
 
+  const openRehabLog = (session: ProgramSession) => {
+    const sessionKey = rehabSessionKey(session);
+    if (!sessionKey) return;
+    const notice: RehabSessionNotice = {
+      programId: program.id,
+      sessionKey,
+      sessionName: session.name,
+      rules: program.rules ?? [],
+      stopSigns: program.stopSigns ?? '',
+    };
+    navigate('/', { state: { rehabSessionNotice: notice } });
+  };
+
+  const handleLogRehabSession = async (session: ProgramSession) => {
+    const userId = auth.currentUser?.uid;
+    if (!userId) {
+      toast.error('You need to be logged in to log this session');
+      return;
+    }
+
+    setLoggingSessionId(session.id);
+    try {
+      const count = await importProgramSessionToDate(userId, program, session, new Date());
+      toast.success(`Added ${count} exercises to today's log`);
+      setExpandedSessions((prev) => (prev.includes(session.id) ? prev : [...prev, session.id]));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not log this session');
+    } finally {
+      setLoggingSessionId(null);
+    }
+  };
+
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -407,6 +449,14 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto overscroll-contain p-4 min-h-0">
         <div className="space-y-3 max-w-4xl mx-auto">
+        {rehabActive && (
+          <div className="space-y-3">
+            <RehabRulesNotice rules={program.rules} stopSigns={program.stopSigns} />
+            {rehab.progress && (
+              <SymmetryPanel tests={rehab.progress.symmetryTests} onAdd={rehab.addSymmetryTest} />
+            )}
+          </div>
+        )}
         {sessions.length > 0 ? (
           sessions.map((session) => (
               <div key={session.id} className="overflow-hidden rounded-2xl border border-border bg-bg-secondary shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-primary hover:shadow-glow">
@@ -423,6 +473,11 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                         Warm-up
                       </span>
                     )}
+                    {rehabActive && session.sessionsPerWeek ? (
+                      <span className="rounded-full border border-border bg-bg-tertiary/80 px-2.5 py-1 text-xs font-medium text-text-secondary">
+                        {session.sessionsPerWeek}× / week
+                      </span>
+                    ) : null}
                   </div>
                 </div>
                 
@@ -486,6 +541,25 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
               {/* Session Content */}
               {expandedSessions.includes(session.id) && (
                 <div className="p-1">
+                  {rehabActive && rehab.progress ? (
+                    <RehabSessionExtras
+                      program={program}
+                      session={session}
+                      painLogs={rehab.progress.painLogs}
+                      logging={loggingSessionId === session.id}
+                      onSavePain={rehab.addPainLog}
+                      onSaveMorning={rehab.setNextMorningPain}
+                      onLogSession={() => { void handleLogRehabSession(session); }}
+                      onOpenLog={() => openRehabLog(session)}
+                    />
+                  ) : null}
+                  {rehabActive && !rehab.loading && !rehab.progress ? (
+                    <div className="flex flex-wrap gap-2 px-3 pb-3">
+                      <Button type="button" size="sm" onClick={() => { void handleLogRehabSession(session); }} isLoading={loggingSessionId === session.id}>
+                        Log session
+                      </Button>
+                    </div>
+                  ) : null}
                   {session.exercises.map((exercise, index) => (
                     <div 
                       key={exercise.id}
