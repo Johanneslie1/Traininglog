@@ -1,11 +1,13 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { loginUser } from '@/services/firebase/auth';
 import { setUser } from '@/features/auth/authSlice';
+import { RootState } from '@/store/store';
+import { getSafeReturnPath } from '@/utils/returnPath';
 import { AppLogo } from '@/components/brand';
 import { Button } from '@/components/ui';
 
@@ -20,7 +22,10 @@ const Login = () => {
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
+  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
+  const returnPath = getSafeReturnPath((location.state as { from?: unknown } | null)?.from);
 
   const {
     register,
@@ -29,6 +34,13 @@ const Login = () => {
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate(returnPath, { replace: true });
+    }
+  }, [isAuthenticated, navigate, returnPath]);
+
   const onSubmit = async (data: LoginFormData) => {
     try {
       setIsLoading(true);
@@ -36,7 +48,7 @@ const Login = () => {
 
       const user = await loginUser(data);
       dispatch(setUser(user));
-      navigate('/');
+      navigate(returnPath, { replace: true });
     } catch (err: unknown) {
       console.error('Login error:', err);
       setError(err instanceof Error ? err.message : 'Unable to sign in. Please try again.');
@@ -66,11 +78,13 @@ const Login = () => {
                 id="email"
                 type="email"
                 autoComplete="email"
+                aria-invalid={errors.email ? true : undefined}
+                aria-describedby={errors.email ? 'login-email-error' : undefined}
                 className="block w-full rounded-2xl border border-border bg-bg-primary px-4 py-3 text-text-primary placeholder:text-text-tertiary outline-none transition focus:border-accent-primary focus:ring-2 focus:ring-focus-ring/40"
                 placeholder="you@example.com"
               />
               {errors.email && (
-                <p className="mt-2 text-sm text-error-text">{errors.email.message}</p>
+                <p id="login-email-error" className="mt-2 text-sm text-error-text" role="alert">{errors.email.message}</p>
               )}
             </div>
 
@@ -83,16 +97,18 @@ const Login = () => {
                 id="password"
                 type="password"
                 autoComplete="current-password"
+                aria-invalid={errors.password ? true : undefined}
+                aria-describedby={errors.password ? 'login-password-error' : undefined}
                 className="block w-full rounded-2xl border border-border bg-bg-primary px-4 py-3 text-text-primary placeholder:text-text-tertiary outline-none transition focus:border-accent-primary focus:ring-2 focus:ring-focus-ring/40"
                 placeholder="Enter your password"
               />
               {errors.password && (
-                <p className="mt-2 text-sm text-error-text">{errors.password.message}</p>
+                <p id="login-password-error" className="mt-2 text-sm text-error-text" role="alert">{errors.password.message}</p>
               )}
             </div>
 
           {error && (
-              <div className="rounded-xl border border-error-border bg-error-bg px-4 py-3 text-sm text-error-text">
+              <div role="alert" className="rounded-xl border border-error-border bg-error-bg px-4 py-3 text-sm text-error-text">
                 {error}
               </div>
           )}
@@ -119,7 +135,7 @@ const Login = () => {
               New user?{' '}
               <button
                 type="button"
-                onClick={() => navigate('/register')}
+                onClick={() => navigate('/register', { state: location.state })}
                 className="font-medium text-accent-primary hover:text-accent-hover underline"
               >
                 Create account

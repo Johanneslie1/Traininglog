@@ -7,7 +7,7 @@ import { SettingsProvider } from '@/context/SettingsContext';
 import { DateProvider } from '@/context/DateContext';
 import { ExerciseLogCalendarProvider } from '@/context/ExerciseLogCalendarContext';
 import { Toaster } from 'react-hot-toast';
-import { StatePersistence } from '@/utils/statePersistence';
+import { getRestoredPath, StatePersistence } from '@/utils/statePersistence';
 import { useAndroidBackButton } from '@/hooks/useBackButton';
 
 interface ProvidersProps {
@@ -22,17 +22,17 @@ const NavigationHandler: React.FC = () => {
   // Restore saved navigation state on mount
   useEffect(() => {
     const savedState = StatePersistence.restoreState();
-    if (savedState && savedState.currentPath) {
-      const targetPath = savedState.currentPath.replace('#', '');
-      if (targetPath !== location.pathname && targetPath !== '#/') {
-        navigate(targetPath, { replace: true });
-      }
-
-      if (savedState.scrollPosition) {
-        StatePersistence.restoreScrollPosition(savedState.scrollPosition);
-      }
+    const targetPath = getRestoredPath(location.pathname, savedState?.currentPath);
+    if (!targetPath) {
+      return;
     }
-  }, []); // Only run once on mount
+
+    navigate(targetPath, { replace: true });
+
+    if (savedState?.scrollPosition) {
+      StatePersistence.restoreScrollPosition(savedState.scrollPosition);
+    }
+  }, []);
 
   // Handle Android/mobile back button
   useAndroidBackButton();

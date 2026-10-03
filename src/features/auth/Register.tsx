@@ -1,11 +1,13 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { registerUser } from '@/services/firebase/auth';
 import { setUser } from '@/features/auth/authSlice';
+import { RootState } from '@/store/store';
+import { getSafeReturnPath } from '@/utils/returnPath';
 import { AppLogo } from '@/components/brand';
 import { Button } from '@/components/ui';
 
@@ -22,7 +24,10 @@ const Register = () => {
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
+  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
+  const returnPath = getSafeReturnPath((location.state as { from?: unknown } | null)?.from);
 
   const {
     register,
@@ -32,13 +37,19 @@ const Register = () => {
     resolver: zodResolver(registerSchema),
   });
 
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate(returnPath, { replace: true });
+    }
+  }, [isAuthenticated, navigate, returnPath]);
+
   const onSubmit = async (data: RegisterFormData) => {
     try {
       setIsLoading(true);
       setError('');
       const user = await registerUser(data);
       dispatch(setUser(user));
-      navigate('/');
+      navigate(returnPath, { replace: true });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Unable to create your account. Please try again.');
     } finally {
@@ -68,11 +79,13 @@ const Register = () => {
                   id="firstName"
                   type="text"
                   autoComplete="given-name"
+                  aria-invalid={errors.firstName ? true : undefined}
+                  aria-describedby={errors.firstName ? 'register-first-name-error' : undefined}
                   className="block w-full rounded-2xl border border-border bg-bg-primary px-4 py-3 text-text-primary placeholder:text-text-tertiary outline-none transition focus:border-accent-primary focus:ring-2 focus:ring-focus-ring/40"
                   placeholder="First"
                 />
                 {errors.firstName && (
-                  <p className="mt-2 text-sm text-error-text">{errors.firstName.message}</p>
+                  <p id="register-first-name-error" className="mt-2 text-sm text-error-text" role="alert">{errors.firstName.message}</p>
                 )}
               </div>
 
@@ -85,11 +98,13 @@ const Register = () => {
                   id="lastName"
                   type="text"
                   autoComplete="family-name"
+                  aria-invalid={errors.lastName ? true : undefined}
+                  aria-describedby={errors.lastName ? 'register-last-name-error' : undefined}
                   className="block w-full rounded-2xl border border-border bg-bg-primary px-4 py-3 text-text-primary placeholder:text-text-tertiary outline-none transition focus:border-accent-primary focus:ring-2 focus:ring-focus-ring/40"
                   placeholder="Last"
                 />
                 {errors.lastName && (
-                  <p className="mt-2 text-sm text-error-text">{errors.lastName.message}</p>
+                  <p id="register-last-name-error" className="mt-2 text-sm text-error-text" role="alert">{errors.lastName.message}</p>
                 )}
               </div>
             </div>
@@ -103,11 +118,13 @@ const Register = () => {
                 id="email"
                 type="email"
                 autoComplete="email"
+                aria-invalid={errors.email ? true : undefined}
+                aria-describedby={errors.email ? 'register-email-error' : undefined}
                 className="block w-full rounded-2xl border border-border bg-bg-primary px-4 py-3 text-text-primary placeholder:text-text-tertiary outline-none transition focus:border-accent-primary focus:ring-2 focus:ring-focus-ring/40"
                 placeholder="you@example.com"
               />
               {errors.email && (
-                <p className="mt-2 text-sm text-error-text">{errors.email.message}</p>
+                <p id="register-email-error" className="mt-2 text-sm text-error-text" role="alert">{errors.email.message}</p>
               )}
             </div>
 
@@ -120,16 +137,18 @@ const Register = () => {
                 id="password"
                 type="password"
                 autoComplete="new-password"
+                aria-invalid={errors.password ? true : undefined}
+                aria-describedby={errors.password ? 'register-password-error' : undefined}
                 className="block w-full rounded-2xl border border-border bg-bg-primary px-4 py-3 text-text-primary placeholder:text-text-tertiary outline-none transition focus:border-accent-primary focus:ring-2 focus:ring-focus-ring/40"
                 placeholder="At least 6 characters"
               />
               {errors.password && (
-                <p className="mt-2 text-sm text-error-text">{errors.password.message}</p>
+                <p id="register-password-error" className="mt-2 text-sm text-error-text" role="alert">{errors.password.message}</p>
               )}
             </div>
 
           {error && (
-              <div className="rounded-xl border border-error-border bg-error-bg px-4 py-3 text-sm text-error-text">
+              <div role="alert" className="rounded-xl border border-error-border bg-error-bg px-4 py-3 text-sm text-error-text">
                 {error}
               </div>
           )}
@@ -146,7 +165,7 @@ const Register = () => {
               Already have an account?{' '}
               <button
                 type="button"
-                onClick={() => navigate('/login')}
+                onClick={() => navigate('/login', { state: location.state })}
                 className="font-medium text-accent-primary hover:text-accent-hover underline"
               >
                 Sign in

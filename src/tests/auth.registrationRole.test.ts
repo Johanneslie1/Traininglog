@@ -1,5 +1,7 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
-import { registerUser } from '@/services/firebase/auth';
+import { getDoc } from 'firebase/firestore';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { loginUser, registerUser } from '@/services/firebase/auth';
 
 const mockCreateUserWithEmailAndPassword = jest.fn();
 const mockDoc = jest.fn();
@@ -69,5 +71,61 @@ describe('registerUser', () => {
         role: 'athlete',
       })
     );
+  });
+
+  it('replaces raw Firebase auth errors with a readable message', async () => {
+    mockCreateUserWithEmailAndPassword.mockRejectedValue({
+      code: 'auth/email-already-in-use',
+      message: 'Firebase: Error (auth/email-already-in-use).',
+    } as never);
+
+    await expect(registerUser({
+      email: 'new@example.com',
+      password: 'secret123',
+      firstName: 'New',
+      lastName: 'User',
+    })).rejects.toThrow('An account with this email already exists.');
+  });
+});
+
+describe('loginUser', () => {
+  const signInMock = signInWithEmailAndPassword as unknown as jest.Mock;
+  const getDocMock = getDoc as unknown as jest.Mock;
+
+  beforeEach(() => {
+    signInMock.mockReset();
+    getDocMock.mockReset();
+  });
+
+  it('continues as an athlete when the Firestore profile is missing', async () => {
+    signInMock.mockResolvedValue({
+      user: { uid: 'existing-user', email: 'athlete@example.com' },
+    } as never);
+    getDocMock.mockResolvedValue({ exists: () => false } as never);
+
+    const user = await loginUser({
+      email: 'athlete@example.com',
+      password: 'secret123',
+    });
+
+    expect(user).toEqual(expect.objectContaining({
+      id: 'existing-user',
+      email: 'athlete@example.com',
+      role: 'athlete',
+      firstName: '',
+      lastName: '',
+    }));
+  });
+
+  it('does not show the raw Firebase credential error', async () => {
+    signInMock.mockRejectedValue({
+      code: 'auth/invalid-credential',
+      message: 'Firebase: Error (auth/invalid-credential).',
+    } as never);
+
+    await expect(loginUser({
+      email: 'athlete@example.com',
+      password: 'wrong-password',
+    })).rejects.toThrow('Email or password is incorrect.');
   });
 });

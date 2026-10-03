@@ -78,6 +78,12 @@ describe('stats routes', () => {
     expect(await screen.findByText('Athlete Stats Route')).toBeInTheDocument();
   });
 
+  it('shows a not-found page for unknown addresses', async () => {
+    renderRoutes('/not-a-page', null);
+
+    expect(await screen.findByRole('heading', { name: 'Page not found' })).toBeInTheDocument();
+  });
+
   it('allows coaches to access personal stats and Coach Hub', async () => {
     renderRoutes('/stats', 'coach');
     expect(await screen.findByText('Athlete Stats Route')).toBeInTheDocument();

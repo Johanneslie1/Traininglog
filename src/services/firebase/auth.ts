@@ -6,6 +6,7 @@ import {
   onAuthStateChanged} from 'firebase/auth';
 import { doc, setDoc, getDoc, Timestamp } from 'firebase/firestore';
 import { auth, db } from './config';
+import { getFirebaseAuthErrorMessage } from '@/utils/authErrors';
 import { logger } from '../../utils/logger';
 
 // Log the current origin - useful for debugging GitHub Pages
@@ -85,8 +86,8 @@ export const registerUser = async (data: RegisterData): Promise<User> => {
     await setDoc(doc(db, 'users', uid), userData);
 
     return convertTimestamps(userData);
-  } catch (error: any) {
-    throw new Error(error.message);
+  } catch (error: unknown) {
+    throw new Error(getFirebaseAuthErrorMessage(error, 'Unable to create your account. Please try again.'));
   }
 };
 
@@ -102,37 +103,48 @@ export const loginUser = async (data: LoginData): Promise<User> => {
     // Get additional user data from Firestore
     const userDoc = await getDoc(doc(db, 'users', uid));
     if (!userDoc.exists()) {
-      logger.error('User document not found in Firestore after login');
-      throw new Error('User data not found');
+      logger.warn('User document not found in Firestore after login; continuing with athlete profile');
+      return {
+        id: uid,
+        email: userCredential.user.email || email,
+        firstName: '',
+        lastName: '',
+        role: 'athlete',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
     }
     logger.debug('User data retrieved from Firestore');
 
     return convertTimestamps(userDoc.data() as User);
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Login error:', error);
-    throw new Error(error.message);
+    throw new Error(getFirebaseAuthErrorMessage(error, 'Unable to sign in. Please try again.'));
   }
 };
 
 export const requestPasswordReset = async (data: PasswordResetData): Promise<void> => {
   try {
     await sendPasswordResetEmail(auth, data.email);
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Password reset error:', error);
+    const code = error && typeof error === 'object' && 'code' in error
+      ? String((error as { code?: unknown }).code ?? '')
+      : '';
 
-    if (error?.code === 'auth/user-not-found') {
+    if (code === 'auth/user-not-found') {
       return;
     }
 
-    throw new Error(error.message);
+    throw new Error(getFirebaseAuthErrorMessage(error, 'Unable to send reset link. Please try again.'));
   }
 };
 
 export const logoutUser = async (): Promise<void> => {
   try {
     await signOut(auth);
-  } catch (error: any) {
-    throw new Error(error.message);
+  } catch (error: unknown) {
+    throw new Error(getFirebaseAuthErrorMessage(error, 'Unable to log out. Please try again.'));
   }
 };
 

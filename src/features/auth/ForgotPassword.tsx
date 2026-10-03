@@ -65,22 +65,24 @@ const ForgotPassword = () => {
                 id="email"
                 type="email"
                 autoComplete="email"
+                aria-invalid={errors.email ? true : undefined}
+                aria-describedby={errors.email ? 'reset-email-error' : undefined}
                 className="block w-full rounded-2xl border border-border bg-bg-primary px-4 py-3 text-text-primary placeholder:text-text-tertiary outline-none transition focus:border-accent-primary focus:ring-2 focus:ring-focus-ring/40"
                 placeholder="you@example.com"
               />
               {errors.email && (
-                <p className="mt-2 text-sm text-error-text">{errors.email.message}</p>
+                <p id="reset-email-error" className="mt-2 text-sm text-error-text" role="alert">{errors.email.message}</p>
               )}
             </div>
 
           {error && (
-              <div className="rounded-xl border border-error-border bg-error-bg px-4 py-3 text-sm text-error-text">
+              <div role="alert" className="rounded-xl border border-error-border bg-error-bg px-4 py-3 text-sm text-error-text">
                 {error}
               </div>
           )}
 
           {successMessage && (
-              <div className="rounded-xl border border-success-border bg-success-bg px-4 py-3 text-sm text-success-text">
+              <div role="status" className="rounded-xl border border-success-border bg-success-bg px-4 py-3 text-sm text-success-text">
                 {successMessage}
               </div>
           )}

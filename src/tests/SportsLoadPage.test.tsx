@@ -318,6 +318,29 @@ describe('SportsLoadPage', () => {
     await waitFor(() => expect(getSrpeByDateMock).toHaveBeenCalledTimes(2));
   });
 
+  it('shows a retry state when sessions fail to load instead of an empty form', async () => {
+    getSportsLoadSessionsByDateMock.mockRejectedValueOnce(new Error('offline'));
+
+    renderPage();
+
+    expect((await screen.findByRole('alert')).textContent).toMatch(/could not load sports load/i);
+    expect(screen.queryByRole('button', { name: 'Add Session' })).toBeNull();
+
+    getSportsLoadSessionsByDateMock.mockResolvedValueOnce([]);
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+
+    expect(await screen.findByRole('button', { name: 'Add Session' })).toBeTruthy();
+  });
+
+  it('selects RPE 1 from the score button', async () => {
+    renderPage();
+
+    await screen.findByLabelText('Sport');
+    fireEvent.click(screen.getByRole('button', { name: 'RPE 1' }));
+
+    expect(screen.getByText('RPE 1 - Very, very easy')).toBeTruthy();
+  });
+
   it('blocks future-date sports load logging', async () => {
     renderPage();
 
