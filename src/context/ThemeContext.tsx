@@ -5,8 +5,8 @@ type ActualTheme = 'light' | 'dark';
 
 const THEME_STORAGE_KEY = 'theme';
 const THEME_META_COLORS: Record<ActualTheme, string> = {
-  dark: '#011c40',
-  light: '#f7fcfd',
+  dark: '#0f1419',
+  light: '#f4f6f8',
 };
 
 const THEME_COLOR_SCHEMES: Record<ActualTheme, string> = {

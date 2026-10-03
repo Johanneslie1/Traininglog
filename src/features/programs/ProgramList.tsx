@@ -141,10 +141,9 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
     <div className="space-y-6">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs uppercase tracking-wide text-text-tertiary">Training library</p>
-          <h1 className="text-3xl font-bold text-text-primary">Programs</h1>
+          <h1 className="text-2xl font-semibold text-text-primary">Programs</h1>
           <p className="mt-1 max-w-2xl text-sm text-text-secondary">
-            Build, duplicate, and open reusable training programs from one place.
+            Build, duplicate, and open reusable training programs.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -217,8 +216,8 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
           />
         </div>
       ) : (
-        <div className="space-y-2">
-          {programs.map((program: Program) => {
+        <div className="overflow-hidden rounded-2xl border border-border bg-bg-secondary">
+          {programs.map((program: Program, index) => {
             const summary = getProgramSummary(program);
 
             return (
@@ -232,45 +231,43 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
                     onSelect ? onSelect(program.id) : navigate(`/programs/${program.id}`);
                   }
                 }}
-                className="group flex cursor-pointer items-center gap-3 rounded-2xl border border-border bg-bg-secondary px-4 py-3 text-left transition-colors hover:border-border-hover hover:bg-hover-overlay active:bg-active-overlay focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+                className={`group flex cursor-pointer items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-bg-tertiary/60 active:bg-active-overlay focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring ${
+                  index > 0 ? 'border-t border-border' : ''
+                }`}
                 onClick={() => (onSelect ? onSelect(program.id) : navigate(`/programs/${program.id}`))}
               >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-bg-tertiary text-lg text-accent-primary">
-                  📋
-                </span>
-
                 <div className="min-w-0 flex-1">
-                  <h3 className="truncate font-semibold text-text-primary">{program.name}</h3>
+                  <h3 className="truncate text-[15px] font-semibold text-text-primary">{program.name}</h3>
 
-                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-text-tertiary">
+                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-text-secondary">
                     <span>{summary.sessionCount} sessions</span>
-                    <span aria-hidden="true">•</span>
+                    <span aria-hidden="true">·</span>
                     <span>{summary.exerciseCount} exercises</span>
                     {viewMode === 'detailed' && (
                       <>
-                        <span aria-hidden="true">•</span>
+                        <span aria-hidden="true">·</span>
                         <span>Updated {formatRelativeDate(program.updatedAt || program.createdAt)}</span>
                       </>
                     )}
-                    {program.tags?.slice(0, viewMode === 'detailed' ? 3 : 2).map(tag => (
-                      <span key={tag} className="rounded-full bg-bg-tertiary px-2 py-0.5 text-xs text-text-secondary">
+                    {program.tags?.slice(0, viewMode === 'detailed' ? 3 : 1).map(tag => (
+                      <span key={tag} className="rounded-md bg-bg-tertiary px-1.5 py-0.5 text-xs text-text-tertiary">
                         {tag}
                       </span>
                     ))}
                   </div>
 
-                  {program.description && (
-                    <p className={`mt-1 text-sm text-text-secondary ${viewMode === 'compact' ? 'truncate' : 'line-clamp-2'}`}>
+                  {program.description && viewMode === 'detailed' && (
+                    <p className="mt-1 line-clamp-2 text-sm text-text-secondary">
                       {program.description}
                     </p>
                   )}
                 </div>
 
-                <div className="flex shrink-0 items-center gap-2">
+                <div className="flex shrink-0 items-center gap-1">
                   <button
                     onClick={(e) => handleDuplicateProgram(program.id, program.name, e)}
                     disabled={duplicatingProgramId === program.id}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-bg-tertiary text-text-primary transition-colors hover:border-accent-primary hover:text-accent-primary disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-text-tertiary transition-colors hover:bg-bg-tertiary hover:text-accent-primary disabled:cursor-not-allowed disabled:opacity-50"
                     title="Duplicate program"
                     aria-label={`Duplicate program ${program.name}`}
                   >
@@ -283,7 +280,7 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
                   <button
                     onClick={(e) => handleDeleteProgram(program.id, program.name, e)}
                     disabled={deletingProgramId === program.id}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-error-border bg-error-bg text-error-text transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-text-tertiary transition-colors hover:bg-error-bg hover:text-error-text disabled:cursor-not-allowed disabled:opacity-50"
                     title="Delete program"
                     aria-label={`Delete program ${program.name}`}
                   >
@@ -293,9 +290,9 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
                       <TrashIcon className="h-4 w-4" />
                     )}
                   </button>
-                  <svg className="hidden h-5 w-5 text-text-tertiary transition-transform group-hover:translate-x-0.5 group-hover:text-text-secondary sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
+                  <span className="px-1 text-text-tertiary" aria-hidden>
+                    ···
+                  </span>
                 </div>
               </div>
             );

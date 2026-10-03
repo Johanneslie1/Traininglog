@@ -458,35 +458,41 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
           </div>
         )}
         {sessions.length > 0 ? (
-          sessions.map((session) => (
-              <div key={session.id} className="overflow-hidden rounded-2xl border border-border bg-bg-secondary shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-primary hover:shadow-glow">
+          <div className="overflow-hidden rounded-2xl border border-border bg-bg-secondary">
+          {sessions.map((session, sessionIndex) => (
+              <div key={session.id} className={sessionIndex > 0 ? 'border-t border-border' : ''}>
               {/* Session Header */}
-              <div className="px-4 sm:px-5 py-3 sm:py-4 flex items-center justify-between border-b border-border gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                    <h3 className="text-lg font-semibold text-text-primary">{session.name}</h3>
-                    <span className="rounded-full border border-border bg-bg-tertiary/80 px-2.5 py-1 text-xs font-medium text-text-secondary">
+              <div className="flex items-center justify-between gap-3 px-4 py-3">
+                <button
+                  type="button"
+                  onClick={() => toggleSession(session.id)}
+                  className="min-w-0 flex-1 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"
+                  aria-expanded={expandedSessions.includes(session.id)}
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-[15px] font-semibold text-text-primary">{session.name}</h3>
+                    <span className="text-xs text-text-secondary">
                       {session.exercises.length} exercises
                     </span>
                     {session.isWarmupSession && (
-                      <span className="rounded-full border border-info-border bg-info-bg px-2.5 py-1 text-xs font-medium text-info-text">
+                      <span className="rounded-md bg-info-bg px-1.5 py-0.5 text-xs font-medium text-info-text">
                         Warm-up
                       </span>
                     )}
                     {rehabActive && session.sessionsPerWeek ? (
-                      <span className="rounded-full border border-border bg-bg-tertiary/80 px-2.5 py-1 text-xs font-medium text-text-secondary">
+                      <span className="text-xs text-text-tertiary">
                         {session.sessionsPerWeek}× / week
                       </span>
                     ) : null}
                   </div>
-                </div>
+                </button>
                 
-                <div className="flex items-center gap-1 flex-shrink-0">
+                <div className="flex flex-shrink-0 items-center gap-0.5">
                   {!selectionMode && (
                     <>
                       <button
                         onClick={() => setSharingSession(session)}
-                        className="min-h-[40px] min-w-[40px] rounded-xl p-2 text-success-text transition-all duration-200 hover:bg-success-bg"
+                        className="min-h-[40px] min-w-[40px] rounded-lg p-2 text-text-tertiary transition-colors hover:bg-bg-tertiary hover:text-success-text"
                         title="Share session"
                         aria-label="Share session"
                       >
@@ -495,7 +501,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                       <button
                         onClick={(e) => handleDuplicateSession(session.id, session.name, e)}
                         disabled={duplicatingSessionId === session.id}
-                        className="min-h-[40px] min-w-[40px] rounded-xl p-2 text-accent-primary transition-all duration-200 hover:bg-bg-tertiary/60 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="min-h-[40px] min-w-[40px] rounded-lg p-2 text-text-tertiary transition-colors hover:bg-bg-tertiary hover:text-accent-primary disabled:cursor-not-allowed disabled:opacity-50"
                         title="Duplicate session"
                         aria-label="Duplicate session"
                       >
@@ -507,7 +513,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                       </button>
                       <button
                         onClick={() => handleSessionEdit(session)}
-                        className="min-h-[40px] min-w-[40px] rounded-xl p-2 text-accent-primary transition-all duration-200 hover:bg-bg-tertiary/60"
+                        className="min-h-[40px] min-w-[40px] rounded-lg p-2 text-text-tertiary transition-colors hover:bg-bg-tertiary hover:text-accent-primary"
                         title="Edit session"
                         aria-label="Edit session"
                       >
@@ -515,7 +521,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                       </button>
                       <button
                         onClick={() => handleDeleteSession(session.id)}
-                        className="min-h-[40px] min-w-[40px] rounded-xl p-2 text-error-text transition-all duration-200 hover:bg-error-bg"
+                        className="min-h-[40px] min-w-[40px] rounded-lg p-2 text-text-tertiary transition-colors hover:bg-error-bg hover:text-error-text"
                         title="Delete session"
                         aria-label="Delete session"
                       >
@@ -525,7 +531,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                   )}
                   <button
                     onClick={() => toggleSession(session.id)}
-                    className="min-h-[40px] min-w-[40px] rounded-xl p-2 transition-all duration-200 hover:bg-bg-tertiary/60"
+                    className="min-h-[40px] min-w-[40px] rounded-lg p-2 transition-colors hover:bg-bg-tertiary"
                     title={expandedSessions.includes(session.id) ? "Collapse session" : "Expand session"}
                     aria-label={expandedSessions.includes(session.id) ? "Collapse session" : "Expand session"}
                   >
@@ -540,7 +546,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
 
               {/* Session Content */}
               {expandedSessions.includes(session.id) && (
-                <div className="p-1">
+                <div className="border-t border-border bg-bg-primary/40">
                   {rehabActive && rehab.progress ? (
                     <RehabSessionExtras
                       program={program}
@@ -554,7 +560,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                     />
                   ) : null}
                   {rehabActive && !rehab.loading && !rehab.progress ? (
-                    <div className="flex flex-wrap gap-2 px-3 pb-3">
+                    <div className="flex flex-wrap gap-2 px-3 py-3">
                       <Button type="button" size="sm" onClick={() => { void handleLogRehabSession(session); }} isLoading={loggingSessionId === session.id}>
                         Log session
                       </Button>
@@ -563,42 +569,42 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                   {session.exercises.map((exercise, index) => (
                     <div 
                       key={exercise.id}
-                      className={`mx-1 rounded-xl border border-transparent px-4 py-3 transition-all duration-200 hover:border-border-focus hover:bg-bg-tertiary/60 hover:shadow-glow ${
-                        index !== session.exercises.length - 1 ? 'mb-1' : ''
+                      className={`grid grid-cols-[28px_1fr_auto] items-start gap-2 px-4 py-2.5 ${
+                        index !== session.exercises.length - 1 ? 'border-b border-border/70' : ''
                       }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h4 className="text-base font-medium text-text-primary">{exercise.name}</h4>
-                            <ActivityBadge activityType={exercise.activityType} />
-                          </div>
-                          {exercise.prescription && exercise.instructionMode === 'structured' ? (
-                            <div className="text-sm text-accent-secondary">
-                              📋 {formatPrescription(exercise.prescription, normalizeActivityType(exercise.activityType))}
-                            </div>
-                          ) : exercise.instructions && exercise.instructionMode === 'freeform' ? (
-                            <div className="text-sm text-accent-secondary italic">
-                              {exercise.instructions}
-                            </div>
-                          ) : (
-                            <div className="text-sm text-text-tertiary">
-                              Sets and reps will be logged during workout
-                            </div>
-                          )}
-                          {exercise.notes && (
-                            <p className="mt-2 whitespace-pre-wrap text-xs text-text-tertiary">
-                              {exercise.notes}
-                            </p>
-                          )}
+                      <span className="pt-0.5 text-xs font-bold text-accent-primary">{index + 1}</span>
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h4 className="text-sm font-semibold text-text-primary">{exercise.name}</h4>
+                          <ActivityBadge activityType={exercise.activityType} />
                         </div>
+                        {exercise.prescription && exercise.instructionMode === 'structured' ? (
+                          <div className="mt-0.5 text-sm text-text-secondary">
+                            {formatPrescription(exercise.prescription, normalizeActivityType(exercise.activityType))}
+                          </div>
+                        ) : exercise.instructions && exercise.instructionMode === 'freeform' ? (
+                          <div className="mt-0.5 text-sm italic text-text-secondary">
+                            {exercise.instructions}
+                          </div>
+                        ) : (
+                          <div className="mt-0.5 text-sm text-text-tertiary">
+                            Sets logged during workout
+                          </div>
+                        )}
+                        {exercise.notes && (
+                          <p className="mt-1 whitespace-pre-wrap text-xs text-text-tertiary">
+                            {exercise.notes}
+                          </p>
+                        )}
                       </div>
                     </div>
                   ))}
                 </div>
               )}
             </div>
-          ))
+          ))}
+          </div>
         ) : (
           <div className="rounded-2xl border border-border bg-bg-secondary">
             <EmptyState

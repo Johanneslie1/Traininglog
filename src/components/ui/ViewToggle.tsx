@@ -27,7 +27,7 @@ function ViewToggle<T extends string>({
             onClick={() => onChange(option.value)}
             className={`min-h-[34px] rounded-full px-3 text-xs font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-accent-primary ${
               isActive
-                ? 'bg-accent-primary text-text-on-accent shadow-glow'
+                ? 'bg-accent-primary text-text-on-accent'
                 : 'text-text-secondary hover:bg-hover-overlay hover:text-text-primary'
             }`}
           >

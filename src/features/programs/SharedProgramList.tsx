@@ -239,7 +239,7 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
               return (
                 <div
                   key={sharedProgram.id}
-                  className="overflow-hidden rounded-2xl border border-border bg-bg-secondary shadow-md transition-all hover:-translate-y-0.5 hover:border-accent-primary hover:shadow-glow"
+                  className="overflow-hidden rounded-2xl border border-border bg-bg-secondary transition-colors hover:border-accent-primary"
                 >
                   {/* Coach Message (if exists) */}
                   {sharedProgram.coachMessage && (
@@ -332,7 +332,7 @@ const SharedProgramList: React.FC<SharedProgramListProps> = ({ embedded = false 
                         className={`flex min-h-[44px] items-center rounded-xl px-4 py-2 font-semibold transition-all ${
                           isCopied
                             ? 'bg-bg-tertiary text-text-muted cursor-not-allowed'
-                            : 'bg-accent-primary text-text-on-accent hover:bg-accent-hover hover:shadow-glow'
+                            : 'bg-accent-primary text-text-on-accent hover:bg-accent-hover'
                         }`}
                       >
                         {copyingProgramId === sharedProgram.id ? (

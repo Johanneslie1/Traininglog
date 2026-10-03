@@ -67,21 +67,18 @@ const shimmerStyle = `
 
 // Preset skeleton layouts
 export const ExerciseCardSkeleton: React.FC = () => (
-  <div className="bg-bg-secondary rounded-xl p-4 space-y-3">
-    <div className="flex items-center justify-between">
-      <Skeleton width="60%" height="24px" />
-      <Skeleton variant="circular" width="32px" height="32px" />
+  <div className="flex items-start gap-3 border-b border-border px-3 py-3 last:border-b-0">
+    <Skeleton width="12px" height="28px" className="mt-1 shrink-0" />
+    <div className="min-w-0 flex-1 space-y-2">
+      <Skeleton width="55%" height="16px" />
+      <Skeleton width="40%" height="12px" />
     </div>
-    <div className="space-y-2">
-      <Skeleton width="80%" />
-      <Skeleton width="60%" />
-      <Skeleton width="40%" />
-    </div>
+    <Skeleton variant="circular" width="28px" height="28px" className="shrink-0" />
   </div>
 );
 
 export const ExerciseListSkeleton: React.FC<{ count?: number }> = ({ count = 3 }) => (
-  <div className="space-y-4">
+  <div className="overflow-hidden rounded-2xl border border-border bg-bg-secondary">
     {Array.from({ length: count }).map((_, index) => (
       <ExerciseCardSkeleton key={index} />
     ))}

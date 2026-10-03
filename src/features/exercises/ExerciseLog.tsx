@@ -1162,35 +1162,20 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
         <div className="relative flex flex-col h-full">
           <div className="flex-grow">
             {rehabSessionNotice ? <RehabLogBanner notice={rehabSessionNotice} /> : null}
-            <section className="mb-4 rounded-2xl border border-border bg-bg-secondary p-3">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-text-tertiary">Session</p>
-                  <p className="text-sm text-text-secondary">Organize today into one or more training sessions.</p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => { void handleCreateNewSession('main'); }}
-                    disabled={sessionsLoading || creatingSessionType !== null}
-                    className="inline-flex min-h-10 items-center justify-center rounded-xl border border-border bg-bg-tertiary px-3 py-2 text-xs font-medium text-text-primary transition-colors hover:border-accent-primary hover:text-accent-primary disabled:opacity-50"
-                    aria-label="Add session"
-                  >
-                    Add Session
-                  </button>
-                </div>
-              </div>
-              {availableSessions.length > 0 ? (
-                <div className="mt-3 flex gap-2 flex-wrap">
-                  {availableSessions.map((session) => {
+            <section className="mb-3" aria-label="Sessions">
+              <div className="flex flex-wrap items-center gap-2">
+                {availableSessions.length > 0 ? (
+                  availableSessions.map((session) => {
                     const label = session.name || `${getSessionTypeLabel(session.sessionType)} ${session.sessionNumberInDay}`;
                     const isSelected = selectedSessionId === session.sessionId;
                     const isRenaming = renamingSessionId === session.sessionId;
                     return (
                       <div
                         key={session.sessionId}
-                        className={`flex items-center rounded-lg text-xs font-medium transition-colors overflow-hidden ${
-                          isSelected ? 'bg-accent text-text-inverse' : 'border border-border text-text-primary'
+                        className={`flex items-center overflow-hidden rounded-full text-xs font-semibold transition-colors ${
+                          isSelected
+                            ? 'bg-accent-primary text-text-on-accent'
+                            : 'border border-border bg-bg-secondary text-text-primary'
                         }`}
                       >
                         {isRenaming ? (
@@ -1224,8 +1209,8 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
                         <button
                           type="button"
                           onClick={() => { void handleDeleteSession(session.sessionId, session.sessionNumberInDay, session.sessionType, session.name); }}
-                          className={`px-2 py-1.5 border-l ${
-                            isSelected ? 'border-white/30 hover:bg-white/20' : 'border-border hover:bg-bg-tertiary'
+                          className={`px-2 py-1.5 ${
+                            isSelected ? 'opacity-80 hover:bg-white/15' : 'border-l border-border hover:bg-bg-tertiary'
                           }`}
                           aria-label={`Delete ${label}`}
                         >
@@ -1233,13 +1218,20 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
                         </button>
                       </div>
                     );
-                  })}
-                </div>
-              ) : (
-                <p className="mt-3 rounded-xl border border-dashed border-border bg-bg-primary px-3 py-2 text-sm text-text-secondary">
-                  No sessions yet
-                </p>
-              )}
+                  })
+                ) : (
+                  <span className="text-sm text-text-secondary">No sessions yet</span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => { void handleCreateNewSession('main'); }}
+                  disabled={sessionsLoading || creatingSessionType !== null}
+                  className="inline-flex min-h-9 items-center justify-center rounded-full border border-dashed border-border px-3 py-1.5 text-xs font-semibold text-text-secondary transition-colors hover:border-accent-primary hover:text-accent-primary disabled:opacity-50"
+                  aria-label="Add session"
+                >
+                  + Session
+                </button>
+              </div>
             </section>
 
             {loading ? (

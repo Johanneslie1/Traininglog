@@ -231,7 +231,7 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
               return (
                 <div
                   key={assignment.id}
-                  className="overflow-hidden rounded-2xl border border-border bg-bg-secondary shadow-md transition-all hover:-translate-y-0.5 hover:border-accent-primary hover:shadow-glow"
+                  className="overflow-hidden rounded-2xl border border-border bg-bg-secondary transition-colors hover:border-accent-primary"
                 >
                   {/* Session Header */}
                   <div className="p-4 border-b border-border">
@@ -275,7 +275,7 @@ const SharedSessionsList: React.FC<SharedSessionsListProps> = ({ embedded = fals
                     <div className="flex gap-2 flex-wrap">
                       <button
                         onClick={() => handleLogSession(assignment)}
-                        className="min-h-[44px] flex-1 min-w-[140px] rounded-xl bg-accent-primary px-4 py-2 font-semibold text-text-on-accent transition-all hover:bg-accent-hover hover:shadow-glow"
+                        className="min-h-[44px] flex-1 min-w-[140px] rounded-xl bg-accent-primary px-4 py-2 font-semibold text-text-on-accent transition-colors hover:bg-accent-hover"
                       >
                         {assignment.status === 'completed'
                           ? 'Log Again'

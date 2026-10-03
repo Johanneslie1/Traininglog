@@ -28,7 +28,7 @@ const FloatingSupersetControls: React.FC<FloatingSupersetControlsProps> = () => 
   };
   
   return (
-    <div className="fixed bottom-app-floating left-1/2 transform -translate-x-1/2 z-50 bg-bg-secondary rounded-lg border border-accent-primary shadow-lg shadow-glow p-4 w-11/12 max-w-md">
+    <div className="fixed bottom-app-floating left-1/2 z-50 w-11/12 max-w-md -translate-x-1/2 transform rounded-xl border border-border bg-bg-secondary p-4 shadow-md">
       <div className="mb-3 flex justify-between items-center">
         <h3 className="text-lg font-medium text-text-primary">Create Superset</h3>
         <span className="text-sm bg-focus-bg text-accent-secondary px-2 py-1 rounded-full">

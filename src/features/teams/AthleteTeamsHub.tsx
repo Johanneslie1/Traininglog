@@ -8,17 +8,17 @@ import AthleteAnnouncements from './AthleteAnnouncements';
 import AthleteActivityFeed from './AthleteActivityFeed';
 import { useCanUseAthleteFeatures } from '@/hooks/useUserRole';
 
-type TabType = 'teams' | 'programs' | 'sessions' | 'announcements' | 'activity';
+type TabType = 'todo' | 'teams' | 'programs' | 'sessions' | 'announcements' | 'activity';
 
 const AthleteTeamsHub: React.FC = () => {
   const canUseAthleteFeatures = useCanUseAthleteFeatures();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState<TabType>('teams');
+  const [activeTab, setActiveTab] = useState<TabType>('todo');
 
   // Read tab from URL on mount
   useEffect(() => {
     const tabParam = searchParams.get('tab') as TabType;
-    if (tabParam && ['teams', 'programs', 'sessions', 'announcements', 'activity'].includes(tabParam)) {
+    if (tabParam && ['todo', 'teams', 'programs', 'sessions', 'announcements', 'activity'].includes(tabParam)) {
       setActiveTab(tabParam);
     }
   }, [searchParams]);
@@ -33,29 +33,30 @@ const AthleteTeamsHub: React.FC = () => {
   };
 
   const tabs = [
-    { id: 'teams' as TabType, label: 'My Teams', icon: UsersIcon },
+    { id: 'todo' as TabType, label: 'To do', icon: ClipboardCheckIcon },
     { id: 'programs' as TabType, label: 'Programs', icon: ClipboardListIcon },
     { id: 'sessions' as TabType, label: 'Sessions', icon: ClipboardCheckIcon },
-    { id: 'announcements' as TabType, label: 'Announcements', icon: ChatAltIcon },
+    { id: 'teams' as TabType, label: 'Team', icon: UsersIcon },
+    { id: 'announcements' as TabType, label: 'Notes', icon: ChatAltIcon },
     { id: 'activity' as TabType, label: 'Activity', icon: LightningBoltIcon },
   ];
 
   return (
     <div className="min-h-screen bg-bg-primary text-text-primary">
       {/* Header */}
-      <header className="bg-bg-secondary border-b border-border p-4 sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto">
-          <h1 className="text-2xl font-bold text-text-primary mb-1">Teams</h1>
-          <p className="text-text-secondary text-sm">
-            Your teams, assigned programs, and training sessions
+      <header className="sticky top-0 z-10 border-b border-border bg-bg-secondary p-4">
+        <div className="mx-auto max-w-6xl">
+          <h1 className="mb-0.5 text-2xl font-semibold text-text-primary">Teams</h1>
+          <p className="text-sm text-text-secondary">
+            What to do next from your coach
           </p>
         </div>
       </header>
 
       {/* Tabs */}
-      <div className="bg-bg-secondary border-b border-border sticky top-[88px] z-10">
-        <div className="max-w-6xl mx-auto px-4">
-          <nav className="flex gap-1 -mb-px overflow-x-auto">
+      <div className="sticky top-[72px] z-10 border-b border-border bg-bg-secondary">
+        <div className="mx-auto max-w-6xl px-4">
+          <nav className="-mb-px flex gap-1 overflow-x-auto">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -64,16 +65,16 @@ const AthleteTeamsHub: React.FC = () => {
                   key={tab.id}
                   onClick={() => handleTabChange(tab.id)}
                   className={`
-                    flex items-center gap-2 px-4 py-3 font-medium text-sm whitespace-nowrap
-                    border-b-2 transition-colors
+                    flex items-center gap-2 whitespace-nowrap border-b-2 px-3 py-3 text-sm font-medium
+                    transition-colors
                     ${
                       isActive
                         ? 'border-accent-primary text-accent-primary'
-                        : 'border-transparent text-text-tertiary hover:text-text-secondary hover:border-border-hover'
+                        : 'border-transparent text-text-tertiary hover:border-border-hover hover:text-text-secondary'
                     }
                   `}
                 >
-                  <Icon className="h-5 w-5" />
+                  <Icon className="h-4 w-4" />
                   {tab.label}
                 </button>
               );
@@ -83,7 +84,19 @@ const AthleteTeamsHub: React.FC = () => {
       </div>
 
       {/* Tab Content */}
-      <main className="max-w-6xl mx-auto">
+      <main className="mx-auto max-w-6xl">
+        {activeTab === 'todo' && (
+          <div className="space-y-6 p-4 pb-20">
+            <section>
+              <h2 className="mb-2 text-[15px] font-semibold text-text-primary">Sessions to log</h2>
+              <SharedSessionsList embedded />
+            </section>
+            <section>
+              <h2 className="mb-2 text-[15px] font-semibold text-text-primary">Programs to copy</h2>
+              <SharedProgramList embedded />
+            </section>
+          </div>
+        )}
         {activeTab === 'teams' && (
           <AthleteTeamWorkspace embedded />
         )}

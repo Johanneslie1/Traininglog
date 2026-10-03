@@ -632,6 +632,13 @@ const DailyTrainingComposition: React.FC<DailyTrainingCompositionProps> = ({ act
 const AnalyticsDashboard: React.FC = () => {
   const { user } = useAuth();
   const [timeframe, setTimeframe] = useState<Timeframe>('month');
+  const [focusTab, setFocusTab] = useState<'overview' | 'load' | 'prs' | 'muscle'>('overview');
+  const focusTabs: Array<{ value: 'overview' | 'load' | 'prs' | 'muscle'; label: string }> = [
+    { value: 'overview', label: 'Overview' },
+    { value: 'load', label: 'Load' },
+    { value: 'prs', label: 'PRs' },
+    { value: 'muscle', label: 'Muscle' },
+  ];
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentExercises, setCurrentExercises] = useState<UnifiedExerciseData[]>([]);
@@ -783,8 +790,8 @@ const AnalyticsDashboard: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-text-primary">Analytics</h1>
-          <p className="text-sm text-text-secondary mt-1">
+          <h1 className="text-2xl font-semibold text-text-primary">Analytics</h1>
+          <p className="mt-1 text-sm text-text-secondary">
             {format(range.startDate, 'MMM d, yyyy')} - {format(range.endDate, 'MMM d, yyyy')}
           </p>
         </div>
@@ -794,9 +801,9 @@ const AnalyticsDashboard: React.FC = () => {
             <button
               key={option.value}
               onClick={() => setTimeframe(option.value)}
-              className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+              className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
                 timeframe === option.value
-                  ? 'bg-accent-primary text-text-inverse'
+                  ? 'bg-accent-primary text-text-on-accent'
                   : 'text-text-secondary hover:text-text-primary'
               }`}
             >
@@ -805,6 +812,25 @@ const AnalyticsDashboard: React.FC = () => {
           ))}
         </div>
       </div>
+
+      {!isLoading && !error && user?.id && hasAnalyticsData && (
+        <div className="flex gap-1 overflow-x-auto border-b border-border">
+          {focusTabs.map((tab) => (
+            <button
+              key={tab.value}
+              type="button"
+              onClick={() => setFocusTab(tab.value)}
+              className={`whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
+                focusTab === tab.value
+                  ? 'border-accent-primary text-accent-primary'
+                  : 'border-transparent text-text-tertiary hover:text-text-secondary'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {isLoading && (
         <div className="rounded-xl border border-border bg-bg-secondary p-8 text-center">
@@ -837,81 +863,98 @@ const AnalyticsDashboard: React.FC = () => {
         <>
           {timeframe === 'day' ? (
             <>
-              <DailyMetricRow summary={summary} healthRow={healthRow} selectedLoad={selectedDayLoad} />
-              <WellnessStrip healthRow={healthRow} />
-
-              <section className="grid grid-cols-1 gap-4 lg:grid-cols-5">
-                <div className="lg:col-span-3">
-                  <SevenDayLoadStrip dataPoints={sevenDayLoadData} />
-                </div>
-                <div className="lg:col-span-2">
-                  <DailyTrainingComposition
-                    activityAnalytics={activityAnalytics}
-                    summary={summary}
-                    healthRow={healthRow}
-                  />
-                </div>
-              </section>
-
-              {(recentPRs.length > 0 || muscleGroupAnalytics.length > 0) && (
-                <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                  {recentPRs.length > 0 && (
-                    <DashboardSection title="Recent PRs">
-                      <div className="mt-3 space-y-2">
-                        {recentPRs.slice(0, 4).map((record) => (
-                          <div key={record.id} className="rounded-lg border border-border bg-bg-tertiary px-3 py-2">
-                            <p className="text-sm font-medium text-text-primary">{record.exerciseName}</p>
-                            <p className="text-xs text-text-secondary">
-                              {record.recordType === PRType.ONE_REP_MAX ? 'Estimated 1RM' : record.recordType}: {Math.round(record.value)}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </DashboardSection>
+              {(focusTab === 'overview' || focusTab === 'load') && (
+                <>
+                  {focusTab === 'overview' && (
+                    <>
+                      <DailyMetricRow summary={summary} healthRow={healthRow} selectedLoad={selectedDayLoad} />
+                      <WellnessStrip healthRow={healthRow} />
+                    </>
                   )}
 
-                  {muscleGroupAnalytics.length > 0 && (
-                    <DashboardSection title="Muscle Groups">
-                      <div className="mt-3 space-y-2">
-                        {muscleGroupAnalytics.slice(0, 5).map((row) => (
-                          <div key={row.muscleGroup} className="rounded-lg border border-border bg-bg-tertiary px-3 py-2 text-sm">
-                            <div className="flex items-center justify-between gap-3">
-                              <span className="font-medium text-text-primary">{formatMuscleName(row.muscleGroup)}</span>
-                              <span className="text-text-secondary">{row.totalSets} sets</span>
-                            </div>
-                            <p className="mt-1 truncate text-xs text-text-secondary">
-                              {row.topExercises.length > 0 ? row.topExercises.join(', ') : 'No contributors'}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </DashboardSection>
+                  <section className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+                    <div className="lg:col-span-3">
+                      <SevenDayLoadStrip dataPoints={sevenDayLoadData} />
+                    </div>
+                    <div className="lg:col-span-2">
+                      <DailyTrainingComposition
+                        activityAnalytics={activityAnalytics}
+                        summary={summary}
+                        healthRow={healthRow}
+                      />
+                    </div>
+                  </section>
+                </>
+              )}
+
+              {focusTab === 'prs' && (
+                <DashboardSection title="Recent PRs">
+                  {recentPRs.length === 0 ? (
+                    <p className="mt-3 rounded-xl border border-border bg-bg-tertiary p-3 text-sm text-text-secondary">
+                      No PRs in this period yet.
+                    </p>
+                  ) : (
+                    <div className="mt-3 space-y-2">
+                      {recentPRs.slice(0, 8).map((record) => (
+                        <div key={record.id} className="rounded-lg border border-border bg-bg-tertiary px-3 py-2">
+                          <p className="text-sm font-medium text-text-primary">{record.exerciseName}</p>
+                          <p className="text-xs text-text-secondary">
+                            {record.recordType === PRType.ONE_REP_MAX ? 'Estimated 1RM' : record.recordType}: {Math.round(record.value)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
                   )}
-                </section>
+                </DashboardSection>
+              )}
+
+              {focusTab === 'muscle' && (
+                <DashboardSection title="Muscle Groups">
+                  {muscleGroupAnalytics.length === 0 ? (
+                    <p className="mt-3 rounded-xl border border-border bg-bg-tertiary p-3 text-sm text-text-secondary">
+                      No muscle-group data for this day.
+                    </p>
+                  ) : (
+                    <div className="mt-3 space-y-2">
+                      {muscleGroupAnalytics.slice(0, 8).map((row) => (
+                        <div key={row.muscleGroup} className="rounded-lg border border-border bg-bg-tertiary px-3 py-2 text-sm">
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="font-medium text-text-primary">{formatMuscleName(row.muscleGroup)}</span>
+                            <span className="text-text-secondary">{row.totalSets} sets</span>
+                          </div>
+                          <p className="mt-1 truncate text-xs text-text-secondary">
+                            {row.topExercises.length > 0 ? row.topExercises.join(', ') : 'No contributors'}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </DashboardSection>
               )}
             </>
           ) : (
             <>
+          {(focusTab === 'overview') && (
           <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
             <div className="rounded-xl border border-border bg-bg-secondary p-4">
-              <p className="text-xs text-text-tertiary uppercase tracking-wide">Workouts</p>
-              <p className="mt-1 text-2xl font-bold text-text-primary">{summary.totalWorkouts}</p>
+              <p className="text-xs uppercase tracking-wide text-text-tertiary">Workouts</p>
+              <p className="mt-1 text-2xl font-semibold text-text-primary">{summary.totalWorkouts}</p>
             </div>
             <div className="rounded-xl border border-border bg-bg-secondary p-4">
-              <p className="text-xs text-text-tertiary uppercase tracking-wide">Volume</p>
-              <p className="mt-1 text-2xl font-bold text-text-primary">{summary.totalVolume.toLocaleString()}</p>
+              <p className="text-xs uppercase tracking-wide text-text-tertiary">Volume</p>
+              <p className="mt-1 text-2xl font-semibold text-text-primary">{summary.totalVolume.toLocaleString()}</p>
             </div>
             <div className="rounded-xl border border-border bg-bg-secondary p-4">
-              <p className="text-xs text-text-tertiary uppercase tracking-wide">Sets</p>
-              <p className="mt-1 text-2xl font-bold text-text-primary">{summary.totalSets}</p>
+              <p className="text-xs uppercase tracking-wide text-text-tertiary">Sets</p>
+              <p className="mt-1 text-2xl font-semibold text-text-primary">{summary.totalSets}</p>
             </div>
             <div className="rounded-xl border border-border bg-bg-secondary p-4">
-              <p className="text-xs text-text-tertiary uppercase tracking-wide">Current Streak</p>
-              <p className="mt-1 text-2xl font-bold text-text-primary">{summary.currentStreak}</p>
+              <p className="text-xs uppercase tracking-wide text-text-tertiary">Current Streak</p>
+              <p className="mt-1 text-2xl font-semibold text-text-primary">{summary.currentStreak}</p>
             </div>
             <div className="rounded-xl border border-border bg-bg-secondary p-4">
-              <p className="text-xs text-text-tertiary uppercase tracking-wide">Sports Load</p>
-              <p className="mt-1 text-2xl font-bold text-text-primary">
+              <p className="text-xs uppercase tracking-wide text-text-tertiary">Sports Load</p>
+              <p className="mt-1 text-2xl font-semibold text-text-primary">
                 {(healthRow?.weeklySrpe.totalLoad ?? 0).toLocaleString()}
               </p>
               <p className="mt-1 text-xs text-text-secondary">
@@ -919,8 +962,8 @@ const AnalyticsDashboard: React.FC = () => {
               </p>
             </div>
             <div className="rounded-xl border border-border bg-bg-secondary p-4">
-              <p className="text-xs text-text-tertiary uppercase tracking-wide">Readiness</p>
-              <p className="mt-1 text-2xl font-bold text-text-primary">
+              <p className="text-xs uppercase tracking-wide text-text-tertiary">Readiness</p>
+              <p className="mt-1 text-2xl font-semibold text-text-primary">
                 {healthRow?.wellnessSnapshot.metricValues.readiness ?? '-'}
               </p>
               <p className="mt-1 text-xs text-text-secondary">
@@ -930,7 +973,9 @@ const AnalyticsDashboard: React.FC = () => {
               </p>
             </div>
           </section>
+          )}
 
+          {(focusTab === 'overview' || focusTab === 'load') && (
           <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <DashboardSection title={loadChartTitle} className="lg:col-span-2">
               {!hasLoadChartData ? (
@@ -946,6 +991,7 @@ const AnalyticsDashboard: React.FC = () => {
               )}
             </DashboardSection>
 
+            {focusTab === 'overview' && (
             <DashboardSection title="Vs Previous Period">
               <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3 lg:grid-cols-1">
                 <MetricChip label="Volume" value={formatChange(periodComparison.changes.volumeChange)} tone={periodComparison.changes.volumeChange > 0 ? 'success' : periodComparison.changes.volumeChange < 0 ? 'error' : 'default'} />
@@ -953,9 +999,13 @@ const AnalyticsDashboard: React.FC = () => {
                 <MetricChip label="Exercises" value={formatChange(periodComparison.changes.exercisesChange)} tone={periodComparison.changes.exercisesChange > 0 ? 'success' : periodComparison.changes.exercisesChange < 0 ? 'error' : 'default'} />
               </div>
             </DashboardSection>
+            )}
           </section>
+          )}
 
+          {(focusTab === 'prs' || focusTab === 'load') && (
           <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {focusTab === 'prs' && (
             <DashboardSection title="Recent PRs">
               {recentPRs.length === 0 ? (
                 <p className="mt-3 rounded-xl border border-border bg-bg-tertiary p-3 text-sm text-text-secondary">
@@ -974,7 +1024,9 @@ const AnalyticsDashboard: React.FC = () => {
                 </div>
               )}
             </DashboardSection>
+            )}
 
+            {focusTab === 'load' && (
             <DashboardSection title="Activity Load">
               {activityAnalytics.length === 0 ? (
                 <p className="mt-3 rounded-xl border border-border bg-bg-tertiary p-3 text-sm text-text-secondary">
@@ -1002,8 +1054,11 @@ const AnalyticsDashboard: React.FC = () => {
                 </div>
               )}
             </DashboardSection>
+            )}
           </section>
+          )}
 
+          {focusTab === 'muscle' && (
           <DashboardSection
             title="Muscle Group Analytics"
             subtitle="Resistance volume is mapped to primary and secondary muscles, then compared with the previous period."
@@ -1048,6 +1103,7 @@ const AnalyticsDashboard: React.FC = () => {
               </div>
             )}
           </DashboardSection>
+          )}
             </>
           )}
         </>

@@ -1,12 +1,12 @@
 import { VolumeDataPoint, MuscleVolumeData, TrainingFrequencyData, HeatmapCell, IntensityLevel, ChartDataset } from '@/types/analytics';
 
 /**
- * Default chart color palette (navy/aqua theme optimized)
+ * Default chart color palette (charcoal UI + teal accent)
  */
 export const DEFAULT_CHART_COLORS = [
-  '#54acbf', // Aqua brand
-  '#a7ebf2', // Light aqua
-  '#26658c', // Deep blue
+  '#54acbf', // Teal accent
+  '#6bb8c9', // Soft teal
+  '#9aa7b5', // Neutral gray
   '#10b981', // Success green
   '#f59e0b', // Amber
   '#7bd4e0', // Soft cyan
@@ -94,7 +94,7 @@ export const MUSCLE_COLORS: Record<string, string> = {
   hamstrings: '#95e1d3',
   calves: '#b5e7a0',
   legs: '#10b981',
-  shoulders: '#26658c',
+  shoulders: '#6d7a88',
   biceps: '#8b5cf6',
   triceps: '#c084fc',
   arms: '#8b5cf6',
@@ -194,11 +194,11 @@ export function groupHeatmapByWeek(cells: HeatmapCell[]): HeatmapCell[][] {
  */
 export function getIntensityColor(intensity: IntensityLevel): string {
   const colors = {
-    [IntensityLevel.REST]: '#011c40',
-    [IntensityLevel.LIGHT]: '#023859',
-    [IntensityLevel.MODERATE]: '#26658c',
+    [IntensityLevel.REST]: '#1f262e',
+    [IntensityLevel.LIGHT]: '#2a333d',
+    [IntensityLevel.MODERATE]: '#3a91a8',
     [IntensityLevel.HIGH]: '#54acbf',
-    [IntensityLevel.VERY_HIGH]: '#a7ebf2',
+    [IntensityLevel.VERY_HIGH]: '#6bb8c9',
   };
   
   return colors[intensity] || colors[IntensityLevel.REST];

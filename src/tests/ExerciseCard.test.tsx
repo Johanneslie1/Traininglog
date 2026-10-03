@@ -185,4 +185,40 @@ describe('ExerciseCard', () => {
 
     expect(screen.getByText('Warm-up')).toBeTruthy();
   });
+
+  it('renders compact log rows collapsed with a summary and expands on tap', () => {
+    const resistanceExercise: UnifiedExerciseData = {
+      id: 'test-log-row-1',
+      exerciseName: 'Back Squat',
+      activityType: ActivityType.RESISTANCE,
+      timestamp: new Date(),
+      userId: 'test-user',
+      sets: [
+        { weight: 80, reps: 5, difficulty: DifficultyCategory.NORMAL },
+        { weight: 85, reps: 4, difficulty: DifficultyCategory.HARD },
+      ],
+    };
+
+    render(
+      <ExerciseCard
+        exercise={resistanceExercise}
+        variant="logRow"
+        showActions={true}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    );
+
+    expect(screen.getByText('Back Squat')).toBeTruthy();
+    expect(screen.getByText('2 × 4–5 · 80–85 kg')).toBeTruthy();
+    expect(screen.queryByText('Load')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: /Expand Back Squat/i }));
+    expect(screen.getByText('Load')).toBeTruthy();
+    expect(screen.getByText('80 kg')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: /Actions for Back Squat/i }));
+    expect(screen.getByRole('menuitem', { name: 'Edit' })).toBeTruthy();
+    expect(screen.getByRole('menuitem', { name: 'Delete' })).toBeTruthy();
+  });
 });

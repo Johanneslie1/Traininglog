@@ -124,7 +124,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
           </Button>
         </div>
 
-        <section className="mb-6 overflow-hidden rounded-3xl border border-border-focus bg-gradient-brand-hero p-5 shadow-xl shadow-accent-primary/20 sm:p-6">
+        <section className="mb-6 overflow-hidden rounded-2xl border border-border bg-bg-secondary p-5 sm:p-6">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.2em] text-accent-100">This week</p>
@@ -185,11 +185,11 @@ const Dashboard: React.FC<DashboardProps> = () => {
                     return (
                       <div
                         key={exercise.id || `${section}-${index}`}
-                        className="group rounded-2xl border border-border bg-bg-tertiary p-3 transition-all hover:border-accent-primary hover:shadow-glow"
+                        className="group rounded-2xl border border-border bg-bg-tertiary p-3 transition-colors hover:border-accent-primary"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex min-w-0 items-start gap-3">
-                            <ActivityBadge activityType={exercise.activityType} variant="dot" className="mt-1 shadow-glow" />
+                            <ActivityBadge activityType={exercise.activityType} variant="dot" className="mt-1" />
                             <div className="min-w-0">
                               <p className="truncate font-semibold text-text-primary">{exercise.exerciseName}</p>
                               <p className="mt-0.5 text-xs text-text-tertiary">
@@ -264,7 +264,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
               <button
                 key={action.label}
                 onClick={() => navigate(action.path)}
-                className="rounded-2xl border border-border bg-bg-tertiary p-4 text-left transition-all hover:-translate-y-0.5 hover:border-accent-primary hover:shadow-glow focus:outline-none focus:ring-2 focus:ring-accent-primary"
+                className="rounded-2xl border border-border bg-bg-tertiary p-4 text-left transition-colors hover:border-accent-primary focus:outline-none focus:ring-2 focus:ring-accent-primary"
               >
                 <svg className="mb-3 h-6 w-6 text-accent-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   {action.icon}

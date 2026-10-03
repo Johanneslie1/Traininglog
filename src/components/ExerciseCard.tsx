@@ -9,6 +9,9 @@ import {
   normalizeDistanceMeters,
   normalizeDurationSeconds,
 } from '@/utils/activityFieldContract';
+import { buildExerciseLogSummary } from '@/utils/exerciseLogSummary';
+
+export type ExerciseCardVariant = 'classic' | 'logRow';
 
 interface ExerciseCardProps {
   exercise: UnifiedExerciseData;
@@ -21,6 +24,8 @@ interface ExerciseCardProps {
   isHidden?: boolean;
   onToggleVisibility?: () => void;
   forceCompact?: boolean;
+  /** Compact day-log row (default for Exercise Log). Classic keeps the older card layout. */
+  variant?: ExerciseCardVariant;
 }
 
 const getDifficultyColor = (difficulty?: string): string => {
@@ -53,15 +58,18 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
   supersetLabel,
   isHidden = false,
   onToggleVisibility,
-  forceCompact = false
+  forceCompact = false,
+  variant = 'classic',
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showSetDetails, setShowSetDetails] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { state, toggleExerciseSelection, isExerciseInSuperset, startCreating } = useSupersets();
   
   const isInSuperset = isExerciseInSuperset(exercise.id || '');
   const isSelected = state.selectedExercises.includes(exercise.id || '');
+  const isLogRow = variant === 'logRow';
   
   // Close menu when clicking outside
   useEffect(() => {
@@ -84,6 +92,22 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
     if (exercise.id) {
       toggleExerciseSelection(exercise.id);
     }
+  };
+
+  const handleStartOrToggleSuperset = () => {
+    if (isInSuperset) return;
+
+    if (!state.isCreating) {
+      startCreating();
+      if (exercise.id) {
+        setTimeout(() => {
+          toggleExerciseSelection(exercise.id || '');
+        }, 50);
+      }
+      return;
+    }
+
+    handleSupersetToggle();
   };
 
   // Calculate total volume for the exercise
@@ -113,6 +137,20 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
 
     return false;
   }, [exercise.activityType, exercise.sets]);
+
+  const logSummary = useMemo(
+    () =>
+      buildExerciseLogSummary({
+        sets: exercise.sets,
+        activityType: exercise.activityType,
+        isNonResistance,
+      }),
+    [exercise.activityType, exercise.sets, isNonResistance]
+  );
+
+  const showExpandedDetails = isLogRow
+    ? !forceCompact && isExpanded
+    : !(isHidden || forceCompact);
 
   const quickViewMetrics = useMemo(() => {
     if (!isNonResistance || !exercise.sets || exercise.sets.length === 0) {
@@ -148,6 +186,68 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
 
     return summary;
   }, [exercise.activityType, exercise.sets, isNonResistance]);
+
+  const renderSetTable = () => {
+    if (!exercise.sets || exercise.sets.length === 0) {
+      return <p className="text-sm text-text-tertiary">No sets logged</p>;
+    }
+
+    if (isNonResistance) {
+      const typeInfo = getActivityTypeInfo(exercise.activityType || ActivityType.OTHER);
+      return (
+        <div className="space-y-2">
+          {exercise.sets.map((set, setIndex) => (
+            <div
+              key={setIndex}
+              className={`rounded-lg bg-bg-tertiary px-3 py-2 border-l-2 ${typeInfo.borderColor}`}
+            >
+              <div className="mb-1 text-xs font-medium text-text-tertiary">Set {setIndex + 1}</div>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-text-primary">
+                {hasDisplayValue(set.reps) && <span>{set.reps} reps</span>}
+                {hasDisplayValue(set.distance) && (
+                  <span>
+                    {normalizeDistanceMeters(set.distance, exercise.activityType || ActivityType.OTHER)} m
+                  </span>
+                )}
+                {hasDisplayValue(set.duration) && (
+                  <span>
+                    {formatDurationSeconds(
+                      normalizeDurationSeconds(set.duration, exercise.activityType || ActivityType.OTHER)
+                    )}
+                  </span>
+                )}
+                {hasDisplayValue(set.height) && <span>{set.height} cm</span>}
+                {hasDisplayValue(set.rpe) && <span>RPE {set.rpe}</span>}
+                {hasDisplayValue(set.restTime) && <span>Rest {set.restTime}s</span>}
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    return (
+      <div className="overflow-hidden rounded-lg border border-border">
+        <div className="grid grid-cols-[40px_1fr_48px] gap-2 border-b border-border bg-bg-tertiary px-3 py-1.5 text-[11px] uppercase tracking-wide text-text-tertiary">
+          <span>Set</span>
+          <span>Load</span>
+          <span className="text-right">Reps</span>
+        </div>
+        {exercise.sets.map((set, setIndex) => (
+          <div
+            key={setIndex}
+            className="grid grid-cols-[40px_1fr_48px] gap-2 border-b border-border px-3 py-1.5 text-sm text-text-primary last:border-b-0"
+          >
+            <span className="text-text-tertiary">{setIndex + 1}</span>
+            <span style={{ color: getDifficultyColor(set.difficulty) }}>
+              {hasDisplayValue(set.weight) ? `${set.weight} kg` : '—'}
+            </span>
+            <span className="text-right">{hasDisplayValue(set.reps) ? set.reps : '—'}</span>
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   // Render the exercise content based on type and visibility
   const renderExerciseContent = () => {
@@ -432,6 +532,155 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
     }
   };
 
+  if (isLogRow) {
+    const rowLabel = supersetLabel || (exerciseNumber
+      ? `${exerciseNumber}${subNumber ? String.fromCharCode(96 + subNumber) : ''}`
+      : null);
+
+    return (
+      <div
+        className={`rounded-xl transition-colors ${
+          isSelected
+            ? 'bg-accent-primary/10'
+            : 'hover:bg-bg-tertiary/60'
+        }`}
+      >
+        {state.isCreating && (
+          <div className="flex items-center gap-2 px-2 pt-2">
+            <input
+              type="checkbox"
+              checked={isSelected}
+              onChange={handleSupersetToggle}
+              className="h-4 w-4 rounded border-gray-300 text-accent-primary focus:ring-accent-primary"
+            />
+            <span className="text-sm text-text-secondary">Select for superset</span>
+          </div>
+        )}
+
+        <div className="flex items-start gap-2 px-1 py-2.5">
+          {rowLabel && (
+            <span className="mt-0.5 w-7 shrink-0 text-xs font-bold text-accent-primary">
+              {rowLabel}
+            </span>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setIsExpanded((current) => !current)}
+            className="min-w-0 flex-1 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"
+            aria-expanded={showExpandedDetails}
+            aria-label={showExpandedDetails ? `Collapse ${exercise.exerciseName}` : `Expand ${exercise.exerciseName}`}
+          >
+            <div className="flex items-start gap-2">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-[15px] font-semibold text-text-primary">
+                    {exercise.exerciseName}
+                  </h3>
+                  {exercise.isWarmup && (
+                    <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-medium text-white">
+                      Warm-up
+                    </span>
+                  )}
+                </div>
+                <p className="mt-0.5 text-sm text-text-secondary">{logSummary}</p>
+              </div>
+              <svg
+                className={`mt-1 h-4 w-4 shrink-0 text-text-tertiary transition-transform ${showExpandedDetails ? 'rotate-180' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </button>
+
+          {showActions && (
+            <div className="relative shrink-0" ref={menuRef}>
+              <button
+                type="button"
+                onClick={() => setShowMenu((current) => !current)}
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-text-tertiary transition-colors hover:bg-bg-tertiary hover:text-text-primary"
+                aria-label={`Actions for ${exercise.exerciseName}`}
+                aria-haspopup="menu"
+                aria-expanded={showMenu}
+              >
+                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
+                  <circle cx="12" cy="5" r="1.75" />
+                  <circle cx="12" cy="12" r="1.75" />
+                  <circle cx="12" cy="19" r="1.75" />
+                </svg>
+              </button>
+              {showMenu && (
+                <div
+                  role="menu"
+                  className="absolute right-0 z-30 mt-1 min-w-[168px] rounded-xl border border-border bg-bg-secondary py-1 shadow-lg"
+                >
+                  {!isInSuperset && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        handleStartOrToggleSuperset();
+                        setShowMenu(false);
+                      }}
+                      className="flex w-full items-center px-3 py-2.5 text-left text-sm text-text-primary hover:bg-bg-tertiary"
+                    >
+                      {isSelected ? 'Selected for superset' : 'Add to superset'}
+                    </button>
+                  )}
+                  {isInSuperset && (
+                    <div className="px-3 py-2 text-sm text-text-tertiary">In superset</div>
+                  )}
+                  {onEdit && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        onEdit();
+                        setShowMenu(false);
+                      }}
+                      className="flex w-full items-center px-3 py-2.5 text-left text-sm text-text-primary hover:bg-bg-tertiary"
+                    >
+                      Edit
+                    </button>
+                  )}
+                  {onDelete && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        onDelete();
+                        setShowMenu(false);
+                      }}
+                      className="flex w-full items-center px-3 py-2.5 text-left text-sm text-red-500 hover:bg-bg-tertiary"
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {showExpandedDetails && (
+          <div className="px-1 pb-3 pl-9">
+            {renderSetTable()}
+            {!isNonResistance && exercise.sets && exercise.sets.length > 0 && (
+              <div className="mt-2 flex items-center justify-between text-xs text-text-tertiary">
+                <span>Total volume</span>
+                <span className="text-text-secondary">{calculateTotalVolume()} kg</span>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   const cardClassName = `bg-bg-secondary rounded-lg p-3 transition-all duration-200 ${
     isInSuperset 
       ? 'bg-blue-500/5 dark:bg-[#2196F3]/5' 
@@ -488,24 +737,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
           <div className="flex gap-2">
             {/* Unified superset button with different states */}
             <button
-              onClick={() => {
-                if (isInSuperset) return; // Already in a superset
-                
-                if (!state.isCreating) {
-                  // Start superset creation mode
-                  startCreating();
-                  
-                  // Auto-select this exercise
-                  if (exercise.id) {
-                    setTimeout(() => {
-                      toggleExerciseSelection(exercise.id || '');
-                    }, 50);
-                  }
-                } else {
-                  // In creation mode - toggle selection
-                  handleSupersetToggle();
-                }
-              }}
+              onClick={handleStartOrToggleSuperset}
               className={`p-2 rounded-lg transition-colors ${
                 isInSuperset 
                   ? 'bg-[#2196F3] text-text-primary' // Blue for existing superset
@@ -554,7 +786,8 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
             )}
           </div>
         )}
-      </div>      <div className="mt-3">
+      </div>
+      <div className="mt-3">
         {renderExerciseContent()}
       </div>
     </div>

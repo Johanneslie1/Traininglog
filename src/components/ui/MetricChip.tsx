@@ -10,7 +10,7 @@ interface MetricChipProps {
 
 const toneStyles = {
   default: 'border-border bg-bg-tertiary text-text-secondary',
-  accent: 'border-border-focus bg-accent-100 text-accent-700 shadow-glow',
+  accent: 'border-border-focus bg-accent-primary/15 text-accent-primary',
   success: 'border-success-border bg-success-bg text-success-text',
   warning: 'border-warning-border bg-warning-bg text-warning-text',
   error: 'border-error-border bg-error-bg text-error-text',

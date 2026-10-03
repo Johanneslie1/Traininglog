@@ -48,20 +48,6 @@ function parseOptionalWholeNumber(value: string): number | undefined | null {
   return parsed;
 }
 
-function getRpeFillPercent(score: number | undefined): number {
-  if (!score) return 0;
-  return ((score - 1) / 9) * 100;
-}
-
-function buildRpeTrackGradient(score: number | undefined): string {
-  if (!score) {
-    return 'linear-gradient(90deg, rgba(148,163,184,0.24) 0%, rgba(148,163,184,0.24) 100%)';
-  }
-
-  const fillPercent = getRpeFillPercent(score);
-  return `linear-gradient(90deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.12) ${fillPercent}%, rgba(255,255,255,0.03) ${fillPercent}%, rgba(255,255,255,0.03) 100%), linear-gradient(90deg, #22c55e 0%, #f59e0b 50%, #ef4444 100%)`;
-}
-
 const SportsLoadPage: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const {
@@ -112,8 +98,7 @@ const SportsLoadPage: React.FC = () => {
     ? calculateSessionLoad({ rpe, durationMinutes: parsedDuration })
     : 0;
   const isEditingSession = editingSessionId !== null;
-  const selectedRpeDescriptor = rpe ? RPE_DESCRIPTORS[rpe - 1] : 'Move the slider to select session effort';
-  const rpeThumbPosition = `${getRpeFillPercent(rpe)}%`;
+  const selectedRpeDescriptor = rpe ? RPE_DESCRIPTORS[rpe - 1] : 'Tap a number to select session effort';
 
   const resetForm = useCallback(() => {
     setEditingSessionId(null);
@@ -297,68 +282,46 @@ const SportsLoadPage: React.FC = () => {
           </div>
         ) : (
           <>
-            <div className="rounded-3xl p-4 md:p-5 space-y-4 border border-border/70 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.08),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] shadow-[0_0_0_1px_rgba(148,163,184,0.12),0_10px_30px_rgba(15,23,42,0.18)]">
+            <div className="space-y-3 rounded-2xl border border-border bg-bg-secondary p-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <label htmlFor="sessionRpe" className="font-medium text-text-primary">
+                  <label htmlFor="sessionRpe" className="text-[15px] font-semibold text-text-primary">
                     Session RPE
                   </label>
                 </div>
-                <div className="text-right min-w-[5.75rem]">
-                  <div className="inline-flex items-center justify-center min-w-[3.4rem] h-11 px-3 rounded-2xl text-xl font-semibold border border-white/15 bg-bg-tertiary text-text-primary shadow-lg">
-                    {rpe ?? '-'}
+                <div className="min-w-[4.5rem] text-right">
+                  <div className="inline-flex h-9 min-w-[2.75rem] items-center justify-center rounded-xl border border-border bg-bg-tertiary px-2.5 text-base font-semibold text-text-primary">
+                    {rpe ?? '–'}
                   </div>
-                  <p className="text-[11px] text-text-secondary mt-1">
+                  <p className="mt-1 text-xs text-text-secondary">
                     {selectedRpeDescriptor}
                   </p>
                 </div>
               </div>
 
               <div className="relative">
-                <div
-                  className="relative rounded-[1.6rem] px-3 py-4 border border-white/10 overflow-hidden bg-slate-950/10"
-                  style={{ background: buildRpeTrackGradient(rpe) }}
-                >
-                  <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.12),transparent_35%,transparent_65%,rgba(255,255,255,0.08))] pointer-events-none" />
-                  <div className="absolute inset-y-3 left-3 right-3 rounded-[1.2rem] border border-white/10 pointer-events-none" />
+                <div className="grid grid-cols-10 gap-1.5">
+                  {RPE_OPTIONS.map((score) => {
+                    const isActive = rpe === score;
 
-                  <div className="grid grid-cols-10 gap-1">
-                    {RPE_OPTIONS.map((score) => {
-                      const isActive = rpe === score;
-                      const isFilled = rpe !== undefined && score <= rpe;
-
-                      return (
-                        <button
-                          key={score}
-                          type="button"
-                          onClick={() => setRpe(score)}
-                          className={[
-                            'relative h-12 rounded-xl text-sm font-semibold transition-all duration-200 border',
-                            isActive
-                              ? 'border-white/80 bg-white/25 text-white scale-[1.06] -translate-y-0.5 shadow-[0_10px_24px_rgba(255,255,255,0.16)]'
-                              : isFilled
-                              ? 'border-white/20 bg-white/12 text-white/95'
-                              : 'border-white/10 bg-black/10 text-white/70 hover:bg-white/10 hover:-translate-y-0.5',
-                          ].join(' ')}
-                          aria-label={`RPE ${score}`}
-                          aria-pressed={isActive}
-                        >
-                          {score}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {rpe && (
-                    <div
-                      className="pointer-events-none absolute -top-2 -translate-x-1/2"
-                      style={{ left: rpeThumbPosition }}
-                    >
-                      <div className="px-2 py-1 rounded-full bg-white text-slate-900 text-[11px] font-semibold shadow-[0_8px_18px_rgba(255,255,255,0.2)]">
-                        {rpe}
-                      </div>
-                    </div>
-                  )}
+                    return (
+                      <button
+                        key={score}
+                        type="button"
+                        onClick={() => setRpe(score)}
+                        className={[
+                          'relative h-11 rounded-xl border text-sm font-semibold transition-colors',
+                          isActive
+                            ? 'border-accent-primary bg-accent-primary text-text-on-accent'
+                            : 'border-border bg-bg-tertiary text-text-primary hover:border-accent-primary hover:text-accent-primary',
+                        ].join(' ')}
+                        aria-label={`RPE ${score}`}
+                        aria-pressed={isActive}
+                      >
+                        {score}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 <input
@@ -371,11 +334,11 @@ const SportsLoadPage: React.FC = () => {
                   onChange={(event) => setRpe(Number(event.target.value))}
                   aria-describedby="sessionRpeDescriptor"
                   aria-valuetext={rpe ? `${rpe} out of 10, ${selectedRpeDescriptor}` : 'No RPE selected'}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
                 />
               </div>
               <p id="sessionRpeDescriptor" className="text-center text-xs text-text-secondary">
-                {rpe ? `RPE ${rpe} - ${selectedRpeDescriptor}` : 'Tap or drag to select effort'}
+                {rpe ? `RPE ${rpe} · ${selectedRpeDescriptor}` : 'Tap or drag to select effort'}
               </p>
             </div>
 

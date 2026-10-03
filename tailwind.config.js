@@ -16,19 +16,19 @@ export default {
           300: '#7bd4e0',
           400: '#54acbf',
           500: '#3a91a8',
-          600: '#26658c',
-          700: '#023859',
-          800: '#012b4f',
-          900: '#011c40',
+          600: '#2f7a8f',
+          700: '#246274',
+          800: '#1a4a58',
+          900: '#0f1419',
           DEFAULT: '#54acbf',
         },
         // Brand colors - available for all color utilities (bg, text, border, ring)
         brand: {
-          dark: '#011c40',
-          light: '#023859',
-          'purple-darker': '#011c40',
+          dark: '#0f1419',
+          light: '#171c22',
+          'purple-darker': '#0f1419',
           'purple': '#54acbf',
-          'purple-light': '#a7ebf2',
+          'purple-light': '#6bb8c9',
           DEFAULT: '#54acbf',
         },
         // Theme system colors using CSS variables
@@ -180,8 +180,8 @@ export default {
         'lg': '0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -4px rgba(0, 0, 0, 0.1)',
         'xl': '0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
         '2xl': '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-        'glow': '0 0 20px rgba(84, 172, 191, 0.3)',
-        'glow-lg': '0 0 30px rgba(167, 235, 242, 0.45)',
+        'glow': '0 0 0 1px rgba(84, 172, 191, 0.22)',
+        'glow-lg': '0 0 0 1px rgba(84, 172, 191, 0.32)',
       },
       // Add animation classes
       animation: {

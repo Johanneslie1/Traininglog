@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getCoachTeams, getTeamMembers, Team } from '@/services/teamService';
-import { UsersIcon, ChartBarIcon, ClipboardListIcon } from '@heroicons/react/outline';
 import toast from 'react-hot-toast';
 import { useIsCoach } from '@/hooks/useUserRole';
 import AthleteList from './AthleteList';
@@ -98,9 +97,9 @@ const CoachDashboard: React.FC = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-4xl font-bold mb-2">Coach Hub</h1>
-          <p className="text-text-tertiary">
-            Overview, teams, and athlete performance in one place
+          <h1 className="text-2xl font-semibold mb-1">Coach</h1>
+          <p className="text-sm text-text-secondary">
+            Focus queue for teams, athletes, and programs
           </p>
         </div>
 
@@ -128,66 +127,58 @@ const CoachDashboard: React.FC = () => {
 
         {activeTab === 'overview' && (
           <>
-            <div className="mb-8 bg-bg-secondary border border-border rounded-lg p-5">
-              <h2 className="text-lg font-semibold">Needs attention</h2>
-              <p className="text-sm text-text-tertiary mt-1">Choose one next step.</p>
-              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-                <button
-                  onClick={() => handleTabChange('teams')}
-                  className="w-full bg-bg-tertiary border border-border hover:border-accent-primary rounded-lg p-4 text-left transition-colors"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-medium text-text-primary">Manage teams</p>
-                      <p className="text-xs text-text-tertiary mt-1">
-                        {teams.length === 0 ? 'Create your first team' : `${teams.length} team${teams.length !== 1 ? 's' : ''} active`}
-                      </p>
-                    </div>
-                    <UsersIcon className="h-5 w-5 text-text-tertiary" />
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => handleTabChange('athletes')}
-                  className="w-full bg-bg-tertiary border border-border hover:border-accent-primary rounded-lg p-4 text-left transition-colors"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-medium text-text-primary">Review athlete activity</p>
-                      <p className="text-xs text-text-tertiary mt-1">
-                        {totalAthletes === 0 ? 'Invite athletes to start tracking' : `${totalAthletes} athlete${totalAthletes !== 1 ? 's' : ''} visible`}
-                      </p>
-                    </div>
-                    <ChartBarIcon className="h-5 w-5 text-text-tertiary" />
-                  </div>
-                </button>
+            <div className="mb-6 overflow-hidden rounded-2xl border border-border bg-bg-secondary">
+              <div className="border-b border-border px-4 py-3">
+                <h2 className="text-[15px] font-semibold text-text-primary">Needs you</h2>
+                <p className="mt-0.5 text-sm text-text-secondary">Today · pick one next step</p>
               </div>
+              <button
+                type="button"
+                onClick={() => handleTabChange('teams')}
+                className="flex w-full items-center justify-between gap-3 border-b border-border px-4 py-3 text-left transition-colors hover:bg-bg-tertiary/60"
+              >
+                <div>
+                  <p className="text-sm font-semibold text-text-primary">
+                    {teams.length === 0 ? 'Create your first team' : `Manage ${teams.length} team${teams.length !== 1 ? 's' : ''}`}
+                  </p>
+                  <p className="mt-0.5 text-xs text-text-secondary">Teams & invites</p>
+                </div>
+                <span className="text-sm font-medium text-accent-primary">Open</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleTabChange('athletes')}
+                className="flex w-full items-center justify-between gap-3 border-b border-border px-4 py-3 text-left transition-colors hover:bg-bg-tertiary/60"
+              >
+                <div>
+                  <p className="text-sm font-semibold text-text-primary">
+                    {totalAthletes === 0 ? 'Invite athletes to start tracking' : `Review ${totalAthletes} athlete${totalAthletes !== 1 ? 's' : ''}`}
+                  </p>
+                  <p className="mt-0.5 text-xs text-text-secondary">Activity & readiness</p>
+                </div>
+                <span className="text-sm font-medium text-accent-primary">Open</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleTabChange('programs')}
+                className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-bg-tertiary/60"
+              >
+                <div>
+                  <p className="text-sm font-semibold text-text-primary">Assign programs</p>
+                  <p className="mt-0.5 text-xs text-text-secondary">Program workflow</p>
+                </div>
+                <span className="text-sm font-medium text-accent-primary">Assign</span>
+              </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+            <div className="mb-2 grid grid-cols-3 gap-3">
               <StatTile label="Teams" value={teams.length} helper="active" />
               <StatTile label="Athletes" value={totalAthletes} helper="visible" />
               <StatTile
-                label="Avg per Team"
+                label="Avg / team"
                 value={teams.length > 0 ? Math.round(totalAthletes / teams.length) : 0}
                 helper="athletes"
               />
-            </div>
-
-            <div className="bg-bg-secondary border border-border rounded-lg p-4">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h3 className="text-base font-semibold">Program workflow</h3>
-                  <p className="text-sm text-text-tertiary mt-1">Assign and track programs from one focused view.</p>
-                </div>
-                <button
-                  onClick={() => handleTabChange('programs')}
-                  className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-accent-primary hover:bg-accent-hover text-text-inverse text-sm font-medium transition-colors"
-                >
-                  <ClipboardListIcon className="h-4 w-4" />
-                  Open programs
-                </button>
-              </div>
             </div>
           </>
         )}
