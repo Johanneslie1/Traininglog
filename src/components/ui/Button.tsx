@@ -46,8 +46,9 @@ const Button: React.FC<ButtonProps> = ({
   return (
     <button
       className={`${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${widthStyle} ${className}`}
-      disabled={disabled || isLoading}
       {...props}
+      disabled={disabled || isLoading}
+      aria-busy={isLoading || undefined}
     >
       {isLoading ? (
         <>

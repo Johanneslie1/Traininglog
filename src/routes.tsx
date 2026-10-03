@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { Routes, Route, Navigate, useParams, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { usePrograms } from '@/context/ProgramsContext';
@@ -127,14 +127,33 @@ const RouteLoading: React.FC<{ label?: string }> = ({ label = 'Loading...' }) =>
 // Protected Route wrapper
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { isAuthenticated, isLoading } = useSelector((state: RootState) => state.auth);
-  // Remove verbose logging - this component renders frequently
+  const location = useLocation();
   
   if (isLoading) {
     return <RouteLoading label="Loading authentication..." />;
   }
 
-  return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
+  if (!isAuthenticated) {
+    const from = `${location.pathname}${location.search}${location.hash}`;
+    return <Navigate to="/login" replace state={{ from }} />;
+  }
+
+  return <>{children}</>;
 };
+
+const NotFound: React.FC = () => (
+  <div className="mx-auto flex min-h-[50dvh] max-w-lg flex-col items-start justify-center gap-3 py-10">
+    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-text-tertiary">404</p>
+    <h1 className="text-3xl font-bold text-text-primary">Page not found</h1>
+    <p className="text-sm text-text-secondary">That address is not part of TrainingLog.</p>
+    <Link
+      to="/"
+      className="mt-2 inline-flex min-h-11 items-center rounded-xl bg-accent-primary px-4 py-2 text-sm font-semibold text-text-on-accent hover:bg-accent-hover"
+    >
+      Go to exercise log
+    </Link>
+  </div>
+);
 
 const RoleRoute: React.FC<RoleRouteProps> = ({ children, allowedRole, redirectTo }) => {
   const userRole = useSelector((state: RootState) => state.auth.user?.role);
@@ -311,10 +330,11 @@ const AppRoutes: React.FC = () => {
           path="/debug"
           element={
             <ProtectedRoute>
-              {import.meta.env.DEV ? <Debug /> : <Navigate to="/" replace />}
+              {process.env.NODE_ENV !== 'production' ? <Debug /> : <Navigate to="/" replace />}
             </ProtectedRoute>
           }
         />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Suspense>
   );

@@ -5,6 +5,8 @@ import { getWellnessByDate, saveWellnessLog } from '@/services/wellnessService';
 import { WELLNESS_METRICS, WellnessMetricKey } from '@/types/wellness';
 import { DailyDateHeader } from '@/features/daily-entry/DailyDateHeader';
 import { useDailyDateNavigation } from '@/features/daily-entry/useDailyDateNavigation';
+import { scoreFromTrackClientX } from '@/utils/scoreFromTrack';
+import { InlineErrorState } from '@/components/ui';
 import toast from 'react-hot-toast';
 
 const SCORE_DESCRIPTORS: Record<WellnessMetricKey, string[]> = {
@@ -165,14 +167,23 @@ const WellnessSlider: React.FC<WellnessSliderProps> = ({
 
       <div className="relative">
         <div
-          className="relative rounded-[1.6rem] px-3 py-4 border border-white/10 overflow-hidden bg-slate-950/10"
+          className="relative z-10 touch-none rounded-[1.6rem] px-3 py-4 border border-white/10 overflow-hidden bg-slate-950/10"
           style={{ background: buildTrackGradient(highIsGood, value, scaleMax) }}
+          onPointerDown={(event) => {
+            if (event.button !== 0) return;
+            event.currentTarget.setPointerCapture(event.pointerId);
+            onChange(scoreFromTrackClientX(event.clientX, event.currentTarget.getBoundingClientRect(), scaleMax));
+          }}
+          onPointerMove={(event) => {
+            if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+            onChange(scoreFromTrackClientX(event.clientX, event.currentTarget.getBoundingClientRect(), scaleMax));
+          }}
         >
           <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.12),transparent_35%,transparent_65%,rgba(255,255,255,0.08))] pointer-events-none" />
           <div className="absolute inset-y-3 left-3 right-3 rounded-[1.2rem] border border-white/10 pointer-events-none" />
 
           <div
-            className="grid gap-1"
+            className="relative z-10 grid gap-1"
             style={{ gridTemplateColumns: `repeat(${scaleMax}, minmax(0, 1fr))` }}
           >
             {scoreOptions.map((score) => {
@@ -220,7 +231,7 @@ const WellnessSlider: React.FC<WellnessSliderProps> = ({
           step={1}
           value={value ?? 1}
           onChange={(e) => onChange(Number(e.target.value))}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          className="pointer-events-none absolute inset-0 z-0 h-full w-full opacity-0"
           aria-label={`${label} slider`}
         />
       </div>
@@ -248,11 +259,13 @@ const WellnessPage: React.FC = () => {
   const [notes, setNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [entryExists, setEntryExists] = useState(false);
 
   const loadEntry = useCallback(async () => {
     if (!user?.id) return;
     setIsLoading(true);
+    setLoadError(null);
     try {
       const entry = await getWellnessByDate(user.id, dateKey);
       if (entry) {
@@ -273,6 +286,10 @@ const WellnessPage: React.FC = () => {
       }
     } catch (err) {
       console.error('Failed to load wellness entry:', err);
+      setEntryExists(false);
+      setScores({});
+      setNotes('');
+      setLoadError('Could not load wellness for this day. Try again before logging so you do not overwrite a saved entry.');
     } finally {
       setIsLoading(false);
     }
@@ -322,7 +339,7 @@ const WellnessPage: React.FC = () => {
         dateKey={dateKey}
         todayKey={todayKey}
         isToday={isToday}
-        statusText={isLoading ? 'Loading entry...' : entryExists ? 'Editing saved entry' : 'No entry saved yet'}
+        statusText={isLoading ? 'Loading entry...' : loadError ? 'Could not load entry' : entryExists ? 'Editing saved entry' : 'No entry saved yet'}
         inputRef={dateInputRef}
         onPreviousDay={goToPreviousDay}
         onNextDay={goToNextDay}
@@ -341,6 +358,20 @@ const WellnessPage: React.FC = () => {
           <div className="text-center py-12 text-text-secondary">
             Can&apos;t log wellness for a future date.
           </div>
+        ) : loadError ? (
+          <InlineErrorState
+            title="Could not load wellness"
+            message={loadError}
+            action={
+              <button
+                type="button"
+                onClick={() => { void loadEntry(); }}
+                className="inline-flex min-h-10 items-center rounded-xl bg-accent-primary px-4 py-2 text-sm font-semibold text-text-on-accent hover:bg-accent-hover"
+              >
+                Try again
+              </button>
+            }
+          />
         ) : (
           <>
             {WELLNESS_METRICS.map(({ key, label, description, highIsGood, scaleMax }) => (
@@ -359,8 +390,9 @@ const WellnessPage: React.FC = () => {
 
             {/* Notes */}
             <div className="bg-bg-secondary rounded-xl p-4 space-y-2">
-              <h2 className="font-medium text-text-primary">Notes</h2>
+              <label htmlFor="wellness-notes" className="block font-medium text-text-primary">Notes</label>
               <textarea
+                id="wellness-notes"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Optional — add any context (e.g. poor sleep due to travel, DOMS after leg day…)"

@@ -109,3 +109,39 @@ export function formatDate(date: Date): string {
 export function parseDate(dateString: string): Date {
   return new Date(dateString);
 }
+
+/**
+ * Converts Firestore timestamps, epoch values, and date strings into a Date.
+ * `new Date(timestamp)` is Invalid Date for Firestore Timestamp objects.
+ */
+export function toJsDate(value: unknown, fallback: Date = new Date()): Date {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? fallback : value;
+  }
+
+  if (value && typeof value === 'object') {
+    const withToDate = value as { toDate?: () => Date; seconds?: number };
+    if (typeof withToDate.toDate === 'function') {
+      const date = withToDate.toDate();
+      if (date instanceof Date && !Number.isNaN(date.getTime())) {
+        return date;
+      }
+    }
+    if (typeof withToDate.seconds === 'number') {
+      const date = new Date(withToDate.seconds * 1000);
+      if (!Number.isNaN(date.getTime())) {
+        return date;
+      }
+    }
+    return fallback;
+  }
+
+  if (typeof value === 'string' || typeof value === 'number') {
+    const date = new Date(value);
+    if (!Number.isNaN(date.getTime())) {
+      return date;
+    }
+  }
+
+  return fallback;
+}

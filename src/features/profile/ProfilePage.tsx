@@ -15,6 +15,7 @@ const ProfilePage: React.FC = () => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -76,12 +77,16 @@ const ProfilePage: React.FC = () => {
   };
 
   const handleLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    setError(null);
     try {
       await logoutUser();
       dispatch(logout());
       navigate('/login');
     } catch (logoutError) {
       setError(logoutError instanceof Error ? logoutError.message : 'Failed to log out.');
+      setIsLoggingOut(false);
     }
   };
 
@@ -103,12 +108,12 @@ const ProfilePage: React.FC = () => {
       <main className="mx-auto max-w-2xl px-4 py-6">
         <div className="rounded-xl border border-border bg-bg-secondary p-5 space-y-4">
           {error && (
-            <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-400">
+            <div role="alert" className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-400">
               {error}
             </div>
           )}
           {success && (
-            <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-400">
+            <div role="status" className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-400">
               {success}
             </div>
           )}
@@ -184,10 +189,12 @@ const ProfilePage: React.FC = () => {
 
           <div className="pt-2 border-t border-border">
             <button
-              onClick={handleLogout}
-              className="w-full sm:w-auto inline-flex items-center justify-center rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-2 text-sm text-red-400 hover:bg-red-500/20 transition-colors"
+              type="button"
+              onClick={() => { void handleLogout(); }}
+              disabled={isLoggingOut}
+              className="w-full sm:w-auto inline-flex items-center justify-center rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-2 text-sm text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-60"
             >
-              Logout
+              {isLoggingOut ? 'Logging out...' : 'Logout'}
             </button>
           </div>
         </div>

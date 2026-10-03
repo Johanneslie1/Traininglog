@@ -13,7 +13,8 @@ import {
 import { SaveSrpeLogInput, SportsLoadSession, SrpeLog } from '@/types/srpe';
 import { DailyDateHeader } from '@/features/daily-entry/DailyDateHeader';
 import { useDailyDateNavigation } from '@/features/daily-entry/useDailyDateNavigation';
-import { ConfirmDialog } from '@/components/ui';
+import { scoreFromTrackClientX } from '@/utils/scoreFromTrack';
+import { ConfirmDialog, InlineErrorState } from '@/components/ui';
 
 const RPE_OPTIONS = Array.from({ length: 10 }, (_, i) => i + 1);
 
@@ -97,6 +98,7 @@ const SportsLoadPage: React.FC = () => {
   const [isDeletingLegacyEntry, setIsDeletingLegacyEntry] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const parsedDuration = Number(durationMinutes);
   const hasValidDuration = Number.isInteger(parsedDuration) && parsedDuration > 0;
@@ -112,6 +114,16 @@ const SportsLoadPage: React.FC = () => {
     ? calculateSessionLoad({ rpe, durationMinutes: parsedDuration })
     : 0;
   const isEditingSession = editingSessionId !== null;
+  const loggedSessionCount = sessions.length > 0 ? sessions.length : (dailyEntry?.sessionCount || 0);
+  const summaryLoad = dailyEntry?.sessionLoad ?? (sessions.length > 0
+    ? sessions.reduce((total, session) => total + session.sessionLoad, 0)
+    : null);
+  const summaryDuration = dailyEntry?.durationMinutes ?? (sessions.length > 0
+    ? sessions.reduce((total, session) => total + session.durationMinutes, 0)
+    : null);
+  const summaryRpe = dailyEntry?.rpe ?? (sessions.length > 0
+    ? Math.round((sessions.reduce((total, session) => total + session.rpe, 0) / sessions.length) * 10) / 10
+    : null);
   const selectedRpeDescriptor = rpe ? RPE_DESCRIPTORS[rpe - 1] : 'Move the slider to select session effort';
   const rpeThumbPosition = `${getRpeFillPercent(rpe)}%`;
 
@@ -132,6 +144,7 @@ const SportsLoadPage: React.FC = () => {
   const loadEntry = useCallback(async () => {
     if (!user?.id) return;
     setIsLoading(true);
+    setLoadError(null);
 
     try {
       const [sessionsResult, entryResult] = await Promise.allSettled([
@@ -142,17 +155,17 @@ const SportsLoadPage: React.FC = () => {
       if (sessionsResult.status === 'fulfilled') {
         setSessions(sessionsResult.value);
       } else {
-        console.warn('Could not load sports load sessions:', sessionsResult.reason);
+        console.error('Could not load sports load sessions:', sessionsResult.reason);
         setSessions([]);
+        setLoadError('Could not load sports load for this day. Try again before adding a session.');
       }
 
       if (entryResult.status === 'fulfilled') {
         setDailyEntry(entryResult.value);
       } else {
-        throw entryResult.reason;
+        console.warn('Could not load legacy sports load entry:', entryResult.reason);
+        setDailyEntry(null);
       }
-    } catch (err) {
-      console.error('Failed to load sports load entry:', err);
     } finally {
       setIsLoading(false);
     }
@@ -277,7 +290,15 @@ const SportsLoadPage: React.FC = () => {
         dateKey={dateKey}
         todayKey={todayKey}
         isToday={isToday}
-        statusText={isLoading ? 'Loading sessions...' : dailyEntry ? `${dailyEntry.sessionCount || 1} session${(dailyEntry.sessionCount || 1) === 1 ? '' : 's'} logged` : 'No sports load saved yet'}
+        statusText={
+          isLoading
+            ? 'Loading sessions...'
+            : loadError
+              ? 'Could not load sessions'
+              : loggedSessionCount > 0
+                ? `${loggedSessionCount} session${loggedSessionCount === 1 ? '' : 's'} logged`
+                : 'No sports load saved yet'
+        }
         inputRef={dateInputRef}
         onPreviousDay={goToPreviousDay}
         onNextDay={goToNextDay}
@@ -295,6 +316,20 @@ const SportsLoadPage: React.FC = () => {
           <div className="text-center py-12 text-text-secondary">
             Can&apos;t log sports load for a future date.
           </div>
+        ) : loadError ? (
+          <InlineErrorState
+            title="Could not load sports load"
+            message={loadError}
+            action={
+              <button
+                type="button"
+                onClick={() => { void loadEntry(); }}
+                className="inline-flex min-h-10 items-center rounded-xl bg-accent-primary px-4 py-2 text-sm font-semibold text-text-on-accent hover:bg-accent-hover"
+              >
+                Try again
+              </button>
+            }
+          />
         ) : (
           <>
             <div className="rounded-3xl p-4 md:p-5 space-y-4 border border-border/70 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.08),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] shadow-[0_0_0_1px_rgba(148,163,184,0.12),0_10px_30px_rgba(15,23,42,0.18)]">
@@ -316,13 +351,22 @@ const SportsLoadPage: React.FC = () => {
 
               <div className="relative">
                 <div
-                  className="relative rounded-[1.6rem] px-3 py-4 border border-white/10 overflow-hidden bg-slate-950/10"
+                  className="relative z-10 touch-none rounded-[1.6rem] px-3 py-4 border border-white/10 overflow-hidden bg-slate-950/10"
                   style={{ background: buildRpeTrackGradient(rpe) }}
+                  onPointerDown={(event) => {
+                    if (event.button !== 0) return;
+                    event.currentTarget.setPointerCapture(event.pointerId);
+                    setRpe(scoreFromTrackClientX(event.clientX, event.currentTarget.getBoundingClientRect(), 10));
+                  }}
+                  onPointerMove={(event) => {
+                    if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+                    setRpe(scoreFromTrackClientX(event.clientX, event.currentTarget.getBoundingClientRect(), 10));
+                  }}
                 >
                   <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.12),transparent_35%,transparent_65%,rgba(255,255,255,0.08))] pointer-events-none" />
                   <div className="absolute inset-y-3 left-3 right-3 rounded-[1.2rem] border border-white/10 pointer-events-none" />
 
-                  <div className="grid grid-cols-10 gap-1">
+                  <div className="relative z-10 grid grid-cols-10 gap-1">
                     {RPE_OPTIONS.map((score) => {
                       const isActive = rpe === score;
                       const isFilled = rpe !== undefined && score <= rpe;
@@ -371,7 +415,7 @@ const SportsLoadPage: React.FC = () => {
                   onChange={(event) => setRpe(Number(event.target.value))}
                   aria-describedby="sessionRpeDescriptor"
                   aria-valuetext={rpe ? `${rpe} out of 10, ${selectedRpeDescriptor}` : 'No RPE selected'}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  className="pointer-events-none absolute inset-0 z-0 h-full w-full opacity-0"
                 />
               </div>
               <p id="sessionRpeDescriptor" className="text-center text-xs text-text-secondary">
@@ -598,17 +642,17 @@ const SportsLoadPage: React.FC = () => {
             <div className="grid grid-cols-3 gap-3">
               <div className="rounded-xl border border-border bg-bg-secondary p-3">
                 <p className="text-[11px] uppercase tracking-wide text-text-tertiary">Daily load</p>
-                <p className="mt-1 text-2xl font-semibold text-text-primary">{dailyEntry?.sessionLoad ?? '-'}</p>
+                <p className="mt-1 text-2xl font-semibold text-text-primary">{summaryLoad ?? '-'}</p>
               </div>
               <div className="rounded-xl border border-border bg-bg-secondary p-3">
                 <p className="text-[11px] uppercase tracking-wide text-text-tertiary">Duration</p>
                 <p className="mt-1 text-2xl font-semibold text-text-primary">
-                  {dailyEntry ? `${dailyEntry.durationMinutes}m` : '-'}
+                  {summaryDuration !== null ? `${summaryDuration}m` : '-'}
                 </p>
               </div>
               <div className="rounded-xl border border-border bg-bg-secondary p-3">
                 <p className="text-[11px] uppercase tracking-wide text-text-tertiary">Avg RPE</p>
-                <p className="mt-1 text-2xl font-semibold text-text-primary">{dailyEntry?.rpe ?? '-'}</p>
+                <p className="mt-1 text-2xl font-semibold text-text-primary">{summaryRpe ?? '-'}</p>
               </div>
             </div>
 

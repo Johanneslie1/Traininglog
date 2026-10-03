@@ -11,6 +11,7 @@ import { Providers } from '@/providers';
 import { store } from '@/store/store';
 import Layout from '@/components/layout/Layout';
 import AppRoutes from '@/routes';
+import { toJsDate } from '@/utils/dateUtils';
 import { StatePersistence } from '@/utils/statePersistence';
 import { ThemeProvider } from '@/context/ThemeContext';
 
@@ -64,8 +65,8 @@ const App: React.FC = () => {
             firstName: userData.firstName || '',
             lastName: userData.lastName || '',
             role: userData.role || 'athlete',
-            createdAt: userData.createdAt ? new Date(userData.createdAt) : new Date(),
-            updatedAt: userData.updatedAt ? new Date(userData.updatedAt) : new Date()
+            createdAt: toJsDate(userData.createdAt),
+            updatedAt: toJsDate(userData.updatedAt)
           }));
         } else {
           store.dispatch(setUser(null));

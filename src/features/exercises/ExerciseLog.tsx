@@ -25,7 +25,7 @@ import {
 import DraggableExerciseDisplay from '../../components/DraggableExerciseDisplay';
 import FloatingSupersetControls from '../../components/FloatingSupersetControls';
 import { getAllExercisesByDate, UnifiedExerciseData, deleteExercise } from '../../utils/unifiedExerciseUtils';
-import { ConfirmDialog, FloatingActionButton, EmptyState, ExerciseListSkeleton } from '../../components/ui';
+import { ConfirmDialog, FloatingActionButton, EmptyState, ExerciseListSkeleton, InlineErrorState } from '../../components/ui';
 import { getSharedSessionAssignment, updateSharedSessionStatus } from '@/services/sessionService';
 import { createNewSessionForDate, getSessionsForDate, SessionInfo, deleteSession, renameSession } from '@/services/firebase/sessionTrackingService';
 import { normalizeActivityType } from '@/types/activityLog';
@@ -115,6 +115,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   // Exercise data loading
   const [exercises, setExercises] = useState<UnifiedExerciseData[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [availableSessions, setAvailableSessions] = useState<SessionInfo[]>([]);
   const [srpeSessionsBySessionId, setSrpeSessionsBySessionId] = useState<Record<string, SportsLoadSession>>({});
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
@@ -278,6 +279,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     const userId = auth.currentUser?.uid || user?.id;
     if (!userId) {
       setLoading(false);
+      setLoadError(null);
       setExercises([]);
       return;
     }
@@ -288,6 +290,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     // Soft refresh keeps the current list visible (no skeleton flash after add/save).
     if (showSkeleton) {
       setLoading(true);
+      setLoadError(null);
     }
 
     // Load supersets for this date
@@ -352,9 +355,16 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
       }
 
       setExercises(combinedExercises);
+      setLoadError(null);
     } catch (error) {
       console.error('Error fetching exercises:', error);
-      setExercises([]);
+      const message = 'Could not load exercises for this day. Check your connection and try again.';
+      setLoadError(message);
+      if (showSkeleton) {
+        setExercises([]);
+      } else {
+        toast.error(message);
+      }
     } finally {
       setLoading(false);
     }
@@ -874,6 +884,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
       return () => clearTimeout(timeoutId);
     } else {
       setExercises([]);
+      setLoadError(null);
       setAvailableSessions([]);
       setSelectedSessionId(null);
       setLoading(false);
@@ -1315,6 +1326,20 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
                   Open Sports Load
                 </button>
               </div>
+            ) : loadError && exercises.length === 0 ? (
+              <InlineErrorState
+                title="Could not load exercises"
+                message={loadError}
+                action={
+                  <button
+                    type="button"
+                    onClick={() => { void loadExercises(selectedDate); }}
+                    className="inline-flex min-h-10 items-center rounded-xl bg-accent-primary px-4 py-2 text-sm font-semibold text-text-on-accent hover:bg-accent-hover"
+                  >
+                    Try again
+                  </button>
+                }
+              />
             ) : exercises.length === 0 ? (
               <EmptyState
                 illustration="workout"
