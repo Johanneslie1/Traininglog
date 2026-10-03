@@ -14,6 +14,23 @@ interface AppState {
 const STATE_STORAGE_KEY = 'app_state_v1';
 const FORM_DATA_PREFIX = 'form_data_';
 
+/**
+ * Resume the last screen only when the app was opened at the root.
+ * A specific URL, such as a team invite, must not be replaced by saved state.
+ */
+export function getRestoredPath(currentPathname: string, savedHashPath: string | null | undefined): string | null {
+  if (currentPathname !== '/' || !savedHashPath) {
+    return null;
+  }
+
+  const targetPath = savedHashPath.replace(/^#/, '');
+  if (!targetPath.startsWith('/') || targetPath === '/') {
+    return null;
+  }
+
+  return targetPath;
+}
+
 export class StatePersistence {
   private static isAutoSaveInitialized = false;
   private static beforeUnloadHandler: (() => void) | null = null;
