@@ -3,7 +3,6 @@ import { ActivityType } from '@/types/activityTypes';
 import { Exercise } from '@/types/exercise';
 import { UniversalSetLogger } from '@/components/UniversalSetLogger';
 import ExerciseSearch from '@/features/exercises/ExerciseSearch';
-import CategoryButton, { Category } from '@/features/exercises/CategoryButton';
 import { ExerciseHistoryPicker } from '@/features/programs/ExerciseHistoryPicker';
 import { UnifiedExerciseData } from '@/utils/unifiedExerciseUtils';
 import { addExerciseLog } from '@/services/firebase/exerciseLogs';
@@ -25,20 +24,10 @@ interface ResistanceTrainingPickerProps {
   selectedSessionType?: SessionType;
 }
 
-const muscleGroups: Category[] = [
-  { id: 'chest', name: 'Chest', icon: '💪', bgColor: 'bg-bg-secondary', iconBgColor: 'bg-activity-resistance', textColor: 'text-text-primary' },
-  { id: 'back', name: 'Back', icon: '🔙', bgColor: 'bg-bg-secondary', iconBgColor: 'bg-accent-primary', textColor: 'text-text-primary' },
-  { id: 'legs', name: 'Legs', icon: '🦵', bgColor: 'bg-bg-secondary', iconBgColor: 'bg-status-warning', textColor: 'text-text-primary' },
-  { id: 'shoulders', name: 'Shoulders', icon: '🎯', bgColor: 'bg-bg-secondary', iconBgColor: 'bg-activity-stretching', textColor: 'text-text-primary' },
-  { id: 'arms', name: 'Arms', icon: '💪', bgColor: 'bg-bg-secondary', iconBgColor: 'bg-status-error', textColor: 'text-text-primary' },
-  { id: 'core', name: 'Core', icon: '⭕', bgColor: 'bg-bg-secondary', iconBgColor: 'bg-accent-secondary', textColor: 'text-text-on-accent' },
-  { id: 'fullBody', name: 'Full-Body', icon: '👤', bgColor: 'bg-bg-secondary', iconBgColor: 'bg-activity-endurance', textColor: 'text-text-primary' },
-];
-
-type ViewState = 'main' | 'search' | 'logging' | 'recentExercises';
+type ViewState = 'search' | 'logging' | 'recentExercises';
 
 const ResistanceTrainingPicker: React.FC<ResistanceTrainingPickerProps> = ({
-  onClose,
+  onClose: _onClose,
   onBack,
   onActivityLogged,
   selectedDate = new Date(),
@@ -47,15 +36,12 @@ const ResistanceTrainingPicker: React.FC<ResistanceTrainingPickerProps> = ({
   selectedSessionId,
   selectedSessionType = 'main'
 }) => {
-  const [view, setView] = useState<ViewState>('main');
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [view, setView] = useState<ViewState>('search');
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const user = useSelector((state: RootState) => state.auth.user);
 
-  // If we're editing an exercise, go directly to logging view
   useEffect(() => {
     if (editingExercise) {
-      // Convert UnifiedExerciseData to Exercise format
       const exerciseForLogger: Exercise = {
         id: editingExercise.id || `edit-${Date.now()}`,
         name: editingExercise.exerciseName,
@@ -115,37 +101,28 @@ const ResistanceTrainingPicker: React.FC<ResistanceTrainingPickerProps> = ({
     }
   };
 
+  const handleSelectExercise = (exercise: Exercise) => {
+    const resistanceExercise: Exercise = {
+      ...exercise,
+      activityType: ActivityType.RESISTANCE,
+      type: exercise.type || 'strength',
+      metrics: {
+        trackWeight: true,
+        trackReps: true,
+        trackRPE: true,
+        ...exercise.metrics
+      },
+      defaultUnit: exercise.defaultUnit || 'kg'
+    };
+    setSelectedExercise(resistanceExercise);
+    setView('logging');
+  };
+
   if (view === 'recentExercises') {
     return (
       <ExerciseHistoryPicker
-        onClose={() => setView('main')}
+        onClose={() => setView('search')}
         onSelectExercises={handleProgramSelected}
-      />
-    );
-  }
-
-  if (view === 'search') {
-    return (
-      <ExerciseSearch
-        onClose={() => setView('main')}
-        category={selectedCategory}
-        onSelectExercise={(exercise) => {
-          // Properly convert exercise without overriding important properties
-          const resistanceExercise: Exercise = {
-            ...exercise,
-            activityType: ActivityType.RESISTANCE,
-            type: exercise.type || 'strength',
-            metrics: {
-              trackWeight: true,
-              trackReps: true,
-              trackRPE: true,
-              ...exercise.metrics
-            },
-            defaultUnit: exercise.defaultUnit || 'kg'
-          };
-          setSelectedExercise(resistanceExercise);
-          setView('logging');
-        }}
       />
     );
   }
@@ -154,7 +131,7 @@ const ResistanceTrainingPicker: React.FC<ResistanceTrainingPickerProps> = ({
     return (
       <UniversalSetLogger
         exercise={selectedExercise}
-        onCancel={() => setView('main')}
+        onCancel={() => setView('search')}
         onSave={async (sets: ExerciseSet[]) => {
           try {
             logger.debug('ResistanceTrainingPicker: Starting to save exercise sets', {
@@ -186,13 +163,13 @@ const ResistanceTrainingPicker: React.FC<ResistanceTrainingPickerProps> = ({
             const docId = await addExerciseLog(
               exerciseLogData,
               selectedDate || new Date(),
-              editingExercise?.id // Pass existing ID for updates
+              editingExercise?.id
             );
 
             logger.debug('ResistanceTrainingPicker: Exercise saved successfully', { docId });
 
             onActivityLogged();
-            setView('main');
+            setView('search');
             toast.success(editingExercise ? 'Exercise updated' : 'Exercise saved');
           } catch (error) {
             logger.error('ResistanceTrainingPicker: Error saving exercise', error);
@@ -209,85 +186,12 @@ const ResistanceTrainingPicker: React.FC<ResistanceTrainingPickerProps> = ({
     );
   }
 
-  // Main view - shows search, recent exercises, and muscle groups
   return (
-    <div className="fixed inset-0 bg-bg-primary/90 backdrop-blur-sm flex flex-col z-50">
-      {/* Header */}
-      <header className="sticky top-0 flex items-center justify-between p-4 bg-bg-secondary border-b border-border">
-        <div className="flex items-center space-x-3">
-          <button 
-            onClick={onBack}
-            className="p-2 hover:bg-hover-overlay rounded-lg transition-colors text-text-tertiary hover:text-text-primary"
-            aria-label="Back"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <h2 className="text-xl font-bold text-text-primary">🏋️‍♂️ Resistance Training</h2>
-        </div>
-        <button 
-          onClick={onClose}
-          className="p-2 hover:bg-hover-overlay rounded-lg transition-colors text-text-tertiary hover:text-text-primary"
-          aria-label="Close"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </header>
-
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto overscroll-contain pb-safe min-h-0">
-        <div className="max-w-md mx-auto p-4 space-y-6 md:space-y-8">
-          {/* Search Box */}
-          <section className="space-y-3">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search exercises..."
-                className="w-full px-4 py-3 pl-10 bg-bg-tertiary border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-focus-ring focus:border-transparent"
-                onFocus={() => {
-                  setSelectedCategory(null);
-                  setView('search');
-                }}
-              />
-              <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
-          </section>
-
-          {/* Quick Options */}
-          <section className="space-y-3 md:space-y-4">
-            <h3 className="text-lg font-semibold text-text-primary">Quick Options</h3>
-            <div className="grid grid-cols-1 gap-3 md:gap-4">
-              <CategoryButton
-                category={{ id: 'recent', name: 'Recent Exercises', icon: '🕒', bgColor: 'bg-bg-secondary', iconBgColor: 'bg-accent-primary', textColor: 'text-text-primary' }}
-                onClick={() => setView('recentExercises')}
-              />
-            </div>
-          </section>
-
-          {/* Muscle Groups */}
-          <section className="space-y-3 md:space-y-4">
-            <h3 className="text-lg font-semibold text-text-primary">Muscle Groups</h3>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4">
-              {muscleGroups.map(category => (
-                <CategoryButton
-                  key={category.id}
-                  category={category}
-                  onClick={() => {
-                    setSelectedCategory(category);
-                    setView('search');
-                  }}
-                />
-              ))}
-            </div>
-          </section>
-        </div>
-      </main>
-    </div>
+    <ExerciseSearch
+      onClose={onBack}
+      onOpenRecent={() => setView('recentExercises')}
+      onSelectExercise={handleSelectExercise}
+    />
   );
 };
 

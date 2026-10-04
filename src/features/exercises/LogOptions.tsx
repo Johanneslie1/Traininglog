@@ -7,7 +7,6 @@ import { ExerciseSet } from '@/types/sets';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import CopyFromPreviousSessionDialog from './CopyFromPreviousSessionDialog';
-import type { Category } from './CategoryButton';
 import ProgramExercisePicker from '@/features/programs/ProgramExercisePicker';
 import { ProgramExerciseSelection } from '@/features/programs/ProgramExercisePicker';
 import { UniversalSetLogger } from '@/components/UniversalSetLogger';
@@ -73,12 +72,6 @@ interface LogOptionsProps {
 
 type ViewState = 'main' | 'setEditor' | 'programPicker' | 'copyPrevious' | 'stretching' | 'endurance' | 'other' | 'speedAgility' | 'resistance' | 'editExercise' | 'selectType';
 
-const helperCategories: Category[] = [
-  { id: 'programs', name: 'Add from Program', icon: '📋', bgColor: 'bg-bg-tertiary', iconBgColor: 'bg-accent-primary', textColor: 'text-text-primary' },
-  { id: 'copyPrevious', name: 'Copy from Previous', icon: '📝', bgColor: 'bg-bg-tertiary', iconBgColor: 'bg-accent-primary', textColor: 'text-text-primary' },
-];
-
-// Activity types for the main selection
 const activityTypes = [
   {
     id: 'resistance',
@@ -839,117 +832,70 @@ export const LogOptions = ({
       className="z-50 flex flex-col !bg-bg-primary !backdrop-blur-none"
       ariaLabel={editingExercise ? 'Edit exercise' : 'Add exercise'}
     >
-      {/* Header - Fixed at top */}
-      <header className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-border bg-bg-secondary px-4 py-4">
-        <div className="min-w-0 flex-1">
-          <h2 className="text-xl font-bold text-text-primary">
-            {editingExercise ? 'Edit Exercise' : 'Add Exercise'}
-          </h2>
-        </div>
-        <button 
+      <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-border bg-bg-secondary px-4 py-3">
+        <h2 className="text-lg font-semibold text-text-primary">
+          {editingExercise ? 'Edit Exercise' : 'Add'}
+        </h2>
+        <button
           onClick={onClose}
-          className="shrink-0 rounded-xl p-2 text-text-tertiary transition-colors hover:bg-hover-overlay hover:text-text-primary"
+          className="shrink-0 rounded-lg p-2 text-text-tertiary transition-colors hover:bg-hover-overlay hover:text-text-primary"
           aria-label="Close"
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </header>
 
-      {/* Main Content - Scrollable */}
       <main className="flex-1 min-h-0 overflow-y-auto overscroll-contain bg-bg-primary">
-        <div className="mx-auto w-full max-w-xl space-y-6 px-4 py-5 pb-[calc(env(safe-area-inset-bottom)+1.25rem)] md:space-y-8 md:py-6">
-          {/* Quick Add Section */}
-          <section className="space-y-3 md:space-y-4">
-            <div>
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-text-tertiary">Quick Add</h3>
-              <p className="mt-1 text-sm text-text-secondary">Reuse structured work without searching manually.</p>
-            </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {helperCategories.map(category => (
-                <button
-                  key={category.id}
-                  onClick={() => {
-                    if (category.id === 'programs') {
-                      setView('programPicker');
-                    } else if (category.id === 'copyPrevious') {
-                      setView('copyPrevious');
-                    }
-                  }}
-                  className="group flex min-h-[72px] items-center gap-4 rounded-2xl border border-border bg-bg-secondary p-4 text-left text-text-primary transition-colors hover:border-border-hover hover:bg-hover-overlay active:bg-active-overlay focus:outline-none focus:ring-2 focus:ring-focus-ring"
-                >
-                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-accent-primary text-2xl text-text-on-accent shadow-sm transition-transform group-active:scale-95">
-                    {category.icon}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block font-semibold">{category.name}</span>
-                  </span>
-                  <svg className="h-5 w-5 shrink-0 text-text-tertiary transition-transform group-hover:translate-x-0.5 group-hover:text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              ))}
-            </div>
-          </section>
-
-          {/* Activity Types Section */}
-          <section className="space-y-3 md:space-y-4">
-            <div>
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-text-tertiary">Choose Activity Type</h3>
-            </div>
-            <div className="grid grid-cols-1 gap-3">
-              {activityTypes.map(activityType => (
-                <button
-                  key={activityType.id}
-                  type="button"
-                  onClick={() => handleActivityTypeSelected(activityType.id)}
-                  className="group w-full rounded-2xl border border-border bg-bg-secondary p-4 text-left transition-colors hover:border-border-hover hover:bg-hover-overlay active:bg-active-overlay focus:outline-none focus:ring-2 focus:ring-focus-ring"
-                >
-                  <div className="flex items-center gap-4">
-                    <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-2xl ${activityType.iconBgColor} ${activityType.accentTextColor}`}>
-                      {activityType.icon}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <h4 className="text-base font-semibold text-text-primary sm:text-lg">
-                        {activityType.name}
-                      </h4>
-                      <p className="mt-0.5 text-sm text-text-secondary">
-                        {activityType.description}
-                      </p>
-                    </div>
-                    <div className="text-text-tertiary transition-transform group-hover:translate-x-0.5 group-hover:text-text-secondary">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </section>
-
-          <section className="border-t border-border pt-4">
+        <div className="mx-auto w-full max-w-xl space-y-4 px-4 py-4 pb-[calc(env(safe-area-inset-bottom)+1.25rem)]">
+          <section className="grid grid-cols-3 gap-2" aria-label="Quick actions">
             <button
-              onClick={() => setShowCreateDialog(true)}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-bg-secondary px-4 py-3 text-text-primary transition-colors hover:bg-hover-overlay active:bg-active-overlay focus:outline-none focus:ring-2 focus:ring-focus-ring"
+              type="button"
+              onClick={() => setView('programPicker')}
+              className="rounded-lg bg-bg-secondary px-2 py-2.5 text-center text-sm font-medium text-text-primary transition-colors hover:bg-hover-overlay focus:outline-none focus:ring-2 focus:ring-focus-ring"
             >
-              <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 102 0v-5h5a1 1 0 100-2h-5V4a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-              Create New Exercise
+              Program
             </button>
+            <button
+              type="button"
+              onClick={() => setView('copyPrevious')}
+              className="rounded-lg bg-bg-secondary px-2 py-2.5 text-center text-sm font-medium text-text-primary transition-colors hover:bg-hover-overlay focus:outline-none focus:ring-2 focus:ring-focus-ring"
+            >
+              Copy
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowCreateDialog(true)}
+              className="rounded-lg bg-bg-secondary px-2 py-2.5 text-center text-sm font-medium text-text-primary transition-colors hover:bg-hover-overlay focus:outline-none focus:ring-2 focus:ring-focus-ring"
+            >
+              New
+            </button>
+          </section>
+
+          <section className="space-y-1.5" aria-label="Activity types">
+            {activityTypes.map((activityType) => (
+              <button
+                key={activityType.id}
+                type="button"
+                onClick={() => handleActivityTypeSelected(activityType.id)}
+                className="flex w-full items-center justify-between rounded-lg bg-bg-secondary px-3 py-2.5 text-left transition-colors hover:bg-hover-overlay focus:outline-none focus:ring-2 focus:ring-focus-ring"
+              >
+                <span className="text-sm font-medium text-text-primary">{activityType.name}</span>
+                <svg className="h-4 w-4 shrink-0 text-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            ))}
           </section>
         </div>
       </main>
-      
-      {/* Create Exercise Dialog */}
+
       {showCreateDialog && (
         <CreateUniversalExerciseDialog
           onClose={() => setShowCreateDialog(false)}
           onSuccess={(_exerciseId) => {
             setShowCreateDialog(false);
-            // Optionally handle the created exercise
           }}
           searchQuery=""
         />

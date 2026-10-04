@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, addWeeks, isToday } from 'date-fns';
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, addWeeks, isToday, addDays } from 'date-fns';
 import { CalendarDaySummary, getWeekSessionSummaries } from '@/services/calendar';
-import { useScrollCollapse } from '@/hooks/useScrollCollapse';
 import { toLocalDateString } from '@/utils/dateUtils';
 
 interface WeeklyCalendarHeaderProps {
@@ -11,22 +10,6 @@ interface WeeklyCalendarHeaderProps {
   onMenuClick?: () => void;
   refreshKey?: number;
 }
-
-const getSessionCountClass = (sessionCount: number): string => {
-  if (sessionCount >= 4) {
-    return 'bg-accent-primary text-white shadow-md shadow-accent-primary/25';
-  }
-  if (sessionCount === 3) {
-    return 'bg-status-warning text-white shadow-md shadow-status-warning/25';
-  }
-  if (sessionCount === 2) {
-    return 'bg-status-success text-white shadow-md shadow-status-success/20';
-  }
-  if (sessionCount === 1) {
-    return 'bg-status-info text-white shadow-md shadow-status-info/25';
-  }
-  return 'text-text-tertiary';
-};
 
 const WeeklyCalendarHeader: React.FC<WeeklyCalendarHeaderProps> = ({
   selectedDate,
@@ -39,16 +22,13 @@ const WeeklyCalendarHeader: React.FC<WeeklyCalendarHeaderProps> = ({
     startOfWeek(selectedDate, { weekStartsOn: 1 })
   );
   const [weekDaySummaries, setWeekDaySummaries] = useState<CalendarDaySummary[]>([]);
-  const { isCollapsed } = useScrollCollapse(80);
 
-  // Calculate week days (Monday to Sunday)
   const weekDays = useMemo(() => {
     const weekStart = startOfWeek(currentWeekStart, { weekStartsOn: 1 });
     const weekEnd = endOfWeek(currentWeekStart, { weekStartsOn: 1 });
     return eachDayOfInterval({ start: weekStart, end: weekEnd });
   }, [currentWeekStart]);
 
-  // Fetch session summaries for the current week
   useEffect(() => {
     const loadWeekSessionSummaries = async () => {
       const summaries = await getWeekSessionSummaries(currentWeekStart);
@@ -61,7 +41,6 @@ const WeeklyCalendarHeader: React.FC<WeeklyCalendarHeaderProps> = ({
     setCurrentWeekStart(startOfWeek(selectedDate, { weekStartsOn: 1 }));
   }, [selectedDate]);
 
-  // Create map for quick lookup of day summaries
   const daySummaryMap = useMemo(() => {
     const map = new Map<string, CalendarDaySummary>();
     weekDaySummaries.forEach((summary) => {
@@ -70,54 +49,64 @@ const WeeklyCalendarHeader: React.FC<WeeklyCalendarHeaderProps> = ({
     return map;
   }, [weekDaySummaries]);
 
-  const handlePreviousWeek = () => {
-    setCurrentWeekStart(prev => addWeeks(prev, -1));
+  const handlePreviousDay = () => {
+    onDateSelect(addDays(selectedDate, -1));
   };
 
-  const handleNextWeek = () => {
-    setCurrentWeekStart(prev => addWeeks(prev, 1));
-  };
-
-  const handleDayClick = (day: Date) => {
-    onDateSelect(day);
+  const handleNextDay = () => {
+    onDateSelect(addDays(selectedDate, 1));
   };
 
   return (
-    <div
-      className={`
-        sticky top-0 z-40
-        bg-bg-secondary border-b border-border
-        transition-all duration-300 ease-in-out
-      `}
-    >
-      {/* Top Bar - Menu and Calendar Icons */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border/50">
-        {/* Menu Button */}
-        {onMenuClick && (
+    <div className="sticky top-0 z-40 border-b border-border bg-bg-secondary">
+      <div className="flex items-center justify-between px-4 py-2.5">
+        {onMenuClick ? (
           <button
             onClick={onMenuClick}
-            className="p-2 hover:bg-bg-tertiary rounded-lg transition-colors"
+            className="rounded-lg p-2 transition-colors hover:bg-bg-tertiary"
             aria-label="Open menu"
           >
-            <svg className="w-6 h-6 text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="h-6 w-6 text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
+        ) : (
+          <span className="w-10" aria-hidden="true" />
         )}
 
-        {/* Title/Date */}
-        <h1 className="text-text-primary text-base font-medium">
-          {format(currentWeekStart, 'MMMM yyyy')}
-        </h1>
+        <div className="flex min-w-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={handlePreviousDay}
+            className="rounded-lg p-1.5 text-text-tertiary transition-colors hover:bg-bg-tertiary hover:text-text-primary"
+            aria-label="Previous day"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <h1 className="truncate text-base font-semibold text-text-primary">
+            {format(selectedDate, 'EEE d MMM')}
+          </h1>
+          <button
+            type="button"
+            onClick={handleNextDay}
+            className="rounded-lg p-1.5 text-text-tertiary transition-colors hover:bg-bg-tertiary hover:text-text-primary"
+            aria-label="Next day"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
 
-        {/* Calendar Icon Button */}
         <button
           onClick={onCalendarIconClick}
-          className="p-2 hover:bg-bg-tertiary rounded-lg transition-colors group"
+          className="rounded-lg p-2 transition-colors hover:bg-bg-tertiary group"
           aria-label="Open monthly calendar"
         >
           <svg
-            className="w-6 h-6 text-text-primary group-hover:text-accent-primary transition-colors"
+            className="h-6 w-6 text-text-primary transition-colors group-hover:text-accent-primary"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -132,88 +121,63 @@ const WeeklyCalendarHeader: React.FC<WeeklyCalendarHeaderProps> = ({
         </button>
       </div>
 
-      {/* Week Navigation */}
-      <div className={`flex items-center justify-between px-2 ${isCollapsed ? 'py-2' : 'py-3'} transition-all duration-300`}>
-        {/* Previous Week Arrow */}
+      <div className="flex items-center justify-center gap-3 px-4 pb-3">
         <button
-          onClick={handlePreviousWeek}
-          className="p-1.5 hover:bg-bg-tertiary rounded-lg transition-colors flex-shrink-0"
+          type="button"
+          onClick={() => setCurrentWeekStart((prev) => addWeeks(prev, -1))}
+          className="rounded-lg p-1 text-text-tertiary transition-colors hover:bg-bg-tertiary hover:text-text-primary"
           aria-label="Previous week"
         >
-          <svg className="w-5 h-5 text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </button>
 
-        {/* Days Grid */}
-        <div className="flex justify-center items-center gap-1 flex-1 overflow-x-auto px-1">
-          {weekDays.map(day => {
+        <div className="flex items-center justify-center gap-2" role="list" aria-label="Week days">
+          {weekDays.map((day) => {
             const daySummary = daySummaryMap.get(toLocalDateString(day));
             const sessionCount = daySummary?.sessionCount || 0;
             const hasSessions = sessionCount > 0;
             const isTodayDay = isToday(day);
             const isSelected = isSameDay(selectedDate, day);
-
-            const sessionStateClass = getSessionCountClass(sessionCount);
-
-            const todayRingClass = isTodayDay ? 'ring-2 ring-accent-primary' : '';
-            const selectedScaleClass = isSelected && !isTodayDay ? 'scale-105 ring-2 ring-accent-primary' : '';
+            const size = isSelected ? 8 : 5;
 
             return (
               <button
                 key={day.toString()}
-                onClick={() => handleDayClick(day)}
+                type="button"
+                role="listitem"
+                onClick={() => onDateSelect(day)}
                 aria-label={`${format(day, 'EEEE, MMMM d')}${isTodayDay ? ', today' : ''}${sessionCount === 1 ? ', 1 session' : sessionCount > 1 ? `, ${sessionCount} sessions` : ', no sessions'}`}
+                aria-current={isSelected ? 'date' : undefined}
                 data-session-count={sessionCount}
                 data-is-selected={isSelected ? 'true' : 'false'}
                 data-is-today={isTodayDay ? 'true' : 'false'}
-                className={`
-                  flex flex-col items-center justify-center
-                  transition-all duration-200
-                  flex-shrink-0
-                  ${isCollapsed ? 'gap-0 min-w-[36px]' : 'gap-0.5 min-w-[40px]'}
-                `}
+                className="flex h-6 w-6 items-center justify-center rounded-full transition-colors hover:bg-bg-tertiary"
               >
-                {/* Day Name */}
-                <span className={`
-                  font-medium
-                  ${isCollapsed ? 'text-[10px]' : 'text-xs'}
-                  ${hasSessions ? 'text-text-secondary' : 'text-text-tertiary'}
-                  transition-all duration-200
-                `}>
-                  {format(day, 'EEE')[0]}
-                </span>
-
-                {/* Date Number with Background */}
-                <div className={`
-                  rounded-full flex items-center justify-center
-                  font-semibold relative
-                  ${isCollapsed ? 'w-7 h-7 text-xs' : 'w-9 h-9 text-sm'}
-                  ${sessionStateClass}
-                  ${!hasSessions && 'hover:bg-bg-tertiary hover:text-text-secondary'}
-                  ${todayRingClass}
-                  ${selectedScaleClass}
-                  transition-all duration-200
-                `}>
-                  {format(day, 'd')}
-                  {hasSessions && (
-                    <span className="pointer-events-none absolute -bottom-1 -right-1 inline-flex min-w-4 items-center justify-center rounded-full bg-black/40 px-1 py-0 text-[8px] font-bold leading-none text-white">
-                      {sessionCount}
-                    </span>
-                  )}
-                </div>
+                <span
+                  className={`rounded-full transition-all ${
+                    isSelected
+                      ? 'bg-accent-primary'
+                      : hasSessions
+                        ? 'bg-text-secondary'
+                        : 'bg-text-tertiary/40'
+                  } ${isTodayDay && !isSelected ? 'ring-1 ring-accent-primary ring-offset-1 ring-offset-bg-secondary' : ''}`}
+                  style={{ width: size, height: size }}
+                  aria-hidden="true"
+                />
               </button>
             );
           })}
         </div>
 
-        {/* Next Week Arrow */}
         <button
-          onClick={handleNextWeek}
-          className="p-1.5 hover:bg-bg-tertiary rounded-lg transition-colors flex-shrink-0"
+          type="button"
+          onClick={() => setCurrentWeekStart((prev) => addWeeks(prev, 1))}
+          className="rounded-lg p-1 text-text-tertiary transition-colors hover:bg-bg-tertiary hover:text-text-primary"
           aria-label="Next week"
         >
-          <svg className="w-5 h-5 text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </button>

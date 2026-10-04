@@ -61,7 +61,7 @@ describe('Calendar monthly session states', () => {
     getWorkoutsByDateMock.mockResolvedValue([]);
   });
 
-  it('renders today, one-session, and multi-session states with visible counts', async () => {
+  it('renders today, one-session, and multi-session states with quiet selection styling', async () => {
     render(<Calendar selectedDate={new Date('2026-04-15T09:00:00.000Z')} />);
 
     await waitFor(() => {
@@ -72,17 +72,16 @@ describe('Calendar monthly session states', () => {
     const todayButton = await screen.findByRole('button', { name: /April 15, 2026, today, 1 session/i });
     const busyDayButton = await screen.findByRole('button', { name: /April 20, 2026, 3 sessions/i });
 
-    expect(screen.getByText('Today')).not.toBeNull();
-    expect(screen.getByText('1 session')).not.toBeNull();
-    expect(screen.getByText('3 sessions')).not.toBeNull();
-    expect(screen.getByText('4+ sessions')).not.toBeNull();
+    expect(screen.queryByText('Today')).toBeNull();
+    expect(screen.queryByText('1 session')).toBeNull();
+    expect(screen.queryByText('4+ sessions')).toBeNull();
     expect(todayButton.getAttribute('data-is-today')).toBe('true');
     expect(todayButton.getAttribute('data-is-selected')).toBe('true');
     expect(todayButton.getAttribute('data-session-count')).toBe('1');
-    expect(todayButton.className).toContain('ring-2');
-    expect(todayButton.className).toContain('bg-status-info');
+    expect(todayButton.className).toContain('ring-1');
+    expect(todayButton.className).toContain('ring-accent-primary');
     expect(busyDayButton.getAttribute('data-session-count')).toBe('3');
-    expect(busyDayButton.className).toContain('bg-status-warning');
+    expect(busyDayButton.className).not.toContain('bg-status-warning');
   });
 
   it('keeps user-driven month navigation instead of snapping back to the selected date month', async () => {

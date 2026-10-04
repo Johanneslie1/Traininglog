@@ -328,58 +328,35 @@ export const UniversalExercisePicker: React.FC<UniversalExercisePickerProps> = (
               >
                 {renderCard ? renderCard(ex, active) : (
                   <>
-                    {/* Selection indicator */}
+                    <span
+                      className={`h-5 w-0.5 shrink-0 rounded-full ${active ? 'bg-accent-primary' : 'bg-accent-primary/70'}`}
+                      aria-hidden="true"
+                    />
                     {multiSelect && (
-                      <div className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center ${
-                        active ? 'bg-accent-primary border-accent-primary' : 'border-border bg-bg-secondary'
+                      <div className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded border-2 ${
+                        active ? 'border-accent-primary bg-accent-primary' : 'border-border bg-bg-secondary'
                       }`}>
                         {active && (
-                          <svg className="w-3 h-3 text-text-on-accent" fill="currentColor" viewBox="0 0 20 20">
+                          <svg className="h-3 w-3 text-text-on-accent" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                         )}
                       </div>
                     )}
-                    
-                    {/* Main content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h3 className={`font-semibold truncate ${active ? 'text-accent-secondary' : 'text-text-primary'}`}>
-                          {ex.name}
-                        </h3>
-                        {/* Primary badge only */}
-                        {(ex.category || ex.type) && (
-                          <span className="flex-shrink-0 px-2 py-0.5 bg-bg-secondary border border-border text-text-tertiary text-[10px] rounded uppercase tracking-wide">
-                            {ex.category || ex.type}
-                          </span>
-                        )}
-                      </div>
-                      {/* Optional: Show description on hover or in a tooltip */}
-                      {ex.description && (
-                        <p className="text-text-tertiary text-xs mt-0.5 line-clamp-1">{ex.description}</p>
-                      )}
+                    <div className="min-w-0 flex-1">
+                      <h3 className={`truncate text-sm font-medium ${active ? 'text-accent-secondary' : 'text-text-primary'}`}>
+                        {ex.name}
+                      </h3>
+                      <p className="mt-0.5 truncate text-xs text-text-tertiary">
+                        {(Array.isArray(ex.primaryMuscles) && ex.primaryMuscles.length > 0
+                          ? ex.primaryMuscles.join(', ')
+                          : null) ||
+                          ex.category ||
+                          ex.type ||
+                          ex.description ||
+                          'Exercise'}
+                      </p>
                     </div>
-
-                    {/* Difficulty indicator */}
-                    {ex.difficulty && (
-                      <div className="flex-shrink-0">
-                        <span className={`text-[10px] px-2 py-1 rounded ${
-                          ex.difficulty === 'beginner' ? 'bg-green-600/20 text-green-400' :
-                          ex.difficulty === 'intermediate' ? 'bg-yellow-600/20 text-yellow-400' :
-                          ex.difficulty === 'advanced' ? 'bg-red-600/20 text-red-400' :
-                          'bg-bg-secondary text-text-tertiary'
-                        }`}>
-                          {ex.difficulty}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Right arrow indicator for single select */}
-                    {!multiSelect && (
-                      <svg className="flex-shrink-0 w-5 h-5 text-text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    )}
                   </>
                 )}
               </div>
