@@ -9,6 +9,8 @@ interface CalendarProps {
   selectedDate?: Date;
   refreshKey?: number;
   showSelectedWorkouts?: boolean;
+  /** Omit outer border/radius when nested inside a modal chrome. */
+  embedded?: boolean;
 }
 
 const Calendar: React.FC<CalendarProps> = ({
@@ -16,6 +18,7 @@ const Calendar: React.FC<CalendarProps> = ({
   selectedDate,
   refreshKey = 0,
   showSelectedWorkouts = true,
+  embedded = false,
 }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [calendarDays, setCalendarDays] = useState<CalendarDaySummary[]>([]);
@@ -77,8 +80,12 @@ const Calendar: React.FC<CalendarProps> = ({
   };
 
   return (
-    <div className="rounded-xl border border-border bg-bg-secondary p-5">
-      <div className="mb-4 flex items-center justify-between">
+    <div
+      className={`w-full min-w-0 overflow-hidden bg-bg-secondary p-4 ${
+        embedded ? '' : 'rounded-xl border border-border'
+      }`}
+    >
+      <div className="mb-3 flex items-center justify-between gap-2">
         <button
           onClick={() => setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1))}
           className="rounded-lg p-2 text-text-primary transition-colors hover:bg-bg-tertiary hover:text-accent-primary"
@@ -86,7 +93,7 @@ const Calendar: React.FC<CalendarProps> = ({
         >
           ‹
         </button>
-        <h2 className="text-lg font-semibold text-text-primary">
+        <h2 className="min-w-0 truncate text-base font-semibold text-text-primary">
           {format(currentMonth, 'MMMM yyyy')}
         </h2>
         <button
@@ -98,17 +105,17 @@ const Calendar: React.FC<CalendarProps> = ({
         </button>
       </div>
 
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid w-full grid-cols-7 gap-0.5">
         {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
           <div
             key={`${day}-${index}`}
-            className="py-1.5 text-center text-[11px] font-medium text-text-tertiary"
+            className="py-1 text-center text-[11px] font-medium text-text-tertiary"
           >
             {day}
           </div>
         ))}
         {Array.from({ length: leadingEmptyDays }).map((_, index) => (
-          <div key={`leading-${index}`} aria-hidden="true" className="h-10" />
+          <div key={`leading-${index}`} aria-hidden="true" className="aspect-square min-w-0" />
         ))}
         {days.map(day => {
           const daySummary = calendarDayMap.get(toLocalDateString(day));
@@ -139,10 +146,10 @@ const Calendar: React.FC<CalendarProps> = ({
               data-is-selected={isSelected ? 'true' : 'false'}
               data-is-today={isTodayDay ? 'true' : 'false'}
               className={`
-                flex h-10 flex-col items-center justify-center gap-1 rounded-md
+                flex aspect-square min-w-0 flex-col items-center justify-center gap-0.5 rounded-md
                 text-sm text-text-secondary transition-colors
                 hover:bg-bg-tertiary hover:text-text-primary
-                ${isSelected ? 'ring-1 ring-accent-primary text-text-primary' : ''}
+                ${isSelected ? 'bg-bg-tertiary text-text-primary outline outline-1 outline-accent-primary' : ''}
                 ${isTodayDay && !isSelected ? 'text-accent-primary' : ''}
               `}
             >
@@ -155,7 +162,7 @@ const Calendar: React.FC<CalendarProps> = ({
           );
         })}
         {Array.from({ length: trailingEmptyDays }).map((_, index) => (
-          <div key={`trailing-${index}`} aria-hidden="true" className="h-10" />
+          <div key={`trailing-${index}`} aria-hidden="true" className="aspect-square min-w-0" />
         ))}
       </div>
 

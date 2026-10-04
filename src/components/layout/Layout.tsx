@@ -104,23 +104,26 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <AppOverlayComponent
           isOpen={showMonthlyCalendar}
           onClose={() => setShowMonthlyCalendar(false)}
-          className="z-[70] flex items-start justify-center overflow-y-auto overscroll-contain p-4"
+          className="z-[70] flex items-center justify-center overflow-hidden p-4"
           ariaLabel="Monthly calendar"
         >
           <div
-            className="relative my-auto w-full max-w-2xl max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain"
+            className="w-full max-w-sm overflow-hidden rounded-xl border border-border bg-bg-secondary"
             onMouseDown={(event) => event.stopPropagation()}
           >
-            <button
-              onClick={() => setShowMonthlyCalendar(false)}
-              className="absolute -top-4 -right-4 z-10 p-2 bg-bg-secondary hover:bg-bg-tertiary rounded-full shadow-lg transition-colors"
-              aria-label="Close calendar"
-            >
-              <svg className="w-6 h-6 text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+            <div className="flex items-center justify-end px-2 pt-2">
+              <button
+                onClick={() => setShowMonthlyCalendar(false)}
+                className="rounded-full p-2 text-text-tertiary transition-colors hover:bg-bg-tertiary hover:text-text-primary"
+                aria-label="Close calendar"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
             <CalendarComponent
+              embedded
               selectedDate={selectedDate}
               refreshKey={calendarRefreshKey}
               showSelectedWorkouts={false}

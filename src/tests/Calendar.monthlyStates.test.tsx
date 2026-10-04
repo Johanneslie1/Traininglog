@@ -78,8 +78,7 @@ describe('Calendar monthly session states', () => {
     expect(todayButton.getAttribute('data-is-today')).toBe('true');
     expect(todayButton.getAttribute('data-is-selected')).toBe('true');
     expect(todayButton.getAttribute('data-session-count')).toBe('1');
-    expect(todayButton.className).toContain('ring-1');
-    expect(todayButton.className).toContain('ring-accent-primary');
+    expect(todayButton.className).toContain('outline-accent-primary');
     expect(busyDayButton.getAttribute('data-session-count')).toBe('3');
     expect(busyDayButton.className).not.toContain('bg-status-warning');
   });

@@ -833,15 +833,27 @@ export const LogOptions = ({
       ariaLabel={editingExercise ? 'Edit exercise' : 'Add exercise'}
     >
       <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-border bg-bg-secondary px-4 py-3">
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex shrink-0 items-center gap-1 rounded-lg p-2 text-text-secondary transition-colors hover:bg-hover-overlay hover:text-text-primary"
+          aria-label="Back"
+        >
+          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          <span className="text-sm font-medium">Back</span>
+        </button>
         <h2 className="text-lg font-semibold text-text-primary">
           {editingExercise ? 'Edit Exercise' : 'Add'}
         </h2>
         <button
+          type="button"
           onClick={onClose}
           className="shrink-0 rounded-lg p-2 text-text-tertiary transition-colors hover:bg-hover-overlay hover:text-text-primary"
           aria-label="Close"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
@@ -849,27 +861,20 @@ export const LogOptions = ({
 
       <main className="flex-1 min-h-0 overflow-y-auto overscroll-contain bg-bg-primary">
         <div className="mx-auto w-full max-w-xl space-y-4 px-4 py-4 pb-[calc(env(safe-area-inset-bottom)+1.25rem)]">
-          <section className="grid grid-cols-3 gap-2" aria-label="Quick actions">
+          <section className="grid grid-cols-1 gap-2" aria-label="Quick actions">
             <button
               type="button"
               onClick={() => setView('programPicker')}
-              className="rounded-lg bg-bg-secondary px-2 py-2.5 text-center text-sm font-medium text-text-primary transition-colors hover:bg-hover-overlay focus:outline-none focus:ring-2 focus:ring-focus-ring"
+              className="flex h-12 w-full items-center justify-center rounded-lg bg-bg-secondary px-4 text-center text-sm font-medium text-text-primary transition-colors hover:bg-hover-overlay focus:outline-none focus:ring-2 focus:ring-focus-ring"
             >
-              Program
+              Add from program
             </button>
             <button
               type="button"
               onClick={() => setView('copyPrevious')}
-              className="rounded-lg bg-bg-secondary px-2 py-2.5 text-center text-sm font-medium text-text-primary transition-colors hover:bg-hover-overlay focus:outline-none focus:ring-2 focus:ring-focus-ring"
+              className="flex h-12 w-full items-center justify-center rounded-lg bg-bg-secondary px-4 text-center text-sm font-medium text-text-primary transition-colors hover:bg-hover-overlay focus:outline-none focus:ring-2 focus:ring-focus-ring"
             >
-              Copy
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowCreateDialog(true)}
-              className="rounded-lg bg-bg-secondary px-2 py-2.5 text-center text-sm font-medium text-text-primary transition-colors hover:bg-hover-overlay focus:outline-none focus:ring-2 focus:ring-focus-ring"
-            >
-              New
+              Copy previous session
             </button>
           </section>
 
@@ -887,6 +892,19 @@ export const LogOptions = ({
                 </svg>
               </button>
             ))}
+          </section>
+
+          <section className="border-t border-border pt-4">
+            <button
+              type="button"
+              onClick={() => setShowCreateDialog(true)}
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-bg-secondary px-4 py-3 text-sm font-medium text-text-primary transition-colors hover:bg-hover-overlay focus:outline-none focus:ring-2 focus:ring-focus-ring"
+            >
+              <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fillRule="evenodd" d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 102 0v-5h5a1 1 0 100-2h-5V4a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              Create new exercise
+            </button>
           </section>
         </div>
       </main>
