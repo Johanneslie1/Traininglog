@@ -4,7 +4,7 @@ import { NumberOrRange, Prescription, Program, ProgramExercise, ProgramSession, 
 
 export const SPEED_STRENGTH_BLOCK_1_NAME = 'Speed + Strength Blokk 1';
 export const SPEED_STRENGTH_BLOCK_1_TAG = 'speed-strength-block-1';
-export const SPEED_STRENGTH_BLOCK_1_REVISION = 3;
+export const SPEED_STRENGTH_BLOCK_1_REVISION = 5;
 export const SPEED_STRENGTH_BLOCK_1_REVISION_TAG = `ssb1-rev-${SPEED_STRENGTH_BLOCK_1_REVISION}`;
 
 export const SPEED_STRENGTH_BLOCK_1_DESCRIPTION = [
@@ -151,42 +151,42 @@ const bein1Exercises = (): BlockExerciseDraft[] => [
     ),
   },
   {
-    id: '1803',
-    name: 'Hang Clean',
+    id: '1302',
+    name: 'Clean',
     activityType: ActivityType.RESISTANCE,
     prescription: strengthRx(4, 2, { min: 6, max: 7 }, REST_HEAVY),
     notes: blockTable(
       ['4 × 2 @ RPE 6–7', '4 × 2 @ RPE 7', '5 × 2 @ RPE 7–8', '3 × 2 @ RPE 6'],
-      ['Clean. Hang Clean fra biblioteket. Start gjerne i 80–95 kg-sonen, men la RPE vinne over kiloene.']
+      ['Clean. Start gjerne i 80–95 kg-sonen, men la RPE vinne over kiloene.']
     ),
   },
   {
-    id: '1836',
-    name: 'Front Squat (Clean Grip)',
+    id: '1811',
+    name: 'Barbell front squat',
     activityType: ActivityType.RESISTANCE,
     prescription: strengthRx(3, 5, 7, REST_HEAVY),
     notes: blockTable(
       ['3 × 5 @ RPE 7', '4 × 4 @ RPE 7–8', '4 × 3 @ RPE 8', '2 × 3 @ RPE 6–7'],
-      ['Front squat. Primær styrkeøvelse. Ikke øk hvis RPE allerede er over plan.']
+      ['Barbell front squat. Primær styrkeøvelse. Ikke øk hvis RPE allerede er over plan.']
     ),
   },
   {
-    id: 'romanian-deadlift-1',
-    name: 'Romanian Deadlift',
+    id: 'elevated-romanian-deadlift-1',
+    name: 'Elevated Romanian Deadlift',
     activityType: ActivityType.RESISTANCE,
     prescription: strengthRx(3, 6, 7, REST_SECONDARY),
     notes: blockTable(['3 × 6 @ RPE 7', '3 × 6 @ RPE 7–8', '3 × 5 @ RPE 8', '2 × 5 @ RPE 6–7']),
   },
   {
-    id: 'hip-thrust-1',
-    name: 'Hip Thrust',
+    id: 'hip-thrust-bootybuilder-1',
+    name: 'Hip Thrust (bootybuilder)',
     activityType: ActivityType.RESISTANCE,
     prescription: strengthRx(3, 6, 7, REST_SECONDARY),
     notes: blockTable(['3 × 6 @ RPE 7', '3 × 6 @ RPE 7–8', '3 × 5 @ RPE 8', '2 × 5 @ RPE 6–7']),
   },
   {
-    id: 'standing-calf-raise-1',
-    name: 'Standing Calf Raise',
+    id: 'standing-calf-raise-machine-1',
+    name: 'Standing Calf Raise (Machine)',
     activityType: ActivityType.RESISTANCE,
     category: 'isolation',
     prescription: strengthRx(3, { min: 8, max: 10 }, 7, REST_ASSIST),
@@ -326,13 +326,13 @@ const bein2Exercises = (): BlockExerciseDraft[] => [
     ),
   },
   {
-    id: '1299',
-    name: 'Power clean',
+    id: '1302',
+    name: 'Clean',
     activityType: ActivityType.RESISTANCE,
     prescription: strengthRx(3, 3, 6, REST_HEAVY),
     notes: blockTable(
       ['3 × 3 @ RPE 6', '3 × 2 @ RPE 6–7', '4 × 2 @ RPE 7', '2 × 2 @ RPE 6'],
-      ['Power clean.']
+      ['Clean.']
     ),
   },
   {
@@ -354,8 +354,8 @@ const bein2Exercises = (): BlockExerciseDraft[] => [
     notes: blockTable(['2 × 8 @ RPE 7', '2 × 8 @ RPE 7–8', '3 × 6–8 @ RPE 8', '1–2 × 8 @ RPE 6–7']),
   },
   {
-    id: 'standing-calf-raise-1',
-    name: 'Standing Calf Raise',
+    id: 'standing-calf-raise-machine-1',
+    name: 'Standing Calf Raise (Machine)',
     activityType: ActivityType.RESISTANCE,
     category: 'isolation',
     prescription: strengthRx(2, { min: 10, max: 15 }, 7, REST_ASSIST),

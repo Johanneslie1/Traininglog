@@ -54,7 +54,7 @@ describe('Speed + Strength Blokk 1', () => {
   });
 
   it('codes week 1 strength as target RPE, not 1RM percentage', () => {
-    const frontSquat = program.sessions[0].exercises.find((exercise) => exercise.name === 'Front Squat (Clean Grip)');
+    const frontSquat = program.sessions[0].exercises.find((exercise) => exercise.name === 'Barbell front squat');
     expect(frontSquat?.prescription).toEqual(
       expect.objectContaining({
         sets: 3,
@@ -64,12 +64,12 @@ describe('Speed + Strength Blokk 1', () => {
       })
     );
 
-    const clean = program.sessions[0].exercises.find((exercise) => exercise.name === 'Hang Clean');
+    const clean = program.sessions[0].exercises.find((exercise) => exercise.name === 'Clean');
     expect(clean?.prescription?.weight).toEqual({ type: 'rpe', value: { min: 6, max: 7 } });
     expect(clean?.prescription?.sets).toBe(4);
     expect(clean?.prescription?.reps).toBe(2);
 
-    const calf = program.sessions[0].exercises.find((exercise) => exercise.name === 'Standing Calf Raise');
+    const calf = program.sessions[0].exercises.find((exercise) => exercise.name === 'Standing Calf Raise (Machine)');
     expect(calf?.prescription).toEqual(
       expect.objectContaining({
         sets: 3,
@@ -121,11 +121,11 @@ describe('Speed + Strength Blokk 1', () => {
     expect(bein1.exercises.map((exercise) => exercise.name)).toEqual([
       'Sprint',
       'Flying 20s',
-      'Hang Clean',
-      'Front Squat (Clean Grip)',
-      'Romanian Deadlift',
-      'Hip Thrust',
-      'Standing Calf Raise',
+      'Clean',
+      'Barbell front squat',
+      'Elevated Romanian Deadlift',
+      'Hip Thrust (bootybuilder)',
+      'Standing Calf Raise (Machine)',
       'Tibialis Raise',
       'Hanging Leg Raise',
     ]);
@@ -142,8 +142,8 @@ describe('Speed + Strength Blokk 1', () => {
       'Pallof Press',
     ]);
 
-    const powerClean = program.sessions[2].exercises.find((exercise) => exercise.name === 'Power clean');
-    expect(powerClean?.prescription).toEqual(
+    const clean = program.sessions[2].exercises.find((exercise) => exercise.name === 'Clean');
+    expect(clean?.prescription).toEqual(
       expect.objectContaining({
         sets: 3,
         reps: 3,
