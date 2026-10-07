@@ -16,6 +16,8 @@ import { db } from './config';
 import { ActivityLog, ActivityLogInput, normalizeActivityType, mapExerciseTypeToActivityType } from '@/types/activityLog';
 import { ensureSessionContextForLog } from './sessionTrackingService';
 import { normalizeSessionType } from '@/types/sessionType';
+import { parseStoredDate } from '@/utils/exerciseOrderTimestamps';
+import { resolveLogTimestamp } from './logTimestamps';
 
 // Helper function to clean undefined values from objects
 const cleanObject = (obj: any): any => {
@@ -93,8 +95,14 @@ export const addActivityLog = async (
     if (!logData.sessionId && requestedSessionType === 'warmup') {
       throw new Error('Create a warm-up session with +W before logging warm-up activities.');
     }
-    const effectiveDate = selectedDate || new Date();
-    const sessionContext = await ensureSessionContextForLog(effectiveUserId, effectiveDate, {
+    const calendarDate = selectedDate || new Date();
+    const { timestamp: resolvedTimestamp, createdAt: preservedCreatedAt } = await resolveLogTimestamp(
+      effectiveUserId,
+      calendarDate,
+      existingId,
+      'activities'
+    );
+    const sessionContext = await ensureSessionContextForLog(effectiveUserId, calendarDate, {
       requestedSessionId: logData.sessionId,
       requestedSessionType: requestedSessionType,
       forceNewSession: logData.startNewSession === true,
@@ -102,8 +110,8 @@ export const addActivityLog = async (
 
     const activityData = cleanObject({
       ...logData,
-      timestamp: Timestamp.fromDate(effectiveDate),
-      createdAt: existingId ? undefined : Timestamp.now(),
+      timestamp: Timestamp.fromDate(resolvedTimestamp),
+      createdAt: preservedCreatedAt ? Timestamp.fromDate(preservedCreatedAt) : existingId ? undefined : Timestamp.now(),
       deviceId: window.navigator.userAgent,
       userId: effectiveUserId,
       sets: Array.isArray(logData.sets) ? logData.sets.map(set => cleanObject(set)).filter(set => set && Object.keys(set).length > 0) : [],
@@ -206,6 +214,7 @@ export const getActivityLogs = async (userId: string, startDate: Date, endDate: 
         activityName: data.activityName,
         sets: data.sets,
         timestamp: data.timestamp.toDate(),
+        createdAt: parseStoredDate(data.createdAt),
         deviceId: data.deviceId || 'legacy',
         userId: data.userId,
         activityType: normalizedActivityType,

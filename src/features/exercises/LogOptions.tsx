@@ -36,6 +36,8 @@ import {
   getSessionsForDate,
   SessionContext,
 } from '@/services/firebase/sessionTrackingService';
+import { listLogTimestampsForDate } from '@/services/firebase/logTimestamps';
+import { buildOrderedImportTimestamps } from '@/utils/exerciseOrderTimestamps';
 
 const PROGRAM_IMPORT_WRITE_CONCURRENCY = 4;
 
@@ -352,10 +354,17 @@ export const LogOptions = ({
         };
       });
 
+      const existingTimestamps = await listLogTimestampsForDate(userId, importDate);
+      const orderedTimestamps = buildOrderedImportTimestamps(
+        importDate,
+        existingTimestamps,
+        preparedImports.length
+      );
+
       const createdIds = await mapWithConcurrency(
         preparedImports,
         PROGRAM_IMPORT_WRITE_CONCURRENCY,
-        async (prepared) => {
+        async (prepared, index) => {
           const {
             selection,
             sets,
@@ -398,7 +407,7 @@ export const LogOptions = ({
                   : undefined,
               prescriptionAssistant,
             },
-            importDate
+            orderedTimestamps[index]
           );
 
           saveExerciseLog({
@@ -406,7 +415,7 @@ export const LogOptions = ({
             exerciseName: exercise.name,
             userId,
             sets,
-            timestamp: importDate,
+            timestamp: orderedTimestamps[index],
             activityType: resolvedActivityType,
             isWarmup: false,
             sessionId: sessionContext?.sessionId || selectedSessionId || undefined,

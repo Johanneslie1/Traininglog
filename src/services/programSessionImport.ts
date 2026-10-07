@@ -6,6 +6,8 @@ import { ensureSessionContextForLog, getSessionsForDate } from '@/services/fireb
 import { generateLocalExercisePrescriptionAssistant } from '@/services/exercisePrescriptionAssistantService';
 import { toLocalDateString } from '@/utils/dateUtils';
 import { prescriptionToSets } from '@/utils/prescriptionUtils';
+import { listLogTimestampsForDate } from '@/services/firebase/logTimestamps';
+import { buildOrderedImportTimestamps } from '@/utils/exerciseOrderTimestamps';
 
 export const importProgramSessionToDate = async (
   userId: string,
@@ -24,8 +26,10 @@ export const importProgramSessionToDate = async (
     sessionName: session.name,
   });
   const dateKey = toLocalDateString(date);
+  const existingTimestamps = await listLogTimestampsForDate(userId, date);
+  const orderedTimestamps = buildOrderedImportTimestamps(date, existingTimestamps, exercises.length);
 
-  for (const exercise of exercises) {
+  for (const [index, exercise] of exercises.entries()) {
     const activityType = resolveActivityTypeFromExerciseLike(exercise, {
       fallback: exercise.activityType || ActivityType.RESISTANCE,
     });
@@ -68,7 +72,7 @@ export const importProgramSessionToDate = async (
         sourceProgramExerciseId: exercise.id,
         prescriptionAssistant,
       },
-      date
+      orderedTimestamps[index]
     );
   }
 

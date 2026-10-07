@@ -12,6 +12,8 @@ export interface ExerciseData {
   id?: string;
   exerciseName: string;
   timestamp: Date;
+  /** When this log document was first created. Used to order logs that share a timestamp. */
+  createdAt?: Date;
   userId: string;
   sets: ExerciseSet[];
   deviceId?: string;

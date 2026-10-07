@@ -1,8 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult, DragStart, DragUpdate } from '@hello-pangea/dnd';
-import { ExerciseData } from '../services/exerciseDataService';
 import { UnifiedExerciseData } from '../utils/unifiedExerciseUtils';
-import { SupersetGroup } from '../types/session';
 import { useSupersets } from '../context/SupersetContext';
 import { 
   loadHiddenExercises, 
@@ -13,6 +11,7 @@ import ExerciseCard from './ExerciseCard';
 import SupersetActionsButton from './SupersetActionsButton';
 import toast from 'react-hot-toast';
 import { buildSupersetDisplayTitle, buildSupersetLabels } from '@/utils/supersetUtils';
+import { groupExercisesInListOrder } from '@/utils/exerciseDisplayGroups';
 import { EmptyState } from '@/components/ui';
 
 // Haptic feedback utility
@@ -200,68 +199,13 @@ const DraggableExerciseDisplay: React.FC<DraggableExerciseDisplayProps> = ({
   );
 
   const groupedExercises = React.useMemo(() => {
-    const groups: {
-      superset: SupersetGroup | null;
-      exercises: ExerciseData[];
-      originalIndices: number[]; // Track original indices for numbering
-      groupKey: string;
-    }[] = [];
-    
-    const processedExerciseIds = new Set<string>();
-    
-    const sortedSupersets = [...state.supersets].sort((a, b) => {
-      const aFirstExerciseId = a.exerciseIds.find((exerciseId) => labelsByExerciseId[exerciseId]);
-      const bFirstExerciseId = b.exerciseIds.find((exerciseId) => labelsByExerciseId[exerciseId]);
-      const aIndex = aFirstExerciseId ? labelsByExerciseId[aFirstExerciseId]?.supersetIndex ?? Number.MAX_SAFE_INTEGER : Number.MAX_SAFE_INTEGER;
-      const bIndex = bFirstExerciseId ? labelsByExerciseId[bFirstExerciseId]?.supersetIndex ?? Number.MAX_SAFE_INTEGER : Number.MAX_SAFE_INTEGER;
-
-      if (aIndex !== bIndex) {
-        return aIndex - bIndex;
-      }
-
-      return (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER);
-    });
-
-    // Process supersets first
-    sortedSupersets.forEach(superset => {
-      const supersetExercises: ExerciseData[] = [];
-      const supersetIndices: number[] = [];
-      
-      superset.exerciseIds.forEach(exerciseId => {
-        const exerciseIndex = exercises.findIndex(ex => ex.id === exerciseId);
-        if (exerciseIndex !== -1) {
-          supersetExercises.push(exercises[exerciseIndex]);
-          supersetIndices.push(exerciseIndex);
-          processedExerciseIds.add(exerciseId);
-        }
-      });
-      
-      if (supersetExercises.length > 0) {
-        groups.push({
-          superset,
-          exercises: supersetExercises,
-          originalIndices: supersetIndices,
-          groupKey: `superset-${superset.id}`
-        });
-      }
-    });
-    
-    // Add remaining individual exercises
-    exercises.forEach((ex, index) => {
-      const localKey = getExerciseLocalKey(ex, index);
-
-      if (!ex.id || !processedExerciseIds.has(ex.id)) {
-        groups.push({
-          superset: null,
-          exercises: [ex],
-          originalIndices: [index],
-          groupKey: localKey
-        });
-      }
-    });
-    
-    return groups;
-  }, [exercises, getExerciseLocalKey, labelsByExerciseId, state.supersets]);
+    return groupExercisesInListOrder(exercises, state.supersets).map((group) => ({
+      ...group,
+      groupKey: group.superset
+        ? `superset-${group.superset.id}`
+        : getExerciseLocalKey(group.exercises[0], group.originalIndices[0] ?? 0),
+    }));
+  }, [exercises, getExerciseLocalKey, state.supersets]);
 
   if (exercises.length === 0) {
     return (

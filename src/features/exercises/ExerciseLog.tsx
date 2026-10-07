@@ -14,6 +14,12 @@ import LogOptions from './LogOptions';
 import { ExerciseSetLogger } from './ExerciseSetLogger';
 import WorkoutSummary from './WorkoutSummary';
 import { toLocalDateString } from '@/utils/dateUtils';
+import {
+  buildOrderedImportTimestamps,
+  compareByExerciseOrder,
+  orderedTimestampForIndex,
+} from '@/utils/exerciseOrderTimestamps';
+import { listLogTimestampsForDate } from '@/services/firebase/logTimestamps';
 import { db } from '../../services/firebase/config';
 import { auth } from '../../services/firebase/config';
 import { collection, query, where, getDocs } from 'firebase/firestore';
@@ -297,12 +303,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     try {
       const combinedExercises = await getAllExercisesByDate(loadedDate, userId);
 
-      combinedExercises.sort((a, b) => {
-        if (a.timestamp instanceof Date && b.timestamp instanceof Date) {
-          return a.timestamp.getTime() - b.timestamp.getTime();
-        }
-        return 0;
-      });
+      combinedExercises.sort(compareByExerciseOrder);
 
       if (runRepairs) {
         try {
@@ -604,23 +605,15 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     // Update the UI immediately
     setExercises(reorderedExercises);
     
-    // Save the new order to localStorage by updating timestamps
-    // This creates a subtle time difference between exercises to maintain order
     const dateString = toLocalDateString(selectedDate);
-    
-    // Create a base timestamp for the selected date
-    const baseTime = new Date(selectedDate);
-    baseTime.setHours(12, 0, 0, 0); // Noon on the selected date
-    
-    // Save each exercise with an incremented timestamp to preserve order in Firestore
+
     if (user?.id) {
       await Promise.all(
         reorderedExercises
           .filter((exercise) => Boolean(exercise.id))
           .map(async (exercise, index) => {
             const exerciseWithSource = exercise as UnifiedExerciseData;
-            const newTimestamp = new Date(baseTime);
-            newTimestamp.setMilliseconds(index * 100);
+            const newTimestamp = orderedTimestampForIndex(selectedDate, index);
 
             await addExerciseLog(
               {
@@ -945,6 +938,12 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
 
         const importedExercisesForUi: UnifiedExerciseData[] = [];
         const sourceToCreatedExerciseId = new Map<string, string>();
+        const existingTimestamps = await listLogTimestampsForDate(user.id, selectedDate);
+        const orderedTimestamps = buildOrderedImportTimestamps(
+          selectedDate,
+          existingTimestamps,
+          sourceExercises.length
+        );
 
         for (const [index, exercise] of sourceExercises.entries()) {
           const activityType = normalizeActivityType(exercise.activityType);
@@ -994,13 +993,12 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
               supersetLabel,
               supersetName
             },
-            selectedDate
+            orderedTimestamps[index]
           );
 
           sourceToCreatedExerciseId.set(exercise.id, createdExerciseId);
 
-          const uiTimestamp = new Date(selectedDate);
-          uiTimestamp.setMilliseconds(index * 100);
+          const uiTimestamp = orderedTimestamps[index];
 
           importedExercisesForUi.push({
             id: createdExerciseId,
@@ -1046,11 +1044,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
               }
             });
 
-            return Array.from(mergedById.values()).sort((a, b) => {
-              const timeA = a.timestamp instanceof Date ? a.timestamp.getTime() : 0;
-              const timeB = b.timestamp instanceof Date ? b.timestamp.getTime() : 0;
-              return timeA - timeB;
-            });
+            return Array.from(mergedById.values()).sort(compareByExerciseOrder);
           });
 
           const mappedSessionSupersets: SupersetGroup[] = sessionSupersets.reduce<SupersetGroup[]>((acc, superset, index) => {

@@ -24,6 +24,8 @@ export interface ActivityLog {
   sets: ExerciseSet[];
   /** When the activity was performed */
   timestamp: Date;
+  /** When this log document was first created. Used to order logs that share a timestamp. */
+  createdAt?: Date;
   /** Device ID for syncing */
   deviceId?: string;
   /** User ID who owns this activity log */

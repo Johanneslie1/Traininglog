@@ -11,6 +11,7 @@ import { getExerciseLogs as getLocalExerciseLogs } from '@/utils/localStorageUti
 import { deleteLocalExerciseLog } from '@/utils/localStorageUtils';
 import { auth } from '@/services/firebase/config';
 import { normalizeSessionType } from '@/types/sessionType';
+import { compareByExerciseOrder } from '@/utils/exerciseOrderTimestamps';
 
 // Extended ExerciseData to support activity types
 export interface UnifiedExerciseData extends ExerciseData {
@@ -60,6 +61,7 @@ export async function getAllExercisesByDate(
       id: log.id,
       exerciseName: log.exerciseName,
       timestamp: log.timestamp || date,
+      createdAt: log.createdAt,
       userId: log.userId || effectiveUserId,
       sets: log.sets || [],
       deviceId: log.deviceId,
@@ -94,6 +96,7 @@ export async function getAllExercisesByDate(
       id: log.id,
       exerciseName: log.activityName,
       timestamp: log.timestamp || date,
+      createdAt: log.createdAt,
       userId: log.userId || effectiveUserId,
       sets: log.sets || [],
       deviceId: log.deviceId,
@@ -113,14 +116,8 @@ export async function getAllExercisesByDate(
       activityData: log
     }));
 
-    // Combine and sort by timestamp
     const allExercises = [...resistanceExercises, ...activityExercises];
-    
-    return allExercises.sort((a, b) => {
-      const timeA = a.timestamp?.getTime() || 0;
-      const timeB = b.timestamp?.getTime() || 0;
-      return timeA - timeB;
-    });
+    return allExercises.sort(compareByExerciseOrder);
 
   } catch (error) {
     console.error('Error getting all exercises by date:', error);
@@ -138,6 +135,7 @@ export async function getAllExercisesByDate(
         id: log.id,
         exerciseName: log.exerciseName,
         timestamp: log.timestamp || date,
+        createdAt: log.createdAt,
         userId: log.userId || effectiveUserId,
         sets: log.sets || [],
         deviceId: log.deviceId,
@@ -166,7 +164,7 @@ export async function getAllExercisesByDate(
         instructionMode: log.instructionMode,
         instructions: log.instructions,
         prescriptionAssistant: log.prescriptionAssistant
-      }));
+      })).sort(compareByExerciseOrder);
     } catch (fallbackError) {
       console.error('Fallback also failed:', fallbackError);
       return [];

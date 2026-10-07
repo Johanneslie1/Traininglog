@@ -23,6 +23,8 @@ import { buildSupersetLabels } from '@/utils/supersetUtils';
 import { addActivityLog } from './activityLogs';
 import { ensureSessionContextForLog } from './sessionTrackingService';
 import { normalizeSessionType, SessionType } from '@/types/sessionType';
+import { parseStoredDate } from '@/utils/exerciseOrderTimestamps';
+import { resolveLogTimestamp } from './logTimestamps';
 
 const LOCAL_EXERCISE_LOGS_KEY = 'exercise_logs';
 
@@ -166,8 +168,14 @@ export const addExerciseLog = async (
       throw new Error('Create a warm-up session with +W before logging warm-up exercises.');
     }
 
-    const effectiveDate = selectedDate || new Date();
-    const sessionContext = await ensureSessionContextForLog(effectiveUserId, effectiveDate, {
+    const calendarDate = selectedDate || new Date();
+    const { timestamp: resolvedTimestamp, createdAt: preservedCreatedAt } = await resolveLogTimestamp(
+      effectiveUserId,
+      calendarDate,
+      existingId,
+      resolvedActivityType === ActivityType.RESISTANCE ? 'exercises' : 'activities'
+    );
+    const sessionContext = await ensureSessionContextForLog(effectiveUserId, calendarDate, {
       requestedSessionId: logData.sessionId,
       requestedSessionType: requestedSessionType,
       forceNewSession: logData.startNewSession === true,
@@ -195,15 +203,15 @@ export const addExerciseLog = async (
           sessionNumberInDay: sessionContext.sessionNumberInDay,
           sessionNumberInWeek: sessionContext.sessionNumberInWeek,
         },
-        effectiveDate,
+        resolvedTimestamp,
         existingId
       );
     }
 
     const exerciseData = removeUndefinedFields({
       ...logData,
-      timestamp: Timestamp.fromDate(selectedDate || new Date()),
-      createdAt: existingId ? undefined : Timestamp.now(),
+      timestamp: Timestamp.fromDate(resolvedTimestamp),
+      createdAt: preservedCreatedAt ? Timestamp.fromDate(preservedCreatedAt) : existingId ? undefined : Timestamp.now(),
       deviceId: window.navigator.userAgent,
       userId: effectiveUserId,
       sets: Array.isArray(logData.sets) ? logData.sets : [], // Ensure sets is always an array
@@ -273,7 +281,7 @@ export const addExerciseLog = async (
       id: docId,
       exerciseName: logData.exerciseName,
       sets: logData.sets,
-      timestamp: selectedDate || new Date(),
+      timestamp: resolvedTimestamp,
       deviceId: window.navigator.userAgent,
       userId: effectiveUserId,
       activityType: resolvedActivityType,
@@ -494,6 +502,7 @@ export const getExerciseLogs = async (userId: string, startDate: Date, endDate: 
         exerciseName: data.exerciseName,
         sets: data.sets,
         timestamp: parseTimestamp(data.timestamp),
+        createdAt: parseStoredDate(data.createdAt),
         deviceId: data.deviceId || 'legacy',
         userId: data.userId,
         activityType: data.activityType,
