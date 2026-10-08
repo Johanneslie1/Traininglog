@@ -66,6 +66,35 @@ service cloud.firestore {
         hasValidSportsLoadMetrics();
     }
 
+    function hasValidHabit() {
+      return request.resource.data.userId == request.auth.uid &&
+        request.resource.data.name is string &&
+        request.resource.data.name.size() > 0 &&
+        request.resource.data.name.size() <= 80 &&
+        request.resource.data.kind in ['check', 'count'] &&
+        request.resource.data.archived is bool &&
+        request.resource.data.sortOrder is int &&
+        request.resource.data.activeFrom is string &&
+        request.resource.data.activeFrom.size() == 10 &&
+        (!('target' in request.resource.data) ||
+          (request.resource.data.target is int &&
+            request.resource.data.target >= 1 &&
+            request.resource.data.target <= 10000)) &&
+        (!('unit' in request.resource.data) ||
+          (request.resource.data.unit is string && request.resource.data.unit.size() <= 40)) &&
+        (!('archivedOn' in request.resource.data) ||
+          (request.resource.data.archivedOn is string && request.resource.data.archivedOn.size() == 10));
+    }
+
+    function hasValidHabitDay() {
+      return request.resource.data.userId == request.auth.uid &&
+        request.resource.data.date is string &&
+        request.resource.data.date.size() == 10 &&
+        request.resource.data.dateEpochDay is int &&
+        request.resource.data.dateEpochDay <= ((request.time.toMillis() / 86400000) + 1) &&
+        request.resource.data.entries is map;
+    }
+
     // Global exercises collection
     match /exercises/{exerciseId} {
       allow read: if isAuthenticated();
@@ -196,6 +225,26 @@ service cloud.firestore {
         allow delete: if isAuthenticated() &&
           isOwner(userId) &&
           resource.data.userId == request.auth.uid;
+      }
+
+      // Private habit definitions. Owner only — coaches cannot read these.
+      match /habits/{habitId} {
+        allow read, delete: if isAuthenticated() && isOwner(userId);
+        allow create, update: if isAuthenticated() &&
+          isOwner(userId) &&
+          hasValidHabit();
+      }
+
+      // Private daily habit logs. Owner only, and not mixed into training export.
+      match /habitDays/{dayId} {
+        allow read, delete: if isAuthenticated() && isOwner(userId);
+        allow create: if isAuthenticated() &&
+          isOwner(userId) &&
+          hasValidHabitDay();
+        allow update: if isAuthenticated() &&
+          isOwner(userId) &&
+          resource.data.userId == request.auth.uid &&
+          hasValidHabitDay();
       }
 
       // Criteria-based rehab progress: checkpoints, session pain, and symmetry tests.

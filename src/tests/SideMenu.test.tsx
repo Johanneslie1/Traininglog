@@ -57,6 +57,7 @@ describe('SideMenu role visibility', () => {
 
     expect(screen.getByText(/^Programs$/i)).toBeInTheDocument();
     expect(screen.getByText('Sports Load')).toBeInTheDocument();
+    expect(screen.getByText('Habits')).toBeInTheDocument();
     expect(screen.queryByText(/^sRPE$/)).not.toBeInTheDocument();
     expect(screen.getByText('Settings')).toBeInTheDocument();
     expect(screen.queryByText(/Assigned Programs/i)).not.toBeInTheDocument();
