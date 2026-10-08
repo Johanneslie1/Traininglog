@@ -11,8 +11,11 @@ const {
   getAuthMock,
 } = {
   setDocMock: jest.fn(async (..._args: unknown[]) => undefined),
-  getDocMock: jest.fn(async () => ({ exists: () => false })),
-  getDocsMock: jest.fn(async () => ({ docs: [] })),
+  getDocMock: jest.fn(async (): Promise<{ exists: () => boolean; data: () => Record<string, unknown> }> => ({
+    exists: () => false,
+    data: () => ({}),
+  })),
+  getDocsMock: jest.fn(async (): Promise<{ docs: Array<{ data: () => Record<string, unknown> }> }> => ({ docs: [] })),
   collectionMock: jest.fn(() => ({ path: 'users/user-1/exercises' })),
   docMock: jest.fn((...segments: unknown[]) => ({
     id: segments.length > 0 ? String(segments[segments.length - 1]) : 'generated-id',
