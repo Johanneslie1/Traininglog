@@ -19,6 +19,12 @@ import {
   isCurrentShoulderRehabRevision,
   isShoulderRehabProgram,
 } from '@/data/programs/shoulderRehab3Week';
+import {
+  SHOULDER_SLING_PROGRAM_NAME,
+  buildShoulderSlingProgram,
+  isCurrentShoulderSlingRehabRevision,
+  isShoulderSlingRehabProgram,
+} from '@/data/programs/shoulderSlingRehab';
 import { logger } from '@/utils/logger';
 
 type StarterSeedResult = { created: boolean; updated: boolean; programId?: string };
@@ -76,6 +82,9 @@ export const findHelesTrainingProgram = (programs: Program[]): Program | undefin
 export const findShoulderRehabProgram = (programs: Program[]): Program | undefined =>
   findNamedProgram(programs, SHOULDER_REHAB_3_WEEK_NAME, isShoulderRehabProgram);
 
+export const findShoulderSlingRehabProgram = (programs: Program[]): Program | undefined =>
+  findNamedProgram(programs, SHOULDER_SLING_PROGRAM_NAME, isShoulderSlingRehabProgram);
+
 export const createSpeedStrengthBlock1Program = async (userId: string): Promise<string> =>
   createProgram(buildSpeedStrengthBlock1Program(userId));
 
@@ -91,6 +100,18 @@ export const ensureSpeedStrengthBlock1Program = async (
     find: findSpeedStrengthBlock1Program,
     isCurrent: isCurrentSpeedStrengthBlock1Revision,
     build: buildSpeedStrengthBlock1Program,
+  });
+};
+
+export const ensureShoulderSlingRehabProgram = async (
+  existingPrograms?: Program[]
+): Promise<StarterSeedResult> => {
+  const programs = existingPrograms ?? await getPrograms();
+  return seedProgram(programs, {
+    label: SHOULDER_SLING_PROGRAM_NAME,
+    find: findShoulderSlingRehabProgram,
+    isCurrent: isCurrentShoulderSlingRehabRevision,
+    build: buildShoulderSlingProgram,
   });
 };
 
@@ -133,9 +154,14 @@ export const ensureStarterPrograms = async (
   }
 
   const shoulderRehab = await ensureShoulderRehabProgram(programs);
+  if (shoulderRehab.created || shoulderRehab.updated) {
+    programs = await getPrograms();
+  }
+
+  const shoulderSling = await ensureShoulderSlingRehabProgram(programs);
   return {
-    created: speedStrength.created || heles.created || shoulderRehab.created,
-    updated: speedStrength.updated || heles.updated || shoulderRehab.updated,
-    programId: shoulderRehab.programId ?? heles.programId ?? speedStrength.programId,
+    created: speedStrength.created || heles.created || shoulderRehab.created || shoulderSling.created,
+    updated: speedStrength.updated || heles.updated || shoulderRehab.updated || shoulderSling.updated,
+    programId: shoulderSling.programId ?? shoulderRehab.programId ?? heles.programId ?? speedStrength.programId,
   };
 };

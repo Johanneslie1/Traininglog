@@ -15,6 +15,7 @@ import SideMenu from '@/components/SideMenu';
 import { ActivityBadge, Button, EmptyState, MetricChip, StickyBottomActions } from '@/components/ui';
 import toast from 'react-hot-toast';
 import { isShoulderRehabProgram } from '@/data/programs/shoulderRehab3Week';
+import { isShoulderSlingRehabProgram } from '@/data/programs/shoulderSlingRehab';
 import { importProgramSessionToDate } from '@/services/programSessionImport';
 import { RehabRulesNotice, RehabSessionExtras, SymmetryPanel } from '@/features/programs/rehab/ShoulderRehabPanels';
 import { useRehabProgress } from '@/features/programs/rehab/useRehabProgress';
@@ -43,8 +44,10 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [sharingSession, setSharingSession] = useState<ProgramSession | null>(null);
   const [loggingSessionId, setLoggingSessionId] = useState<string | null>(null);
-  const rehabActive = isShoulderRehabProgram(program);
-  const rehab = useRehabProgress(program.id, rehabActive);
+  const shoulderRehab = isShoulderRehabProgram(program);
+  const slingRehab = isShoulderSlingRehabProgram(program);
+  const rehabActive = shoulderRehab || slingRehab;
+  const rehab = useRehabProgress(program.id, shoulderRehab);
   const { updateSessionInProgram: updateSession, deleteProgram, updateProgram, duplicateSession } = usePrograms();
   const totalExercises = sessions.reduce((count, session) => count + (session.exercises?.length || 0), 0);
   const guidedExercises = sessions.reduce((count, session) => (
@@ -452,7 +455,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
         {rehabActive && (
           <div className="space-y-3">
             <RehabRulesNotice rules={program.rules} stopSigns={program.stopSigns} />
-            {rehab.progress && (
+            {shoulderRehab && rehab.progress && (
               <SymmetryPanel tests={rehab.progress.symmetryTests} onAdd={rehab.addSymmetryTest} />
             )}
           </div>
@@ -547,11 +550,11 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
               {/* Session Content */}
               {expandedSessions.includes(session.id) && (
                 <div className="border-t border-border bg-bg-primary/40">
-                  {rehabActive && rehab.progress ? (
+                  {(shoulderRehab && rehab.progress) || slingRehab ? (
                     <RehabSessionExtras
                       program={program}
                       session={session}
-                      painLogs={rehab.progress.painLogs}
+                      painLogs={rehab.progress?.painLogs ?? []}
                       logging={loggingSessionId === session.id}
                       onSavePain={rehab.addPainLog}
                       onSaveMorning={rehab.setNextMorningPain}
@@ -559,7 +562,7 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                       onOpenLog={() => openRehabLog(session)}
                     />
                   ) : null}
-                  {rehabActive && !rehab.loading && !rehab.progress ? (
+                  {shoulderRehab && !rehab.loading && !rehab.progress ? (
                     <div className="flex flex-wrap gap-2 px-3 py-3">
                       <Button type="button" size="sm" onClick={() => { void handleLogRehabSession(session); }} isLoading={loggingSessionId === session.id}>
                         Log session

@@ -1,20 +1,22 @@
 import { ActivityType } from '@/types/activityTypes';
 import { Exercise } from '@/types/exercise';
 import { NumberOrRange, Prescription, Program, ProgramExercise, ProgramSession } from '@/types/program';
+import { buildShoulderSlingSessions } from '@/data/programs/shoulderSlingRehab';
 
 export const SHOULDER_REHAB_3_WEEK_NAME = 'Shoulder Rehab – 3 Weeks';
 export const SHOULDER_REHAB_3_WEEK_TAG = 'shoulder-rehab-3-week';
-export const SHOULDER_REHAB_3_WEEK_REVISION = 4;
+export const SHOULDER_REHAB_3_WEEK_REVISION = 5;
 export const SHOULDER_REHAB_3_WEEK_REVISION_TAG = `shr3-rev-${SHOULDER_REHAB_3_WEEK_REVISION}`;
 
 export const SHOULDER_REHAB_3_WEEK_DESCRIPTION =
-  'Rehab after anterior shoulder dislocation. Daily activation plus three weeks of strength work.';
+  'Rehab after anterior shoulder dislocation. Daily activation, three weeks of strength work, and a separate three-week sling program from physio.';
 
 export const SHOULDER_REHAB_3_WEEK_RULES = [
   'Pain up to 3/10 during exercise is OK; it should be back to normal by the next morning.',
   "Stop an exercise if the shoulder slips, clunks, or feels like it's about to come out.",
   'Daily shoulder activation every day; strength sessions as listed per week.',
   "Legs, core and cardio can be trained freely as long as the arm isn't involved.",
+  'Sling program: 3 sessions per week. Steepen the lean only when the current angle stays controlled.',
 ];
 
 export const SHOULDER_REHAB_3_WEEK_STOP_SIGNS =
@@ -299,6 +301,11 @@ export const buildShoulderRehab3WeekProgram = (
         sessionsPerWeek: 3,
       }
     ),
+    ...buildShoulderSlingSessions(userId, {
+      orderOffset: 4,
+      weekOffset: 3,
+      namePrefix: 'Sling program · ',
+    }),
   ];
 
   return {

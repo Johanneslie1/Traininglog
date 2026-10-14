@@ -30,6 +30,9 @@ describe('Shoulder Rehab – 3 Weeks', () => {
       'Week 1 · Calm and activate',
       'Week 2 · Build strength',
       'Week 3 · Power',
+      'Sling program · Week 1 · Learn the positions',
+      'Sling program · Week 2 · Add one arm',
+      'Sling program · Week 3 · Physio prescription',
     ]);
   });
 
@@ -89,5 +92,15 @@ describe('Shoulder Rehab – 3 Weeks', () => {
     expect(week3.exercises).toHaveLength(7);
     expect(week3.checkpoint).toBeUndefined();
     expect(week3.exercises.every((exercise) => exercise.instructionMode === 'structured')).toBe(true);
+
+    const slingWeeks = program.sessions.slice(4);
+    expect(slingWeeks.map((session) => session.week)).toEqual([4, 5, 6]);
+    expect(slingWeeks[2].exercises.map((exercise) => exercise.name)).toEqual([
+      'Sling Superman',
+      'Sling Superman, Arm Down',
+      'Sling External Rotation',
+      'Sling Internal Rotation',
+      'Medicine Ball Straight-Arm Reach',
+    ]);
   });
 });
