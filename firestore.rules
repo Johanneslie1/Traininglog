@@ -66,6 +66,49 @@ service cloud.firestore {
         hasValidSportsLoadMetrics();
     }
 
+    function assessmentNumberInRange(field, minValue, maxValue) {
+      return !(field in request.resource.data) ||
+        (request.resource.data[field] is number &&
+          request.resource.data[field] >= minValue &&
+          request.resource.data[field] <= maxValue);
+    }
+
+    function hasValidAssessment() {
+      return request.resource.data.userId == request.auth.uid &&
+        request.resource.data.kind in ['body_composition', 'vo2max'] &&
+        request.resource.data.date is string &&
+        request.resource.data.date.size() == 10 &&
+        request.resource.data.method is string &&
+        request.resource.data.method.size() > 0 &&
+        request.resource.data.method.size() <= 40 &&
+        request.resource.data.dateEpochDay is int &&
+        request.resource.data.dateEpochDay <= ((request.time.toMillis() / 86400000) + 1) &&
+        (!('notes' in request.resource.data) ||
+          (request.resource.data.notes is string && request.resource.data.notes.size() <= 1000)) &&
+        assessmentNumberInRange('heightCm', 50, 250) &&
+        assessmentNumberInRange('bodyMassKg', 20, 300) &&
+        assessmentNumberInRange('bodyFatPercent', 1, 70) &&
+        assessmentNumberInRange('fatMassKg', 0, 250) &&
+        assessmentNumberInRange('leanMassKg', 0, 250) &&
+        assessmentNumberInRange('vo2maxMlKgMin', 10, 100) &&
+        assessmentNumberInRange('vo2maxLMin', 0.5, 10) &&
+        (!('maxHeartRate' in request.resource.data) ||
+          (request.resource.data.maxHeartRate is int &&
+            request.resource.data.maxHeartRate >= 40 &&
+            request.resource.data.maxHeartRate <= 230)) &&
+        (
+          (request.resource.data.kind == 'body_composition' &&
+            ('heightCm' in request.resource.data ||
+              'bodyMassKg' in request.resource.data ||
+              'bodyFatPercent' in request.resource.data ||
+              'fatMassKg' in request.resource.data ||
+              'leanMassKg' in request.resource.data)) ||
+          (request.resource.data.kind == 'vo2max' &&
+            'vo2maxMlKgMin' in request.resource.data &&
+            request.resource.data.vo2maxMlKgMin is number)
+        );
+    }
+
     function hasValidHabit() {
       return request.resource.data.userId == request.auth.uid &&
         request.resource.data.name is string &&
@@ -203,6 +246,21 @@ service cloud.firestore {
           isOwner(userId) &&
           resource.data.userId == request.auth.uid &&
           request.resource.data.userId == request.auth.uid;
+        allow delete: if isAuthenticated() &&
+          isOwner(userId) &&
+          resource.data.userId == request.auth.uid;
+      }
+
+      // Body composition and VO2max results. One document per kind per day.
+      match /assessments/{assessmentId} {
+        allow read: if isAuthenticated() && (isOwner(userId) || hasCoachAthleteAccess(userId));
+        allow create: if isAuthenticated() &&
+          isOwner(userId) &&
+          hasValidAssessment();
+        allow update: if isAuthenticated() &&
+          isOwner(userId) &&
+          resource.data.userId == request.auth.uid &&
+          hasValidAssessment();
         allow delete: if isAuthenticated() &&
           isOwner(userId) &&
           resource.data.userId == request.auth.uid;
