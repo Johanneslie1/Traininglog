@@ -1,5 +1,5 @@
 import { Habit, HabitDayEntry } from '@/types/habit';
-import { addDays, dateKeyToLocalDate, toLocalDateString } from '@/utils/dateUtils';
+import { addDays, dateKeyToLocalDate, getLocalWeekDateRange, toLocalDateString } from '@/utils/dateUtils';
 
 export type HabitDayMark = 'met' | 'miss' | 'future' | 'inactive';
 
@@ -134,6 +134,102 @@ export function bestStreak(
     }
   }
   return best;
+}
+
+export interface DateBounds {
+  start: string;
+  end: string;
+}
+
+export interface HabitScore {
+  habit: Habit;
+  week: HabitRate;
+  month: HabitRate;
+}
+
+export function weekBounds(dateKey: string): DateBounds {
+  const date = dateKeyToLocalDate(dateKey);
+  if (!date) throw new Error('Invalid habit date');
+  const week = getLocalWeekDateRange(date, 1);
+  return { start: week.startDateKey, end: week.endDateKey };
+}
+
+export function monthBounds(dateKey: string): DateBounds {
+  const date = dateKeyToLocalDate(dateKey);
+  if (!date) throw new Error('Invalid habit date');
+  return {
+    start: toLocalDateString(new Date(date.getFullYear(), date.getMonth(), 1)),
+    end: toLocalDateString(new Date(date.getFullYear(), date.getMonth() + 1, 0)),
+  };
+}
+
+/** The next week can open when its Monday is still today or earlier. */
+export function canAdvanceWeek(selectedDate: string, todayKey: string): boolean {
+  return addDateKey(weekBounds(selectedDate).start, 7) <= todayKey;
+}
+
+/** Earlier weeks stay reachable through the earliest day a habit was active. */
+export function canRetreatWeek(selectedDate: string, earliestKey: string): boolean {
+  return weekBounds(selectedDate).start > earliestKey;
+}
+
+export function shiftSelectedWeek(selectedDate: string, todayKey: string, direction: -1 | 1): string {
+  if (direction === 1 && !canAdvanceWeek(selectedDate, todayKey)) return selectedDate;
+  const next = addDateKey(selectedDate, direction * 7);
+  return next > todayKey ? todayKey : next;
+}
+
+export function combineHabitRates(rates: HabitRate[]): HabitRate {
+  let met = 0;
+  let expected = 0;
+  for (const rate of rates) {
+    met += rate.met;
+    expected += rate.expected;
+  }
+  return { met, expected, rate: expected === 0 ? 0 : met / expected };
+}
+
+/**
+ * Active habits, plus archived habits that were expected in the week or month.
+ * Lowest month score first, then lowest week score.
+ */
+export function rankHabitScores(
+  habits: Habit[],
+  entriesByDate: Record<string, Record<string, HabitDayEntry | undefined>>,
+  todayKey: string,
+  week: DateBounds,
+  month: DateBounds,
+): HabitScore[] {
+  const scores = habits.flatMap((habit) => {
+    const entries = entriesForHabit(entriesByDate, habit.id);
+    const weekRate = habitCompletion(habit, entries, todayKey, week.start, week.end);
+    const monthRate = habitCompletion(habit, entries, todayKey, month.start, month.end);
+    if (habit.archived && weekRate.expected === 0 && monthRate.expected === 0) return [];
+    return [{ habit, week: weekRate, month: monthRate }];
+  });
+
+  return scores.sort((a, b) => {
+    const monthDiff = rankValue(a.month) - rankValue(b.month);
+    if (monthDiff !== 0) return monthDiff;
+    const weekDiff = rankValue(a.week) - rankValue(b.week);
+    if (weekDiff !== 0) return weekDiff;
+    return a.habit.name.localeCompare(b.habit.name);
+  });
+}
+
+function entriesForHabit(
+  entriesByDate: Record<string, Record<string, HabitDayEntry | undefined>>,
+  habitId: string,
+): Record<string, HabitDayEntry | undefined> {
+  const entries: Record<string, HabitDayEntry | undefined> = {};
+  for (const [date, day] of Object.entries(entriesByDate)) {
+    if (day[habitId]) entries[date] = day[habitId];
+  }
+  return entries;
+}
+
+function rankValue(rate: HabitRate): number {
+  return rate.expected === 0 ? Number.POSITIVE_INFINITY : rate.rate;
 }
 
 function lastExpectedDate(habit: Pick<Habit, 'activeFrom' | 'archived' | 'archivedOn'>, todayKey: string): string | null {

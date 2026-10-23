@@ -12,13 +12,17 @@ import {
 } from '@/services/habitService';
 import { buildHabitCsv, downloadHabitCsv } from '@/services/habitExportService';
 import { getLocalWeekDateRange, dateKeyToLocalDate, toLocalDateString } from '@/utils/dateUtils';
+import { canAdvanceWeek, canRetreatWeek, monthBounds, shiftSelectedWeek } from '@/utils/habitStats';
 import { HabitTodayList } from '@/features/habits/HabitTodayList';
 import { HabitWeekList } from '@/features/habits/HabitWeekList';
 import { HabitMonth } from '@/features/habits/HabitMonth';
+import { HabitOverview } from '@/features/habits/HabitOverview';
+import { HabitWeekNav } from '@/features/habits/HabitWeekNav';
 
 type HabitView =
   | { name: 'today' }
   | { name: 'habits' }
+  | { name: 'overview' }
   | { name: 'detail'; habitId: string };
 
 function indexEntries(days: HabitDay[]): Record<string, Record<string, HabitDayEntry>> {
@@ -65,10 +69,17 @@ const HabitsPage: React.FC = () => {
     void load();
   }, [load]);
 
-  const weekKeys = useMemo(
-    () => getLocalWeekDateRange(dateKeyToLocalDate(todayKey) ?? new Date(), 1).dateKeys,
-    [todayKey],
+  const week = useMemo(
+    () => getLocalWeekDateRange(dateKeyToLocalDate(selectedDate) ?? new Date(), 1),
+    [selectedDate],
   );
+  const month = useMemo(() => monthBounds(selectedDate), [selectedDate]);
+  const earliestKey = habits.reduce<string | null>(
+    (earliest, habit) => (!earliest || habit.activeFrom < earliest ? habit.activeFrom : earliest),
+    null,
+  );
+  const canGoPrevious = earliestKey ? canRetreatWeek(selectedDate, earliestKey) : false;
+  const canGoNext = canAdvanceWeek(selectedDate, todayKey);
 
   const persistEntry = async (date: string, habitId: string, entry: HabitDayEntry) => {
     const previous = entriesByDate[date]?.[habitId];
@@ -145,13 +156,26 @@ const HabitsPage: React.FC = () => {
   };
 
   const detailHabit = view.name === 'detail' ? habits.find((habit) => habit.id === view.habitId) : undefined;
-  const title = view.name === 'detail' ? detailHabit?.name ?? 'Habit' : view.name === 'habits' ? 'Habits' : 'Today';
+  const title =
+    view.name === 'detail'
+      ? detailHabit?.name ?? 'Habit'
+      : view.name === 'overview'
+        ? 'Overview'
+        : view.name === 'habits'
+          ? 'Habits'
+          : selectedDate === todayKey
+            ? 'Today'
+            : formatDayTitle(selectedDate);
+
+  const shiftWeek = (direction: -1 | 1) => {
+    setSelectedDate((current) => shiftSelectedWeek(current, todayKey, direction));
+  };
 
   return (
     <div className="pb-24 text-text-primary">
       <div className="mx-auto max-w-xl">
         {view.name === 'detail' ? null : (
-          <div className="flex items-end justify-between px-4 pb-2 pt-4">
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 pb-2 pt-4">
             <h1 className="text-xl font-semibold">{title}</h1>
             <div className="flex gap-2">
               <button
@@ -173,8 +197,28 @@ const HabitsPage: React.FC = () => {
               >
                 Habits
               </button>
+              <button
+                type="button"
+                aria-pressed={view.name === 'overview'}
+                onClick={() => setView({ name: 'overview' })}
+                className={`rounded-full px-3 py-1 text-sm ${view.name === 'overview' ? 'bg-accent-primary text-text-inverse' : 'text-text-secondary'}`}
+              >
+                Overview
+              </button>
             </div>
           </div>
+        )}
+
+        {loading || view.name === 'detail' ? null : (
+          <HabitWeekNav
+            startKey={week.startDateKey}
+            endKey={week.endDateKey}
+            todayKey={todayKey}
+            canGoPrevious={canGoPrevious}
+            canGoNext={canGoNext}
+            onPrevious={() => shiftWeek(-1)}
+            onNext={() => shiftWeek(1)}
+          />
         )}
 
         {loading ? (
@@ -193,7 +237,7 @@ const HabitsPage: React.FC = () => {
         ) : view.name === 'habits' ? (
           <HabitWeekList
             habits={habits}
-            weekKeys={weekKeys}
+            weekKeys={week.dateKeys}
             todayKey={todayKey}
             entriesByDate={entriesByDate}
             editing={editing}
@@ -203,6 +247,16 @@ const HabitsPage: React.FC = () => {
             onArchive={archive}
             onCreate={create}
             onExport={exportHabits}
+          />
+        ) : view.name === 'overview' ? (
+          <HabitOverview
+            habits={habits}
+            entriesByDate={entriesByDate}
+            todayKey={todayKey}
+            week={{ start: week.startDateKey, end: week.endDateKey }}
+            month={month}
+            monthDateKey={selectedDate}
+            onOpen={(habitId) => setView({ name: 'detail', habitId })}
           />
         ) : (
           <HabitTodayList
@@ -219,5 +273,11 @@ const HabitsPage: React.FC = () => {
     </div>
   );
 };
+
+function formatDayTitle(dateKey: string): string {
+  const date = dateKeyToLocalDate(dateKey);
+  if (!date) return 'Today';
+  return date.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+}
 
 export default HabitsPage;
