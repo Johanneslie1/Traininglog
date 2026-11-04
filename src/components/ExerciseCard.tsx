@@ -124,7 +124,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
       return false;
     }
 
-    if (exercise.activityType && exercise.activityType !== ActivityType.RESISTANCE) {
+    if (exercise.activityType) {
       return true;
     }
 
