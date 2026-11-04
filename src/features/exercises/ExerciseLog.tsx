@@ -147,6 +147,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastLoadedDateKeyRef = useRef<string | null>(null);
+  const dateLoadGenerationRef = useRef(0);
   const [selectedExercise, setSelectedExercise] = useState<ExerciseData | null>(null);
   const [editingExercise, setEditingExercise] = useState<UnifiedExerciseData | null>(null);
   const sharedImportInFlightRef = useRef<string | null>(null);
@@ -275,14 +276,17 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
   // Handle exercise data loading
   const loadExercises = useCallback(async (
     date: Date,
-    options?: { showSkeleton?: boolean; runRepairs?: boolean }
+    options?: { showSkeleton?: boolean; runRepairs?: boolean; generation?: number }
   ) => {
     const showSkeleton = options?.showSkeleton !== false;
     const runRepairs = options?.runRepairs !== false;
+    const generation = options?.generation ?? dateLoadGenerationRef.current;
+    const isCurrentLoad = () => generation === dateLoadGenerationRef.current;
 
     // Guard against null user
     const userId = auth.currentUser?.uid || user?.id;
     if (!userId) {
+      if (!isCurrentLoad()) return;
       setLoading(false);
       setExercises([]);
       return;
@@ -292,7 +296,7 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     const loadedDate = normalizeDate(date);
     
     // Soft refresh keeps the current list visible (no skeleton flash after add/save).
-    if (showSkeleton) {
+    if (showSkeleton && isCurrentLoad()) {
       setLoading(true);
     }
 
@@ -302,10 +306,11 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
 
     try {
       const combinedExercises = await getAllExercisesByDate(loadedDate, userId);
+      if (!isCurrentLoad()) return;
 
       combinedExercises.sort(compareByExerciseOrder);
 
-      if (runRepairs) {
+      if (runRepairs && isCurrentLoad()) {
         try {
           const repairedCount = await repairExerciseLogActivityTypes(
             userId,
@@ -352,12 +357,17 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
         }
       }
 
+      if (!isCurrentLoad()) return;
       setExercises(combinedExercises);
     } catch (error) {
       console.error('Error fetching exercises:', error);
-      setExercises([]);
+      if (isCurrentLoad()) {
+        setExercises([]);
+      }
     } finally {
-      setLoading(false);
+      if (isCurrentLoad()) {
+        setLoading(false);
+      }
     }
   }, [
     user?.id,
@@ -670,15 +680,19 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     ? srpeSessionsBySessionId[selectedSessionId]
     : undefined;
 
-  const loadSessionsForDate = useCallback(async (date: Date) => {
-    if (!user?.id) return;
+  const loadSessionsForDate = useCallback(async (date: Date, generation?: number) => {
+    const loadGeneration = generation ?? dateLoadGenerationRef.current;
+    const isCurrentLoad = () => loadGeneration === dateLoadGenerationRef.current;
+    if (!user?.id || !isCurrentLoad()) return;
     setSessionsLoading(true);
     try {
       await ensureSrpeSessionContextsForDate(user.id, getDateKey(date));
+      if (!isCurrentLoad()) return;
       const [sessions, srpeSessions] = await Promise.all([
         getSessionsForDate(user.id, date),
         getSportsLoadSessionsByDate(user.id, getDateKey(date)),
       ]);
+      if (!isCurrentLoad()) return;
       const visibleSessions = sessions.filter((session) => session.sessionType !== 'warmup');
       const srpeSessionMap = srpeSessions.reduce<Record<string, SportsLoadSession>>((acc, session) => {
         if (session.sessionId) {
@@ -704,7 +718,9 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
     } catch (error) {
       console.warn('Could not load sessions for date:', error);
     } finally {
-      setSessionsLoading(false);
+      if (isCurrentLoad()) {
+        setSessionsLoading(false);
+      }
     }
   }, [user?.id, getDateKey]);
 
@@ -859,10 +875,18 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
         return;
       }
 
+      const generation = dateLoadGenerationRef.current + 1;
+      dateLoadGenerationRef.current = generation;
+      lastLoadedDateKeyRef.current = null;
       setSelectedSessionId(null);
+      setExercises([]);
+      setAvailableSessions([]);
+      setSrpeSessionsBySessionId({});
+      setLoading(true);
+      setSessionsLoading(true);
       const timeoutId = setTimeout(() => {
-        loadExercises(selectedDate);
-        void loadSessionsForDate(selectedDate);
+        void loadExercises(selectedDate, { generation });
+        void loadSessionsForDate(selectedDate, generation);
       }, 50); // Small delay to ensure any local storage updates have completed
       return () => clearTimeout(timeoutId);
     } else {
@@ -1213,6 +1237,8 @@ const ExerciseLogContent: React.FC<ExerciseLogProps> = () => {
                       </div>
                     );
                   })
+                ) : sessionsLoading ? (
+                  <span className="text-sm text-text-secondary">Loading sessions...</span>
                 ) : (
                   <span className="text-sm text-text-secondary">No sessions yet</span>
                 )}

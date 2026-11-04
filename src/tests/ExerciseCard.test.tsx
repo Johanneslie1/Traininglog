@@ -221,4 +221,34 @@ describe('ExerciseCard', () => {
     expect(screen.getByRole('menuitem', { name: 'Edit' })).toBeTruthy();
     expect(screen.getByRole('menuitem', { name: 'Delete' })).toBeTruthy();
   });
+
+  it('shows bodyweight work without a zero-kilogram load', () => {
+    const bodyweightExercise: UnifiedExerciseData = {
+      id: 'test-log-row-bw',
+      exerciseName: 'Sling Superman',
+      activityType: ActivityType.RESISTANCE,
+      timestamp: new Date(),
+      userId: 'test-user',
+      sets: [
+        { weight: 0, reps: 10, difficulty: DifficultyCategory.NORMAL },
+        { weight: 0, reps: 10, difficulty: DifficultyCategory.NORMAL },
+        { weight: 0, reps: 10, difficulty: DifficultyCategory.NORMAL },
+      ],
+    };
+
+    render(
+      <ExerciseCard
+        exercise={bodyweightExercise}
+        variant="logRow"
+        showActions={false}
+      />
+    );
+
+    expect(screen.getByText('3 × 10')).toBeTruthy();
+    expect(screen.queryByText(/0 kg/)).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: /Expand Sling Superman/i }));
+    expect(screen.getAllByText('Bodyweight')).toHaveLength(3);
+    expect(screen.queryByText('Total volume')).toBeNull();
+  });
 });

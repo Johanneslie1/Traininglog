@@ -185,6 +185,7 @@ const ExerciseOverview: React.FC = () => {
                       type="button"
                       onClick={() => navigate('/')}
                       className="ml-3 shrink-0 text-xs font-medium text-accent-primary hover:underline"
+                      aria-label={`Log ${log.exerciseName} today`}
                     >
                       Log today
                     </button>
@@ -202,11 +203,13 @@ const ExerciseOverview: React.FC = () => {
           <input
             type="text"
             placeholder="Search exercises..."
+            aria-label="Search exercises"
             className="flex-1 px-4 py-2 rounded-lg bg-bg-secondary text-text-primary border border-border"
             value={filters.search}
             onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
           />
           <select
+            aria-label="Exercise source"
             className="px-4 py-2 rounded-lg bg-bg-secondary text-text-primary border border-border"
             value={filters.type}
             onChange={(e) => setFilters(prev => ({ ...prev, type: e.target.value as FilterState['type'] }))}
@@ -304,6 +307,7 @@ const ExerciseOverview: React.FC = () => {
                     type="button"
                     onClick={() => handleEditCustomExercise(exercise)}
                     className="text-sm font-medium text-accent-primary hover:underline"
+                    aria-label={`Edit ${exercise.name}`}
                   >
                     Edit
                   </button>
@@ -311,6 +315,7 @@ const ExerciseOverview: React.FC = () => {
                     type="button"
                     onClick={() => handleDeleteCustomExercise(exercise)}
                     className="text-sm font-medium text-red-500 hover:underline"
+                    aria-label={`Delete ${exercise.name}`}
                   >
                     Delete
                   </button>

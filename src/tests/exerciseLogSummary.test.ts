@@ -19,6 +19,25 @@ describe('exerciseLogSummary', () => {
     ).toBe('4 × 4–5 · 80–85 kg');
   });
 
+  it('leaves the weight off when every set is bodyweight', () => {
+    expect(
+      buildResistanceSummary([
+        { weight: 0, reps: 10, difficulty: DifficultyCategory.NORMAL },
+        { weight: 0, reps: 10, difficulty: DifficultyCategory.NORMAL },
+        { weight: 0, reps: 10, difficulty: DifficultyCategory.NORMAL },
+      ])
+    ).toBe('3 × 10');
+  });
+
+  it('keeps a zero in the range when a bodyweight set is mixed with a loaded set', () => {
+    expect(
+      buildResistanceSummary([
+        { weight: 0, reps: 10, difficulty: DifficultyCategory.NORMAL },
+        { weight: 20, reps: 8, difficulty: DifficultyCategory.NORMAL },
+      ])
+    ).toBe('2 × 8–10 · 0–20 kg');
+  });
+
   it('summarizes loaded carries by time instead of zero reps', () => {
     expect(
       buildResistanceSummary([

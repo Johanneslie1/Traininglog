@@ -244,7 +244,11 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
           >
             <span className="text-text-tertiary">{setIndex + 1}</span>
             <span style={{ color: getDifficultyColor(set.difficulty) }}>
-              {hasDisplayValue(set.weight) ? `${set.weight} kg` : '—'}
+              {typeof set.weight === 'number' && set.weight > 0
+                ? `${set.weight} kg`
+                : set.weight === 0
+                  ? 'Bodyweight'
+                  : '—'}
             </span>
             <span className="text-right">
               {(set.reps ?? 0) > 0
@@ -461,7 +465,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
                   className="font-medium whitespace-nowrap"
                   style={{ color: getDifficultyColor(set.difficulty) }}
                 >
-                  {set.weight}kg {(set.reps ?? 0) > 0 ? `${set.reps}r` : (set.duration ?? 0) > 0 ? formatDurationSeconds(set.duration) : `${set.reps ?? 0}r`}
+                  {(set.weight ?? 0) > 0 ? `${set.weight}kg ` : ''}{(set.reps ?? 0) > 0 ? `${set.reps}r` : (set.duration ?? 0) > 0 ? formatDurationSeconds(set.duration) : `${set.reps ?? 0}r`}
                 </span>
                 {index < exercise.sets.length - 1 && (
                   <span className="text-gray-500 mx-1">|</span>
@@ -679,7 +683,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
         {showExpandedDetails && (
           <div className="px-1 pb-3 pl-9">
             {renderSetTable()}
-            {!isNonResistance && exercise.sets && exercise.sets.length > 0 && (
+            {!isNonResistance && exercise.sets && exercise.sets.length > 0 && calculateTotalVolume() > 0 && (
               <div className="mt-2 flex items-center justify-between text-xs text-text-tertiary">
                 <span>Total volume</span>
                 <span className="text-text-secondary">{calculateTotalVolume()} kg</span>

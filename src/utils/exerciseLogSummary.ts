@@ -41,7 +41,7 @@ export function buildResistanceSummary(sets: ExerciseSet[] | undefined): string 
     return `${setCount} × ${repsLabel}`;
   })();
 
-  if (weights.length === 0) {
+  if (weights.length === 0 || weights.every((value) => value <= 0)) {
     return repsPart;
   }
 
