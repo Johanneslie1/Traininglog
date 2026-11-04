@@ -13,6 +13,18 @@ interface CalendarProps {
   embedded?: boolean;
 }
 
+const EARLIEST_CALENDAR_YEAR = 2015;
+
+const yearsForCalendar = (visibleYear: number, now = new Date()): number[] => {
+  const end = Math.max(now.getFullYear() + 1, visibleYear);
+  const start = Math.min(EARLIEST_CALENDAR_YEAR, visibleYear);
+  const years: number[] = [];
+  for (let year = end; year >= start; year -= 1) {
+    years.push(year);
+  }
+  return years;
+};
+
 const Calendar: React.FC<CalendarProps> = ({
   onDayClick,
   selectedDate,
@@ -79,30 +91,77 @@ const Calendar: React.FC<CalendarProps> = ({
     onDayClick?.(date);
   };
 
+  const moveMonth = (deltaMonths: number) => {
+    setCurrentMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + deltaMonths, 1));
+  };
+
+  const moveToYear = (year: number) => {
+    setCurrentMonth((prev) => new Date(year, prev.getMonth(), 1));
+  };
+
+  const visibleYear = currentMonth.getFullYear();
+  const yearOptions = yearsForCalendar(visibleYear);
+
   return (
     <div
       className={`w-full min-w-0 overflow-hidden bg-bg-secondary p-4 ${
         embedded ? '' : 'rounded-xl border border-border'
       }`}
     >
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <button
-          onClick={() => setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1))}
-          className="rounded-lg p-2 text-text-primary transition-colors hover:bg-bg-tertiary hover:text-accent-primary"
-          aria-label="Previous month"
-        >
-          ‹
-        </button>
-        <h2 className="min-w-0 truncate text-base font-semibold text-text-primary">
-          {format(currentMonth, 'MMMM yyyy')}
-        </h2>
-        <button
-          onClick={() => setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1))}
-          className="rounded-lg p-2 text-text-primary transition-colors hover:bg-bg-tertiary hover:text-accent-primary"
-          aria-label="Next month"
-        >
-          ›
-        </button>
+      <div className="mb-3 flex items-center justify-between gap-1">
+        <div className="flex items-center">
+          <button
+            type="button"
+            onClick={() => moveMonth(-12)}
+            className="rounded-lg px-1.5 py-2 text-text-primary transition-colors hover:bg-bg-tertiary hover:text-accent-primary"
+            aria-label="Previous year"
+          >
+            «
+          </button>
+          <button
+            type="button"
+            onClick={() => moveMonth(-1)}
+            className="rounded-lg px-1.5 py-2 text-text-primary transition-colors hover:bg-bg-tertiary hover:text-accent-primary"
+            aria-label="Previous month"
+          >
+            ‹
+          </button>
+        </div>
+        <div className="flex min-w-0 items-center justify-center gap-1.5">
+          <h2 className="truncate text-base font-semibold text-text-primary">
+            {format(currentMonth, 'MMMM')}
+          </h2>
+          <select
+            aria-label="Year"
+            value={visibleYear}
+            onChange={(event) => moveToYear(Number(event.target.value))}
+            className="cursor-pointer rounded-md border border-border bg-bg-tertiary px-1.5 py-0.5 text-base font-semibold text-text-primary outline-none focus:ring-2 focus:ring-accent-primary"
+          >
+            {yearOptions.map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="flex items-center">
+          <button
+            type="button"
+            onClick={() => moveMonth(1)}
+            className="rounded-lg px-1.5 py-2 text-text-primary transition-colors hover:bg-bg-tertiary hover:text-accent-primary"
+            aria-label="Next month"
+          >
+            ›
+          </button>
+          <button
+            type="button"
+            onClick={() => moveMonth(12)}
+            className="rounded-lg px-1.5 py-2 text-text-primary transition-colors hover:bg-bg-tertiary hover:text-accent-primary"
+            aria-label="Next year"
+          >
+            »
+          </button>
+        </div>
       </div>
 
       <div className="grid w-full grid-cols-7 gap-0.5">

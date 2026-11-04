@@ -86,15 +86,36 @@ describe('Calendar monthly session states', () => {
   it('keeps user-driven month navigation instead of snapping back to the selected date month', async () => {
     render(<Calendar selectedDate={new Date('2026-06-04T09:00:00.000Z')} />);
 
-    expect(await screen.findByRole('heading', { name: /June 2026/i })).not.toBeNull();
+    expect(await screen.findByRole('heading', { name: 'June' })).not.toBeNull();
+    expect((screen.getByLabelText('Year') as HTMLSelectElement).value).toBe('2026');
 
     fireEvent.click(screen.getByRole('button', { name: /Next month/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /July 2026/i })).not.toBeNull();
+      expect(screen.getByRole('heading', { name: 'July' })).not.toBeNull();
     });
 
-    expect(screen.queryByRole('heading', { name: /June 2026/i })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'June' })).toBeNull();
+    expect((screen.getByLabelText('Year') as HTMLSelectElement).value).toBe('2026');
+  });
+
+  it('jumps back a year and can open an earlier year directly', async () => {
+    render(<Calendar selectedDate={new Date('2026-06-04T09:00:00.000Z')} />);
+
+    expect(await screen.findByRole('heading', { name: 'June' })).not.toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: /Previous year/i }));
+
+    await waitFor(() => {
+      expect((screen.getByLabelText('Year') as HTMLSelectElement).value).toBe('2025');
+    });
+
+    expect(await screen.findByRole('button', { name: /June 4, 2025, no sessions/i })).not.toBeNull();
+
+    fireEvent.change(screen.getByLabelText('Year'), { target: { value: '2020' } });
+
+    expect(await screen.findByRole('button', { name: /June 4, 2020, no sessions/i })).not.toBeNull();
+    expect((screen.getByLabelText('Year') as HTMLSelectElement).value).toBe('2020');
   });
 
   it('can suppress selected-day workout details for picker-only modal usage', async () => {

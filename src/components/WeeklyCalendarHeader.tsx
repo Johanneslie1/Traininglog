@@ -85,8 +85,13 @@ const WeeklyCalendarHeader: React.FC<WeeklyCalendarHeaderProps> = ({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <h1 className="truncate text-base font-semibold text-text-primary">
-            {format(selectedDate, 'EEE d MMM')}
+          <h1 className="flex min-w-0 flex-col items-center leading-none">
+            <span className="text-xs font-semibold text-text-secondary">
+              {format(selectedDate, 'yyyy')}
+            </span>
+            <span className="mt-0.5 truncate text-base font-semibold text-text-primary">
+              {format(selectedDate, 'EEE d MMM')}
+            </span>
           </h1>
           <button
             type="button"
