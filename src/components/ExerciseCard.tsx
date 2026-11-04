@@ -120,6 +120,10 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
       return true;
     }
 
+    if (exercise.activityType === ActivityType.RESISTANCE) {
+      return false;
+    }
+
     if (exercise.activityType && exercise.activityType !== ActivityType.RESISTANCE) {
       return true;
     }
@@ -242,7 +246,13 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
             <span style={{ color: getDifficultyColor(set.difficulty) }}>
               {hasDisplayValue(set.weight) ? `${set.weight} kg` : '—'}
             </span>
-            <span className="text-right">{hasDisplayValue(set.reps) ? set.reps : '—'}</span>
+            <span className="text-right">
+              {(set.reps ?? 0) > 0
+                ? set.reps
+                : (set.duration ?? 0) > 0
+                  ? formatDurationSeconds(set.duration)
+                  : hasDisplayValue(set.reps) ? set.reps : '—'}
+            </span>
           </div>
         ))}
       </div>
@@ -451,7 +461,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
                   className="font-medium whitespace-nowrap"
                   style={{ color: getDifficultyColor(set.difficulty) }}
                 >
-                  {set.weight}kg {set.reps}r
+                  {set.weight}kg {(set.reps ?? 0) > 0 ? `${set.reps}r` : (set.duration ?? 0) > 0 ? formatDurationSeconds(set.duration) : `${set.reps ?? 0}r`}
                 </span>
                 {index < exercise.sets.length - 1 && (
                   <span className="text-gray-500 mx-1">|</span>

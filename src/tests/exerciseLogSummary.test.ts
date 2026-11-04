@@ -19,6 +19,15 @@ describe('exerciseLogSummary', () => {
     ).toBe('4 × 4–5 · 80–85 kg');
   });
 
+  it('summarizes loaded carries by time instead of zero reps', () => {
+    expect(
+      buildResistanceSummary([
+        { weight: 18, reps: 0, duration: 30 },
+        { weight: 18, reps: 0, duration: 45 },
+      ])
+    ).toBe('2 × 30s–45s · 18 kg');
+  });
+
   it('summarizes activity sets with reps and best time', () => {
     expect(
       buildActivitySummary(

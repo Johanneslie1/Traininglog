@@ -19,6 +19,19 @@ export function buildResistanceSummary(sets: ExerciseSet[] | undefined): string 
   const weights = sets.map((set) => set.weight).filter(hasNumeric);
 
   const repsPart = (() => {
+    const durations = sets
+      .map((set) => set.duration)
+      .filter((value): value is number => hasNumeric(value) && value > 0);
+    const allRepsZero = reps.length > 0 && reps.every((value) => value === 0);
+    if (allRepsZero && durations.length > 0) {
+      const minDuration = Math.min(...durations);
+      const maxDuration = Math.max(...durations);
+      const durationLabel = minDuration === maxDuration
+        ? formatDurationSeconds(minDuration)
+        : `${formatDurationSeconds(minDuration)}–${formatDurationSeconds(maxDuration)}`;
+      return `${setCount} × ${durationLabel}`;
+    }
+
     if (reps.length === 0) {
       return `${setCount} set${setCount === 1 ? '' : 's'}`;
     }
