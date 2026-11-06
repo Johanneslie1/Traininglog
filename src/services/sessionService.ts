@@ -1,6 +1,7 @@
 import type { ProgramSession, SharedSession, SharedSessionAssignment } from '@/types/program';
 import { db } from '@/services/firebase/config';
 import {
+  arrayRemove,
   collection,
   doc,
   FirestoreError,
@@ -89,7 +90,8 @@ export const shareSession = async (
   shareWithUserIds: string[],
   coachMessage?: string,
   sourceProgramId?: string,
-  sourceProgramName?: string
+  sourceProgramName?: string,
+  plannedDates?: string[]
 ): Promise<string> => {
   try {
     const user = await ensureAuth();
@@ -150,7 +152,10 @@ export const shareSession = async (
         sharedByName,
         assignedAt: new Date().toISOString(),
         status: 'not-started' as const,
-        coachMessage: coachMessage || undefined
+        coachMessage: coachMessage || undefined,
+        plannedDates: plannedDates && plannedDates.length > 0 ? plannedDates : undefined,
+        sourceProgramId: sourceProgramId || undefined,
+        sourceProgramName: sourceProgramName || undefined
       });
       batch.set(assignmentRef, assignmentData);
     });
@@ -269,6 +274,35 @@ export const getSharedSessionsSharedByCoach = async (): Promise<SharedSession[]>
     console.error('[sessionService] Error fetching coach shared sessions:', error);
     throw error;
   }
+};
+
+/**
+ * Athlete declines a planned day. Removes that date only; other planned days stay.
+ */
+export const declinePlannedSession = async (
+  assignmentId: string,
+  dateKey: string
+): Promise<void> => {
+  const user = await ensureAuth();
+  if (!assignmentId || !/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) {
+    throw new Error('Choose a session day to decline.');
+  }
+
+  const assignmentRef = doc(db, 'sharedSessionAssignments', assignmentId);
+  const assignmentSnap = await getDoc(assignmentRef);
+  if (!assignmentSnap.exists()) {
+    throw new Error('Assignment not found');
+  }
+
+  const assignmentData = assignmentSnap.data();
+  if (assignmentData.userId !== user.uid) {
+    throw new Error('You can only decline your own assignments');
+  }
+
+  await updateDoc(assignmentRef, {
+    plannedDates: arrayRemove(dateKey),
+    lastViewedAt: new Date().toISOString(),
+  });
 };
 
 /**

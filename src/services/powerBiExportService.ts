@@ -21,6 +21,7 @@ import { verifyCoachAthleteRelationship } from '@/services/coachService';
 import { getCoachTeams, getTeamMembers, syncCoachAthleteAccess } from '@/services/teamService';
 import { db } from '@/services/firebase/config';
 import { ActivityType } from '@/types/activityTypes';
+import { isCompletedTrainingSet } from '@/utils/completedTrainingSet';
 import { normalizeActivityType } from '@/types/activityLog';
 import type {
   DimAthleteRow,
@@ -703,6 +704,7 @@ const processRawSets = (
   allRawSets: Record<string, unknown>[]
 ): void => {
   sets.forEach((s) => {
+    if (!isCompletedTrainingSet(s)) return;
     allRawSets.push(s);
     if (isResistanceSet(s)) {
       gymSets.push(buildGymSetRow(athleteId, athleteName, s, sessionNamesById));

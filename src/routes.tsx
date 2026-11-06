@@ -257,6 +257,7 @@ const AppRoutes: React.FC = () => {
             </ProtectedRoute>
           }
         />
+        <Route path="/coach-workspace" element={<Navigate to="/" replace />} />
         <Route
           path="/programs/:id"
           element={

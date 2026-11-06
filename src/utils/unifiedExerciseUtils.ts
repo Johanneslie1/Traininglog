@@ -112,6 +112,11 @@ export async function getAllExercisesByDate(
       sourceProgramSessionId: log.sourceProgramSessionId,
       sourceProgramSessionName: log.sourceProgramSessionName,
       sourceProgramExerciseId: log.sourceProgramExerciseId,
+      sharedSessionAssignmentId: log.sharedSessionAssignmentId,
+      sharedSessionId: log.sharedSessionId,
+      sharedSessionExerciseId: log.sharedSessionExerciseId,
+      sharedSessionDateKey: log.sharedSessionDateKey,
+      sharedSessionExerciseCompleted: log.sharedSessionExerciseCompleted,
       isWarmup: normalizeSessionType(log.sessionType) === 'warmup',
       activityData: log
     }));

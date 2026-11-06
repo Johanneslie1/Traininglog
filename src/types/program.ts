@@ -150,4 +150,8 @@ export interface SharedSessionAssignment {
   lastViewedAt?: string;
   completedAt?: string;
   coachMessage?: string;
+  /** Training days (YYYY-MM-DD) this assignment is placed on. assignedAt stays the day it was given. */
+  plannedDates?: string[];
+  sourceProgramId?: string;
+  sourceProgramName?: string;
 }

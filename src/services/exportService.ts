@@ -8,6 +8,7 @@ import { SupersetGroup } from '@/types/session';
 import { buildSupersetLabels, SupersetLabelMetadata } from '@/utils/supersetUtils';
 import { normalizeDistanceMeters, normalizeDurationSeconds } from '@/utils/activityFieldContract';
 import { toLocalDateString, toLocalTimestamp } from '@/utils/dateUtils';
+import { isCompletedTrainingSet } from '@/utils/completedTrainingSet';
 import { normalizeSessionType } from '@/types/sessionType';
 import type { WellnessLog } from '@/types/wellness';
 
@@ -605,9 +606,10 @@ export const exportData = async (userId: string, options: ExportOptions = {}) =>
         });
 
         results.sets = unifiedLogs.flatMap(log =>
-          log.sets.map((set, index) => {
+          log.sets.flatMap((set, index) => {
+            if (!set || !isCompletedTrainingSet(set)) return [];
             const supersetMeta = resolveSupersetMetadata(log);
-            return serializeSetForExport(
+            return [serializeSetForExport(
               userId,
               {
                 ...log,
@@ -618,7 +620,7 @@ export const exportData = async (userId: string, options: ExportOptions = {}) =>
               },
               set,
               index
-            );
+            )];
           })
         );
       }
@@ -664,7 +666,9 @@ export const getExportPreview = async (userId: string, startDate?: Date, endDate
   const sessionCount = sessionsResult.status === 'fulfilled' ? sessionsResult.value.length : 0;
 
   const logs = logsResult.status === 'fulfilled' ? logsResult.value : [];
-  const setCount = logs.reduce((sum, log) => sum + (Array.isArray(log.sets) ? log.sets.length : 0), 0);
+  const setCount = logs.reduce((sum, log) => sum + (
+    Array.isArray(log.sets) ? log.sets.filter((set) => set && isCompletedTrainingSet(set)).length : 0
+  ), 0);
 
   return {
     sessionCount,

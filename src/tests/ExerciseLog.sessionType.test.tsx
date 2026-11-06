@@ -66,6 +66,8 @@ jest.mock('@/services/firebase/exerciseLogs', () => ({
 
 jest.mock('@/services/sessionService', () => ({
   getSharedSessionAssignment: jest.fn(),
+  getSharedSessionsForAthlete: jest.fn(async () => []),
+  declinePlannedSession: jest.fn(async () => undefined),
   updateSharedSessionStatus: jest.fn(),
 }));
 

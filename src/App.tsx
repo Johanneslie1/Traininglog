@@ -10,6 +10,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Providers } from '@/providers';
 import { store } from '@/store/store';
 import Layout from '@/components/layout/Layout';
+import AuthenticatedShell from '@/features/coach-shell/AuthenticatedShell';
 import AppRoutes from '@/routes';
 import { StatePersistence } from '@/utils/statePersistence';
 import { ThemeProvider } from '@/context/ThemeContext';
@@ -117,9 +118,13 @@ const App: React.FC = () => {
       <ThemeProvider>
         <Providers>
           <UpdateNotification />
-          <Layout>
-            <AppRoutes />
-          </Layout>
+          <AuthenticatedShell
+            phoneShell={
+              <Layout>
+                <AppRoutes />
+              </Layout>
+            }
+          />
         </Providers>
       </ThemeProvider>
     </ErrorBoundary>

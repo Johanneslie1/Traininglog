@@ -44,6 +44,11 @@ export interface ActivityLog {
   sourceProgramSessionId?: string;
   sourceProgramSessionName?: string;
   sourceProgramExerciseId?: string;
+  sharedSessionAssignmentId?: string;
+  sharedSessionId?: string;
+  sharedSessionExerciseId?: string;
+  sharedSessionDateKey?: string;
+  sharedSessionExerciseCompleted?: boolean;
   /** Normalized training session identifier */
   sessionId?: string;
   /** Session mode for this log entry */
@@ -74,6 +79,11 @@ export type ActivityLogInput = {
   sourceProgramSessionId?: string;
   sourceProgramSessionName?: string;
   sourceProgramExerciseId?: string;
+  sharedSessionAssignmentId?: string;
+  sharedSessionId?: string;
+  sharedSessionExerciseId?: string;
+  sharedSessionDateKey?: string;
+  sharedSessionExerciseCompleted?: boolean;
   sessionId?: string;
   sessionType?: SessionType;
   sessionDateKey?: string;

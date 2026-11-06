@@ -5,6 +5,7 @@ import { getExportPreview, ExportPreview } from '@/services/exportService';
 import { downloadPowerBiZip, buildPowerBiFiles } from '@/services/powerBiExportService';
 import { getAllAthletes } from '@/services/coachService';
 import { getCoachTeams, type Team } from '@/services/teamService';
+import CoachWorkspaceSetting from '@/features/coach-shell/CoachWorkspaceSetting';
 import { useIsCoach } from '@/hooks/useUserRole';
 import type { PowerBiExportScope } from '@/types/powerBiExport';
 import { exportFullBackup, downloadBackupJson } from '@/services/backupService';
@@ -424,6 +425,8 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                   {user?.role || 'athlete'}
                 </span>
               </div>
+
+              {isCoach && <CoachWorkspaceSetting />}
 
               {/* Progressive Overload Auto-fill Toggle */}
               <div className="flex items-start justify-between py-2">
