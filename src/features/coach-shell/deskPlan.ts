@@ -10,6 +10,7 @@ export interface CoachPlacement {
   sessionId: string;
   sessionName: string;
   programName?: string;
+  coachMessage?: string;
   assignedAt: string;
   exercises: ProgramExercise[];
 }
@@ -131,6 +132,9 @@ export function toCoachPlacement(id: string, data: Record<string, unknown>): Coa
   const programName = typeof data.sourceProgramName === 'string' && data.sourceProgramName.trim()
     ? data.sourceProgramName.trim()
     : undefined;
+  const coachMessage = typeof data.coachMessage === 'string' && data.coachMessage.trim()
+    ? data.coachMessage.trim()
+    : undefined;
   return {
     id,
     athleteId: data.userId,
@@ -138,6 +142,7 @@ export function toCoachPlacement(id: string, data: Record<string, unknown>): Coa
     sessionId,
     sessionName: typeof session.name === 'string' && session.name.trim() ? session.name.trim() : 'Session',
     programName,
+    coachMessage,
     assignedAt: typeof data.assignedAt === 'string' ? data.assignedAt : '',
     exercises: readExercises(session.exercises),
   };

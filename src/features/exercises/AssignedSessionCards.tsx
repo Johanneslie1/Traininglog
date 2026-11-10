@@ -38,6 +38,9 @@ const AssignedSessionCards: React.FC<AssignedSessionCardsProps> = ({
             <p className="mt-1 text-sm text-text-secondary">
               {exercises.length} {exercises.length === 1 ? 'exercise' : 'exercises'} · not started
             </p>
+            {assignment.coachMessage?.trim() && (
+              <p className="mt-2 text-sm text-text-secondary">{assignment.coachMessage.trim()}</p>
+            )}
             <ul className="mt-3 space-y-2">
               {exercises.map((exercise) => {
                 const summary = plannedSummary(exercise.prescription, exercise.activityType);

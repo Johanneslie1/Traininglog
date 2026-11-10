@@ -3,7 +3,24 @@ import toast from 'react-hot-toast';
 import Button from '@/components/ui/Button';
 import type { Program } from '@/types/program';
 import type { TeamMember } from '@/services/teamService';
-import { clearPlannedDate, placeSessionOnDate, type CoachPlacement } from '@/services/coachPlacementService';
+import {
+  clearPlannedDate,
+  placeSessionOnDate,
+  placeSessionOnDates,
+} from '@/services/coachPlacementService';
+import type { CoachPlacement } from '@/features/coach-shell/deskPlan';
+import {
+  buildBulkPlaceTargets,
+  cellKey,
+  selectionSummary,
+  toggleAthleteAcrossDates,
+  toggleCellKey,
+  toggleDateAcrossAthletes,
+  uniqueSelectedAthletes,
+  uniqueSelectedDates,
+} from '@/features/coach-shell/calendarSelection';
+import type { CalendarCellDaySummary } from '@/features/coach-shell/calendarLoggedSummary';
+import { useTeamCalendarLogs } from '@/features/coach-shell/useTeamCalendarLogs';
 import {
   chunkWeeks,
   dayCaption,
@@ -36,12 +53,61 @@ const RANGES: Array<{ id: CalendarRange; label: string }> = [
   { id: 'year', label: 'Year' },
 ];
 
+const COACH_NOTE_MAX = 500;
+
 function actionError(error: unknown, fallback: string): string {
   if (error instanceof Error) {
     if (/permission/i.test(error.message)) return 'You do not have permission to change that assignment.';
     if (error.message && error.message.length < 160) return error.message;
   }
   return fallback;
+}
+
+function LoggedWorkChips({ summary }: { summary?: CalendarCellDaySummary }) {
+  if (!summary?.hasLoggedWork) return null;
+  const typeChips = summary.chips.filter((chip) => chip.kind !== 'sportsLoad');
+  const loadChip = summary.chips.find((chip) => chip.kind === 'sportsLoad');
+  return (
+    <>
+      {typeChips.map((chip) => (
+        <span
+          key={chip.kind}
+          className="truncate rounded border border-border px-1 py-0.5 text-[11px] text-text-secondary"
+        >
+          {chip.label}
+        </span>
+      ))}
+      {loadChip && (
+        <span className="truncate rounded border border-accent-primary px-1 py-0.5 text-[11px] text-accent-primary">
+          {loadChip.label}
+        </span>
+      )}
+      {summary.collapsedTypeCount > 0 && (
+        <span className="text-[11px] text-text-tertiary">
+          +{summary.collapsedTypeCount} type{summary.collapsedTypeCount === 1 ? '' : 's'}
+        </span>
+      )}
+    </>
+  );
+}
+
+function YearPresenceDots({
+  summary,
+  hasPlanned,
+}: {
+  summary?: CalendarCellDaySummary;
+  hasPlanned: boolean;
+}) {
+  const hasLoggedGym = Boolean(summary?.chips.some((chip) => chip.kind !== 'sportsLoad'));
+  const hasLoad = Boolean(summary?.totalSportsLoad && summary.totalSportsLoad > 0);
+  if (!hasPlanned && !hasLoggedGym && !hasLoad) return null;
+  return (
+    <span className="mt-auto flex items-center gap-1 px-0.5 pt-0.5" aria-hidden>
+      {hasPlanned && <span className="h-1.5 w-1.5 rounded-full bg-bg-secondary ring-1 ring-border" />}
+      {hasLoggedGym && <span className="h-1.5 w-1.5 rounded-full border border-border" />}
+      {hasLoad && <span className="h-1.5 w-1.5 rounded-full bg-accent-primary" />}
+    </span>
+  );
 }
 
 const CoachCalendar: React.FC<CoachCalendarProps> = ({
@@ -57,21 +123,29 @@ const CoachCalendar: React.FC<CoachCalendarProps> = ({
 }) => {
   const [range, setRange] = useState<CalendarRange>('week');
   const [anchor, setAnchor] = useState(() => new Date());
-  const [selection, setSelection] = useState<{ athleteId: string; date: string } | null>(null);
+  const [selectedCells, setSelectedCells] = useState<Set<string>>(() => new Set());
   const [programId, setProgramId] = useState('');
   const [sessionKey, setSessionKey] = useState('');
+  const [coachNote, setCoachNote] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    setSelection((current) => {
-      if (!current) return current;
-      return members.some((member) => member.id === current.athleteId) ? current : null;
+    const memberIds = new Set(members.map((member) => member.id));
+    setSelectedCells((current) => {
+      const next = new Set([...current].filter((key) => {
+        const athleteId = key.split('|')[0];
+        return memberIds.has(athleteId);
+      }));
+      return next.size === current.size ? current : next;
     });
   }, [members]);
 
   const dates = useMemo(() => rangeDates(anchor, range), [anchor, range]);
   const weeks = useMemo(() => chunkWeeks(dates), [dates]);
   const title = rangeTitle(dates);
+  const athleteIds = useMemo(() => members.map((member) => member.id), [members]);
+  const { summaries: logSummaries, loading: logsLoading } = useTeamCalendarLogs(athleteIds, dates);
+  const compactLogged = range === 'year';
   const selectedProgram = programs.find((program) => program.id === programId) ?? null;
   const programSessions = useMemo(
     () => (selectedProgram ? sessionsInProgramOrder(selectedProgram.sessions ?? []) : []),
@@ -85,32 +159,39 @@ const CoachCalendar: React.FC<CoachCalendarProps> = ({
   }, [programId, programSessions, sessionKey]);
 
   const selectedSession = programSessions.find((session) => `${programId}::${session.id}` === sessionKey) ?? null;
-  const selectedMember = members.find((member) => member.id === selection?.athleteId) ?? null;
-  const cellPlacements = placements.filter(
-    (placement) => placement.athleteId === selection?.athleteId && selection && placement.plannedDates.includes(selection.date)
-  );
+  const summary = selectionSummary(selectedCells);
+  const selectedDates = uniqueSelectedDates(selectedCells);
+  const selectedAthleteIds = uniqueSelectedAthletes(selectedCells);
+  const singleCellKey = summary.cellCount === 1 ? [...selectedCells][0] : null;
+  const singleCell = singleCellKey
+    ? { athleteId: singleCellKey.split('|')[0], date: singleCellKey.slice(singleCellKey.indexOf('|') + 1) }
+    : null;
+  const cellPlacements = singleCell
+    ? placements.filter(
+      (placement) => placement.athleteId === singleCell.athleteId && placement.plannedDates.includes(singleCell.date)
+    )
+    : [];
+  const trimmedNote = coachNote.trim();
+  const overviewDate = selectedDates.length === 1 ? selectedDates[0] : today;
 
   const placeSession = async () => {
-    if (!selection || !selectedSession || !selectedProgram) return;
-    const existing = placements.find(
-      (placement) => placement.athleteId === selection.athleteId && placement.sessionId === selectedSession.id
-    );
-    if (existing?.plannedDates.includes(selection.date)) {
-      toast.success('That session is already on this day.');
+    if (summary.cellCount === 0 || !selectedSession || !selectedProgram) return;
+    const targets = buildBulkPlaceTargets(selectedCells, selectedSession.id, placements);
+    if (targets.length === 0) {
+      toast.success('That session is already on the selected days.');
       return;
     }
     setSaving(true);
     try {
-      await placeSessionOnDate({
+      const placed = await placeSessionOnDates({
         session: selectedSession,
-        athleteId: selection.athleteId,
-        date: selection.date,
-        assignmentId: existing?.id,
+        targets,
         programId: selectedProgram.id,
         programName: selectedProgram.name,
+        coachMessage: trimmedNote || undefined,
       });
       await onChanged();
-      toast.success('Session placed.');
+      toast.success(placed === 1 ? 'Placed on 1 cell' : `Placed on ${placed} cells`);
     } catch (error) {
       toast.error(actionError(error, 'Could not place that session.'));
       await onChanged().catch(() => undefined);
@@ -120,39 +201,46 @@ const CoachCalendar: React.FC<CoachCalendarProps> = ({
   };
 
   const placeProgram = async () => {
-    if (!selection || !selectedProgram) return;
+    if (summary.cellCount === 0 || !selectedProgram) return;
+    if (selectedDates.length !== 1) {
+      toast.error('Place program needs one start day. Select cells on a single date.');
+      return;
+    }
+    const startDate = selectedDates[0];
     const sessions = programSessions.filter((session) => session.exercises?.length);
     if (sessions.length === 0) {
       toast.error('Add at least one exercise before assigning this program.');
       return;
     }
-    const planned = programPlacementDates(selection.date, sessions.length);
-    const pending = sessions.flatMap((session, index) => {
-      const date = planned[index];
-      const existing = placements.find(
-        (placement) => placement.athleteId === selection.athleteId && placement.sessionId === session.id
-      );
-      if (!date || existing?.plannedDates.includes(date)) return [];
-      return [{ session, date, assignmentId: existing?.id }];
-    });
-    if (pending.length === 0) {
-      toast.success('Those sessions are already placed.');
-      return;
-    }
     setSaving(true);
     try {
-      for (const item of pending) {
-        await placeSessionOnDate({
-          session: item.session,
-          athleteId: selection.athleteId,
-          date: item.date,
-          assignmentId: item.assignmentId,
-          programId: selectedProgram.id,
-          programName: selectedProgram.name,
+      let placed = 0;
+      for (const athleteId of selectedAthleteIds) {
+        const planned = programPlacementDates(startDate, sessions.length);
+        const pending = sessions.flatMap((session, index) => {
+          const date = planned[index];
+          const existing = placements.find(
+            (placement) => placement.athleteId === athleteId && placement.sessionId === session.id
+          );
+          if (!date || existing?.plannedDates.includes(date)) return [];
+          return [{ session, date, assignmentId: existing?.id }];
         });
+        for (const item of pending) {
+          await placeSessionOnDate({
+            session: item.session,
+            athleteId,
+            date: item.date,
+            assignmentId: item.assignmentId,
+            programId: selectedProgram.id,
+            programName: selectedProgram.name,
+            coachMessage: trimmedNote || undefined,
+          });
+          placed += 1;
+        }
       }
       await onChanged();
-      toast.success('Program placed.');
+      if (placed === 0) toast.success('Those sessions are already placed.');
+      else toast.success(placed === 1 ? 'Program placed on 1 cell' : `Program placed on ${placed} cells`);
     } catch (error) {
       toast.error(actionError(error, 'Could not place that program.'));
       await onChanged().catch(() => undefined);
@@ -215,58 +303,100 @@ const CoachCalendar: React.FC<CoachCalendarProps> = ({
       </header>
 
       <div className="border-b border-border px-4 py-4 md:px-6">
-        <p className="text-sm text-text-secondary" aria-live="polite">
-          {selectedMember && selection
-            ? `${memberLabel(selectedMember)} · ${selection.date}`
-            : 'Select an athlete and a day to assign a program or a session.'}
-        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-sm text-text-secondary" aria-live="polite">
+            {summary.cellCount > 0
+              ? `${summary.athleteCount} athlete${summary.athleteCount === 1 ? '' : 's'} · ${summary.dayCount} day${summary.dayCount === 1 ? '' : 's'} · ${summary.cellCount} cell${summary.cellCount === 1 ? '' : 's'}`
+              : 'Select athlete/day cells to assign a program or a session.'}
+          </p>
+          {summary.cellCount > 0 && (
+            <Button type="button" variant="ghost" size="sm" onClick={() => setSelectedCells(new Set())}>
+              Clear selection
+            </Button>
+          )}
+        </div>
         <p className="mt-1 text-xs text-text-tertiary">
-          A session can sit on more than one day. Placing a program lays its sessions on the following days, in program order.
+          Click cells to toggle. Athlete names select that row; day headers select that column. Place program needs one start day.
         </p>
+        <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-text-secondary">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="rounded bg-bg-secondary px-1.5 py-0.5 text-[10px] text-text-primary">Session</span>
+            Planned
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="rounded border border-border px-1.5 py-0.5 text-[10px] text-text-secondary">Resistance · 4</span>
+            Logged
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="rounded border border-accent-primary px-1.5 py-0.5 text-[10px] text-accent-primary">Load 320</span>
+            Sports load
+          </span>
+          {logsLoading && <span className="text-text-tertiary">Updating logs…</span>}
+        </div>
         {loadError && (
           <p className="mt-3 text-sm text-text-primary" role="alert">{loadError}</p>
         )}
         {programs.length === 0 ? (
           <p className="mt-3 text-sm text-text-secondary">Build a program in the phone app, then assign it here.</p>
         ) : (
-          <div className="mt-3 flex flex-wrap items-end gap-3">
-            <label className="text-sm text-text-secondary">
-              Program
-              <select
-                className="mt-1 block min-w-48 rounded-xl border border-border bg-bg-primary px-3 py-2 text-sm text-text-primary"
-                value={programId}
-                onChange={(event) => setProgramId(event.target.value)}
+          <div className="mt-3 space-y-3">
+            <div className="flex flex-wrap items-end gap-3">
+              <label className="text-sm text-text-secondary">
+                Program
+                <select
+                  className="mt-1 block min-w-48 rounded-xl border border-border bg-bg-primary px-3 py-2 text-sm text-text-primary"
+                  value={programId}
+                  onChange={(event) => setProgramId(event.target.value)}
+                >
+                  <option value="">Choose a program</option>
+                  {programs.map((program) => (
+                    <option key={program.id} value={program.id}>{program.name}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="text-sm text-text-secondary">
+                Session
+                <select
+                  className="mt-1 block min-w-48 rounded-xl border border-border bg-bg-primary px-3 py-2 text-sm text-text-primary"
+                  value={sessionKey}
+                  onChange={(event) => setSessionKey(event.target.value)}
+                  disabled={!selectedProgram}
+                >
+                  <option value="">Choose a session</option>
+                  {programSessions.map((session) => (
+                    <option key={session.id} value={`${programId}::${session.id}`}>{session.name}</option>
+                  ))}
+                </select>
+              </label>
+              <Button type="button" size="sm" onClick={placeSession} disabled={summary.cellCount === 0 || !selectedSession || saving}>
+                Place session
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={placeProgram}
+                disabled={summary.cellCount === 0 || !selectedProgram || saving}
               >
-                <option value="">Choose a program</option>
-                {programs.map((program) => (
-                  <option key={program.id} value={program.id}>{program.name}</option>
-                ))}
-              </select>
+                Place program
+              </Button>
+            </div>
+            <label className="block max-w-xl text-sm text-text-secondary" htmlFor="coach-desk-note">
+              Note for athletes (optional)
+              <textarea
+                id="coach-desk-note"
+                className="mt-1 block w-full rounded-xl border border-border bg-bg-primary px-3 py-2 text-sm text-text-primary"
+                rows={2}
+                value={coachNote}
+                onChange={(event) => setCoachNote(event.target.value.slice(0, COACH_NOTE_MAX))}
+                placeholder="Optional message shown with the assigned session"
+              />
+              <span className="mt-1 block text-xs text-text-tertiary">{coachNote.length}/{COACH_NOTE_MAX}</span>
             </label>
-            <label className="text-sm text-text-secondary">
-              Session
-              <select
-                className="mt-1 block min-w-48 rounded-xl border border-border bg-bg-primary px-3 py-2 text-sm text-text-primary"
-                value={sessionKey}
-                onChange={(event) => setSessionKey(event.target.value)}
-                disabled={!selectedProgram}
-              >
-                <option value="">Choose a session</option>
-                {programSessions.map((session) => (
-                  <option key={session.id} value={`${programId}::${session.id}`}>{session.name}</option>
-                ))}
-              </select>
-            </label>
-            <Button type="button" size="sm" onClick={placeSession} disabled={!selection || !selectedSession || saving}>
-              Place session
-            </Button>
-            <Button type="button" variant="secondary" size="sm" onClick={placeProgram} disabled={!selection || !selectedProgram || saving}>
-              Place program
-            </Button>
           </div>
         )}
         <div className="mt-3">
-          <Button type="button" variant="ghost" size="sm" onClick={() => onOpenOverview(selection?.date ?? today)}>
+          <Button type="button" variant="ghost" size="sm" onClick={() => onOpenOverview(overviewDate)}>
             Open session overview
           </Button>
         </div>
@@ -279,7 +409,7 @@ const CoachCalendar: React.FC<CoachCalendarProps> = ({
                 variant="secondary"
                 size="sm"
                 disabled={saving}
-                onClick={() => selection && clearDate(placement.id, selection.date)}
+                onClick={() => singleCell && clearDate(placement.id, singleCell.date)}
               >
                 Clear {placement.sessionName}
               </Button>
@@ -304,37 +434,56 @@ const CoachCalendar: React.FC<CoachCalendarProps> = ({
                 <div className="grid grid-cols-[8.5rem_repeat(7,minmax(6.5rem,1fr))] gap-1">
                   <div />
                   {week.map((date) => (
-                    <div key={date} className={`px-1 pb-1 text-center text-xs ${date === today ? 'font-semibold text-accent-primary' : 'text-text-secondary'}`}>
+                    <button
+                      key={date}
+                      type="button"
+                      className={`px-1 pb-1 text-center text-xs hover:bg-bg-tertiary ${date === today ? 'font-semibold text-accent-primary' : 'text-text-secondary'}`}
+                      onClick={() => setSelectedCells((current) => toggleDateAcrossAthletes(current, date, members.map((m) => m.id)))}
+                      aria-label={`Select all athletes on ${date}`}
+                    >
                       <div>{weekdayLabel(date)}</div>
                       <div>{dayCaption(date)}</div>
-                    </div>
+                    </button>
                   ))}
                   {members.map((member) => (
                     <React.Fragment key={member.id}>
-                      <div className="sticky left-0 z-10 flex items-center bg-bg-primary pr-2 text-sm font-medium">
+                      <button
+                        type="button"
+                        className="sticky left-0 z-10 flex items-center bg-bg-primary pr-2 text-left text-sm font-medium hover:bg-bg-tertiary"
+                        onClick={() => setSelectedCells((current) => toggleAthleteAcrossDates(current, member.id, dates))}
+                        aria-label={`Select ${memberLabel(member)} across visible days`}
+                      >
                         {memberLabel(member)}
-                      </div>
+                      </button>
                       {week.map((date) => {
                         const onDay = placements.filter(
                           (placement) => placement.athleteId === member.id && placement.plannedDates.includes(date)
                         );
-                        const selected = selection?.athleteId === member.id && selection.date === date;
+                        const selected = selectedCells.has(cellKey({ athleteId: member.id, date }));
+                        const dayLog = logSummaries.get(cellKey({ athleteId: member.id, date }));
                         return (
                           <button
                             key={date}
                             type="button"
                             aria-pressed={selected}
                             aria-label={`${memberLabel(member)} ${date}`}
-                            className={`flex min-h-16 flex-col items-stretch gap-1 rounded-lg border p-1 text-left ${selected ? 'border-accent-primary bg-bg-tertiary' : 'border-border bg-bg-primary hover:border-border-hover'}`}
-                            onClick={() => setSelection({ athleteId: member.id, date })}
+                            className={`flex min-h-[4.5rem] flex-col items-stretch gap-1 rounded-lg border p-1 text-left ${selected ? 'border-accent-primary bg-bg-tertiary' : 'border-border bg-bg-primary hover:border-border-hover'}`}
+                            onClick={() => setSelectedCells((current) => toggleCellKey(current, { athleteId: member.id, date }))}
                           >
-                            {onDay.slice(0, 2).map((placement) => (
-                              <span key={placement.id} className="truncate rounded bg-bg-secondary px-1 py-0.5 text-[11px] text-text-primary">
-                                {placement.sessionName}
-                              </span>
-                            ))}
-                            {onDay.length > 2 && (
-                              <span className="text-[11px] text-text-tertiary">+{onDay.length - 2}</span>
+                            {compactLogged ? (
+                              <YearPresenceDots summary={dayLog} hasPlanned={onDay.length > 0} />
+                            ) : (
+                              <>
+                                {onDay.slice(0, 2).map((placement) => (
+                                  <span key={placement.id} className="truncate rounded bg-bg-secondary px-1 py-0.5 text-[11px] text-text-primary">
+                                    {placement.sessionName}
+                                  </span>
+                                ))}
+                                {onDay.length > 2 && (
+                                  <span className="text-[11px] text-text-tertiary">+{onDay.length - 2}</span>
+                                )}
+                                <LoggedWorkChips summary={dayLog} />
+                              </>
                             )}
                           </button>
                         );

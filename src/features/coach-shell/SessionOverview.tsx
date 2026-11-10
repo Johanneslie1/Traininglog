@@ -10,8 +10,25 @@ import {
   sessionActivityLabel,
   unmatchedSessionLogs,
 } from '@/features/coach-shell/monitorLines';
+import {
+  sessionProgressLabel,
+  sessionProgressStatus,
+  type SessionProgressStatus,
+} from '@/features/coach-shell/sessionProgress';
+import { sportsLoadOverviewLine } from '@/features/coach-shell/overviewSportsLoad';
 import { useTodayTrainingLogs } from '@/features/coach-shell/useTodayTrainingLogs';
 import { dateKeyToLocalDate } from '@/utils/dateUtils';
+
+function progressBadgeClass(status: SessionProgressStatus): string {
+  switch (status) {
+    case 'logging':
+      return 'bg-accent-primary/15 text-accent-primary';
+    case 'started':
+      return 'bg-bg-tertiary text-text-primary';
+    default:
+      return 'bg-bg-tertiary text-text-secondary';
+  }
+}
 
 interface SessionOverviewProps {
   teamName: string | null;
@@ -53,7 +70,7 @@ const SessionOverview: React.FC<SessionOverviewProps> = ({
     () => [...new Set(todayPlacements.map((placement) => placement.athleteId))],
     [todayPlacements]
   );
-  const { logsByAthlete, failedAthleteIds, live } = useTodayTrainingLogs(athleteIds, today);
+  const { logsByAthlete, sportsLoadByAthlete, failedAthleteIds, live } = useTodayTrainingLogs(athleteIds, today);
   const openedFromAnotherDay = Boolean(linkedDate && linkedDate !== today);
 
   return (
@@ -109,13 +126,23 @@ const SessionOverview: React.FC<SessionOverviewProps> = ({
               sessions.map((session) => ({ id: session.sessionId, exercises: session.exercises })),
               logs
             );
+            const dayExtras = assigned.extras;
+            const sportsLoad = sportsLoadByAthlete[athleteId] ?? [];
             const failed = failedAthleteIds.includes(athleteId);
+            const athleteStatus = sessionProgressStatus(
+              sessions.flatMap((session) => assigned.bySessionId[session.sessionId] ?? [])
+            );
             return (
               <article
                 key={athleteId}
                 className="w-80 shrink-0 rounded-2xl border border-border bg-bg-secondary p-4"
               >
-                <h3 className="text-base font-semibold">{member ? memberLabel(member) : 'Athlete'}</h3>
+                <div className="flex items-start justify-between gap-3">
+                  <h3 className="text-base font-semibold">{member ? memberLabel(member) : 'Athlete'}</h3>
+                  <span className={`shrink-0 rounded-full px-2 py-1 text-xs font-medium ${progressBadgeClass(athleteStatus)}`}>
+                    {sessionProgressLabel(athleteStatus)}
+                  </span>
+                </div>
                 {failed && (
                   <p className="mt-2 text-xs text-text-secondary">Live updates are unavailable for this athlete. The plan is still shown.</p>
                 )}
@@ -123,16 +150,25 @@ const SessionOverview: React.FC<SessionOverviewProps> = ({
                   {sessions.map((session) => {
                     const sessionLogs = assigned.bySessionId[session.sessionId] ?? [];
                     const extras = unmatchedSessionLogs(session.exercises, sessionLogs);
+                    const status = sessionProgressStatus(sessionLogs);
                     return (
                       <div key={session.id}>
                         <div className="flex items-start justify-between gap-3">
                           <h4 className="text-sm font-semibold">{session.sessionName}</h4>
-                          <span className="rounded-full bg-bg-tertiary px-2 py-1 text-xs text-text-secondary">
-                            {sessionActivityLabel(session.exercises)}
-                          </span>
+                          <div className="flex flex-col items-end gap-1">
+                            <span className={`rounded-full px-2 py-1 text-xs font-medium ${progressBadgeClass(status)}`}>
+                              {sessionProgressLabel(status)}
+                            </span>
+                            <span className="rounded-full bg-bg-tertiary px-2 py-1 text-xs text-text-secondary">
+                              {sessionActivityLabel(session.exercises)}
+                            </span>
+                          </div>
                         </div>
                         {session.programName && (
                           <p className="mt-1 text-xs text-text-tertiary">{session.programName}</p>
+                        )}
+                        {session.coachMessage && (
+                          <p className="mt-2 text-sm text-text-secondary">{session.coachMessage}</p>
                         )}
                         <ul className="mt-3 space-y-3">
                           {session.exercises.map((exercise) => {
@@ -168,6 +204,35 @@ const SessionOverview: React.FC<SessionOverviewProps> = ({
                       </div>
                     );
                   })}
+                  {dayExtras.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-text-tertiary">Also logged today</p>
+                      <ul className="mt-2 space-y-1">
+                        {dayExtras.flatMap((log) => linesForLoggedExercise(log)).map((line) => (
+                          <li key={line.id} className="flex items-baseline justify-between gap-3 text-sm">
+                            <span className="text-text-secondary">{line.label}</span>
+                            <span className="text-text-primary">{line.detail}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {sportsLoad.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-text-tertiary">Sports load</p>
+                      <ul className="mt-2 space-y-1">
+                        {sportsLoad.map((session) => {
+                          const line = sportsLoadOverviewLine(session);
+                          return (
+                            <li key={line.id} className="flex items-baseline justify-between gap-3 text-sm">
+                              <span className="text-text-secondary">{line.label}</span>
+                              <span className="text-text-primary">{line.detail}</span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               </article>
             );

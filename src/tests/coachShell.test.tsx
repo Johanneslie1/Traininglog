@@ -13,6 +13,7 @@ jest.mock('@/services/teamService', () => ({
 jest.mock('@/services/coachPlacementService', () => ({
   listCoachPlacements: jest.fn(async () => []),
   placeSessionOnDate: jest.fn(async () => undefined),
+  placeSessionOnDates: jest.fn(async () => 0),
   clearPlannedDate: jest.fn(async () => undefined),
 }));
 
@@ -20,6 +21,11 @@ jest.mock('@/services/coachService', () => ({
   getAllAthletes: jest.fn(async () => [
     { id: 'athlete-1', firstName: 'Ada', lastName: 'Lovelace', email: 'ada@example.com' },
   ]),
+  getAthleteExerciseLogs: jest.fn(async () => []),
+}));
+
+jest.mock('@/services/srpeService', () => ({
+  getSportsLoadSessionsByDateRange: jest.fn(async () => []),
 }));
 
 jest.mock('@/services/powerBiExportService', () => ({
@@ -32,6 +38,18 @@ jest.mock('@/services/powerBiExportService', () => ({
     footballLoadCount: 0,
   })),
 }));
+
+jest.mock('@/features/coach-shell/CoachPrograms', () => ({
+  __esModule: true,
+  default: () => (
+    <div>
+      <h2>Programs</h2>
+      <p>Create programs and one-off sessions here, then place them on the calendar.</p>
+      <button type="button">New session</button>
+    </div>
+  ),
+}));
+
 import { configureStore } from '@reduxjs/toolkit';
 import { Provider } from 'react-redux';
 import { MemoryRouter, useLocation } from 'react-router-dom';
@@ -129,6 +147,7 @@ describe('coach shell gate', () => {
     expect(screen.getByRole('heading', { name: 'Coach workspace' })).toBeInTheDocument();
     expect(screen.queryByText('Phone shell')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Calendar' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Programs' })).toBeInTheDocument();
     expect(screen.getByText('Team')).toBeInTheDocument();
     expect(await screen.findByText(/no team yet/i)).toBeInTheDocument();
 
@@ -136,6 +155,11 @@ describe('coach shell gate', () => {
     expect(screen.getByRole('heading', { name: 'Session overview' })).toBeInTheDocument();
     expect(screen.getByText(/today only/i)).toBeInTheDocument();
     expect(screen.getByText(/choose the team in the left menu/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Programs' }));
+    expect(screen.getByRole('button', { name: 'New session' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Programs' })).toBeInTheDocument();
+    expect(screen.getByText(/place them on the calendar/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Export' }));
     expect(screen.getByRole('heading', { name: 'Export' })).toBeInTheDocument();

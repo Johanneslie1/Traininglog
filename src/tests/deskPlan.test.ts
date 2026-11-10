@@ -61,6 +61,7 @@ describe('coach desk plan', () => {
       assignedAt: '2026-11-01T00:00:00.000Z',
       plannedDates: ['2026-11-05', 'not-a-date', '2026-11-05'],
       sourceProgramName: 'Strength',
+      coachMessage: '  Push pace  ',
       sessionData: {
         id: 'session-1',
         name: 'Upper',
@@ -73,6 +74,7 @@ describe('coach desk plan', () => {
       sessionId: 'session-1',
       sessionName: 'Upper',
       programName: 'Strength',
+      coachMessage: 'Push pace',
       plannedDates: ['2026-11-05'],
     });
     expect(toCoachPlacement('broken', { userId: 'athlete-1' })).toBeNull();

@@ -57,6 +57,18 @@ describe('coach session monitor', () => {
     expect(formatLoggedSet({ duration: 90, distance: 1500 })).toBe('2 min · 1.5 km');
   });
 
+  it('keeps unmatched endurance logs in athlete-level extras', () => {
+    const assigned = assignLogsToSessions(
+      [{ id: 'strength', exercises: [{ id: 'squat', name: 'Squat' }] }],
+      [
+        { id: 'squat-log', name: 'Squat', sourceProgramSessionId: 'strength', sets: [{ reps: 5 }] },
+        { id: 'run', name: 'Easy run', activityType: 'endurance', sets: [{ duration: 1200, distance: 3000 }] },
+      ]
+    );
+    expect(assigned.bySessionId.strength.map((log) => log.id)).toEqual(['squat-log']);
+    expect(assigned.extras.map((log) => log.id)).toEqual(['run']);
+  });
+
   it('keeps an empty saved set planned and matches the shared exercise id', () => {
     const lines = buildMonitorLines(bench, [{
       id: 'log-1',

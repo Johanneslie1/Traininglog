@@ -17,7 +17,10 @@ import {
 
 type ProgramViewMode = 'compact' | 'detailed';
 
-const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onSelect }) => {
+const ProgramListContent: React.FC<{
+  onSelect?: (id: string) => void;
+  onCreated?: (id: string) => void;
+}> = ({ onSelect, onCreated }) => {
   const navigate = useNavigate();
   const { programs, addProgram: create, refresh, deleteProgram, duplicateProgram } = usePrograms();
   const [showCreateNew, setShowCreateNew] = useState(false);
@@ -32,6 +35,18 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
   const existingHelesProgram = findHelesTrainingProgram(programs);
 
   // No need for useEffect to refresh - ProgramsContext handles this automatically
+
+  const openProgram = (programId: string, created = false) => {
+    if (created && onCreated) {
+      onCreated(programId);
+      return;
+    }
+    if (onSelect) {
+      onSelect(programId);
+      return;
+    }
+    navigate(`/programs/${programId}`);
+  };
 
   const getProgramSummary = (program: Program) => {
     const sessions = program.sessions || [];
@@ -48,7 +63,7 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
       console.log('[ProgramList] Creating new program:', program);
       const programId = await create(program);
       setShowCreateNew(false);
-      navigate(`/programs/${programId}`);
+      openProgram(programId, true);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create program';
       console.error('Error creating program:', err);
@@ -62,7 +77,7 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
     createProgram: (userId: string) => Promise<string>
   ) => {
     if (existing) {
-      navigate(`/programs/${existing.id}`);
+      openProgram(existing.id);
       return;
     }
 
@@ -78,7 +93,7 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
     try {
       const programId = await createProgram(user.uid);
       await refresh();
-      navigate(`/programs/${programId}`);
+      openProgram(programId, true);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create program';
       console.error('[ProgramList] Error creating starter program:', err);
@@ -126,8 +141,7 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
       console.log('[ProgramList] Duplicating program:', programId);
       const duplicatedProgram = await duplicateProgram(programId);
       console.log('[ProgramList] Program duplicated successfully:', duplicatedProgram.id);
-      // Navigate to the duplicated program
-      navigate(`/programs/${duplicatedProgram.id}`);
+      openProgram(duplicatedProgram.id, true);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to duplicate program';
       console.error('[ProgramList] Error duplicating program:', err);
@@ -157,9 +171,11 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
               ]}
             />
           )}
-          <Button variant="secondary" onClick={() => navigate('/teams?tab=programs')}>
-            Assigned
-          </Button>
+          {!onSelect && (
+            <Button variant="secondary" onClick={() => navigate('/teams?tab=programs')}>
+              Assigned
+            </Button>
+          )}
           {!existingHelesProgram && (
             <Button
               variant="secondary"
@@ -228,13 +244,13 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
                 onKeyDown={(event) => {
                   if (event.key === 'Enter' || event.key === ' ') {
                     event.preventDefault();
-                    onSelect ? onSelect(program.id) : navigate(`/programs/${program.id}`);
+                    openProgram(program.id);
                   }
                 }}
                 className={`group flex cursor-pointer items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-bg-tertiary/60 active:bg-active-overlay focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring ${
                   index > 0 ? 'border-t border-border' : ''
                 }`}
-                onClick={() => (onSelect ? onSelect(program.id) : navigate(`/programs/${program.id}`))}
+                onClick={() => openProgram(program.id)}
               >
                 <div className="min-w-0 flex-1">
                   <h3 className="truncate text-[15px] font-semibold text-text-primary">{program.name}</h3>
@@ -326,7 +342,10 @@ const ProgramListContent: React.FC<{ onSelect?: (id: string) => void }> = ({ onS
   );
 };
 
-const ProgramList: React.FC<{ onSelect?: (id: string) => void }> = (props) => {
+const ProgramList: React.FC<{
+  onSelect?: (id: string) => void;
+  onCreated?: (id: string) => void;
+}> = (props) => {
   return (
     <ErrorBoundary fallback={<div className="text-text-primary p-4">Error loading programs. Please try again.</div>}>
       <ProgramListContent {...props} />

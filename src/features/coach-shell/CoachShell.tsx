@@ -13,13 +13,14 @@ import {
 import { memberLabel } from '@/features/coach-shell/deskPlan';
 import CoachAthleteExport from '@/features/coach-shell/CoachAthleteExport';
 import CoachCalendar from '@/features/coach-shell/CoachCalendar';
+import CoachPrograms from '@/features/coach-shell/CoachPrograms';
 import SessionOverview from '@/features/coach-shell/SessionOverview';
 import { listCoachPlacements, type CoachPlacement } from '@/services/coachPlacementService';
 import { getCoachTeams, getTeamMembers, type Team, type TeamMember } from '@/services/teamService';
 import type { RootState } from '@/store/store';
 import { toLocalDateString } from '@/utils/dateUtils';
 
-type DeskScreen = 'calendar' | 'overview' | 'export';
+type DeskScreen = 'calendar' | 'overview' | 'programs' | 'export';
 
 const CoachShell: React.FC = () => {
   const location = useLocation();
@@ -159,6 +160,7 @@ const CoachShell: React.FC = () => {
         <nav className="flex gap-1 md:mt-4 md:flex-col" aria-label="Coach workspace">
           {navButton('calendar', 'Calendar')}
           {navButton('overview', 'Session overview')}
+          {navButton('programs', 'Programs')}
           {navButton('export', 'Export')}
         </nav>
         <div className="md:mt-auto">
@@ -181,6 +183,7 @@ const CoachShell: React.FC = () => {
         />
       </div>
       {screen === 'export' && <CoachAthleteExport />}
+      {screen === 'programs' && <CoachPrograms />}
       {screen === 'overview' && (
         <SessionOverview
           teamName={selectedTeam?.name ?? null}

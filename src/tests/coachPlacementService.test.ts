@@ -30,7 +30,12 @@ jest.mock('@/services/sessionService', () => ({
   shareSession: (...args: unknown[]) => shareSessionMock(...args),
 }));
 
-import { clearPlannedDate, listCoachPlacements, placeSessionOnDate } from '@/services/coachPlacementService';
+import {
+  clearPlannedDate,
+  listCoachPlacements,
+  placeSessionOnDate,
+  placeSessionOnDates,
+} from '@/services/coachPlacementService';
 
 const session = {
   id: 'session-1',
@@ -61,12 +66,30 @@ describe('coach placement service', () => {
     );
   });
 
+  it('updates coachMessage when adding a date to an existing assignment', async () => {
+    await placeSessionOnDate({
+      session,
+      athleteId: 'athlete-1',
+      date: '2026-11-06',
+      assignmentId: 'assign-1',
+      coachMessage: '  Focus on tempo  ',
+    });
+
+    expect(updateDocMock).toHaveBeenCalledWith(
+      { id: 'assign-1' },
+      {
+        plannedDates: { union: '2026-11-06' },
+        coachMessage: 'Focus on tempo',
+      }
+    );
+  });
+
   it('shares a new session with the planned date in the same write', async () => {
     shareSessionMock.mockResolvedValue('shared-1');
     getDocsMock.mockResolvedValue({
       docs: [{
         ref: { id: 'assign-2' },
-        data: () => ({ userId: 'athlete-1' }),
+        data: () => ({ userId: 'athlete-1', plannedDates: ['2026-11-05'] }),
       }],
     });
 
@@ -76,15 +99,83 @@ describe('coach placement service', () => {
       date: '2026-11-05',
       programId: 'program-1',
       programName: 'Strength',
+      coachMessage: 'Easy day',
     });
 
     expect(shareSessionMock).toHaveBeenCalledWith(
       session,
       ['athlete-1'],
-      undefined,
+      'Easy day',
       'program-1',
       'Strength',
       ['2026-11-05']
+    );
+    expect(updateDocMock).not.toHaveBeenCalled();
+  });
+
+  it('places a session on multiple targets', async () => {
+    shareSessionMock.mockResolvedValue('shared-bulk');
+    getDocsMock.mockResolvedValue({
+      docs: [{
+        ref: { id: 'assign-new' },
+        data: () => ({ userId: 'athlete-2', plannedDates: ['2026-11-06'] }),
+      }],
+    });
+
+    const placed = await placeSessionOnDates({
+      session,
+      targets: [
+        { athleteId: 'athlete-1', date: '2026-11-05', assignmentId: 'assign-1' },
+        { athleteId: 'athlete-2', date: '2026-11-06' },
+      ],
+      coachMessage: 'Bulk note',
+    });
+
+    expect(placed).toBe(2);
+    expect(updateDocMock).toHaveBeenCalledWith(
+      { id: 'assign-1' },
+      {
+        plannedDates: { union: '2026-11-05' },
+        coachMessage: 'Bulk note',
+      }
+    );
+    expect(shareSessionMock).toHaveBeenCalledWith(
+      session,
+      ['athlete-2'],
+      'Bulk note',
+      undefined,
+      undefined,
+      ['2026-11-06']
+    );
+  });
+
+  it('shares once per athlete when bulk-placing multiple days', async () => {
+    shareSessionMock.mockResolvedValue('shared-multi-day');
+    getDocsMock.mockResolvedValue({
+      docs: [{
+        ref: { id: 'assign-new' },
+        data: () => ({ userId: 'athlete-1', plannedDates: ['2026-11-05', '2026-11-06'] }),
+      }],
+    });
+
+    const placed = await placeSessionOnDates({
+      session,
+      targets: [
+        { athleteId: 'athlete-1', date: '2026-11-05' },
+        { athleteId: 'athlete-1', date: '2026-11-06' },
+      ],
+      coachMessage: 'Two days',
+    });
+
+    expect(placed).toBe(2);
+    expect(shareSessionMock).toHaveBeenCalledTimes(1);
+    expect(shareSessionMock).toHaveBeenCalledWith(
+      session,
+      ['athlete-1'],
+      'Two days',
+      undefined,
+      undefined,
+      ['2026-11-05', '2026-11-06']
     );
     expect(updateDocMock).not.toHaveBeenCalled();
   });

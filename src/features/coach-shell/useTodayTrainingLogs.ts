@@ -2,22 +2,27 @@ import { useEffect, useState } from 'react';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '@/services/firebase/config';
 import { DayTrainingLog, logMatchesDate, toDayTrainingLog } from '@/features/coach-shell/monitorLines';
+import { getSportsLoadSessionsByDate } from '@/services/srpeService';
+import type { SportsLoadSession } from '@/types/srpe';
 
 const LOG_COLLECTIONS = ['exercises', 'activities'] as const;
 
 export function useTodayTrainingLogs(athleteIds: string[], dateKey: string): {
   logsByAthlete: Record<string, DayTrainingLog[]>;
+  sportsLoadByAthlete: Record<string, SportsLoadSession[]>;
   failedAthleteIds: string[];
   live: boolean;
 } {
   const athleteKey = [...athleteIds].sort().join('|');
   const [logsByAthlete, setLogsByAthlete] = useState<Record<string, DayTrainingLog[]>>({});
+  const [sportsLoadByAthlete, setSportsLoadByAthlete] = useState<Record<string, SportsLoadSession[]>>({});
   const [failedAthleteIds, setFailedAthleteIds] = useState<string[]>([]);
   const [live, setLive] = useState(false);
 
   useEffect(() => {
     const ids = athleteKey ? athleteKey.split('|') : [];
     setLogsByAthlete({});
+    setSportsLoadByAthlete({});
     setFailedAthleteIds([]);
     setLive(false);
     if (ids.length === 0) return;
@@ -55,10 +60,25 @@ export function useTodayTrainingLogs(athleteIds: string[], dateKey: string): {
       });
     });
 
+    let cancelled = false;
+    void Promise.all(
+      ids.map(async (athleteId) => {
+        try {
+          const sessions = await getSportsLoadSessionsByDate(athleteId, dateKey);
+          if (cancelled) return;
+          setSportsLoadByAthlete((current) => ({ ...current, [athleteId]: sessions }));
+        } catch {
+          if (cancelled) return;
+          setSportsLoadByAthlete((current) => ({ ...current, [athleteId]: [] }));
+        }
+      })
+    );
+
     return () => {
+      cancelled = true;
       unsubs.forEach((unsubscribe) => unsubscribe());
     };
   }, [athleteKey, dateKey]);
 
-  return { logsByAthlete, failedAthleteIds, live };
+  return { logsByAthlete, sportsLoadByAthlete, failedAthleteIds, live };
 }
