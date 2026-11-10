@@ -2,7 +2,9 @@ import { describe, expect, it } from '@jest/globals';
 import {
   assignLogsToSessions,
   buildMonitorLines,
+  foldSharedTrainingSessions,
   formatLoggedSet,
+  groupUnassignedLogs,
   logMatchesDate,
   plannedSummary,
   toDayTrainingLog,
@@ -87,6 +89,64 @@ describe('coach session monitor', () => {
     });
   });
 
+  it('shows an unassigned logged session beside work that has no session', () => {
+    const grouped = groupUnassignedLogs([
+      {
+        id: 'squat',
+        name: 'Squat',
+        sessionId: 'free-1',
+        sessionType: 'main',
+        sessionNumberInDay: 2,
+        sourceProgramName: 'Own program',
+        timestampMs: 20,
+        sets: [{ reps: 5, weight: 100 }],
+      },
+      {
+        id: 'row',
+        name: 'Row',
+        sessionId: 'free-1',
+        sessionType: 'main',
+        sessionNumberInDay: 2,
+        timestampMs: 10,
+        sets: [{ reps: 8 }],
+      },
+      {
+        id: 'mobility',
+        name: 'Mobility',
+        activityType: 'stretching',
+        sets: [{ duration: 30 }],
+      },
+      {
+        id: 'upper',
+        name: 'Bench press',
+        sourceProgramSessionId: 'upper',
+        sourceProgramSessionName: 'Upper',
+        sourceProgramName: 'Galpin Power',
+        sets: [{ reps: 6, weight: 80 }],
+      },
+    ]);
+
+    expect(grouped.sessions.map((session) => session.name)).toEqual(['Upper', 'Session 2']);
+    expect(grouped.sessions[0]).toMatchObject({ programName: 'Galpin Power' });
+    expect(grouped.sessions[1].logs.map((log) => log.name)).toEqual(['Row', 'Squat']);
+    expect(grouped.loose.map((log) => log.id)).toEqual(['mobility']);
+  });
+
+  it('keeps extra exercises from the same logged workout on the assigned session', () => {
+    const folded = foldSharedTrainingSessions(
+      [{ id: 'upper' }],
+      {
+        upper: [{ id: 'bench', name: 'Bench press', sessionId: 'workout-1', sets: [{ reps: 5 }] }],
+      },
+      [
+        { id: 'row', name: 'Row', sessionId: 'workout-1', sets: [{ reps: 8 }] },
+        { id: 'run', name: 'Easy run', sessionId: 'workout-2', sets: [{ duration: 1200 }] },
+      ]
+    );
+    expect(folded.bySessionId.upper.map((log) => log.id)).toEqual(['bench', 'row']);
+    expect(folded.extras.map((log) => log.id)).toEqual(['run']);
+  });
+
   it('reads today from a date key and from an activity name', () => {
     expect(logMatchesDate({ date: '2026-11-05' }, '2026-11-05')).toBe(true);
     expect(logMatchesDate({ date: '2026-11-04' }, '2026-11-05')).toBe(false);
@@ -97,5 +157,19 @@ describe('coach session monitor', () => {
       sets: [{ duration: 30 }],
     });
     expect(log).toMatchObject({ name: 'Mobility', activityType: 'stretching', sets: [{ duration: 30 }] });
+    const tagged = toDayTrainingLog('exercise-2', {
+      exerciseName: 'Squat',
+      sessionId: 'session-9',
+      sessionType: 'warmup',
+      sessionNumberInDay: 1,
+      sourceProgramSessionName: 'Lower',
+      sets: [{ reps: 5 }],
+    });
+    expect(tagged).toMatchObject({
+      sessionId: 'session-9',
+      sessionType: 'warmup',
+      sessionNumberInDay: 1,
+      sourceProgramSessionName: 'Lower',
+    });
   });
 });

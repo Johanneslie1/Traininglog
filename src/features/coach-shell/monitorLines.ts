@@ -1,4 +1,5 @@
 import type { NumberOrRange, Prescription, WeightPrescription } from '@/types/program';
+import type { SessionType } from '@/types/sessionType';
 import { toLocalDateString } from '@/utils/dateUtils';
 
 export interface LoggedSet {
@@ -16,8 +17,21 @@ export interface DayTrainingLog {
   sourceProgramExerciseId?: string;
   sharedSessionExerciseId?: string;
   sourceProgramSessionId?: string;
+  sourceProgramSessionName?: string;
+  sourceProgramName?: string;
+  sharedSessionId?: string;
+  sessionId?: string;
+  sessionType?: SessionType;
+  sessionNumberInDay?: number;
   timestampMs?: number;
   sets: LoggedSet[];
+}
+
+export interface LoggedSessionGroup {
+  id: string;
+  name: string;
+  programName?: string;
+  logs: DayTrainingLog[];
 }
 
 export interface MonitorExercise {
@@ -157,6 +171,20 @@ function readLoggedSet(value: unknown): LoggedSet | null {
   };
 }
 
+function readText(data: Record<string, unknown>, key: string): string | undefined {
+  const value = data[key];
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
+function readSessionType(value: unknown): SessionType | undefined {
+  if (value === 'main' || value === 'warmup' || value === 'srpe') return value;
+  return undefined;
+}
+
+function readSessionNumber(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : undefined;
+}
+
 function readLogName(data: Record<string, unknown>): string {
   for (const key of ['exerciseName', 'activityName', 'name']) {
     const value = data[key];
@@ -177,9 +205,15 @@ export function toDayTrainingLog(id: string, data: Record<string, unknown>): Day
     id,
     name,
     activityType: typeof data.activityType === 'string' ? data.activityType : undefined,
-    sourceProgramExerciseId: typeof data.sourceProgramExerciseId === 'string' ? data.sourceProgramExerciseId : undefined,
-    sharedSessionExerciseId: typeof data.sharedSessionExerciseId === 'string' ? data.sharedSessionExerciseId : undefined,
-    sourceProgramSessionId: typeof data.sourceProgramSessionId === 'string' ? data.sourceProgramSessionId : undefined,
+    sourceProgramExerciseId: readText(data, 'sourceProgramExerciseId'),
+    sharedSessionExerciseId: readText(data, 'sharedSessionExerciseId'),
+    sourceProgramSessionId: readText(data, 'sourceProgramSessionId'),
+    sourceProgramSessionName: readText(data, 'sourceProgramSessionName'),
+    sourceProgramName: readText(data, 'sourceProgramName'),
+    sharedSessionId: readText(data, 'sharedSessionId'),
+    sessionId: readText(data, 'sessionId'),
+    sessionType: readSessionType(data.sessionType),
+    sessionNumberInDay: readSessionNumber(data.sessionNumberInDay),
     timestampMs: timestamp ? timestamp.getTime() : undefined,
     sets: Array.isArray(data.sets) ? data.sets.flatMap((set) => {
       const logged = readLoggedSet(set);
@@ -216,7 +250,7 @@ export function buildMonitorLines(exercise: MonitorExercise, logs: DayTrainingLo
     const set = sets[index];
     return {
       id: `${exercise.id}-${index}`,
-      label: `${exercise.name} · Set ${index + 1}`,
+      label: `${exercise.name} · Set\u00A0${index + 1}`,
       detail: set ? formatLoggedSet(set) : 'Planned',
       logged: Boolean(set),
     };
@@ -234,7 +268,7 @@ export function linesForLoggedExercise(log: DayTrainingLog): MonitorLine[] {
   }
   return sets.map((set, index) => ({
     id: `${log.id}-${index}`,
-    label: `${log.name} · Set ${index + 1}`,
+    label: `${log.name} · Set\u00A0${index + 1}`,
     detail: formatLoggedSet(set),
     logged: true,
   }));
@@ -259,4 +293,86 @@ export function assignLogsToSessions<T extends { id: string; exercises: Array<{ 
     bySessionId,
     extras: logs.filter((log) => !claimed.has(log.id)),
   };
+}
+
+function unassignedSessionKey(log: DayTrainingLog): string | null {
+  if (log.sourceProgramSessionId) return `program:${log.sourceProgramSessionId}`;
+  if (log.sharedSessionId) return `shared:${log.sharedSessionId}`;
+  if (log.sessionId) return `session:${log.sessionId}`;
+  return null;
+}
+
+function loggedSessionName(logs: DayTrainingLog[], key: string): string {
+  const named = logs.find((log) => log.sourceProgramSessionName);
+  if (named?.sourceProgramSessionName) return named.sourceProgramSessionName;
+  const sample = logs[0];
+  const number = sample?.sessionNumberInDay ?? 1;
+  if (sample?.sessionType === 'warmup') return `Warm-up ${number}`;
+  if (sample?.sessionType === 'srpe') return `sRPE ${number}`;
+  if (key.startsWith('session:')) return `Session ${number}`;
+  return 'Logged session';
+}
+
+/** Keep extra exercises from the same logged workout on the assigned session they belong to. */
+export function foldSharedTrainingSessions(
+  sessions: Array<{ id: string }>,
+  bySessionId: Record<string, DayTrainingLog[]>,
+  extras: DayTrainingLog[]
+): { bySessionId: Record<string, DayTrainingLog[]>; extras: DayTrainingLog[] } {
+  const next: Record<string, DayTrainingLog[]> = {};
+  const ownerByTrainingSession = new Map<string, string>();
+  sessions.forEach((session) => {
+    const logs = [...(bySessionId[session.id] ?? [])];
+    next[session.id] = logs;
+    logs.forEach((log) => {
+      if (log.sessionId && !ownerByTrainingSession.has(log.sessionId)) {
+        ownerByTrainingSession.set(log.sessionId, session.id);
+      }
+    });
+  });
+  const remaining: DayTrainingLog[] = [];
+  extras.forEach((log) => {
+    const owner = log.sessionId ? ownerByTrainingSession.get(log.sessionId) : undefined;
+    if (owner) next[owner].push(log);
+    else remaining.push(log);
+  });
+  return { bySessionId: next, extras: remaining };
+}
+
+/** Group logs that were not claimed by an assigned session into the sessions the athlete actually logged. */
+export function groupUnassignedLogs(logs: DayTrainingLog[]): {
+  sessions: LoggedSessionGroup[];
+  loose: DayTrainingLog[];
+} {
+  const groups = new Map<string, DayTrainingLog[]>();
+  const loose: DayTrainingLog[] = [];
+  logs.forEach((log) => {
+    const key = unassignedSessionKey(log);
+    if (!key) {
+      loose.push(log);
+      return;
+    }
+    const bucket = groups.get(key) ?? [];
+    bucket.push(log);
+    groups.set(key, bucket);
+  });
+
+  const sessions = [...groups.entries()].map(([id, groupLogs]) => {
+    const ordered = [...groupLogs].sort(
+      (a, b) => (a.timestampMs ?? 0) - (b.timestampMs ?? 0) || a.name.localeCompare(b.name)
+    );
+    const programName = ordered.find((log) => log.sourceProgramName)?.sourceProgramName;
+    return {
+      id,
+      name: loggedSessionName(ordered, id),
+      programName,
+      logs: ordered,
+    };
+  });
+  sessions.sort((a, b) => {
+    const aTime = a.logs[0]?.timestampMs ?? 0;
+    const bTime = b.logs[0]?.timestampMs ?? 0;
+    return aTime - bTime || a.name.localeCompare(b.name);
+  });
+  return { sessions, loose };
 }
