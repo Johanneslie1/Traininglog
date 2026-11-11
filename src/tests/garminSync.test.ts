@@ -1,0 +1,130 @@
+import { buildGarminSyncPlan, formatGarminDistance, formatGarminDuration, formatGarminSleep, garminActivityLabel, garminSyncRange } from '@/services/garminSync';
+
+describe('garminSync', () => {
+  const source = {
+    userId: 'athlete-1',
+    rangeStart: '2026-10-11',
+    rangeEnd: '2026-11-10',
+    syncedAt: '2026-11-10T18:00:00.000Z',
+    activities: [
+      {
+        activityId: 25009493087,
+        activityName: 'Bergen Løping',
+        activityType: { typeKey: 'running' },
+        startTimeLocal: '2026-11-08 14:43:41',
+        distance: 2401.4,
+        duration: 786,
+        calories: 225,
+        averageHR: 154.2,
+        maxHR: 174,
+      },
+      {
+        activityId: 11,
+        activityName: 'Old ride',
+        activityType: { typeKey: 'cycling' },
+        startTimeLocal: '2026-09-01 08:00:00',
+        duration: 3600,
+        distance: 20000,
+      },
+      {
+        activityId: 12,
+        activityName: 'Elliptical',
+        activityType: { typeKey: 'elliptical' },
+        startTimeLocal: '2026-11-08 14:11:48',
+        duration: 0,
+        distance: 0,
+        calories: 0,
+        averageHR: 0,
+      },
+    ],
+    sleep: [
+      {
+        calendarDate: '2026-11-08',
+        sleepTimeSeconds: 30540,
+        sleepScores: { overall: { value: 96 } },
+      },
+    ],
+    hrv: {
+      hrvSummaries: [
+        { calendarDate: '2026-11-08', lastNightAvg: 58.4, weeklyAvg: 62, status: 'BALANCED' },
+      ],
+    },
+    bodyBattery: [
+      {
+        date: '2026-11-08',
+        charged: 45,
+        drained: 30,
+        bodyBatteryValuesArray: [[1, 40], [2, 72]],
+      },
+    ],
+    dailySummaries: {
+      data: [
+        {
+          calendarDate: '2026-11-08',
+          restingHeartRate: 48,
+          averageStressLevel: 25,
+          totalSteps: 8432,
+          bodyBatteryMostRecentValue: 10,
+        },
+        { calendarDate: '2026-09-01', restingHeartRate: 50, totalSteps: 1000 },
+      ],
+    },
+  };
+
+  it('keeps activities and days inside the sync window and drops empty metrics', () => {
+    const plan = buildGarminSyncPlan(source);
+
+    expect(plan.activities.map((activity) => activity.garminActivityId)).toEqual(['25009493087', '12']);
+    expect(plan.activities[0]).toMatchObject({
+      activityName: 'Bergen Løping',
+      activityTypeKey: 'running',
+      dateKey: '2026-11-08',
+      durationSeconds: 786,
+      distanceMeters: 2401,
+      calories: 225,
+      averageHeartRate: 154,
+      maxHeartRate: 174,
+    });
+    expect(plan.activities[1].distanceMeters).toBeUndefined();
+    expect(plan.activities[1].calories).toBeUndefined();
+    expect(plan.days).toEqual([
+      expect.objectContaining({
+        date: '2026-11-08',
+        sleepScore: 96,
+        sleepSeconds: 30540,
+        hrvLastNight: 58,
+        hrvWeeklyAverage: 62,
+        hrvStatus: 'BALANCED',
+        restingHeartRate: 48,
+        averageStress: 25,
+        steps: 8432,
+        bodyBatteryCharged: 45,
+        bodyBatteryDrained: 30,
+        bodyBatteryLatest: 72,
+      }),
+    ]);
+    expect(plan.status).toMatchObject({
+      userId: 'athlete-1',
+      activityCount: 2,
+      dayCount: 1,
+      rangeStart: '2026-10-11',
+      rangeEnd: '2026-11-10',
+    });
+  });
+
+  it('formats duration, distance, sleep, and activity labels', () => {
+    expect(formatGarminDuration(786)).toBe('13 min');
+    expect(formatGarminDuration(5400)).toBe('1h 30m');
+    expect(formatGarminDistance(2401)).toBe('2.40 km');
+    expect(formatGarminDistance(0)).toBeNull();
+    expect(formatGarminSleep(30540)).toBe('8h 29m');
+    expect(garminActivityLabel('trail_running')).toBe('Trail Running');
+  });
+
+  it('uses a 31-day inclusive window ending today', () => {
+    expect(garminSyncRange(new Date(2026, 10, 10))).toEqual({
+      start: '2026-10-11',
+      end: '2026-11-10',
+    });
+  });
+});

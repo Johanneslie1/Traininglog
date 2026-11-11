@@ -14,13 +14,14 @@ import { memberLabel } from '@/features/coach-shell/deskPlan';
 import CoachAthleteExport from '@/features/coach-shell/CoachAthleteExport';
 import CoachCalendar from '@/features/coach-shell/CoachCalendar';
 import CoachPrograms from '@/features/coach-shell/CoachPrograms';
+import CoachSquadStrip from '@/features/coach-shell/CoachSquadStrip';
 import SessionOverview from '@/features/coach-shell/SessionOverview';
 import { listCoachPlacements, type CoachPlacement } from '@/services/coachPlacementService';
 import { getCoachTeams, getTeamMembers, type Team, type TeamMember } from '@/services/teamService';
 import type { RootState } from '@/store/store';
 import { toLocalDateString } from '@/utils/dateUtils';
 
-type DeskScreen = 'calendar' | 'overview' | 'programs' | 'export';
+type DeskScreen = 'calendar' | 'overview' | 'programs' | 'export' | 'garmin';
 
 const CoachShell: React.FC = () => {
   const location = useLocation();
@@ -162,6 +163,7 @@ const CoachShell: React.FC = () => {
           {navButton('overview', 'Session overview')}
           {navButton('programs', 'Programs')}
           {navButton('export', 'Export')}
+          {navButton('garmin', 'Squad')}
         </nav>
         <div className="md:mt-auto">
           <Button type="button" variant="secondary" size="sm" onClick={() => setCoachShellEnabled(false)}>
@@ -183,6 +185,15 @@ const CoachShell: React.FC = () => {
         />
       </div>
       {screen === 'export' && <CoachAthleteExport />}
+      {screen === 'garmin' && (
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6 md:px-8">
+          <CoachSquadStrip
+            members={members}
+            membersLoading={loading || membersLoading}
+            loadError={loadError}
+          />
+        </div>
+      )}
       {screen === 'programs' && <CoachPrograms />}
       {screen === 'overview' && (
         <SessionOverview

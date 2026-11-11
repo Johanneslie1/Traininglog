@@ -216,6 +216,89 @@ service cloud.firestore {
           resource.data.userId == request.auth.uid;
       }
 
+      // Personal Garmin stats copied by scripts/syncGarmin.ts.
+      // garminActivities: activity summary. garminDays: sleep, HRV, resting heart rate, Body Battery.
+      // garminConnection/status: last sync only. The API key is never stored.
+      // Owners write their own stats. A coach can read stats for an athlete they coach.
+      function isValidGarminActivity() {
+        let data = request.resource.data;
+        return data.userId == request.auth.uid
+          && data.garminActivityId is string
+          && data.garminActivityId.size() > 0
+          && data.garminActivityId.size() <= 40
+          && data.activityName is string
+          && data.activityName.size() > 0
+          && data.activityName.size() <= 200
+          && data.activityTypeKey is string
+          && data.activityTypeKey.size() > 0
+          && data.activityTypeKey.size() <= 80
+          && data.dateKey is string
+          && data.dateKey.size() == 10
+          && data.startTimeLocal is string
+          && data.startTimeLocal.size() <= 40
+          && data.durationSeconds is number
+          && data.durationSeconds >= 0
+          && data.syncedAt is string
+          && data.syncedAt.size() <= 40
+          && (!('distanceMeters' in data) || (data.distanceMeters is number && data.distanceMeters >= 0))
+          && (!('calories' in data) || (data.calories is number && data.calories >= 0))
+          && (!('averageHeartRate' in data) || (data.averageHeartRate is number && data.averageHeartRate > 0 && data.averageHeartRate < 300))
+          && (!('maxHeartRate' in data) || (data.maxHeartRate is number && data.maxHeartRate > 0 && data.maxHeartRate < 300));
+      }
+
+      function isValidGarminDay() {
+        let data = request.resource.data;
+        return data.userId == request.auth.uid
+          && data.date is string
+          && data.date.size() == 10
+          && data.syncedAt is string
+          && data.syncedAt.size() <= 40
+          && (!('sleepScore' in data) || (data.sleepScore is number && data.sleepScore >= 0 && data.sleepScore <= 100))
+          && (!('sleepSeconds' in data) || (data.sleepSeconds is number && data.sleepSeconds >= 0))
+          && (!('hrvLastNight' in data) || (data.hrvLastNight is number && data.hrvLastNight >= 0))
+          && (!('hrvWeeklyAverage' in data) || (data.hrvWeeklyAverage is number && data.hrvWeeklyAverage >= 0))
+          && (!('hrvStatus' in data) || (data.hrvStatus is string && data.hrvStatus.size() <= 40))
+          && (!('restingHeartRate' in data) || (data.restingHeartRate is number && data.restingHeartRate > 0 && data.restingHeartRate < 300))
+          && (!('averageStress' in data) || (data.averageStress is number && data.averageStress >= 0 && data.averageStress <= 100))
+          && (!('bodyBatteryCharged' in data) || (data.bodyBatteryCharged is number && data.bodyBatteryCharged >= 0))
+          && (!('bodyBatteryDrained' in data) || (data.bodyBatteryDrained is number && data.bodyBatteryDrained >= 0))
+          && (!('bodyBatteryLatest' in data) || (data.bodyBatteryLatest is number && data.bodyBatteryLatest >= 0 && data.bodyBatteryLatest <= 100))
+          && (!('steps' in data) || (data.steps is number && data.steps >= 0));
+      }
+
+      function isValidGarminConnection() {
+        let data = request.resource.data;
+        return data.userId == request.auth.uid
+          && data.lastSyncedAt is string
+          && data.lastSyncedAt.size() <= 40
+          && data.rangeStart is string
+          && data.rangeStart.size() == 10
+          && data.rangeEnd is string
+          && data.rangeEnd.size() == 10
+          && data.activityCount is number
+          && data.activityCount >= 0
+          && data.dayCount is number
+          && data.dayCount >= 0;
+      }
+
+      match /garminActivities/{activityId} {
+        allow read: if isAuthenticated() && (isOwner(userId) || hasCoachAthleteAccess(userId));
+        allow create, update: if isAuthenticated() && isOwner(userId) && isValidGarminActivity();
+        allow delete: if isAuthenticated() && isOwner(userId);
+      }
+
+      match /garminDays/{dateKey} {
+        allow read: if isAuthenticated() && (isOwner(userId) || hasCoachAthleteAccess(userId));
+        allow create, update: if isAuthenticated() && isOwner(userId) && isValidGarminDay();
+        allow delete: if isAuthenticated() && isOwner(userId);
+      }
+
+      match /garminConnection/{connectionId} {
+        allow read: if isAuthenticated() && (isOwner(userId) || hasCoachAthleteAccess(userId));
+        allow create, update: if isAuthenticated() && isOwner(userId) && isValidGarminConnection();
+        allow delete: if isAuthenticated() && isOwner(userId);
+      }
+
       // Nested strengthExercises collection under users
       // Supports legacy/alternative resistance logging path
       match /strengthExercises/{exerciseId} {

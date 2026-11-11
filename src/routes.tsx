@@ -27,6 +27,7 @@ const ExerciseOverview = lazy(() => import('@/pages/ExerciseOverview'));
 const SpeedAgilityPlyoPage = lazy(() => import('@/pages/SpeedAgilityPlyoPage'));
 const AnalyticsDashboard = lazy(() => import('@/pages/AnalyticsDashboard'));
 const WellnessPage = lazy(() => import('@/features/wellness/WellnessPage'));
+const GarminPage = lazy(() => import('@/features/garmin/GarminPage'));
 const HabitsPage = lazy(() => import('@/features/habits/HabitsPage'));
 const SportsLoadPage = lazy(() => import('@/features/srpe/SportsLoadPage'));
 const TestsPage = lazy(() => import('@/features/tests/TestsPage'));
@@ -202,6 +203,14 @@ const AppRoutes: React.FC = () => {
           element={
             <ProtectedRoute>
               <WellnessPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/garmin"
+          element={
+            <ProtectedRoute>
+              <GarminPage />
             </ProtectedRoute>
           }
         />

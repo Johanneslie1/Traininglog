@@ -112,6 +112,18 @@ const SideMenu: React.FC<SideMenuProps> = ({
               Wellness
             </button>
             <button
+              onClick={() => navigateAndClose('/garmin')}
+              className={navButtonClass('/garmin')}
+              aria-current={isActivePath('/garmin') ? 'page' : undefined}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l2.5 2.5" />
+                <circle cx="12" cy="12" r="7" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3.5h6M9 20.5h6" />
+              </svg>
+              Garmin
+            </button>
+            <button
               onClick={() => navigateAndClose('/tests')}
               className={navButtonClass('/tests')}
               aria-current={isActivePath('/tests') ? 'page' : undefined}
