@@ -19,12 +19,18 @@ export function spanDateKeys(endDate: Date, days: number): string[] {
   return keys;
 }
 
+function positiveAverage(values: Array<number | undefined>): number | null {
+  const known = values.filter((value): value is number => value !== undefined && value > 0);
+  if (known.length === 0) return null;
+  return Math.round(known.reduce((sum, value) => sum + value, 0) / known.length);
+}
+
 export function hrvBaseline(days: GarminDayRecord[]): number | null {
-  const values = days
-    .map((day) => day.hrvLastNight)
-    .filter((value): value is number => value !== undefined && value > 0);
-  if (values.length === 0) return null;
-  return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
+  return positiveAverage(days.map((day) => day.hrvLastNight));
+}
+
+export function restingHeartRateBaseline(days: GarminDayRecord[]): number | null {
+  return positiveAverage(days.map((day) => day.restingHeartRate));
 }
 
 export function morningFlag(

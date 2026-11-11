@@ -67,6 +67,13 @@ describe('garminSync', () => {
           bodyBatteryMostRecentValue: 10,
         },
         { calendarDate: '2026-09-01', restingHeartRate: 50, totalSteps: 1000 },
+        {
+          calendarDate: '2026-11-09',
+          heartRate: { restingValue: 46.2, minValue: 42, maxValue: 161 },
+          stress: { avgLevel: 22 },
+          movement: { steps: { value: 9100 } },
+          bodyBattery: { chargedValue: 50, drainedValue: 20, latestValue: 80 },
+        },
       ],
     },
   };
@@ -89,6 +96,15 @@ describe('garminSync', () => {
     expect(plan.activities[1].calories).toBeUndefined();
     expect(plan.days).toEqual([
       expect.objectContaining({
+        date: '2026-11-09',
+        restingHeartRate: 46,
+        averageStress: 22,
+        steps: 9100,
+        bodyBatteryCharged: 50,
+        bodyBatteryDrained: 20,
+        bodyBatteryLatest: 80,
+      }),
+      expect.objectContaining({
         date: '2026-11-08',
         sleepScore: 96,
         sleepSeconds: 30540,
@@ -106,7 +122,7 @@ describe('garminSync', () => {
     expect(plan.status).toMatchObject({
       userId: 'athlete-1',
       activityCount: 2,
-      dayCount: 1,
+      dayCount: 2,
       rangeStart: '2026-10-11',
       rangeEnd: '2026-11-10',
     });

@@ -32,6 +32,7 @@ interface SquadRow {
   flag: MorningFlag | null;
   minutes: number;
   hrv: number | null;
+  rhr: number | null;
   recovery: number | null;
   wellness: WellnessScores | null;
 }
@@ -74,6 +75,7 @@ const CoachSquadStrip: React.FC<CoachSquadStripProps> = ({ members, membersLoadi
         flag: morning && baseline !== null ? morningFlag(morning, baseline) : null,
         minutes,
         hrv: morning?.hrvLastNight ?? null,
+        rhr: morning?.restingHeartRate ?? null,
         recovery: morning?.bodyBatteryLatest ?? null,
         wellness: wellnessWindowScores(wellness, dateKeys),
       };
@@ -142,6 +144,8 @@ const CoachSquadStrip: React.FC<CoachSquadStripProps> = ({ members, membersLoadi
               </p>
               <p className="mt-1 text-xs text-text-tertiary">
                 {row.hrv !== null ? `HRV ${row.hrv}` : 'HRV —'}
+                {' · '}
+                {row.rhr !== null ? `RHR ${row.rhr}` : 'RHR —'}
                 {' · '}
                 {row.recovery !== null ? `Recovery ${row.recovery}` : 'Recovery —'}
                 {' · '}

@@ -3,6 +3,7 @@ import {
   daysInWindow,
   hrvBaseline,
   latestRecordedDay,
+  restingHeartRateBaseline,
   morningFlag,
   spanDateKeys,
   wellnessWindowScores,
@@ -47,12 +48,13 @@ describe('monitoringBoard', () => {
 
   it('flags a morning from sleep, HRV, and recovery against the window average', () => {
     const recorded = [
-      day({ date: '2026-11-09', sleepScore: 90, hrvLastNight: 62, bodyBatteryLatest: 74 }),
-      day({ date: '2026-11-10', sleepScore: 70, hrvLastNight: 46, bodyBatteryLatest: 32 }),
+      day({ date: '2026-11-09', sleepScore: 90, hrvLastNight: 62, bodyBatteryLatest: 74, restingHeartRate: 50 }),
+      day({ date: '2026-11-10', sleepScore: 70, hrvLastNight: 46, bodyBatteryLatest: 32, restingHeartRate: 48 }),
     ];
     const windowDays = daysInWindow(recorded, keys);
 
     expect(hrvBaseline(windowDays)).toBe(54);
+    expect(restingHeartRateBaseline(windowDays)).toBe(49);
     expect(morningFlag(recorded[0], 54)).toBe('Clear');
     expect(morningFlag(recorded[1], 54)).toBe('Ease');
     expect(morningFlag(day({ date: '2026-11-08', sleepScore: 80 }), 54)).toBeNull();

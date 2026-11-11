@@ -180,13 +180,17 @@ function mapDays(source: GarminSyncSource): GarminDayRecord[] {
     const record = asRecord(entry);
     const date = record ? dateKeyOf(record) : undefined;
     if (!record || !date || !inRange(date, source.rangeStart, source.rangeEnd)) continue;
+    const heartRate = asRecord(record.heartRate);
+    const stress = asRecord(record.stress);
+    const movement = asRecord(record.movement);
+    const summaryBattery = asRecord(record.bodyBattery);
     fillMissing(draftFor(date), {
-      restingHeartRate: positive(record.restingHeartRate),
-      averageStress: nonNegative(record.averageStressLevel),
-      steps: nonNegative(record.totalSteps),
-      bodyBatteryCharged: nonNegative(record.bodyBatteryChargedValue),
-      bodyBatteryDrained: nonNegative(record.bodyBatteryDrainedValue),
-      bodyBatteryLatest: nonNegative(record.bodyBatteryMostRecentValue),
+      restingHeartRate: positive(heartRate?.restingValue) ?? positive(record.restingHeartRate),
+      averageStress: nonNegative(stress?.avgLevel) ?? nonNegative(record.averageStressLevel),
+      steps: nonNegative(quantityValue(movement?.steps)) ?? nonNegative(record.totalSteps),
+      bodyBatteryCharged: nonNegative(summaryBattery?.chargedValue) ?? nonNegative(record.bodyBatteryChargedValue),
+      bodyBatteryDrained: nonNegative(summaryBattery?.drainedValue) ?? nonNegative(record.bodyBatteryDrainedValue),
+      bodyBatteryLatest: nonNegative(summaryBattery?.latestValue) ?? nonNegative(record.bodyBatteryMostRecentValue),
     });
   }
 
@@ -227,6 +231,12 @@ function asList(value: unknown, nestedKeys: string[]): unknown[] {
     if (Array.isArray(record[key])) return record[key] as unknown[];
   }
   return [];
+}
+
+function quantityValue(value: unknown): unknown {
+  const record = asRecord(value);
+  if (record && 'value' in record) return record.value;
+  return value;
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {

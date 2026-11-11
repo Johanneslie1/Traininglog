@@ -12,6 +12,7 @@ import {
   daysInWindow,
   hrvBaseline,
   latestRecordedDay,
+  restingHeartRateBaseline,
   morningFlag,
   spanDateKeys,
 } from '@/services/monitoringBoard';
@@ -56,6 +57,7 @@ const GarminPage: React.FC = () => {
   const dateKeys = useMemo(() => spanDateKeys(new Date(), spanDays), [spanDays]);
   const windowDays = useMemo(() => daysInWindow(days, dateKeys), [days, dateKeys]);
   const baseline = hrvBaseline(windowDays);
+  const rhrBaseline = restingHeartRateBaseline(windowDays);
   const morning = latestRecordedDay(windowDays, dateKeys);
   const flag = morning && baseline !== null ? morningFlag(morning, baseline) : null;
   const hasStats = days.length > 0 || activities.length > 0;
@@ -102,9 +104,10 @@ const GarminPage: React.FC = () => {
                 </InfoTip>
               </p>
             </div>
-            <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <dl className="grid grid-cols-2 gap-3 sm:grid-cols-5">
               <Metric label="Sleep" value={metric(morning?.sleepScore)} />
               <Metric label="HRV" value={morning?.hrvLastNight !== undefined ? `${morning.hrvLastNight}` : '—'} detail={baseline !== null ? `avg ${baseline}` : undefined} />
+              <Metric label="RHR" value={metric(morning?.restingHeartRate)} detail={rhrBaseline !== null ? `avg ${rhrBaseline}` : undefined} />
               <Metric label="Recovery" value={metric(morning?.bodyBatteryLatest)} />
               <Metric label="Activity" value={`${morning ? activityMinutesOn(activities, morning.date) : 0} min`} />
             </dl>
@@ -120,8 +123,22 @@ const GarminPage: React.FC = () => {
                   </InfoTip>
                 </div>
                 <Sparkline
+                  label="Nightly HRV"
                   values={dateKeys.map((date) => windowDays.find((day) => day.date === date)?.hrvLastNight ?? null)}
                   baseline={baseline}
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm font-semibold">RHR</h2>
+                  <InfoTip label="What the RHR line shows">
+                    Resting heart rate in beats per minute. The mark is your average for the selected window.
+                  </InfoTip>
+                </div>
+                <Sparkline
+                  label="Resting heart rate"
+                  values={dateKeys.map((date) => windowDays.find((day) => day.date === date)?.restingHeartRate ?? null)}
+                  baseline={rhrBaseline}
                 />
               </div>
               <div className="space-y-2">
@@ -145,6 +162,8 @@ const GarminPage: React.FC = () => {
                       {day?.sleepScore !== undefined ? `Sleep ${day.sleepScore}` : 'Sleep —'}
                       {' · '}
                       {day?.hrvLastNight !== undefined ? `HRV ${day.hrvLastNight}` : 'HRV —'}
+                      {' · '}
+                      {day?.restingHeartRate !== undefined ? `RHR ${day.restingHeartRate}` : 'RHR —'}
                       {' · '}
                       {day?.bodyBatteryLatest !== undefined ? day.bodyBatteryLatest : '—'}
                       {minutes > 0 ? ` · ${minutes} min` : ''}
@@ -175,7 +194,7 @@ function metric(value: number | undefined): string {
   return value === undefined ? '—' : String(value);
 }
 
-function Sparkline({ values, baseline }: { values: Array<number | null>; baseline: number | null }) {
+function Sparkline({ values, baseline, label }: { values: Array<number | null>; baseline: number | null; label: string }) {
   const width = 320;
   const height = 88;
   const known = values.filter((value): value is number => value !== null);
@@ -199,7 +218,7 @@ function Sparkline({ values, baseline }: { values: Array<number | null>; baselin
   const baselineY = baseline === null ? null : yFor(baseline);
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="h-20 w-full text-accent-primary" role="img" aria-label="Nightly HRV">
+    <svg viewBox={`0 0 ${width} ${height}`} className="h-20 w-full text-accent-primary" role="img" aria-label={label}>
       {baselineY !== null ? (
         <line x1={0} x2={width} y1={baselineY} y2={baselineY} stroke="currentColor" strokeOpacity={0.35} strokeDasharray="4 4" />
       ) : null}
