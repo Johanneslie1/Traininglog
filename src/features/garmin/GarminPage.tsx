@@ -19,6 +19,8 @@ import {
 import { formatGarminDateKey } from '@/services/garminSync';
 import type { GarminActivityRecord, GarminDayRecord } from '@/types/garmin';
 
+const GARMIN_SPANS = MONITOR_SPANS.filter((item) => item.id !== 'day');
+
 const FLAG_CLASS: Record<MorningFlag, string> = {
   Clear: 'text-success-text',
   Watch: 'text-warning-text',
@@ -27,7 +29,7 @@ const FLAG_CLASS: Record<MorningFlag, string> = {
 
 const GarminPage: React.FC = () => {
   const userId = useSelector((state: RootState) => state.auth.user?.id);
-  const [span, setSpan] = useState<MonitorSpan>('day');
+  const [span, setSpan] = useState<MonitorSpan>('7');
   const [days, setDays] = useState<GarminDayRecord[]>([]);
   const [activities, setActivities] = useState<GarminActivityRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,7 +55,7 @@ const GarminPage: React.FC = () => {
     void load();
   }, [load]);
 
-  const spanDays = MONITOR_SPANS.find((item) => item.id === span)?.days ?? 1;
+  const spanDays = GARMIN_SPANS.find((item) => item.id === span)?.days ?? 7;
   const dateKeys = useMemo(() => spanDateKeys(new Date(), spanDays), [spanDays]);
   const windowDays = useMemo(() => daysInWindow(days, dateKeys), [days, dateKeys]);
   const baseline = hrvBaseline(windowDays);
@@ -63,7 +65,7 @@ const GarminPage: React.FC = () => {
   const hasStats = days.length > 0 || activities.length > 0;
 
   return (
-    <div className="mx-auto max-w-xl space-y-5 text-text-primary">
+    <div className="mx-auto w-full max-w-xl space-y-5 text-text-primary">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <h1 className="text-2xl font-semibold">Garmin</h1>
@@ -72,7 +74,7 @@ const GarminPage: React.FC = () => {
           </InfoTip>
         </div>
         <div className="flex gap-1" role="group" aria-label="Time window">
-          {MONITOR_SPANS.map((item) => (
+          {GARMIN_SPANS.map((item) => (
             <button
               key={item.id}
               type="button"
@@ -114,8 +116,7 @@ const GarminPage: React.FC = () => {
             </dl>
           </section>
 
-          {span !== 'day' ? (
-            <section className="space-y-4">
+          <section className="space-y-4">
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <h2 className="text-sm font-semibold">HRV</h2>
@@ -125,6 +126,7 @@ const GarminPage: React.FC = () => {
                 </div>
                 <Sparkline
                   label="Nightly HRV"
+                  dates={dateKeys}
                   values={dateKeys.map((date) => windowDays.find((day) => day.date === date)?.hrvLastNight ?? null)}
                   baseline={baseline}
                 />
@@ -138,6 +140,7 @@ const GarminPage: React.FC = () => {
                 </div>
                 <Sparkline
                   label="Resting heart rate"
+                  dates={dateKeys}
                   values={dateKeys.map((date) => windowDays.find((day) => day.date === date)?.restingHeartRate ?? null)}
                   baseline={rhrBaseline}
                 />
@@ -146,8 +149,7 @@ const GarminPage: React.FC = () => {
                 <h2 className="text-sm font-semibold">Activity</h2>
                 <MinuteBars values={dateKeys.map((date) => activityMinutesOn(activities, date))} />
               </div>
-            </section>
-          ) : null}
+          </section>
 
           <DayTable
             dateKeys={dateKeys}
@@ -248,22 +250,39 @@ function DayTable({
   );
 }
 
-function Sparkline({ values, baseline, label }: { values: Array<number | null>; baseline: number | null; label: string }) {
-  const height = 132;
-  const left = 36;
-  const top = 20;
-  const right = 12;
-  const bottom = 10;
+function Sparkline({
+  values,
+  dates,
+  baseline,
+  label,
+}: {
+  values: Array<number | null>;
+  dates: string[];
+  baseline: number | null;
+  label: string;
+}) {
   const known = values.flatMap((value, index) => (value === null ? [] : [{ value, index }]));
   if (known.length === 0) return <p className="text-sm text-text-tertiary">—</p>;
-  const min = Math.min(...known.map((point) => point.value), baseline ?? known[0].value);
-  const max = Math.max(...known.map((point) => point.value), baseline ?? known[0].value);
-  const range = max - min || 1;
-  const plotWidth = Math.max(312, (Math.max(values.length, 2) - 1) * 44);
-  const width = left + plotWidth + right;
+  const dataMin = Math.min(...known.map((point) => point.value), baseline ?? known[0].value);
+  const dataMax = Math.max(...known.map((point) => point.value), baseline ?? known[0].value);
+  const ticks = scoreTicks(dataMin, dataMax);
+  const axisMin = ticks[0];
+  const axisMax = ticks[ticks.length - 1];
+  const span = axisMax - axisMin || 1;
+  const width = 360;
+  const height = 192;
+  const left = 46;
+  const right = 10;
+  const top = 12;
+  const bottom = 54;
+  const plotWidth = width - left - right;
+  const slot = values.length > 1 ? plotWidth / (values.length - 1) : plotWidth;
+  const rotatedDays = slot < 28;
   const plotHeight = height - top - bottom;
+  const plotBottom = top + plotHeight;
   const xFor = (index: number) => (values.length > 1 ? left + (index * plotWidth) / (values.length - 1) : left + plotWidth / 2);
-  const yFor = (value: number) => top + ((max - value) / range) * plotHeight;
+  const yFor = (value: number) => top + ((axisMax - value) / span) * plotHeight;
+  const dayFont = rotatedDays ? 9 : 11;
   const segments: string[] = [];
   let current: string[] = [];
   values.forEach((value, index) => {
@@ -275,42 +294,38 @@ function Sparkline({ values, baseline, label }: { values: Array<number | null>; 
     current.push(`${xFor(index)},${yFor(value)}`);
   });
   if (current.length > 0) segments.push(current.join(' '));
-
-  const labels: Array<{ x: number; y: number; text: string }> = [];
-  known.forEach((point, position) => {
-    const x = xFor(point.index);
-    const previous = labels[labels.length - 1];
-    const isLast = position === known.length - 1;
-    if (previous && x - previous.x < 28) {
-      if (!isLast) return;
-      labels.pop();
-    }
-    const above = yFor(point.value) - 8;
-    labels.push({
-      x,
-      y: above < 12 ? yFor(point.value) + 14 : above,
-      text: String(Math.round(point.value)),
-    });
-  });
-
-  const axis = [max];
-  if (baseline !== null && Math.abs(baseline - max) > range * 0.18 && Math.abs(baseline - min) > range * 0.18) axis.push(baseline);
-  if (min !== max) axis.push(min);
   const baselineY = baseline === null ? null : yFor(baseline);
+  const scoreLabelY = top + plotHeight / 2;
 
   return (
-    <div className="overflow-x-auto">
-    <svg viewBox={`0 0 ${width} ${height}`} className="h-36 max-w-none" style={{ width }} role="img" aria-label={label}>
+    <svg viewBox={`0 0 ${width} ${height}`} className="block h-auto w-full" role="img" aria-label={label}>
+      <text
+        x={8}
+        y={scoreLabelY}
+        textAnchor="middle"
+        fontSize="10"
+        transform={`rotate(-90 8 ${scoreLabelY})`}
+        className="fill-current text-text-tertiary"
+      >
+        Score
+      </text>
+      <g className="stroke-current text-text-tertiary" strokeOpacity="0.35">
+        {ticks.map((tick) => (
+          <line key={tick} x1={left} x2={width - right} y1={yFor(tick)} y2={yFor(tick)} strokeWidth="1" />
+        ))}
+        <line x1={left} x2={left} y1={top} y2={plotBottom} strokeWidth="1" />
+        <line x1={left} x2={width - right} y1={plotBottom} y2={plotBottom} strokeWidth="1" />
+      </g>
       <g className="fill-current text-text-secondary">
-        {axis.map((value) => (
-          <text key={value} x={left - 6} y={yFor(value) + 4} textAnchor="end" fontSize="12">
-            {Math.round(value)}
+        {ticks.map((tick) => (
+          <text key={tick} x={left - 6} y={yFor(tick) + 3} textAnchor="end" fontSize="11">
+            {tick}
           </text>
         ))}
       </g>
       <g className="text-accent-primary">
         {baselineY !== null ? (
-          <line x1={left} x2={width - right} y1={baselineY} y2={baselineY} stroke="currentColor" strokeOpacity={0.35} strokeDasharray="4 4" />
+          <line x1={left} x2={width - right} y1={baselineY} y2={baselineY} stroke="currentColor" strokeOpacity={0.45} strokeDasharray="4 4" />
         ) : null}
         {segments.map((points) => (
           <polyline key={points} points={points} fill="none" stroke="currentColor" strokeWidth="2" />
@@ -319,16 +334,65 @@ function Sparkline({ values, baseline, label }: { values: Array<number | null>; 
           <circle key={point.index} cx={xFor(point.index)} cy={yFor(point.value)} r="2.5" fill="currentColor" />
         ))}
       </g>
-      <g className="fill-current text-text-primary">
-        {labels.map((item) => (
-          <text key={`${item.x}-${item.text}`} x={item.x} y={item.y} textAnchor="middle" fontSize="12">
-            {item.text}
-          </text>
-        ))}
+      <g className="fill-current text-text-secondary">
+        {dates.map((date, index) => {
+          const axis = dayAxisLabel(date, false);
+          const x = xFor(index);
+          if (rotatedDays) {
+            return (
+              <text
+                key={date}
+                x={x}
+                y={plotBottom + 8}
+                textAnchor="end"
+                fontSize={dayFont}
+                transform={`rotate(-65 ${x} ${plotBottom + 8})`}
+              >
+                {axis.name} {axis.title}
+              </text>
+            );
+          }
+          return (
+            <g key={date}>
+              <text x={x} y={plotBottom + 14} textAnchor="middle" fontSize={dayFont}>{axis.name}</text>
+              <text x={x} y={plotBottom + 26} textAnchor="middle" fontSize={dayFont}>{axis.title}</text>
+            </g>
+          );
+        })}
       </g>
     </svg>
-    </div>
   );
+}
+
+function dayAxisLabel(dateKey: string, compact: boolean): { name: string; title: string } {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(dateKey);
+  if (!match) return { name: dateKey, title: '' };
+  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  const weekday = date.toLocaleDateString('en-GB', { weekday: 'short' });
+  return {
+    name: compact ? weekday.slice(0, 1) : weekday,
+    title: String(date.getDate()),
+  };
+}
+
+function scoreTicks(min: number, max: number): number[] {
+  if (min === max) {
+    const step = Math.max(1, niceStep(Math.max(1, Math.abs(min) * 0.2)));
+    return [min - step, min, min + step];
+  }
+  const step = Math.max(1, niceStep((max - min) / 3));
+  const start = Math.floor(min / step) * step;
+  const end = Math.ceil(max / step) * step;
+  const ticks: number[] = [];
+  for (let value = start; value <= end + step * 0.001; value += step) ticks.push(value);
+  return ticks.length > 1 ? ticks : [start, start + step];
+}
+
+function niceStep(rough: number): number {
+  const power = 10 ** Math.floor(Math.log10(Math.max(rough, 1)));
+  const fraction = rough / power;
+  const nice = fraction <= 1 ? 1 : fraction <= 2 ? 2 : fraction <= 5 ? 5 : 10;
+  return nice * power;
 }
 
 function MinuteBars({ values }: { values: number[] }) {
