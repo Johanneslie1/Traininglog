@@ -33,7 +33,8 @@ interface SquadRow {
   minutes: number;
   hrv: number | null;
   rhr: number | null;
-  recovery: number | null;
+  wake: number | null;
+  bed: number | null;
   wellness: WellnessScores | null;
 }
 
@@ -76,7 +77,8 @@ const CoachSquadStrip: React.FC<CoachSquadStripProps> = ({ members, membersLoadi
         minutes,
         hrv: morning?.hrvLastNight ?? null,
         rhr: morning?.restingHeartRate ?? null,
-        recovery: morning?.bodyBatteryLatest ?? null,
+        wake: morning?.bodyBatteryAtWake ?? (morning?.bodyBatteryAtBed === undefined ? morning?.bodyBatteryLatest ?? null : null),
+        bed: morning?.bodyBatteryAtBed ?? null,
         wellness: wellnessWindowScores(wellness, dateKeys),
       };
     }))
@@ -100,7 +102,7 @@ const CoachSquadStrip: React.FC<CoachSquadStripProps> = ({ members, membersLoadi
         <div className="flex items-center gap-2">
           <h1 className="text-2xl font-semibold">Squad</h1>
           <InfoTip label="How squad flags and wellness scores work">
-            The flag uses that athlete’s own HRV average for the window. Ease: sleep under 75, HRV 10 ms under the average, or recovery under 40. Clear: sleep 85 or higher, HRV within 2 ms, and recovery 60 or higher. Day is that 1–5 check-in. A longer window is the average. Sleep, mood, and readiness rise when they feel better. Fatigue, soreness, and stress rise when they feel worse.
+            The flag uses that athlete’s own HRV average for the window. Ease: sleep under 75, HRV 10 ms under the average, or wake recovery under 40. Clear: sleep 85 or higher, HRV within 2 ms, and wake recovery 60 or higher. Day is that 1–5 check-in. A longer window is the average. Sleep, mood, and readiness rise when they feel better. Fatigue, soreness, and stress rise when they feel worse. Wake is Body Battery at waking. Bed is the reading before sleep.
           </InfoTip>
         </div>
         <div className="flex gap-1" role="group" aria-label="Time window">
@@ -147,7 +149,9 @@ const CoachSquadStrip: React.FC<CoachSquadStripProps> = ({ members, membersLoadi
                 {' · '}
                 {row.rhr !== null ? `RHR ${row.rhr}` : 'RHR —'}
                 {' · '}
-                {row.recovery !== null ? `Recovery ${row.recovery}` : 'Recovery —'}
+                {row.wake !== null ? `Wake ${row.wake}` : 'Wake —'}
+                {' · '}
+                {row.bed !== null ? `Bed ${row.bed}` : 'Bed —'}
                 {' · '}
                 {row.minutes} min
               </p>

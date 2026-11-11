@@ -24,6 +24,8 @@ type DayDraft = {
   bodyBatteryCharged?: number;
   bodyBatteryDrained?: number;
   bodyBatteryLatest?: number;
+  bodyBatteryAtWake?: number;
+  bodyBatteryAtBed?: number;
   steps?: number;
 };
 
@@ -136,6 +138,9 @@ function mapActivity(record: Record<string, unknown>, source: GarminSyncSource):
 
 function mapDays(source: GarminSyncSource): GarminDayRecord[] {
   const days = new Map<string, DayDraft>();
+  const samples: ClockSample[] = [];
+  const sleepBounds: SleepBound[] = [];
+  let deviceOffsetMs = 0;
   const draftFor = (date: string): DayDraft => {
     const existing = days.get(date);
     if (existing) return existing;
@@ -151,6 +156,12 @@ function mapDays(source: GarminSyncSource): GarminDayRecord[] {
     fillMissing(draftFor(date), {
       sleepScore: positive(sleepScoreOf(record)) ?? nonNegative(sleepScoreOf(record)),
       sleepSeconds: positive(record.sleepTimeSeconds),
+    });
+    sleepBounds.push({
+      startLocal: stringValue(record.sleepStartTimestampLocal),
+      endLocal: stringValue(record.sleepEndTimestampLocal),
+      startGmt: stringValue(record.sleepStartTimestampGMT),
+      endGmt: stringValue(record.sleepEndTimestampGMT),
     });
   }
 
@@ -174,6 +185,9 @@ function mapDays(source: GarminSyncSource): GarminDayRecord[] {
       bodyBatteryDrained: nonNegative(record.drained),
       bodyBatteryLatest: batteryLatest(record),
     });
+    const offset = timestampOffsetMs(record);
+    if (offset !== undefined) deviceOffsetMs = offset;
+    samples.push(...batterySamples(record, offset ?? deviceOffsetMs));
   }
 
   for (const entry of asList(source.dailySummaries, ['data', 'dailySummaries'])) {
@@ -194,6 +208,8 @@ function mapDays(source: GarminSyncSource): GarminDayRecord[] {
     });
   }
 
+  assignWakeAndBed(days, samples, sleepMoments(sleepBounds, deviceOffsetMs));
+
   return [...days.values()]
     .filter(hasDayMetric)
     .map((day) => omitEmpty(day))
@@ -211,6 +227,8 @@ function hasDayMetric(day: DayDraft): boolean {
     day.bodyBatteryCharged !== undefined ||
     day.bodyBatteryDrained !== undefined ||
     day.bodyBatteryLatest !== undefined ||
+    day.bodyBatteryAtWake !== undefined ||
+    day.bodyBatteryAtBed !== undefined ||
     day.steps !== undefined
   );
 }
@@ -258,6 +276,139 @@ function sleepScoreOf(record: Record<string, unknown>): unknown {
   const overall = scores.overall;
   if (typeof overall === 'number') return overall;
   return asRecord(overall)?.value;
+}
+
+interface ClockSample {
+  /** Device-local clock stored as UTC components, so it compares with other local timestamps. */
+  at: number;
+  level: number;
+}
+
+interface SleepBound {
+  startLocal?: string;
+  endLocal?: string;
+  startGmt?: string;
+  endGmt?: string;
+}
+
+function assignWakeAndBed(
+  days: Map<string, DayDraft>,
+  samples: ClockSample[],
+  sleeps: Array<{ start?: number; end?: number }>,
+): void {
+  if (samples.length === 0) return;
+  days.forEach((day) => {
+    const wakeTarget = sleeps.find((sleep) => sleep.end !== undefined && localDateKey(sleep.end) === day.date)?.end;
+    const bedTarget = sleeps.find((sleep) => sleep.start !== undefined && localDateKey(sleep.start) === day.date)?.start;
+    const onDate = samples.filter((sample) => localDateKey(sample.at) === day.date);
+    const wake = nearestLevel(samples, wakeTarget) ?? peakLevel(onDate, 5, 11);
+    const bed = nearestLevel(samples, bedTarget) ?? lastLevel(onDate, 20, 24);
+    if (wake !== undefined) day.bodyBatteryAtWake = wake;
+    if (bed !== undefined) day.bodyBatteryAtBed = bed;
+  });
+}
+
+function sleepMoments(bounds: SleepBound[], offsetMs: number): Array<{ start?: number; end?: number }> {
+  return bounds.flatMap((bound) => {
+    const start = parseLocalMs(bound.startLocal) ?? shiftGmt(bound.startGmt, offsetMs);
+    const end = parseLocalMs(bound.endLocal) ?? shiftGmt(bound.endGmt, offsetMs);
+    return start === undefined && end === undefined ? [] : [{ start, end }];
+  });
+}
+
+function batterySamples(record: Record<string, unknown>, offsetMs: number): ClockSample[] {
+  const array = record.bodyBatteryValuesArray;
+  if (!Array.isArray(array)) return [];
+  const startLocal = parseLocalMs(record.startTimestampLocal);
+  return array.flatMap((entry) => {
+    const sample = clockSample(entry, startLocal, offsetMs);
+    return sample ? [sample] : [];
+  });
+}
+
+function clockSample(entry: unknown, startLocal: number | undefined, offsetMs: number): ClockSample | undefined {
+  if (Array.isArray(entry)) {
+    const stamp = finiteNumber(entry[0]);
+    const level = batteryLevel(entry[1] ?? entry[2]);
+    if (stamp === undefined || level === undefined) return undefined;
+    if (stamp > 1e12) return { at: stamp + offsetMs, level };
+    if (stamp > 1e9) return { at: stamp * 1000 + offsetMs, level };
+    if (startLocal !== undefined && stamp >= 0 && stamp < 48 * 3600) return { at: startLocal + stamp * 1000, level };
+    return undefined;
+  }
+  const sample = asRecord(entry);
+  if (!sample) return undefined;
+  const level = batteryLevel(sample.level) ?? batteryLevel(sample.value) ?? batteryLevel(sample.bodyBatteryLevel);
+  if (level === undefined) return undefined;
+  const local = parseLocalMs(sample.timestampLocal) ?? parseLocalMs(sample.startTimestampLocal);
+  if (local !== undefined) return { at: local, level };
+  const epoch = finiteNumber(sample.timestamp);
+  if (epoch !== undefined && epoch > 1e12) return { at: epoch + offsetMs, level };
+  return undefined;
+}
+
+function timestampOffsetMs(record: Record<string, unknown>): number | undefined {
+  const local = parseLocalMs(record.startTimestampLocal);
+  const gmt = parseLocalMs(record.startTimestampGMT);
+  if (local === undefined || gmt === undefined) return undefined;
+  return local - gmt;
+}
+
+function nearestLevel(samples: ClockSample[], target: number | undefined): number | undefined {
+  if (target === undefined) return undefined;
+  const maxGap = 2 * 60 * 60 * 1000;
+  let best: ClockSample | undefined;
+  let gap = maxGap;
+  samples.forEach((sample) => {
+    const distance = Math.abs(sample.at - target);
+    if (distance <= gap) {
+      best = sample;
+      gap = distance;
+    }
+  });
+  return best?.level;
+}
+
+function peakLevel(samples: ClockSample[], fromHour: number, toHour: number): number | undefined {
+  const levels = samples.filter((sample) => {
+    const hour = new Date(sample.at).getUTCHours();
+    return hour >= fromHour && hour < toHour;
+  }).map((sample) => sample.level);
+  if (levels.length === 0) return undefined;
+  return Math.max(...levels);
+}
+
+function lastLevel(samples: ClockSample[], fromHour: number, toHour: number): number | undefined {
+  const inWindow = samples.filter((sample) => {
+    const hour = new Date(sample.at).getUTCHours();
+    return hour >= fromHour && hour < toHour;
+  }).sort((left, right) => left.at - right.at);
+  return inWindow[inWindow.length - 1]?.level;
+}
+
+function shiftGmt(value: string | undefined, offsetMs: number): number | undefined {
+  const gmt = parseLocalMs(value);
+  return gmt === undefined ? undefined : gmt + offsetMs;
+}
+
+function parseLocalMs(value: unknown): number | undefined {
+  if (typeof value !== 'string') return undefined;
+  const match = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?/.exec(value);
+  if (!match) return undefined;
+  return Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]), Number(match[4]), Number(match[5]), Number(match[6] ?? 0));
+}
+
+function localDateKey(localMs: number): string {
+  const date = new Date(localMs);
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
+  return `${date.getUTCFullYear()}-${month}-${day}`;
+}
+
+function batteryLevel(value: unknown): number | undefined {
+  const level = nonNegative(value);
+  if (level === undefined || level > 100) return undefined;
+  return level;
 }
 
 function batteryLatest(record: Record<string, unknown>): number | undefined {

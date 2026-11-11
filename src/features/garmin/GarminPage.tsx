@@ -100,15 +100,16 @@ const GarminPage: React.FC = () => {
               <p className={`flex items-center gap-2 text-lg font-semibold ${flag ? FLAG_CLASS[flag] : 'text-text-tertiary'}`}>
                 {flag ?? '—'}
                 <InfoTip label="How the morning flag is set">
-                  Ease: sleep under 75, HRV 10 ms under your average for this window, or recovery under 40. Clear: sleep 85 or higher, HRV within 2 ms of that average, and recovery 60 or higher. Otherwise Watch.
+                  Ease: sleep under 75, HRV 10 ms under your average for this window, or wake recovery under 40. Clear: sleep 85 or higher, HRV within 2 ms of that average, and wake recovery 60 or higher. Otherwise Watch.
                 </InfoTip>
               </p>
             </div>
-            <dl className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+            <dl className="grid grid-cols-3 gap-3">
               <Metric label="Sleep" value={metric(morning?.sleepScore)} />
-              <Metric label="HRV" value={morning?.hrvLastNight !== undefined ? `${morning.hrvLastNight}` : '—'} detail={baseline !== null ? `avg ${baseline}` : undefined} />
+              <Metric label="HRV" value={metric(morning?.hrvLastNight)} detail={baseline !== null ? `avg ${baseline}` : undefined} />
               <Metric label="RHR" value={metric(morning?.restingHeartRate)} detail={rhrBaseline !== null ? `avg ${rhrBaseline}` : undefined} />
-              <Metric label="Recovery" value={metric(morning?.bodyBatteryLatest)} />
+              <Metric label="Steps" value={formatSteps(morning?.steps)} />
+              <Metric label="Recovery" value={recoveryValue(morning)} detail={recoveryDetail(morning)} />
               <Metric label="Activity" value={`${morning ? activityMinutesOn(activities, morning.date) : 0} min`} />
             </dl>
           </section>
@@ -148,32 +149,12 @@ const GarminPage: React.FC = () => {
             </section>
           ) : null}
 
-          <ul className="space-y-2">
-            {[...dateKeys].reverse().map((date) => {
-              const day = windowDays.find((entry) => entry.date === date);
-              const dayFlag = day && baseline !== null ? morningFlag(day, baseline) : null;
-              const minutes = activityMinutesOn(activities, date);
-              if (!day && minutes === 0) return null;
-              return (
-                <li key={date} className="flex items-baseline justify-between gap-3 rounded-2xl border border-border bg-bg-secondary px-4 py-3">
-                  <div>
-                    <p className="font-medium">{formatGarminDateKey(date)}</p>
-                    <p className="text-sm text-text-secondary">
-                      {day?.sleepScore !== undefined ? `Sleep ${day.sleepScore}` : 'Sleep —'}
-                      {' · '}
-                      {day?.hrvLastNight !== undefined ? `HRV ${day.hrvLastNight}` : 'HRV —'}
-                      {' · '}
-                      {day?.restingHeartRate !== undefined ? `RHR ${day.restingHeartRate}` : 'RHR —'}
-                      {' · '}
-                      {day?.bodyBatteryLatest !== undefined ? day.bodyBatteryLatest : '—'}
-                      {minutes > 0 ? ` · ${minutes} min` : ''}
-                    </p>
-                  </div>
-                  <p className={`text-sm font-semibold ${dayFlag ? FLAG_CLASS[dayFlag] : 'text-text-tertiary'}`}>{dayFlag ?? '—'}</p>
-                </li>
-              );
-            })}
-          </ul>
+          <DayTable
+            dateKeys={dateKeys}
+            windowDays={windowDays}
+            activities={activities}
+            baseline={baseline}
+          />
         </>
       ) : null}
     </div>
@@ -190,20 +171,99 @@ function Metric({ label, value, detail }: { label: string; value: string; detail
   );
 }
 
+function formatSteps(value: number | undefined): string {
+  return value === undefined ? '—' : value.toLocaleString('en-GB');
+}
+
 function metric(value: number | undefined): string {
   return value === undefined ? '—' : String(value);
 }
 
+function recoveryValue(day: GarminDayRecord | null): string {
+  if (!day) return '—';
+  if (day.bodyBatteryAtWake !== undefined || day.bodyBatteryAtBed !== undefined) {
+    return `${metric(day.bodyBatteryAtWake)} / ${metric(day.bodyBatteryAtBed)}`;
+  }
+  return metric(day.bodyBatteryLatest);
+}
+
+function recoveryDetail(day: GarminDayRecord | null): string | undefined {
+  if (!day) return undefined;
+  return day.bodyBatteryAtWake !== undefined || day.bodyBatteryAtBed !== undefined ? 'wake / bed' : undefined;
+}
+
+function DayTable({
+  dateKeys,
+  windowDays,
+  activities,
+  baseline,
+}: {
+  dateKeys: string[];
+  windowDays: GarminDayRecord[];
+  activities: GarminActivityRecord[];
+  baseline: number | null;
+}) {
+  const rows = [...dateKeys].reverse().flatMap((date) => {
+    const day = windowDays.find((entry) => entry.date === date);
+    const minutes = activityMinutesOn(activities, date);
+    if (!day && minutes === 0) return [];
+    return [{
+      date,
+      day,
+      minutes,
+      flag: day && baseline !== null ? morningFlag(day, baseline) : null,
+    }];
+  });
+  if (rows.length === 0) return null;
+
+  return (
+    <div className="overflow-x-auto rounded-2xl border border-border">
+      <table className="w-full min-w-[40rem] border-collapse text-left text-sm">
+        <thead>
+          <tr className="border-b border-border text-[0.68rem] uppercase tracking-wide text-text-tertiary">
+            {['Date', 'Sleep', 'HRV', 'RHR', 'Steps', 'Wake', 'Bed', 'Min', ''].map((heading) => (
+              <th key={heading || 'flag'} className={`px-3 py-2 font-medium ${heading === 'Date' ? 'sticky left-0 bg-bg-secondary' : ''}`}>
+                {heading}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.date} className="border-b border-border last:border-b-0">
+              <th className="sticky left-0 bg-bg-primary px-3 py-2 text-left font-medium">{formatGarminDateKey(row.date)}</th>
+              <td className="px-3 py-2 tabular-nums">{metric(row.day?.sleepScore)}</td>
+              <td className="px-3 py-2 tabular-nums">{metric(row.day?.hrvLastNight)}</td>
+              <td className="px-3 py-2 tabular-nums">{metric(row.day?.restingHeartRate)}</td>
+              <td className="px-3 py-2 tabular-nums">{formatSteps(row.day?.steps)}</td>
+              <td className="px-3 py-2 tabular-nums">{metric(row.day?.bodyBatteryAtWake ?? (row.day?.bodyBatteryAtBed === undefined ? row.day?.bodyBatteryLatest : undefined))}</td>
+              <td className="px-3 py-2 tabular-nums">{metric(row.day?.bodyBatteryAtBed)}</td>
+              <td className="px-3 py-2 tabular-nums">{row.minutes}</td>
+              <td className={`px-3 py-2 font-semibold ${row.flag ? FLAG_CLASS[row.flag] : 'text-text-tertiary'}`}>{row.flag ?? '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function Sparkline({ values, baseline, label }: { values: Array<number | null>; baseline: number | null; label: string }) {
-  const width = 320;
-  const height = 88;
-  const known = values.filter((value): value is number => value !== null);
+  const height = 132;
+  const left = 36;
+  const top = 20;
+  const right = 12;
+  const bottom = 10;
+  const known = values.flatMap((value, index) => (value === null ? [] : [{ value, index }]));
   if (known.length === 0) return <p className="text-sm text-text-tertiary">—</p>;
-  const min = Math.min(...known, baseline ?? known[0]);
-  const max = Math.max(...known, baseline ?? known[0]);
+  const min = Math.min(...known.map((point) => point.value), baseline ?? known[0].value);
+  const max = Math.max(...known.map((point) => point.value), baseline ?? known[0].value);
   const range = max - min || 1;
-  const step = values.length > 1 ? width / (values.length - 1) : 0;
-  const yFor = (value: number) => height - 6 - ((value - min) / range) * (height - 12);
+  const plotWidth = Math.max(312, (Math.max(values.length, 2) - 1) * 44);
+  const width = left + plotWidth + right;
+  const plotHeight = height - top - bottom;
+  const xFor = (index: number) => (values.length > 1 ? left + (index * plotWidth) / (values.length - 1) : left + plotWidth / 2);
+  const yFor = (value: number) => top + ((max - value) / range) * plotHeight;
   const segments: string[] = [];
   let current: string[] = [];
   values.forEach((value, index) => {
@@ -212,20 +272,62 @@ function Sparkline({ values, baseline, label }: { values: Array<number | null>; 
       current = [];
       return;
     }
-    current.push(`${index * step},${yFor(value)}`);
+    current.push(`${xFor(index)},${yFor(value)}`);
   });
   if (current.length > 0) segments.push(current.join(' '));
+
+  const labels: Array<{ x: number; y: number; text: string }> = [];
+  known.forEach((point, position) => {
+    const x = xFor(point.index);
+    const previous = labels[labels.length - 1];
+    const isLast = position === known.length - 1;
+    if (previous && x - previous.x < 28) {
+      if (!isLast) return;
+      labels.pop();
+    }
+    const above = yFor(point.value) - 8;
+    labels.push({
+      x,
+      y: above < 12 ? yFor(point.value) + 14 : above,
+      text: String(Math.round(point.value)),
+    });
+  });
+
+  const axis = [max];
+  if (baseline !== null && Math.abs(baseline - max) > range * 0.18 && Math.abs(baseline - min) > range * 0.18) axis.push(baseline);
+  if (min !== max) axis.push(min);
   const baselineY = baseline === null ? null : yFor(baseline);
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="h-20 w-full text-accent-primary" role="img" aria-label={label}>
-      {baselineY !== null ? (
-        <line x1={0} x2={width} y1={baselineY} y2={baselineY} stroke="currentColor" strokeOpacity={0.35} strokeDasharray="4 4" />
-      ) : null}
-      {segments.map((points) => (
-        <polyline key={points} points={points} fill="none" stroke="currentColor" strokeWidth="2" />
-      ))}
+    <div className="overflow-x-auto">
+    <svg viewBox={`0 0 ${width} ${height}`} className="h-36 max-w-none" style={{ width }} role="img" aria-label={label}>
+      <g className="fill-current text-text-secondary">
+        {axis.map((value) => (
+          <text key={value} x={left - 6} y={yFor(value) + 4} textAnchor="end" fontSize="12">
+            {Math.round(value)}
+          </text>
+        ))}
+      </g>
+      <g className="text-accent-primary">
+        {baselineY !== null ? (
+          <line x1={left} x2={width - right} y1={baselineY} y2={baselineY} stroke="currentColor" strokeOpacity={0.35} strokeDasharray="4 4" />
+        ) : null}
+        {segments.map((points) => (
+          <polyline key={points} points={points} fill="none" stroke="currentColor" strokeWidth="2" />
+        ))}
+        {known.map((point) => (
+          <circle key={point.index} cx={xFor(point.index)} cy={yFor(point.value)} r="2.5" fill="currentColor" />
+        ))}
+      </g>
+      <g className="fill-current text-text-primary">
+        {labels.map((item) => (
+          <text key={`${item.x}-${item.text}`} x={item.x} y={item.y} textAnchor="middle" fontSize="12">
+            {item.text}
+          </text>
+        ))}
+      </g>
     </svg>
+    </div>
   );
 }
 

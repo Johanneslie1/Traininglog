@@ -34,13 +34,14 @@ export function restingHeartRateBaseline(days: GarminDayRecord[]): number | null
 }
 
 export function morningFlag(
-  day: Pick<GarminDayRecord, 'sleepScore' | 'hrvLastNight' | 'bodyBatteryLatest'>,
+  day: Pick<GarminDayRecord, 'sleepScore' | 'hrvLastNight' | 'bodyBatteryLatest' | 'bodyBatteryAtWake'>,
   baseline: number,
 ): MorningFlag | null {
-  const { sleepScore, hrvLastNight, bodyBatteryLatest } = day;
-  if (sleepScore === undefined || hrvLastNight === undefined || bodyBatteryLatest === undefined) return null;
-  if (sleepScore < 75 || baseline - hrvLastNight >= 10 || bodyBatteryLatest < 40) return 'Ease';
-  if (sleepScore >= 85 && hrvLastNight >= baseline - 2 && bodyBatteryLatest >= 60) return 'Clear';
+  const { sleepScore, hrvLastNight } = day;
+  const recovery = day.bodyBatteryAtWake ?? day.bodyBatteryLatest;
+  if (sleepScore === undefined || hrvLastNight === undefined || recovery === undefined) return null;
+  if (sleepScore < 75 || baseline - hrvLastNight >= 10 || recovery < 40) return 'Ease';
+  if (sleepScore >= 85 && hrvLastNight >= baseline - 2 && recovery >= 60) return 'Clear';
   return 'Watch';
 }
 

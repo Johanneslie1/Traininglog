@@ -137,6 +137,55 @@ describe('garminSync', () => {
     expect(garminActivityLabel('trail_running')).toBe('Trail Running');
   });
 
+  it('stores body battery at waking and before bed', () => {
+    const plan = buildGarminSyncPlan({
+      userId: 'athlete-1',
+      rangeStart: '2026-11-10',
+      rangeEnd: '2026-11-11',
+      syncedAt: '2026-11-11T18:00:00.000Z',
+      activities: [],
+      sleep: [
+        {
+          calendarDate: '2026-11-11',
+          sleepStartTimestampLocal: '2026-11-10T23:00:00.0',
+          sleepEndTimestampLocal: '2026-11-11T07:00:00.0',
+          sleepTimeSeconds: 28800,
+          sleepScores: { overall: { value: 90 } },
+        },
+      ],
+      hrv: [],
+      bodyBattery: [
+        {
+          date: '2026-11-10',
+          startTimestampLocal: '2026-11-10T06:00:00.0',
+          startTimestampGMT: '2026-11-10T05:00:00.0',
+          charged: 40,
+          drained: 55,
+          bodyBatteryValuesArray: [
+            [Date.parse('2026-11-10T21:00:00.000Z'), 34],
+            [Date.parse('2026-11-10T22:00:00.000Z'), 28],
+          ],
+        },
+        {
+          date: '2026-11-11',
+          startTimestampLocal: '2026-11-11T06:00:00.0',
+          startTimestampGMT: '2026-11-11T05:00:00.0',
+          charged: 54,
+          drained: 12,
+          bodyBatteryValuesArray: [
+            [Date.parse('2026-11-11T06:00:00.000Z'), 82],
+            [Date.parse('2026-11-11T16:00:00.000Z'), 40],
+          ],
+        },
+      ],
+      dailySummaries: [],
+    });
+
+    const byDate = new Map(plan.days.map((day) => [day.date, day]));
+    expect(byDate.get('2026-11-10')).toMatchObject({ bodyBatteryAtBed: 28 });
+    expect(byDate.get('2026-11-11')).toMatchObject({ bodyBatteryAtWake: 82, sleepScore: 90 });
+  });
+
   it('uses a 31-day inclusive window ending today', () => {
     expect(garminSyncRange(new Date(2026, 10, 10))).toEqual({
       start: '2026-10-11',

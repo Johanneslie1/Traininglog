@@ -67,6 +67,8 @@ function mapDay(data: Record<string, unknown>): GarminDayRecord | null {
     bodyBatteryCharged: optionalNumber(data.bodyBatteryCharged),
     bodyBatteryDrained: optionalNumber(data.bodyBatteryDrained),
     bodyBatteryLatest: optionalNumber(data.bodyBatteryLatest),
+    bodyBatteryAtWake: optionalNumber(data.bodyBatteryAtWake),
+    bodyBatteryAtBed: optionalNumber(data.bodyBatteryAtBed),
     steps: optionalNumber(data.steps),
   });
 }

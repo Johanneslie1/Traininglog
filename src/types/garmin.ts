@@ -31,6 +31,10 @@ export interface GarminDayRecord {
   bodyBatteryCharged?: number;
   bodyBatteryDrained?: number;
   bodyBatteryLatest?: number;
+  /** Body Battery when sleep ended that morning. */
+  bodyBatteryAtWake?: number;
+  /** Body Battery at the start of that night’s sleep. */
+  bodyBatteryAtBed?: number;
   steps?: number;
   syncedAt: string;
 }

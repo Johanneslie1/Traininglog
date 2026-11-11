@@ -57,6 +57,7 @@ describe('monitoringBoard', () => {
     expect(restingHeartRateBaseline(windowDays)).toBe(49);
     expect(morningFlag(recorded[0], 54)).toBe('Clear');
     expect(morningFlag(recorded[1], 54)).toBe('Ease');
+    expect(morningFlag(day({ date: '2026-11-10', sleepScore: 90, hrvLastNight: 62, bodyBatteryLatest: 20, bodyBatteryAtWake: 80 }), 54)).toBe('Clear');
     expect(morningFlag(day({ date: '2026-11-08', sleepScore: 80 }), 54)).toBeNull();
     expect(latestRecordedDay(recorded, keys)?.date).toBe('2026-11-10');
   });

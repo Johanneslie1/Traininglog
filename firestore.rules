@@ -263,6 +263,8 @@ service cloud.firestore {
           && (!('bodyBatteryCharged' in data) || (data.bodyBatteryCharged is number && data.bodyBatteryCharged >= 0))
           && (!('bodyBatteryDrained' in data) || (data.bodyBatteryDrained is number && data.bodyBatteryDrained >= 0))
           && (!('bodyBatteryLatest' in data) || (data.bodyBatteryLatest is number && data.bodyBatteryLatest >= 0 && data.bodyBatteryLatest <= 100))
+          && (!('bodyBatteryAtWake' in data) || (data.bodyBatteryAtWake is number && data.bodyBatteryAtWake >= 0 && data.bodyBatteryAtWake <= 100))
+          && (!('bodyBatteryAtBed' in data) || (data.bodyBatteryAtBed is number && data.bodyBatteryAtBed >= 0 && data.bodyBatteryAtBed <= 100))
           && (!('steps' in data) || (data.steps is number && data.steps >= 0));
       }
 
