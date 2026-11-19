@@ -28,6 +28,20 @@ describe('session overview set table', () => {
     ]);
   });
 
+  it('keeps mean velocity on the logged set and leaves planned sets blank', () => {
+    const table = exerciseSetTable(squat, [{
+      id: 'log-1',
+      name: 'Back squat',
+      sourceProgramExerciseId: 'squat',
+      timestampMs: 10,
+      sets: [
+        { reps: 6, weight: 80, meanVelocity: 0.62 },
+        { reps: 6, weight: 80, meanVelocity: 0.625 },
+      ],
+    }]);
+    expect(table.rows.map((row) => row.velocity)).toEqual(['0.62', '0.63', '—']);
+  });
+
   it('puts duration and distance in the reps and load columns', () => {
     const table = exerciseSetTable(
       { id: 'spin', name: 'Easy spin', activityType: 'endurance' },

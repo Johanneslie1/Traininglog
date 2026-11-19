@@ -14,26 +14,26 @@ const USER_ID = 'test-user';
 
 const hasWeekTable = (text: string | undefined): boolean => {
   if (!text) return false;
-  return /Uke 1/.test(text) && /Uke 2/.test(text) && /Uke 3/.test(text) && /Uke 4/.test(text);
+  return /Week 1/.test(text) && /Week 2/.test(text) && /Week 3/.test(text) && /Week 4/.test(text);
 };
 
 const usesPercentageLoad = (prescription: Prescription | undefined): boolean =>
   prescription?.weight?.type === 'percentage';
 
-describe('Speed + Strength Blokk 1', () => {
+describe('Speed + Strength Block 1', () => {
   const program = buildSpeedStrengthBlock1Program(USER_ID);
 
-  it('creates one program with Bein 1 / Overkropp 1 / Bein 2 / Overkropp 2', () => {
+  it('creates one program with Legs 1 / Upper 1 / Legs 2 / Upper 2', () => {
     expect(program.name).toBe(SPEED_STRENGTH_BLOCK_1_NAME);
     expect(program.userId).toBe(USER_ID);
     expect(program.sessions.map((session) => session.name)).toEqual([
-      'Bein 1 — Speed + Heavy Lower',
-      'Overkropp 1 — Upper Strength',
-      'Bein 2 — Speed + Power',
-      'Overkropp 2 — Upper + Core',
+      'Legs 1 — Speed + Heavy Lower',
+      'Upper 1 — Upper Strength',
+      'Legs 2 — Speed + Power',
+      'Upper 2 — Upper + Core',
     ]);
-    expect(SPEED_STRENGTH_BLOCK_1_DESCRIPTION).toMatch(/RPE styrer/i);
-    expect(SPEED_STRENGTH_BLOCK_1_DESCRIPTION).toMatch(/uke 4 er deload/i);
+    expect(SPEED_STRENGTH_BLOCK_1_DESCRIPTION).toMatch(/RPE sets the load/i);
+    expect(SPEED_STRENGTH_BLOCK_1_DESCRIPTION).toMatch(/week 4, it is a deload/i);
     expect(program.description).toBe(SPEED_STRENGTH_BLOCK_1_DESCRIPTION);
     expect(program.tags).toContain(SPEED_STRENGTH_BLOCK_1_REVISION_TAG);
     expect(isSpeedStrengthBlock1Program(program)).toBe(true);
@@ -109,7 +109,7 @@ describe('Speed + Strength Blokk 1', () => {
     expect(throwExercise?.prescription?.sets).toBe(3);
     expect(throwExercise?.prescription?.reps).toBe(4);
     expect(throwExercise?.notes).toMatch(/4\/side/);
-    expect(throwExercise?.notes).not.toMatch(/Uke 1: 6 ×/);
+    expect(throwExercise?.notes).not.toMatch(/Week 1: 6 ×/);
 
     const pallof = program.sessions[3].exercises.find((exercise) => exercise.name === 'Pallof Press');
     expect(pallof?.prescription?.sets).toBe(2);
@@ -129,7 +129,7 @@ describe('Speed + Strength Blokk 1', () => {
       'Tibialis Raise',
       'Hanging Leg Raise',
     ]);
-    expect(bein1.exercises[0].notes).toMatch(/Uke 4: 3 × 10–15 m/);
+    expect(bein1.exercises[0].notes).toMatch(/Week 4: 3 × 10–15 m/);
 
     const overkropp2 = program.sessions[3];
     expect(overkropp2.exercises.map((exercise) => exercise.name)).toEqual([

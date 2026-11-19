@@ -8,6 +8,7 @@ export interface LoggedSet {
   rpe?: number;
   duration?: number;
   distance?: number;
+  meanVelocity?: number;
 }
 
 export interface DayTrainingLog {
@@ -168,6 +169,7 @@ function readLoggedSet(value: unknown): LoggedSet | null {
     rpe: positiveNumber(set.rpe),
     duration: positiveNumber(set.duration),
     distance: positiveNumber(set.distance),
+    meanVelocity: positiveNumber(set.meanVelocity),
   };
 }
 

@@ -789,6 +789,53 @@ describe('powerBiExportService wellness export', () => {
     expect(sessionCells[sessionHeader.indexOf('estimated_session_load')]).toBe('');
   });
 
+  it('appends mean concentric velocity to fact_gym_sets.csv', async () => {
+    mockedExportService.exportData.mockResolvedValue({
+      sessions: [],
+      exerciseLogs: [],
+      sets: [
+        {
+          sessionType: 'main',
+          exerciseLogId: 'squat-log',
+          exerciseName: 'Back Squat',
+          activityType: 'resistance',
+          loggedDate: '2026-03-10',
+          reps: 3,
+          weight: 100,
+          meanVelocity: 0.625,
+        },
+        {
+          sessionType: 'main',
+          exerciseLogId: 'squat-log',
+          exerciseName: 'Back Squat',
+          activityType: 'resistance',
+          loggedDate: '2026-03-10',
+          reps: 3,
+          weight: 100,
+          meanVelocity: 9,
+        },
+      ],
+    });
+
+    const result = await buildPowerBiFiles({ scope: 'self' }, currentAthlete);
+    const gymCsv = getFileContent(result, 'fact_gym_sets.csv');
+    const [headerLine, firstLine, secondLine] = gymCsv.split('\n');
+    const header = headerLine.split(',');
+    const velocityIndex = header.indexOf('mean_velocity_mps');
+
+    expect(header.at(-1)).toBe('mean_velocity_mps');
+    expect(header[velocityIndex - 1]).toBe('notes');
+    expect(firstLine.split(',')[velocityIndex]).toBe('0.63');
+    expect(secondLine.split(',')[velocityIndex]).toBe('');
+
+    const meta = JSON.parse(getFileContent(result, 'export_meta.json')) as {
+      notes: string[];
+      columns: Array<{ name: string }>;
+    };
+    expect(meta.notes.join(' ')).toContain('mean concentric velocity in m/s');
+    expect(meta.columns.some((column) => column.name === 'mean_velocity_mps')).toBe(true);
+  });
+
   it('keeps Foster load on fact_football_load only and does not copy it onto fact_sessions', async () => {
     mockedSrpeService.getSportsLoadSessionsByDateRange.mockResolvedValue([
       {

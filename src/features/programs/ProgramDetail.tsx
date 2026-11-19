@@ -29,6 +29,45 @@ interface Props {
   selectionMode?: boolean;
 }
 
+const DETAIL_TOGGLE_LENGTH = 180;
+
+const CollapsibleDetail: React.FC<{ text: string; className: string }> = ({ text, className }) => {
+  const [open, setOpen] = useState(false);
+
+  if (text.length <= DETAIL_TOGGLE_LENGTH) {
+    return <p className={className}>{text}</p>;
+  }
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center gap-1 text-xs font-medium text-accent-primary sm:text-sm"
+        aria-expanded={false}
+      >
+        Show details
+        <ChevronDownIcon className="h-4 w-4" />
+      </button>
+    );
+  }
+
+  return (
+    <div>
+      <p className={className}>{text}</p>
+      <button
+        type="button"
+        onClick={() => setOpen(false)}
+        className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-accent-primary sm:text-sm"
+        aria-expanded={true}
+      >
+        Hide details
+        <ChevronDownIcon className="h-4 w-4 rotate-180" />
+      </button>
+    </div>
+  );
+};
+
 const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMode = false }) => {
   const sessions: ProgramSession[] = program.sessions ?? [];
   const [showSessionBuilder, setShowSessionBuilder] = useState(false);
@@ -372,7 +411,12 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
               <div>
                 <h1 className="text-lg sm:text-xl font-semibold text-text-primary break-words">{program.name}</h1>
                 {program.description && (
-                  <p className="text-xs sm:text-sm text-text-tertiary mt-0.5 break-words">{program.description}</p>
+                  <div className="mt-1">
+                    <CollapsibleDetail
+                      text={program.description}
+                      className="text-xs text-text-tertiary break-words sm:text-sm"
+                    />
+                  </div>
                 )}
                 <div className="mt-3 flex flex-wrap gap-2">
                   <MetricChip label="Sessions" value={sessions.length} tone="accent" />
@@ -550,6 +594,14 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
               {/* Session Content */}
               {expandedSessions.includes(session.id) && (
                 <div className="border-t border-border bg-bg-primary/40">
+                  {session.notes && !(((shoulderRehab && rehab.progress) || slingRehab) && rehabSessionKey(session)) ? (
+                    <div className="border-b border-border/70 px-4 py-3">
+                      <CollapsibleDetail
+                        text={session.notes}
+                        className="whitespace-pre-wrap text-sm text-text-secondary"
+                      />
+                    </div>
+                  ) : null}
                   {(shoulderRehab && rehab.progress) || slingRehab ? (
                     <RehabSessionExtras
                       program={program}
@@ -596,9 +648,12 @@ const ProgramDetail: React.FC<Props> = ({ program, onBack, onUpdate, selectionMo
                           </div>
                         )}
                         {exercise.notes && (
-                          <p className="mt-1 whitespace-pre-wrap text-xs text-text-tertiary">
-                            {exercise.notes}
-                          </p>
+                          <div className="mt-1">
+                            <CollapsibleDetail
+                              text={exercise.notes}
+                              className="whitespace-pre-wrap text-xs text-text-tertiary"
+                            />
+                          </div>
                         )}
                       </div>
                     </div>

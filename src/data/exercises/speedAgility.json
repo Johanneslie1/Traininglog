@@ -1163,5 +1163,31 @@
     "defaultUnit": "distance",
     "metrics": { "trackDistance": true, "trackTime": true, "trackReps": true, "trackSets": true },
     "isDefault": true
+  },
+  {
+    "id": "sap111",
+    "name": "A-Walk",
+    "category": "warm-up",
+    "type": "sprint",
+    "lateralization": "bilateral",
+    "equipment": ["bodyweight"],
+    "muscleGroups": ["hip flexors", "hamstrings", "glutes", "calves"],
+    "instructions": "Walk forward with a tall posture. Drive one knee up, dorsiflex the foot, then step through. Keep the movement controlled.",
+    "defaultUnit": "distance",
+    "metrics": { "trackTime": true, "trackReps": true, "trackSets": true, "trackDistance": true, "trackRPE": true },
+    "isDefault": true
+  },
+  {
+    "id": "sap112",
+    "name": "A-Switch",
+    "category": "warm-up",
+    "type": "sprint",
+    "lateralization": "bilateral",
+    "equipment": ["bodyweight"],
+    "muscleGroups": ["hip flexors", "hamstrings", "glutes", "calves"],
+    "instructions": "Walk forward and switch the lead leg each step. Drive the knee up, then snap the foot down under the hip.",
+    "defaultUnit": "distance",
+    "metrics": { "trackTime": true, "trackReps": true, "trackSets": true, "trackDistance": true, "trackRPE": true },
+    "isDefault": true
   }
 ]

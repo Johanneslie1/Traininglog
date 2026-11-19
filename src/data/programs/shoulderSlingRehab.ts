@@ -4,21 +4,21 @@ import { NumberOrRange, Program, ProgramExercise, ProgramSession } from '@/types
 
 export const SHOULDER_SLING_PROGRAM_NAME = 'Shoulder Sling Rehab';
 export const SHOULDER_SLING_PROGRAM_TAG = 'shoulder-sling-rehab';
-export const SHOULDER_SLING_PROGRAM_REVISION = 1;
+export const SHOULDER_SLING_PROGRAM_REVISION = 3;
 export const SHOULDER_SLING_PROGRAM_REVISION_TAG = `ssr-rev-${SHOULDER_SLING_PROGRAM_REVISION}`;
 
 export const SHOULDER_SLING_PROGRAM_DESCRIPTION =
-  'Three-week suspension-trainer shoulder program from physio. Week 3 is the prescribed sling and medicine-ball work. The same sessions are also listed on Shoulder Rehab – 3 Weeks.';
+  'Three-week sling program. Week 3 is the full sling and medicine-ball work. The same sessions are on Shoulder Rehab – 3 Weeks.';
 
 export const SHOULDER_SLING_PROGRAM_RULES = [
-  'Pain up to 3/10 during exercise is OK; it should be back to normal by the next morning.',
-  "Stop an exercise if the shoulder slips, clunks, or feels like it's about to come out.",
-  'Three sessions per week. Move on only when the current week stays settled.',
-  'Steepen the body angle only when the current lean stays controlled.',
+  'If pain stays at or below 3/10 and is normal by the next morning, continue.',
+  'If the shoulder slips, clunks, or feels like it will come out, stop that exercise.',
+  '3 sessions a week. If the current week stays settled, move on.',
+  'If the current lean stays controlled, you may steepen it.',
 ];
 
 export const SHOULDER_SLING_PROGRAM_STOP_SIGNS =
-  'Stop and contact a doctor if the shoulder slips or clicks, sudden sharp pain, or numbness/weakness.';
+  'If the shoulder slips or clicks, or there is sudden sharp pain, numbness, or weakness, stop and contact a doctor.';
 
 type Draft = {
   id: string;

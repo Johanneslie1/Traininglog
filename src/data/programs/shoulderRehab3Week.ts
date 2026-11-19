@@ -5,25 +5,25 @@ import { buildShoulderSlingSessions } from '@/data/programs/shoulderSlingRehab';
 
 export const SHOULDER_REHAB_3_WEEK_NAME = 'Shoulder Rehab – 3 Weeks';
 export const SHOULDER_REHAB_3_WEEK_TAG = 'shoulder-rehab-3-week';
-export const SHOULDER_REHAB_3_WEEK_REVISION = 5;
+export const SHOULDER_REHAB_3_WEEK_REVISION = 7;
 export const SHOULDER_REHAB_3_WEEK_REVISION_TAG = `shr3-rev-${SHOULDER_REHAB_3_WEEK_REVISION}`;
 
 export const SHOULDER_REHAB_3_WEEK_DESCRIPTION =
   'Rehab after anterior shoulder dislocation. Daily activation, three weeks of strength work, and a separate three-week sling program from physio.';
 
 export const SHOULDER_REHAB_3_WEEK_RULES = [
-  'Pain up to 3/10 during exercise is OK; it should be back to normal by the next morning.',
-  "Stop an exercise if the shoulder slips, clunks, or feels like it's about to come out.",
-  'Daily shoulder activation every day; strength sessions as listed per week.',
-  "Legs, core and cardio can be trained freely as long as the arm isn't involved.",
-  'Sling program: 3 sessions per week. Steepen the lean only when the current angle stays controlled.',
+  'If pain stays at or below 3/10 and is normal by the next morning, continue.',
+  'If the shoulder slips, clunks, or feels like it will come out, stop that exercise.',
+  'Do the daily activation every day. Strength sessions follow the listed week.',
+  'If the arm is not involved, legs, core, and cardio are free.',
+  'Sling: 3 sessions a week. If the current lean stays controlled, you may steepen it.',
 ];
 
 export const SHOULDER_REHAB_3_WEEK_STOP_SIGNS =
-  'Stop and contact a doctor if the shoulder slips or clicks, sudden sharp pain, or numbness/weakness.';
+  'If the shoulder slips or clicks, or there is sudden sharp pain, numbness, or weakness, stop and contact a doctor.';
 
 const DAILY_PROGRESSION_NOTE =
-  'Week 1: increase isometric effort from 30-50% to 70-80% by end of week.';
+  'If it is week 1, raise the isometric effort from 30-50% to 70-80% by the end of the week.';
 
 type Draft = {
   id: string;

@@ -54,6 +54,7 @@ function sportsTimestamp(value: SportsLoadSession['timestamp']): number {
 }
 
 function SetTable({ exercise }: { exercise: SetTableExercise }) {
+  const showVelocity = exercise.rows.some((row) => row.velocity !== '—');
   return (
     <table className="w-full border-collapse text-left text-xs">
       <caption className="mb-1 text-left text-xs font-semibold text-text-primary">{exercise.name}</caption>
@@ -62,7 +63,8 @@ function SetTable({ exercise }: { exercise: SetTableExercise }) {
           <th scope="col" className="py-1 pr-2 font-medium">Set</th>
           <th scope="col" className="py-1 pr-2 font-medium">Reps</th>
           <th scope="col" className="py-1 pr-2 font-medium">Load</th>
-          <th scope="col" className="py-1 font-medium">RPE</th>
+          <th scope="col" className="py-1 pr-2 font-medium">RPE</th>
+          {showVelocity && <th scope="col" className="py-1 font-medium">Velocity</th>}
         </tr>
       </thead>
       <tbody>
@@ -71,7 +73,8 @@ function SetTable({ exercise }: { exercise: SetTableExercise }) {
             <th scope="row" className="py-0.5 pr-2 font-medium">{row.setNumber}</th>
             <td className="py-0.5 pr-2">{row.reps}</td>
             <td className="py-0.5 pr-2">{row.load}</td>
-            <td className="py-0.5">{row.rpe}</td>
+            <td className="py-0.5 pr-2">{row.rpe}</td>
+            {showVelocity && <td className="py-0.5">{row.velocity}</td>}
           </tr>
         ))}
       </tbody>

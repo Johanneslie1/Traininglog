@@ -97,6 +97,8 @@ const LEGACY_SET_KEYS = [
   'flexibility',
   'pace',
   'elevation',
+  'meanVelocity',
+  'velocitySource',
 ] as const;
 
 const normalizeSetsForExport = (entry: Record<string, unknown>): AnySet[] => {

@@ -78,6 +78,8 @@ export interface FactGymSetRow {
   normalised_load?: number | '';
   set_volume: number | '';
   notes: string;
+  /** Set-level mean concentric velocity. Empty when the athlete did not record one. */
+  mean_velocity_mps: number | '';
 }
 
 // ---------------------------------------------------------------------------
@@ -332,6 +334,7 @@ export const POWER_BI_EXPORT_NOTES: string[] = [
   'fact_football_load.csv is named for Power BI compatibility; rows are any sport logged on Sports Load. football is the default sport.',
   'fact_sessions.csv may list the same session_id so diaries join. Do not sum fact_sessions load columns with fact_football_load.session_load.',
   'Gym set rpe on fact_gym_sets.csv is set-level RPE, not session RPE.',
+  'mean_velocity_mps on fact_gym_sets.csv is set-level mean concentric velocity in m/s.',
   'avg_set_rpe on fact_sessions.csv is a mean of gym/activity set RPEs, not Foster session RPE.',
   'distance_meters, calories, avg_hr, and max_hr on fact_football_load.csv are optional manual fields, not GPS.',
   'date and logged_date are the same calendar day. logged_at is a timestamp when one exists.',
@@ -345,6 +348,7 @@ export const POWER_BI_EXPORT_COLUMNS: ExportMetaColumn[] = [
   { name: 'logged_date', files: ['fact_gym_sets.csv', 'fact_activity.csv', 'fact_sessions.csv', 'fact_wellness.csv', 'fact_football_load.csv'], grain: 'mixed', type: 'date', unit: 'YYYY-MM-DD', alias_of: 'date' },
   { name: 'logged_at', files: ['fact_gym_sets.csv', 'fact_activity.csv', 'fact_sessions.csv', 'fact_wellness.csv', 'fact_football_load.csv'], grain: 'mixed', type: 'datetime', unit: 'local YYYY-MM-DDTHH:mm:ss' },
   { name: 'rpe', files: ['fact_gym_sets.csv', 'fact_activity.csv'], grain: 'player-set', type: 'number', range: 'typically 1-10', formula: 'set-level RPE; not session RPE' },
+  { name: 'mean_velocity_mps', files: ['fact_gym_sets.csv'], grain: 'player-set', type: 'number', unit: 'm/s', range: '0.01-5', formula: 'set-level mean concentric velocity' },
   { name: 'rpe', files: ['fact_football_load.csv'], grain: 'player-session', type: 'number', unit: 'CR-10', range: '1-10', formula: 'session RPE logged on Sports Load' },
   { name: 'duration_min', files: ['fact_football_load.csv'], grain: 'player-session', type: 'number', unit: 'minutes', formula: 'Sports Load duration' },
   { name: 'duration_min', files: ['fact_sessions.csv'], grain: 'player-session', type: 'number', unit: 'minutes', formula: 'sports-load minutes, else activity duration, else session clock' },

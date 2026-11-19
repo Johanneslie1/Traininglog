@@ -1,4 +1,4 @@
-import { buildGarminSyncPlan, formatGarminDistance, formatGarminDuration, formatGarminSleep, garminActivityLabel, garminSyncRange } from '@/services/garminSync';
+import { buildGarminSyncPlan, formatGarminDistance, formatGarminDuration, formatGarminSleep, garminActivityLabel, garminPerceivedExertion, garminSyncRange, garminTrainingKind } from '@/services/garminSync';
 
 describe('garminSync', () => {
   const source = {
@@ -191,5 +191,126 @@ describe('garminSync', () => {
       start: '2026-10-11',
       end: '2026-11-10',
     });
+  });
+
+  it('reads Garmin perceived effort from the ten-times score', () => {
+    expect(garminPerceivedExertion(70)).toBe(7);
+    expect(garminPerceivedExertion(100)).toBe(10);
+    expect(garminPerceivedExertion(10)).toBe(1);
+    expect(garminPerceivedExertion(7)).toBeUndefined();
+    expect(garminPerceivedExertion(0)).toBeUndefined();
+  });
+
+  it('logs a run as endurance and a football session as sports load', () => {
+    const plan = buildGarminSyncPlan({
+      ...source,
+      activities: [
+        {
+          activityId: 25009493087,
+          activityName: 'Bergen Løping',
+          activityType: { typeKey: 'running' },
+          startTimeLocal: '2026-11-08 14:43:41',
+          distance: 2401.4,
+          duration: 786,
+          calories: 225,
+          averageHR: 154.2,
+          maxHR: 174,
+          directWorkoutRpe: 70,
+        },
+        {
+          activityId: 88,
+          activityName: 'Kamp',
+          activityType: { typeKey: 'soccer' },
+          startTimeLocal: '2026-11-08 18:00:00',
+          duration: 5400,
+          distance: 8200,
+          calories: 900,
+          averageHR: 150,
+          maxHR: 188,
+          directWorkoutRpe: 80,
+        },
+        {
+          activityId: 89,
+          activityName: 'Football without a score',
+          activityType: { typeKey: 'soccer' },
+          startTimeLocal: '2026-11-07 18:00:00',
+          duration: 3600,
+        },
+        {
+          activityId: 90,
+          activityName: 'Elliptical',
+          activityType: { typeKey: 'elliptical' },
+          startTimeLocal: '2026-11-08 09:00:00',
+          duration: 1800,
+          directWorkoutRpe: 40,
+        },
+        {
+          activityId: 91,
+          activityName: 'Fotballtrening',
+          activityType: { typeKey: 'other' },
+          startTimeLocal: '2026-11-06 19:00:00',
+          duration: 3600,
+          directWorkoutRpe: 60,
+        },
+        {
+          activityId: 92,
+          activityName: 'Football intervals',
+          activityType: { typeKey: 'running' },
+          startTimeLocal: '2026-11-08 08:00:00',
+          duration: 1200,
+          directWorkoutRpe: 50,
+        },
+        {
+          activityId: 93,
+          activityName: 'Table tennis',
+          activityType: { typeKey: 'other' },
+          startTimeLocal: '2026-11-05 12:00:00',
+          duration: 1800,
+          directWorkoutRpe: 30,
+        },
+      ],
+    });
+
+    const endurance = plan.trainingLogs.filter((log) => log.collection === 'activities');
+    const sports = plan.trainingLogs.filter((log) => log.collection === 'sportsLoadSessions');
+    expect(endurance.map((log) => log.id)).toEqual(['garmin-92', 'garmin-25009493087']);
+    expect(sports.map((log) => log.id)).toEqual(['garmin-91', 'garmin-88']);
+    expect(plan.trainingLogs.filter((log) => log.id === 'garmin-89' || log.id === 'garmin-90' || log.id === 'garmin-93')).toEqual([]);
+
+    expect(endurance[1].data).toMatchObject({
+      activityName: 'Bergen Løping',
+      activityType: 'endurance',
+      sessionType: 'main',
+      sessionDateKey: '2026-11-08',
+      sessionWeekKey: '2026-W45',
+      sessionNumberInDay: 2,
+      sets: [{ duration: 786, distance: 2401, calories: 225, averageHeartRate: 154, maxHeartRate: 174, rpe: 7 }],
+    });
+    expect(endurance[0].data).toMatchObject({
+      activityName: 'Football intervals',
+      activityType: 'endurance',
+      sessionNumberInDay: 1,
+      sets: [{ duration: 1200, rpe: 5 }],
+    });
+    expect(sports[1].data).toMatchObject({
+      sportType: 'football',
+      sportName: 'Football',
+      sessionName: 'Kamp',
+      sessionType: 'srpe',
+      rpe: 8,
+      durationMinutes: 90,
+      sessionLoad: 720,
+      distanceMeters: 8200,
+      date: '2026-11-08',
+    });
+    expect(sports[0].data).toMatchObject({
+      sportType: 'football',
+      rpe: 6,
+      durationMinutes: 60,
+      sessionLoad: 360,
+      sessionName: 'Fotballtrening',
+    });
+    expect(garminTrainingKind('indoor_cycling', 'Indoor cycling')).toBe('endurance');
+    expect(garminTrainingKind('elliptical', 'Elliptical')).toBeNull();
   });
 });

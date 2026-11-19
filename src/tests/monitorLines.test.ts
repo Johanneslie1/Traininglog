@@ -81,11 +81,11 @@ describe('coach session monitor', () => {
     expect(lines.every((line) => line.detail === 'Planned' && line.logged === false)).toBe(true);
     const fromExerciseName = toDayTrainingLog('exercise-1', {
       exerciseName: 'Bench press',
-      sets: [{ reps: 8, weight: 60 }, {}],
+      sets: [{ reps: 8, weight: 60, meanVelocity: 0.62 }, { meanVelocity: 0.5 }],
     });
     expect(fromExerciseName).toMatchObject({
       name: 'Bench press',
-      sets: [{ reps: 8, weight: 60 }],
+      sets: [{ reps: 8, weight: 60, meanVelocity: 0.62 }],
     });
   });
 

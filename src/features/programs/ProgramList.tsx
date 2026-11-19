@@ -195,7 +195,7 @@ const ProgramListContent: React.FC<{
               }}
               disabled={creatingStarter !== null}
             >
-              {creatingStarter === 'speed' ? 'Adding block…' : 'Add Speed + Strength Blokk 1'}
+              {creatingStarter === 'speed' ? 'Adding block…' : 'Add Speed + Strength Block 1'}
             </Button>
           )}
           <Button

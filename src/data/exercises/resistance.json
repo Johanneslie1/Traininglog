@@ -1854,6 +1854,28 @@
     "isDefault": true
   },
   {
+    "id": "standing-cable-hip-flexion-1",
+    "name": "Standing Cable Hip Flexion",
+    "category": "isolation",
+    "description": "A standing cable drill that flexes the hip against the stack, used as a sprint-step pattern.",
+    "type": "strength",
+    "activityType": "resistance",
+    "difficulty": "beginner",
+    "equipment": ["cable"],
+    "instructions": [
+      "Attach the cable to the ankle of the working leg",
+      "Stand tall facing away from the stack and hold the machine for balance",
+      "Drive the knee forward and up",
+      "Return the leg under control and switch sides"
+    ],
+    "tips": ["Stay tall", "Move from the hip", "Keep the pelvis still"],
+    "primaryMuscles": ["hip_flexors"],
+    "secondaryMuscles": ["quadriceps", "core"],
+    "defaultUnit": "kg",
+    "metrics": { "trackWeight": true, "trackReps": true, "trackRPE": true },
+    "isDefault": true
+  },
+  {
     "id": "goblet-squat-1",
     "name": "Goblet Squat",
     "category": "compound",

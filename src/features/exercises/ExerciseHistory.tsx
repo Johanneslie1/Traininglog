@@ -12,6 +12,7 @@ import {
   formatWeight,
   getDateSectionLabel,
 } from '@/utils/displayFormatters';
+import { formatMeanVelocity } from '@/utils/meanVelocity';
 
 interface ExerciseLog {
   id: string;
@@ -21,6 +22,7 @@ interface ExerciseLog {
     reps: number;
     weight: number;
     rpe?: number;
+    meanVelocity?: number;
   }>;
 }
 
@@ -147,15 +149,19 @@ export const ExerciseHistory: React.FC = () => {
 
                 {viewMode === 'detailed' && (
                   <div className="mt-3 space-y-2 rounded-xl border border-border bg-bg-tertiary/70 p-3">
-                    {log.sets.map((set, index) => (
+                    {log.sets.map((set, index) => {
+                      const velocity = formatMeanVelocity(set.meanVelocity);
+                      return (
                       <div key={index} className="flex flex-wrap items-center gap-2 text-sm text-text-secondary">
                         <span className="font-medium text-text-primary">Set {index + 1}</span>
                         <span>{formatWeight(set.weight)}</span>
                         <span>×</span>
                         <span>{formatReps(set.reps)}</span>
                         {set.rpe ? <span>RPE {set.rpe}</span> : null}
+                        {velocity ? <span>{velocity}</span> : null}
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>

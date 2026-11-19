@@ -79,4 +79,41 @@ describe('UniversalSetLogger prescription guide toggle', () => {
     fireEvent.click(toggleButton);
     expect(toggleButton.getAttribute('aria-expanded')).toBe('false');
   });
+
+  it('saves a typed mean velocity and drops it when the field is cleared', () => {
+    const onSave = jest.fn();
+    render(
+      <SettingsProvider>
+        <UniversalSetLogger
+          exercise={createExercise()}
+          initialSets={[
+            {
+              weight: 70,
+              reps: 8,
+              difficulty: DifficultyCategory.NORMAL,
+            },
+          ]}
+          onCancel={jest.fn()}
+          onSave={onSave}
+        />
+      </SettingsProvider>
+    );
+
+    fireEvent.click(screen.getByText('Set 1'));
+    const velocity = screen.getByLabelText('Mean velocity (m/s)');
+    fireEvent.change(velocity, { target: { value: '0.625' } });
+    fireEvent.blur(velocity);
+    fireEvent.click(screen.getByRole('button', { name: /Save Set/i }));
+
+    const saved = onSave.mock.calls[0][0] as Array<{ meanVelocity?: number; velocitySource?: string }>;
+    expect(saved[0].meanVelocity).toBe(0.63);
+    expect(saved[0].velocitySource).toBe('manual');
+
+    fireEvent.change(velocity, { target: { value: '' } });
+    fireEvent.blur(velocity);
+    fireEvent.click(screen.getByRole('button', { name: /Save Set/i }));
+    const cleared = onSave.mock.calls[1][0] as Array<Record<string, unknown>>;
+    expect(cleared[0].meanVelocity).toBeUndefined();
+    expect(cleared[0].velocitySource).toBeUndefined();
+  });
 });

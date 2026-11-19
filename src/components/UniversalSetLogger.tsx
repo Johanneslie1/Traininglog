@@ -27,6 +27,7 @@ import { generateExercisePrescriptionAssistant } from '@/services/exercisePrescr
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import AppOverlay from '@/components/ui/AppOverlay';
+import { MEAN_VELOCITY_MAX_MPS, normalizeMeanVelocity, sanitizeLoggedMeanVelocity } from '@/utils/meanVelocity';
 
 interface UniversalSetLoggerProps {
   exercise: Exercise;
@@ -193,6 +194,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
   
   // Track unique IDs for sets to prevent key issues
   const [setIds, setSetIds] = useState<string[]>([]);
+  const [velocityDrafts, setVelocityDrafts] = useState<Record<string, string>>({});
   
   // Ref for scrolling to new sets
   const setListRef = useRef<HTMLDivElement>(null);
@@ -403,9 +405,18 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
         newSets[index] = { ...previousSet };
         return newSets;
       });
+      const setId = setIds[index];
+      if (setId) {
+        setVelocityDrafts((current) => {
+          if (!(setId in current)) return current;
+          const next = { ...current };
+          delete next[setId];
+          return next;
+        });
+      }
       toast.success('Copied previous set values');
     }
-  }, [sets]);
+  }, [sets, setIds]);
 
   // Handle copying last values from exercise history
   const handleCopyLastHistoryValues = useCallback((historySets: ExerciseSet[]) => {
@@ -465,8 +476,24 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
       });
     }
 
-    onSave(validSets, { prescriptionAssistant: assistantSuggestion });
+    onSave(validSets.map(sanitizeLoggedMeanVelocity), { prescriptionAssistant: assistantSuggestion });
   };
+
+  const clearMeanVelocity = useCallback((index: number) => {
+    setSets((prev) => prev.map((set, i) => {
+      if (i !== index) return set;
+      const next = { ...set };
+      delete next.meanVelocity;
+      delete next.velocitySource;
+      return next;
+    }));
+  }, []);
+
+  const setMeanVelocity = useCallback((index: number, value: number) => {
+    setSets((prev) => prev.map((set, i) => (
+      i === index ? { ...set, meanVelocity: value, velocitySource: 'manual' as const } : set
+    )));
+  }, []);
 
   const renderFieldsForSet = useMemo(() => (setIndex: number) => {
     const set = sets[setIndex];
@@ -667,6 +694,61 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
             colorScheme="orange"
           />
         );
+        {
+          const velocityId = `mean-velocity-${setId}`;
+          const draft = velocityDrafts[setId];
+          const stored = sets[setIndex]?.meanVelocity;
+          const velocityValue = draft !== undefined
+            ? draft
+            : (typeof stored === 'number' ? String(stored) : '');
+          fields.push(
+            <div key="mean-velocity" className="space-y-1">
+              <label htmlFor={velocityId} className="block text-sm font-medium text-text-secondary">
+                Mean velocity (m/s)
+              </label>
+              <input
+                id={velocityId}
+                type="number"
+                inputMode="decimal"
+                min={0.01}
+                max={MEAN_VELOCITY_MAX_MPS}
+                step={0.01}
+                value={velocityValue}
+                placeholder="0.65"
+                onChange={(event) => {
+                  event.stopPropagation();
+                  const raw = event.target.value;
+                  setVelocityDrafts((current) => ({ ...current, [setId]: raw }));
+                  if (raw.trim() === '') {
+                    clearMeanVelocity(setIndex);
+                    return;
+                  }
+                  const parsed = Number(raw);
+                  if (Number.isFinite(parsed) && parsed > 0 && parsed <= MEAN_VELOCITY_MAX_MPS) {
+                    setMeanVelocity(setIndex, parsed);
+                  }
+                }}
+                onBlur={(event) => {
+                  event.stopPropagation();
+                  const raw = event.target.value.trim();
+                  const normalized = raw === '' ? undefined : normalizeMeanVelocity(Number(raw));
+                  if (normalized === undefined) {
+                    clearMeanVelocity(setIndex);
+                  } else {
+                    setMeanVelocity(setIndex, normalized);
+                  }
+                  setVelocityDrafts((current) => {
+                    if (!(setId in current)) return current;
+                    const next = { ...current };
+                    delete next[setId];
+                    return next;
+                  });
+                }}
+                className="resistance-input resistance-input-control w-full px-3 py-2 bg-bg-tertiary border border-border rounded-lg text-text-primary text-center focus:outline-none focus:border-accent-primary focus:ring-1 focus:ring-accent-primary transition-colors"
+              />
+            </div>
+          );
+        }
         break;
 
       case 'endurance':
@@ -829,7 +911,7 @@ export const UniversalSetLogger: React.FC<UniversalSetLoggerProps> = ({
     );
 
     return fields;
-  }, [sets, updateSet, setIds, showAdvancedMetricsBySetId]);
+  }, [sets, updateSet, setIds, showAdvancedMetricsBySetId, velocityDrafts, clearMeanVelocity, setMeanVelocity]);
 
   const getSetLabel = () => {
     switch (exerciseType) {

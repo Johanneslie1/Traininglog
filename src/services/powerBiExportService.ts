@@ -47,6 +47,7 @@ import {
   inferExerciseFactorCategory,
   type ExerciseFactorCategory,
 } from '@/data/exerciseFactors';
+import { normalizeMeanVelocity } from '@/utils/meanVelocity';
 import { getMergedExercisesForExport } from '@/services/exerciseDatabaseService';
 import {
   findCatalogExercise,
@@ -338,6 +339,7 @@ const buildGymSetRow = (
     normalised_load: normalisedLoad,
     set_volume: toEmpty(s.setVolume),
     notes: String(s.notes ?? s.comment ?? ''),
+    mean_velocity_mps: toEmpty(normalizeMeanVelocity(s.meanVelocity)),
   };
 };
 
@@ -1114,6 +1116,7 @@ export const buildPowerBiFiles = async (
     'exercise_id', 'exercise_name', 'date', 'logged_date', 'logged_at', 'exercise_order', 'set_number',
     'reps', 'weight', 'rpe', 'rest_sec', 'is_warmup', 'tonnage',
     'exercise_factor_category', 'exercise_factor', 'normalised_load', 'set_volume', 'notes',
+    'mean_velocity_mps',
   ];
 
   const activityHeaders: (keyof FactActivityRow)[] = [

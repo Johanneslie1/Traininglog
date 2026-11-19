@@ -13,6 +13,8 @@ export interface GarminActivityRecord {
   calories?: number;
   averageHeartRate?: number;
   maxHeartRate?: number;
+  /** Garmin perceived effort, 1–10. Stored only when the watch has a score. */
+  perceivedExertion?: number;
   syncedAt: string;
 }
 
@@ -49,10 +51,18 @@ export interface GarminConnectionStatus {
   dayCount: number;
 }
 
+/** One Firestore document created from a Garmin activity. */
+export interface GarminTrainingDocument {
+  collection: 'activities' | 'sportsLoadSessions' | 'sessions';
+  id: string;
+  data: Record<string, unknown>;
+}
+
 export interface GarminSyncPlan {
   activities: GarminActivityRecord[];
   days: GarminDayRecord[];
   status: GarminConnectionStatus;
+  trainingLogs: GarminTrainingDocument[];
 }
 
 export interface GarminSyncSource {

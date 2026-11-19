@@ -1,10 +1,11 @@
-import { addDays, toLocalDateString } from '@/utils/dateUtils';
+import { addDays, getDateEpochDay, toLocalDateString } from '@/utils/dateUtils';
 import type {
   GarminActivityRecord,
   GarminConnectionStatus,
   GarminDayRecord,
   GarminSyncPlan,
   GarminSyncSource,
+  GarminTrainingDocument,
 } from '@/types/garmin';
 
 const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/;
@@ -47,7 +48,66 @@ export function buildGarminSyncPlan(source: GarminSyncSource): GarminSyncPlan {
     activityCount: activities.length,
     dayCount: days.length,
   };
-  return { activities, days, status };
+  return { activities, days, status, trainingLogs: buildGarminTrainingLogs(activities) };
+}
+
+const ENDURANCE_TYPE_KEYS = new Set([
+  'running',
+  'trail_running',
+  'treadmill_running',
+  'track_running',
+  'ultra_run',
+  'virtual_run',
+  'cycling',
+  'road_biking',
+  'indoor_cycling',
+  'virtual_ride',
+  'mountain_biking',
+  'gravel_cycling',
+  'swimming',
+  'lap_swimming',
+  'open_water_swimming',
+  'rowing',
+  'indoor_rowing',
+  'hiking',
+  'walking',
+  'casual_walking',
+  'speed_walking',
+]);
+
+const SPORTS_LOAD_BY_TYPE: Record<string, { sportType: string; sportName: string }> = {
+  soccer: { sportType: 'football', sportName: 'Football' },
+  soccer_indoor: { sportType: 'football', sportName: 'Football' },
+  football: { sportType: 'football', sportName: 'Football' },
+  basketball: { sportType: 'basketball', sportName: 'Basketball' },
+  handball: { sportType: 'handball', sportName: 'Handball' },
+  tennis: { sportType: 'tennis', sportName: 'Tennis' },
+  volleyball: { sportType: 'volleyball', sportName: 'Volleyball' },
+  beach_volleyball: { sportType: 'volleyball', sportName: 'Volleyball' },
+  indoor_volleyball: { sportType: 'volleyball', sportName: 'Volleyball' },
+};
+
+const SPORTS_LOAD_BY_NAME: Array<{ pattern: RegExp; sportType: string; sportName: string }> = [
+  { pattern: /fotball|football|soccer/i, sportType: 'football', sportName: 'Football' },
+  { pattern: /basketball/i, sportType: 'basketball', sportName: 'Basketball' },
+  { pattern: /handball/i, sportType: 'handball', sportName: 'Handball' },
+  { pattern: /volleyball/i, sportType: 'volleyball', sportName: 'Volleyball' },
+  { pattern: /\btennis\b/i, sportType: 'tennis', sportName: 'Tennis' },
+];
+
+export type GarminTrainingKind = 'endurance' | 'sportsLoad';
+
+/** Garmin stores perceived effort as ten times the 1–10 score. 70 is RPE 7. */
+export function garminPerceivedExertion(value: unknown): number | undefined {
+  const score = finiteNumber(value);
+  if (score === undefined || score < 10 || score > 100 || score % 10 !== 0) return undefined;
+  return score / 10;
+}
+
+export function garminTrainingKind(typeKey: string, activityName: string): GarminTrainingKind | null {
+  if (ENDURANCE_TYPE_KEYS.has(typeKey)) return 'endurance';
+  if (SPORTS_LOAD_BY_TYPE[typeKey]) return 'sportsLoad';
+  return sportFromName(activityName) ? 'sportsLoad' : null;
 }
 
 export function garminActivityLabel(typeKey: string): string {
@@ -119,6 +179,7 @@ function mapActivity(record: Record<string, unknown>, source: GarminSyncSource):
   const activityTypeKey = stringValue(activityType?.typeKey) ?? stringValue(record.activityTypeKey) ?? 'other';
   const activityName = stringValue(record.activityName) ?? garminActivityLabel(activityTypeKey);
   const durationSeconds = nonNegative(record.duration) ?? nonNegative(record.durationInSeconds) ?? 0;
+  const summary = asRecord(record.summaryDTO);
 
   return omitEmpty({
     garminActivityId,
@@ -132,8 +193,152 @@ function mapActivity(record: Record<string, unknown>, source: GarminSyncSource):
     calories: positive(record.calories),
     averageHeartRate: positive(record.averageHR) ?? positive(record.averageHeartRate),
     maxHeartRate: positive(record.maxHR) ?? positive(record.maxHeartRate),
+    perceivedExertion: garminPerceivedExertion(record.directWorkoutRpe ?? summary?.directWorkoutRpe),
     syncedAt: source.syncedAt,
   });
+}
+
+function buildGarminTrainingLogs(activities: GarminActivityRecord[]): GarminTrainingDocument[] {
+  const ready = activities
+    .map((activity) => ({ activity, kind: garminTrainingKind(activity.activityTypeKey, activity.activityName) }))
+    .filter((entry): entry is { activity: GarminActivityRecord; kind: GarminTrainingKind } => {
+      if (!entry.kind || entry.activity.durationSeconds <= 0) return false;
+      if (entry.kind === 'sportsLoad' && entry.activity.perceivedExertion === undefined) return false;
+      if (entry.kind === 'sportsLoad' && Math.round(entry.activity.durationSeconds / 60) <= 0) return false;
+      return true;
+    })
+    .sort((left, right) => left.activity.startTimeLocal.localeCompare(right.activity.startTimeLocal));
+
+  const dayCounts = new Map<string, number>();
+  const weekCounts = new Map<string, number>();
+  const documents: GarminTrainingDocument[] = [];
+
+  ready.forEach(({ activity, kind }) => {
+    const startedAt = localStart(activity.startTimeLocal);
+    const sessionType = kind === 'sportsLoad' ? 'srpe' : 'main';
+    const weekKey = isoWeekKey(startedAt);
+    const dayCountKey = `${activity.dateKey}:${sessionType}`;
+    const weekCountKey = `${weekKey}:${sessionType}`;
+    const sessionNumberInDay = (dayCounts.get(dayCountKey) ?? 0) + 1;
+    const sessionNumberInWeek = (weekCounts.get(weekCountKey) ?? 0) + 1;
+    dayCounts.set(dayCountKey, sessionNumberInDay);
+    weekCounts.set(weekCountKey, sessionNumberInWeek);
+
+    const id = `garmin-${activity.garminActivityId}`;
+    const sport = kind === 'sportsLoad'
+      ? SPORTS_LOAD_BY_TYPE[activity.activityTypeKey] ?? sportFromName(activity.activityName)
+      : null;
+    if (kind === 'sportsLoad' && (!sport || activity.perceivedExertion === undefined)) return;
+    const durationMinutes = Math.round(activity.durationSeconds / 60);
+
+    documents.push({
+      collection: 'sessions',
+      id,
+      data: {
+        userId: activity.userId,
+        sessionId: id,
+        name: activity.activityName,
+        sessionType,
+        sessionDateKey: activity.dateKey,
+        sessionWeekKey: weekKey,
+        sessionNumberInDay,
+        sessionNumberInWeek,
+        status: 'completed',
+        startedAt,
+        createdAt: startedAt,
+        updatedAt: new Date(activity.syncedAt),
+      },
+    });
+
+    if (kind === 'endurance') {
+      documents.push({
+        collection: 'activities',
+        id,
+        data: {
+          activityName: activity.activityName,
+          userId: activity.userId,
+          activityType: 'endurance',
+          sets: [omitEmpty({
+            duration: activity.durationSeconds,
+            distance: activity.distanceMeters,
+            calories: activity.calories,
+            averageHeartRate: activity.averageHeartRate,
+            maxHeartRate: activity.maxHeartRate,
+            rpe: activity.perceivedExertion,
+          })],
+          timestamp: startedAt,
+          createdAt: startedAt,
+          deviceId: 'garmin',
+          garminActivityId: activity.garminActivityId,
+          sessionId: id,
+          sessionType,
+          sessionDateKey: activity.dateKey,
+          sessionWeekKey: weekKey,
+          sessionNumberInDay,
+          sessionNumberInWeek,
+        },
+      });
+      return;
+    }
+
+    documents.push({
+      collection: 'sportsLoadSessions',
+      id,
+      data: omitEmpty({
+        userId: activity.userId,
+        sessionId: id,
+        sessionType,
+        sessionDateKey: activity.dateKey,
+        sessionWeekKey: weekKey,
+        sessionNumberInDay,
+        sessionNumberInWeek,
+        date: activity.dateKey,
+        dateEpochDay: getDateEpochDay(activity.dateKey),
+        rpe: activity.perceivedExertion,
+        durationMinutes,
+        sessionLoad: (activity.perceivedExertion ?? 0) * durationMinutes,
+        sportType: sport?.sportType,
+        sportName: sport?.sportName,
+        sessionName: activity.activityName,
+        timestamp: startedAt,
+        distanceMeters: activity.distanceMeters,
+        calories: activity.calories,
+        averageHeartRate: activity.averageHeartRate,
+        maxHeartRate: activity.maxHeartRate,
+        garminActivityId: activity.garminActivityId,
+      }),
+    });
+  });
+
+  return documents;
+}
+
+function sportFromName(activityName: string): { sportType: string; sportName: string } | null {
+  if (/table\s*tennis/i.test(activityName)) return null;
+  const match = SPORTS_LOAD_BY_NAME.find((sport) => sport.pattern.test(activityName));
+  return match ? { sportType: match.sportType, sportName: match.sportName } : null;
+}
+
+function localStart(startTimeLocal: string): Date {
+  const match = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/.exec(startTimeLocal);
+  if (!match) return new Date(`${startTimeLocal.slice(0, 10)}T12:00:00`);
+  return new Date(
+    Number(match[1]),
+    Number(match[2]) - 1,
+    Number(match[3]),
+    Number(match[4]),
+    Number(match[5]),
+    Number(match[6] ?? 0),
+  );
+}
+
+function isoWeekKey(date: Date): string {
+  const tmp = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = tmp.getUTCDay() || 7;
+  tmp.setUTCDate(tmp.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1));
+  const weekNum = Math.ceil((((tmp.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  return `${tmp.getUTCFullYear()}-W${String(weekNum).padStart(2, '0')}`;
 }
 
 function mapDays(source: GarminSyncSource): GarminDayRecord[] {

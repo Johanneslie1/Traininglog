@@ -96,7 +96,7 @@ export const ensureSpeedStrengthBlock1Program = async (
 ): Promise<StarterSeedResult> => {
   const programs = existingPrograms ?? await getPrograms();
   return seedProgram(programs, {
-    label: 'Speed + Strength Blokk 1',
+    label: 'Speed + Strength Block 1',
     find: findSpeedStrengthBlock1Program,
     isCurrent: isCurrentSpeedStrengthBlock1Revision,
     build: buildSpeedStrengthBlock1Program,
@@ -139,10 +139,19 @@ export const ensureHelesTrainingProgram = async (
   });
 };
 
+let starterSeedQueue: Promise<void> = Promise.resolve();
+
 export const ensureStarterPrograms = async (
-  existingPrograms?: Program[]
+  _existingPrograms?: Program[]
 ): Promise<StarterSeedResult> => {
-  let programs = existingPrograms ?? await getPrograms();
+  const run = starterSeedQueue.then(() => seedStarterPrograms());
+  starterSeedQueue = run.then(() => undefined, () => undefined);
+  return run;
+};
+
+const seedStarterPrograms = async (): Promise<StarterSeedResult> => {
+  // Read inside the queue so an overlapping page load sees copies created by the previous seed.
+  let programs = await getPrograms();
   const speedStrength = await ensureSpeedStrengthBlock1Program(programs);
   if (speedStrength.created || speedStrength.updated) {
     programs = await getPrograms();
@@ -159,6 +168,10 @@ export const ensureStarterPrograms = async (
   }
 
   const shoulderSling = await ensureShoulderSlingRehabProgram(programs);
+  if (shoulderSling.created || shoulderSling.updated) {
+    programs = await getPrograms();
+  }
+
   return {
     created: speedStrength.created || heles.created || shoulderRehab.created || shoulderSling.created,
     updated: speedStrength.updated || heles.updated || shoulderRehab.updated || shoulderSling.updated,

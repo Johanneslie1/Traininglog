@@ -10,6 +10,7 @@ import {
   type DayTrainingLog,
   type LoggedSet,
 } from '@/features/coach-shell/monitorLines';
+import { normalizeMeanVelocity } from '@/utils/meanVelocity';
 
 const EMPTY = '—';
 
@@ -19,6 +20,7 @@ export interface SetTableRow {
   reps: string;
   load: string;
   rpe: string;
+  velocity: string;
   logged: boolean;
 }
 
@@ -79,6 +81,11 @@ function durationLabel(seconds: number | undefined): string {
   return `${minutes}m`;
 }
 
+function velocityLabel(value: number | undefined): string {
+  const normalized = normalizeMeanVelocity(value);
+  return normalized === undefined ? EMPTY : normalized.toFixed(2);
+}
+
 function distanceLabel(meters: number | undefined): string {
   if (!meters) return EMPTY;
   if (meters >= 1000) {
@@ -89,24 +96,27 @@ function distanceLabel(meters: number | undefined): string {
   return `${Math.round(meters)}m`;
 }
 
-export function cellsFromLoggedSet(set: LoggedSet): { reps: string; load: string; rpe: string } {
+export function cellsFromLoggedSet(set: LoggedSet): { reps: string; load: string; rpe: string; velocity: string } {
   const rpe = numberLabel(set.rpe);
+  const velocity = velocityLabel(set.meanVelocity);
   if (set.reps || set.weight) {
     return {
       reps: numberLabel(set.reps),
       load: set.weight ? numberLabel(set.weight) : (set.distance ? distanceLabel(set.distance) : EMPTY),
       rpe,
+      velocity,
     };
   }
   return {
     reps: set.duration ? durationLabel(set.duration) : EMPTY,
     load: set.distance ? distanceLabel(set.distance) : EMPTY,
     rpe,
+    velocity,
   };
 }
 
-function plannedCells(prescription: Prescription | undefined, activityType?: string): { reps: string; load: string; rpe: string } {
-  if (!prescription) return { reps: EMPTY, load: EMPTY, rpe: EMPTY };
+function plannedCells(prescription: Prescription | undefined, activityType?: string): { reps: string; load: string; rpe: string; velocity: string } {
+  if (!prescription) return { reps: EMPTY, load: EMPTY, rpe: EMPTY, velocity: EMPTY };
   const reps = rangeLabel(prescription.reps);
   const rpe = typeof prescription.rpe === 'number'
     ? String(prescription.rpe)
@@ -127,12 +137,14 @@ function plannedCells(prescription: Prescription | undefined, activityType?: str
       reps: reps ?? EMPTY,
       load: load ?? (distance ? `${distance}${distanceUnit}` : EMPTY),
       rpe: rpe ?? EMPTY,
+      velocity: EMPTY,
     };
   }
   return {
     reps: duration ? `${duration}${durationUnit}` : EMPTY,
     load: distance ? `${distance}${distanceUnit}` : EMPTY,
     rpe: rpe ?? EMPTY,
+    velocity: EMPTY,
   };
 }
 
@@ -271,6 +283,7 @@ export function sportsLoadSession(session: OverviewSportsLoad): AthleteSessionVi
         reps: EMPTY,
         load: session.durationMinutes ? `${session.durationMinutes}m` : EMPTY,
         rpe: numberLabel(session.rpe),
+        velocity: EMPTY,
         logged,
       }],
     }],

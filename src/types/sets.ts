@@ -13,6 +13,10 @@ export interface ExerciseSet {
   
   // Intensity & effort
   rpe?: number; // 1-10 Rating of Perceived Exertion
+  /** Mean concentric bar velocity in m/s. Typed by the athlete, or written later by a tracker import. */
+  meanVelocity?: number;
+  /** `manual` when the athlete types the velocity. `device` is reserved for a future tracker import. */
+  velocitySource?: 'manual' | 'device';
   difficulty?: DifficultyCategory;
   intensity?: number; // 1-10 for flexibility/cardio
   

@@ -4,14 +4,13 @@ import { NumberOrRange, Prescription, Program, ProgramExercise, ProgramSession, 
 
 export const HELES_TRAINING_PROGRAM_NAME = "Hele's Training Program";
 export const HELES_TRAINING_PROGRAM_TAG = 'heles-training-program';
-export const HELES_TRAINING_PROGRAM_REVISION = 1;
+export const HELES_TRAINING_PROGRAM_REVISION = 3;
 export const HELES_TRAINING_PROGRAM_REVISION_TAG = `htp-rev-${HELES_TRAINING_PROGRAM_REVISION}`;
 
 export const HELES_TRAINING_PROGRAM_DESCRIPTION = [
-  'Eight-week hypertrophy block with four sessions: Lower 1, Lower 2, Upper 1, and Upper 2.',
-  'The structured prescription is week 1. The full week 1–8 plan is in each exercise note.',
-  'Do not increase load if RPE is already above the planned target. Double progression: add weight only after you hit the reps at the prescribed RPE.',
-  'Unilateral work uses the prescribed set count per side. Do not double the set count.',
+  'Eight-week block: Lower 1, Lower 2, Upper 1, and Upper 2. The sets line is week 1. Weeks 1–8 are in each note.',
+  'If RPE is already above the target, do not add load. If you hit the reps at the target RPE, add weight.',
+  'If the work is one side at a time, log the prescribed sets per side.',
 ].join(' ');
 
 const REST_MAIN = 120;
@@ -189,7 +188,7 @@ const upper2Exercises = (): BlockExerciseDraft[] => [
     type: 'bodyweight',
     defaultUnit: 'reps',
     prescription: strengthRx(2, { min: 10, max: 12 }, 7, REST_ACCESSORY),
-    notes: blockTable(DIPS_WEEKS, ['Dips / assisted dips. Use machine assistance if needed.']),
+    notes: blockTable(DIPS_WEEKS, ['If you need help, use assisted dips.']),
   },
   mainLift('barbell-row-1', 'Barbell Row', ['Standing barbell row.']),
   accessoryLift('2456', 'Barbell upright row', ['Upright row.']),

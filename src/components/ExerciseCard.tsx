@@ -10,6 +10,7 @@ import {
   normalizeDurationSeconds,
 } from '@/utils/activityFieldContract';
 import { buildExerciseLogSummary } from '@/utils/exerciseLogSummary';
+import { formatMeanVelocity } from '@/utils/meanVelocity';
 
 export type ExerciseCardVariant = 'classic' | 'logRow';
 
@@ -230,17 +231,22 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
       );
     }
 
+    const showVelocity = exercise.sets.some((set) => formatMeanVelocity(set.meanVelocity));
+    const rowClass = showVelocity
+      ? 'grid grid-cols-[40px_minmax(0,1fr)_48px_4.5rem] gap-2'
+      : 'grid grid-cols-[40px_minmax(0,1fr)_48px] gap-2';
     return (
       <div className="overflow-hidden rounded-lg border border-border">
-        <div className="grid grid-cols-[40px_1fr_48px] gap-2 border-b border-border bg-bg-tertiary px-3 py-1.5 text-[11px] uppercase tracking-wide text-text-tertiary">
+        <div className={`${rowClass} border-b border-border bg-bg-tertiary px-3 py-1.5 text-[11px] uppercase tracking-wide text-text-tertiary`}>
           <span>Set</span>
           <span>Load</span>
           <span className="text-right">Reps</span>
+          {showVelocity && <span className="text-right">Velocity</span>}
         </div>
         {exercise.sets.map((set, setIndex) => (
           <div
             key={setIndex}
-            className="grid grid-cols-[40px_1fr_48px] gap-2 border-b border-border px-3 py-1.5 text-sm text-text-primary last:border-b-0"
+            className={`${rowClass} border-b border-border px-3 py-1.5 text-sm text-text-primary last:border-b-0`}
           >
             <span className="text-text-tertiary">{setIndex + 1}</span>
             <span style={{ color: getDifficultyColor(set.difficulty) }}>
@@ -257,6 +263,11 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
                   ? formatDurationSeconds(set.duration)
                   : hasDisplayValue(set.reps) ? set.reps : '—'}
             </span>
+            {showVelocity && (
+              <span className="text-right text-text-secondary">
+                {formatMeanVelocity(set.meanVelocity) ?? '—'}
+              </span>
+            )}
           </div>
         ))}
       </div>
@@ -459,19 +470,23 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({
       return (
         <div className="text-sm">
           <div className="flex flex-wrap items-center mb-2">
-            {exercise.sets.map((set: ExerciseSet, index: number) => (
+            {exercise.sets.map((set: ExerciseSet, index: number) => {
+              const velocity = formatMeanVelocity(set.meanVelocity);
+              return (
               <div key={index} className="flex items-center" style={{ marginRight: index === exercise.sets.length - 1 ? 0 : 8 }}>
                 <span 
                   className="font-medium whitespace-nowrap"
                   style={{ color: getDifficultyColor(set.difficulty) }}
                 >
                   {(set.weight ?? 0) > 0 ? `${set.weight}kg ` : ''}{(set.reps ?? 0) > 0 ? `${set.reps}r` : (set.duration ?? 0) > 0 ? formatDurationSeconds(set.duration) : `${set.reps ?? 0}r`}
+                  {velocity ? ` ${velocity}` : ''}
                 </span>
                 {index < exercise.sets.length - 1 && (
                   <span className="text-gray-500 mx-1">|</span>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
 
           <button

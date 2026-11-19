@@ -2,16 +2,16 @@ import { ActivityType } from '@/types/activityTypes';
 import { Exercise } from '@/types/exercise';
 import { NumberOrRange, Prescription, Program, ProgramExercise, ProgramSession, WeightPrescription } from '@/types/program';
 
-export const SPEED_STRENGTH_BLOCK_1_NAME = 'Speed + Strength Blokk 1';
+export const SPEED_STRENGTH_BLOCK_1_NAME = 'Speed + Strength Block 1';
 export const SPEED_STRENGTH_BLOCK_1_TAG = 'speed-strength-block-1';
-export const SPEED_STRENGTH_BLOCK_1_REVISION = 5;
+export const SPEED_STRENGTH_BLOCK_1_REVISION = 9;
 export const SPEED_STRENGTH_BLOCK_1_REVISION_TAG = `ssb1-rev-${SPEED_STRENGTH_BLOCK_1_REVISION}`;
 
 export const SPEED_STRENGTH_BLOCK_1_DESCRIPTION = [
-  'Fire økter: Bein 1, Overkropp 1, Bein 2, Overkropp 2. Strukturert resept er uke 1; 4-ukersplanen står i øvelsesnotatet.',
-  'Ikke øk alt hver uke. RPE styrer lasten. Treffer du planlagt RPE, kan du øke 2,5–5 kg neste uke. Ligger RPE allerede over plan, behold vekten eller kutt reps.',
-  'Uke 4 er deload: færre sett, RPE 6–7, omtrent 90 % av uke 3-last.',
-  'Sprint: ett sett per løp, 95–100 %, høy kvalitet. Unilateralt arbeid logges som foreskrevet settantall med /side i notat.',
+  'Four sessions: Legs 1, Upper 1, Legs 2, and Upper 2. The sets line is week 1. Weeks 1–4 are in each note.',
+  'If you hit the planned RPE, add 2.5–5 kg next week. If RPE is already above the plan, keep the load or cut reps. RPE sets the load.',
+  'If it is week 4, it is a deload: fewer sets, RPE 6–7, about 90% of week 3.',
+  'Sprint: one set per run, 95–100%. If the work is one side at a time, log the prescribed sets per side.',
 ].join(' ');
 
 const REST_HEAVY = 180;
@@ -75,10 +75,10 @@ const blockTable = (
   extras: string[] = []
 ): string =>
   weekNotes(
-    `Uke 1: ${weeks[0]}`,
-    `Uke 2: ${weeks[1]}`,
-    `Uke 3: ${weeks[2]}`,
-    `Uke 4: ${weeks[3]}`,
+    `Week 1: ${weeks[0]}`,
+    `Week 2: ${weeks[1]}`,
+    `Week 3: ${weeks[2]}`,
+    `Week 4: ${weeks[3]}`,
     ...extras
   );
 
@@ -134,7 +134,7 @@ const bein1Exercises = (): BlockExerciseDraft[] => [
     prescription: sprintRx(4, { min: 10, max: 15 }, REST_SPRINT_ACC),
     notes: blockTable(
       ['4 × 10–15 m 95–100 %', '5 × 10–20 m 95–100 %', '5–6 × 10–20 m 95–100 %', '3 × 10–15 m 95–100 %'],
-      ['Acceleration sprint. Pause: 2–3 min. Logg ett sett per løp. Ikke jag volum.']
+      ['Acceleration sprint. Rest 2–3 min. One set per run. If you want more volume, stop.']
     ),
   },
   {
@@ -147,7 +147,7 @@ const bein1Exercises = (): BlockExerciseDraft[] => [
     prescription: sprintRx(3, { min: 20, max: 30 }, REST_SPRINT_MAX),
     notes: blockTable(
       ['3 × 20–30 m 95–100 %', '4 × 20–30 m 95–100 %', '4–5 × 20–30 m 95–100 %', '2–3 × 20–30 m 95–100 %'],
-      ['Max velocity sprint. Pause: 3–5 min. Logg ett sett per løp. Ikke jag volum.']
+      ['Max velocity sprint. Rest 3–5 min. One set per run. If you want more volume, stop.']
     ),
   },
   {
@@ -157,7 +157,7 @@ const bein1Exercises = (): BlockExerciseDraft[] => [
     prescription: strengthRx(4, 2, { min: 6, max: 7 }, REST_HEAVY),
     notes: blockTable(
       ['4 × 2 @ RPE 6–7', '4 × 2 @ RPE 7', '5 × 2 @ RPE 7–8', '3 × 2 @ RPE 6'],
-      ['Clean. Start gjerne i 80–95 kg-sonen, men la RPE vinne over kiloene.']
+      ['If you are unsure, start around 80–95 kg. If RPE and the kilos disagree, follow RPE.']
     ),
   },
   {
@@ -167,7 +167,7 @@ const bein1Exercises = (): BlockExerciseDraft[] => [
     prescription: strengthRx(3, 5, 7, REST_HEAVY),
     notes: blockTable(
       ['3 × 5 @ RPE 7', '4 × 4 @ RPE 7–8', '4 × 3 @ RPE 8', '2 × 3 @ RPE 6–7'],
-      ['Barbell front squat. Primær styrkeøvelse. Ikke øk hvis RPE allerede er over plan.']
+      ['Main strength lift. If RPE is already above the plan, do not add load.']
     ),
   },
   {
@@ -222,7 +222,7 @@ const overkropp1Exercises = (): BlockExerciseDraft[] => [
     prescription: strengthRx(3, 6, 7, REST_HEAVY),
     notes: blockTable(
       ['3 × 6 @ RPE 7', '4 × 5 @ RPE 7–8', '4 × 4 @ RPE 8', '2 × 5 @ RPE 6–7'],
-      ['Benkpress.']
+      ['Bench press.']
     ),
   },
   {
@@ -234,7 +234,7 @@ const overkropp1Exercises = (): BlockExerciseDraft[] => [
     prescription: strengthRx(4, 5, 7, REST_SECONDARY),
     notes: blockTable(
       ['4 × 5 @ RPE 7', '4 × 5 @ RPE 7–8', '4 × 4–5 @ RPE 8', '3 × 4 @ RPE 6–7'],
-      ['Hvis kroppsvekt blir for lett: logg ekstra last i kg. Assistert = settnotat, ikke negativ vekt.']
+      ['If bodyweight is too easy, log the extra load in kg. If you need assistance, write it in the set note.']
     ),
   },
   {
@@ -244,7 +244,7 @@ const overkropp1Exercises = (): BlockExerciseDraft[] => [
     prescription: strengthRx(3, 6, 7, REST_SECONDARY),
     notes: blockTable(
       ['3 × 6 @ RPE 7', '3 × 6 @ RPE 7–8', '3 × 5 @ RPE 8', '2 × 5 @ RPE 6–7'],
-      ['Militærpress.']
+      ['Overhead press.']
     ),
   },
   {
@@ -254,7 +254,7 @@ const overkropp1Exercises = (): BlockExerciseDraft[] => [
     prescription: strengthRx(3, 8, 7, REST_ASSIST),
     notes: blockTable(
       ['3 × 8 @ RPE 7', '3 × 8 @ RPE 7–8', '3 × 6–8 @ RPE 8', '2 × 8 @ RPE 6–7'],
-      ['Sittende kabelroing.']
+      ['Seated cable row.']
     ),
   },
   {
@@ -264,7 +264,7 @@ const overkropp1Exercises = (): BlockExerciseDraft[] => [
     prescription: strengthRx(2, 8, 7, REST_ASSIST),
     notes: blockTable(
       ['2 × 8 @ RPE 7', '3 × 8 @ RPE 7–8', '3 × 6–8 @ RPE 8', '2 × 8 @ RPE 6–7'],
-      ['Dumbbell skråbenk.']
+      ['Incline dumbbell press.']
     ),
   },
   {
@@ -296,7 +296,7 @@ const bein2Exercises = (): BlockExerciseDraft[] => [
     prescription: sprintRx(3, 10, REST_SPRINT_ACC),
     notes: blockTable(
       ['3 × 10 m 95–100 %', '4 × 10 m 95–100 %', '4 × 15 m 95–100 %', '2–3 × 10 m 95–100 %'],
-      ['Acceleration sprint. Logg ett sett per løp. Dette er ikke en ny tung beinøkt.']
+      ['Acceleration sprint. One set per run. If this feels like another heavy leg day, the load is too high.']
     ),
   },
   {
@@ -309,7 +309,7 @@ const bein2Exercises = (): BlockExerciseDraft[] => [
     prescription: powerRx(3, 4, 6),
     notes: blockTable(
       ['3 × 4/side @ RPE 6', '3 × 5/side @ RPE 6–7', '4 × 4/side @ RPE 7', '2 × 4/side @ RPE 6'],
-      ['Maksimal eksplosivitet. Logg foreskrevet settantall og skriv /side i notat — ikke doble sett.']
+      ['Max effort. Log the prescribed sets and write /side in the note. If you are about to double the sets, don\'t.']
     ),
   },
   {
@@ -322,7 +322,7 @@ const bein2Exercises = (): BlockExerciseDraft[] => [
     prescription: powerRx(3, 3, 6),
     notes: blockTable(
       ['3 × 3 @ RPE 6', '3 × 3 @ RPE 6–7', '4 × 3 @ RPE 7', '2 × 3 @ RPE 6'],
-      ['Countermovement jump. Full pause mellom sett. Hold samme hoppvariant gjennom blokken.']
+      ['Countermovement jump. Full rest between sets. Keep the same jump for the whole block.']
     ),
   },
   {
@@ -342,7 +342,7 @@ const bein2Exercises = (): BlockExerciseDraft[] => [
     prescription: strengthRx(2, 6, 7, REST_SECONDARY),
     notes: blockTable(
       ['2 × 6/side @ RPE 7', '3 × 6/side @ RPE 7', '3 × 5/side @ RPE 8', '2 × 5/side @ RPE 6–7'],
-      ['Bulgarsk utfall. Logg foreskrevet settantall og skriv /side i notat. Ikke doble sett.']
+      ['Log the prescribed sets and write /side in the note. If you are about to double the sets, don\'t.']
     ),
   },
   {
@@ -381,7 +381,7 @@ const overkropp2Exercises = (): BlockExerciseDraft[] => [
     prescription: strengthRx(3, 8, 7, REST_ASSIST),
     notes: blockTable(
       ['3 × 8 @ RPE 7', '3 × 8 @ RPE 7–8', '3 × 6–8 @ RPE 8', '2 × 8 @ RPE 6–7'],
-      ['Dumbbell skråbenk. Overkropp 2 skal føles lettere enn Overkropp 1.']
+      ['Incline dumbbell press. Upper 2 should feel lighter than Upper 1.']
     ),
   },
   {
@@ -391,7 +391,7 @@ const overkropp2Exercises = (): BlockExerciseDraft[] => [
     prescription: strengthRx(3, { min: 8, max: 10 }, 7, REST_ASSIST),
     notes: blockTable(
       ['3 × 8–10 @ RPE 7', '3 × 8 @ RPE 7–8', '3 × 6–8 @ RPE 8', '2 × 8–10 @ RPE 6–7'],
-      ['Nedtrekk.']
+      ['Lat pulldown.']
     ),
   },
   {
@@ -410,7 +410,7 @@ const overkropp2Exercises = (): BlockExerciseDraft[] => [
     prescription: strengthRx(3, 8, 7, REST_ASSIST),
     notes: blockTable(
       ['3 × 8 @ RPE 7', '3 × 8 @ RPE 7–8', '3 × 6 @ RPE 8', '2 × 8 @ RPE 6–7'],
-      ['Barbell stående roing.']
+      ['Barbell row.']
     ),
   },
   {
@@ -440,7 +440,7 @@ const overkropp2Exercises = (): BlockExerciseDraft[] => [
     prescription: strengthRx(2, { min: 8, max: 12 }, 7, REST_CORE),
     notes: blockTable(
       ['2 × 8–12/side @ RPE 7', '2 × 8–12/side @ RPE 7–8', '3 × 8–10/side @ RPE 8', '2 × 8–10/side @ RPE 6–7'],
-      ['Logg foreskrevet settantall og skriv /side i notat. Ikke doble settantallet.']
+      ['Log the prescribed sets and write /side in the note. If you are about to double the sets, don\'t.']
     ),
   },
 ];
@@ -482,34 +482,34 @@ export const buildSpeedStrengthBlock1Program = (
   const sessions = [
     makeSession(
       'session-bein-1',
-      'Bein 1 — Speed + Heavy Lower',
+      'Legs 1 — Speed + Heavy Lower',
       userId,
       0,
-      'Ukens viktigste økt. Acceleration og maksfart først, deretter clean og primær front squat.',
+      'The main session of the week. Acceleration and max velocity first, then the clean and the front squat.',
       bein1Exercises()
     ),
     makeSession(
       'session-overkropp-1',
-      'Overkropp 1 — Upper Strength',
+      'Upper 1 — Upper Strength',
       userId,
       1,
-      'Bevisst lavere volum enn tidligere overkroppsøkter. Ca. 20 arbeidssett.',
+      'Less volume than a normal upper session. About 20 work sets.',
       overkropp1Exercises()
     ),
     makeSession(
       'session-bein-2',
-      'Bein 2 — Speed + Power',
+      'Legs 2 — Speed + Power',
       userId,
       2,
-      'Ikke en ny tung beinøkt. Mer eksplosivitet uten et stort restitusjonshull.',
+      'If this feels like another heavy leg day, the load is too high. More power, without a big recovery hole.',
       bein2Exercises()
     ),
     makeSession(
       'session-overkropp-2',
-      'Overkropp 2 — Upper + Core',
+      'Upper 2 — Upper + Core',
       userId,
       3,
-      'Litt morsommere og mindre krevende enn Overkropp 1. Ikke gjør den om til en ny tung overkroppsøkt.',
+      'Lighter than Upper 1. If it starts to feel like another heavy upper day, cut it back.',
       overkropp2Exercises()
     ),
   ];

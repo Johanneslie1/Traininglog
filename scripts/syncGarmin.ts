@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { buildGarminSyncPlan, garminSyncRange } from '../src/services/garminSync';
-import type { GarminActivityRecord, GarminConnectionStatus, GarminDayRecord } from '../src/types/garmin';
+import { buildGarminSyncPlan, garminSyncRange, garminTrainingKind } from '../src/services/garminSync';
+import type { GarminActivityRecord, GarminConnectionStatus, GarminDayRecord, GarminTrainingDocument } from '../src/types/garmin';
 
 const PROJECT_ID = 'session-logger-3619e';
 const GARMIN_BASE_URL = 'https://personal.connectapi.garmin.com';
@@ -21,7 +21,7 @@ type FirestoreValue =
   | { arrayValue: { values: FirestoreValue[] } }
   | { mapValue: { fields: Record<string, FirestoreValue> } };
 
-type GarminDocument = GarminActivityRecord | GarminDayRecord | GarminConnectionStatus;
+type GarminDocument = GarminActivityRecord | GarminDayRecord | GarminConnectionStatus | GarminTrainingDocument['data'];
 
 const readPersonalApiKey = (): string => {
   const envPath = resolve(process.cwd(), '.env.local');
@@ -105,6 +105,35 @@ const fetchActivities = async (token: string, rangeStart: string, rangeEnd: stri
     start += page.length;
   }
   return activities;
+};
+
+const attachPerceivedExertion = async (token: string, activities: unknown[]): Promise<void> => {
+  const pending = activities.filter((entry) => {
+    if (!entry || typeof entry !== 'object') return false;
+    const record = entry as Record<string, unknown>;
+    if (record.directWorkoutRpe !== undefined && record.directWorkoutRpe !== null) return false;
+    const activityType = record.activityType as { typeKey?: unknown } | undefined;
+    const typeKey = typeof activityType?.typeKey === 'string' ? activityType.typeKey : 'other';
+    const name = typeof record.activityName === 'string' ? record.activityName : '';
+    const duration = typeof record.duration === 'number' ? record.duration : 0;
+    return duration > 0 && garminTrainingKind(typeKey, name) !== null && record.activityId !== undefined;
+  });
+
+  for (let index = 0; index < pending.length; index += 5) {
+    await Promise.all(pending.slice(index, index + 5).map(async (entry) => {
+      const record = entry as Record<string, unknown>;
+      try {
+        const detail = await garminGet(token, `/activity-service/activity/${record.activityId}`) as {
+          summaryDTO?: { directWorkoutRpe?: unknown };
+        };
+        const perceived = detail?.summaryDTO?.directWorkoutRpe;
+        if (perceived !== undefined && perceived !== null) record.directWorkoutRpe = perceived;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown Garmin error';
+        console.warn(`Skipped perceived effort for activity ${record.activityId}: ${message}`);
+      }
+    }));
+  }
 };
 
 const fetchOptional = async (token: string, path: string, label: string): Promise<unknown> => {
@@ -260,6 +289,8 @@ async function run(): Promise<void> {
     ),
   ]);
 
+  await attachPerceivedExertion(token, activities);
+
   const login = readFirebaseCliLogin();
   if (!login.email) {
     throw new Error('Firebase CLI login has no email. Run "firebase login" and try again.');
@@ -278,8 +309,11 @@ async function run(): Promise<void> {
     syncedAt: new Date().toISOString(),
   });
 
+  const enduranceLogs = plan.trainingLogs.filter((log) => log.collection === 'activities').length;
+  const sportsLoadLogs = plan.trainingLogs.filter((log) => log.collection === 'sportsLoadSessions').length;
   console.log(`Garmin ${plan.status.rangeStart} → ${plan.status.rangeEnd}`);
   console.log(`${plan.status.activityCount} activities · ${plan.status.dayCount} days`);
+  console.log(`${enduranceLogs} endurance logs · ${sportsLoadLogs} sports load logs`);
   console.log(`Account ${login.email}`);
 
   if (!apply) {
@@ -297,6 +331,10 @@ async function run(): Promise<void> {
     ...plan.days.map((day) => ({
       name: `${documentRoot}/garminDays/${day.date}`,
       data: day,
+    })),
+    ...plan.trainingLogs.map((log) => ({
+      name: `${documentRoot}/${log.collection}/${log.id}`,
+      data: log.data,
     })),
   ];
   await commitWrites(accessToken, writes);
