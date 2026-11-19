@@ -14,6 +14,7 @@ import AuthenticatedShell from '@/features/coach-shell/AuthenticatedShell';
 import AppRoutes from '@/routes';
 import { StatePersistence } from '@/utils/statePersistence';
 import { ThemeProvider } from '@/context/ThemeContext';
+import { resolveAppRole } from '@/config/coachAccess';
 
 import 'mobile-drag-drop/default.css';
 import '@/styles/dragAndDrop.css';
@@ -59,12 +60,13 @@ const App: React.FC = () => {
           const userData = userDoc.exists() ? userDoc.data() : { email: user.email };
           
           // Dispatch user data to Redux
+          const email = user.email || userData.email || '';
           store.dispatch(setUser({
             id: user.uid,
-            email: user.email || userData.email || '',
+            email,
             firstName: userData.firstName || '',
             lastName: userData.lastName || '',
-            role: userData.role || 'athlete',
+            role: resolveAppRole(email),
             createdAt: userData.createdAt ? new Date(userData.createdAt) : new Date(),
             updatedAt: userData.updatedAt ? new Date(userData.updatedAt) : new Date()
           }));

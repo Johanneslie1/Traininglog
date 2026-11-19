@@ -8,6 +8,8 @@ import SideMenu from '../SideMenu';
 import WeeklyCalendarHeader from '../WeeklyCalendarHeader';
 import Calendar from '../Calendar';
 import AppOverlay from '@/components/ui/AppOverlay';
+import AthleteBottomNav from '@/components/layout/AthleteBottomNav';
+import { useWorkspace } from '@/features/coach-shell/useWorkspace';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -30,7 +32,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const workspace = useWorkspace();
   const { isExerciseLogMainView, calendarRefreshKey } = useExerciseLogCalendar();
+  const showAthleteNav = isAuthenticated && workspace === 'athlete';
   
   const isDarkBackground = ['/'].includes(location.pathname);
   
@@ -55,9 +59,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className={`min-h-[100dvh] flex flex-col ${
-      isDarkBackground ? 'bg-bg-primary' : 'bg-bg-secondary'
-    }`}>
+    <div
+      className={`min-h-[100dvh] flex flex-col ${
+        isDarkBackground ? 'bg-bg-primary' : 'bg-bg-secondary'
+      }`}
+      style={showAthleteNav ? { ['--app-nav-height' as string]: '3.5rem' } : undefined}
+    >
       {/* Weekly Calendar Header - Only show on specific routes */}
       {showWeeklyCalendar && (
         <WeeklyCalendarHeaderComponent
@@ -98,6 +105,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           onOpenProfile={() => handleNavigate('/profile')}
         />
       )}
+
+      {showAthleteNav && <AthleteBottomNav />}
 
       {/* Monthly Calendar Modal */}
       {showWeeklyCalendar && showMonthlyCalendar && (

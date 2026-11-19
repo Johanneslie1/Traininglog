@@ -52,27 +52,21 @@ const renderSideMenu = (role: 'athlete' | 'coach') => {
 };
 
 describe('SideMenu role visibility', () => {
-  it('shows Programs navigation entry but not Assigned Programs', () => {
+  it('keeps programs for athletes and hides the extra personal pages', () => {
     renderSideMenu('athlete');
 
     expect(screen.getByText(/^Programs$/i)).toBeInTheDocument();
-    expect(screen.getByText('Sports Load')).toBeInTheDocument();
     expect(screen.getByText('Garmin')).toBeInTheDocument();
-    expect(screen.getByText('Tests')).toBeInTheDocument();
-    expect(screen.getByText('Habits')).toBeInTheDocument();
-    expect(screen.queryByText(/^sRPE$/)).not.toBeInTheDocument();
+    expect(screen.getByText('Teams')).toBeInTheDocument();
     expect(screen.getByText('Settings')).toBeInTheDocument();
-    expect(screen.queryByText(/Assigned Programs/i)).not.toBeInTheDocument();
-  });
-
-  it('shows athlete hub entry for athletes', () => {
-    renderSideMenu('athlete');
-
-    const athleteSection = screen.getByText('Athlete').parentElement as HTMLElement;
-    expect(within(athleteSection).getByText('Stats')).toBeInTheDocument();
-    expect(within(athleteSection).getByText('Analytics')).toBeInTheDocument();
-    expect(within(athleteSection).getByText('Teams')).toBeInTheDocument();
+    expect(screen.getByText('Profile')).toBeInTheDocument();
+    expect(screen.queryByText('Habits')).not.toBeInTheDocument();
+    expect(screen.queryByText('Tests')).not.toBeInTheDocument();
+    expect(screen.queryByText('Stats')).not.toBeInTheDocument();
+    expect(screen.queryByText('Analytics')).not.toBeInTheDocument();
+    expect(screen.queryByText('Sports Load')).not.toBeInTheDocument();
     expect(screen.queryByText('Coach Hub')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Assigned Programs/i)).not.toBeInTheDocument();
   });
 
   it('shows regular athlete navigation plus coach hub for coaches', () => {

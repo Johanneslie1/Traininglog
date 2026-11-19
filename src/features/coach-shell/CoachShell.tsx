@@ -167,7 +167,7 @@ const CoachShell: React.FC = () => {
         </nav>
         <div className="md:mt-auto">
           <Button type="button" variant="secondary" size="sm" onClick={() => setCoachShellEnabled(false)}>
-            Use the phone app
+            Personal training
           </Button>
         </div>
       </aside>

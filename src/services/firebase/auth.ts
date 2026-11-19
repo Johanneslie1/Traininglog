@@ -5,6 +5,7 @@ import {
   signOut,
   onAuthStateChanged} from 'firebase/auth';
 import { doc, setDoc, getDoc, Timestamp } from 'firebase/firestore';
+import { resolveAppRole } from '@/config/coachAccess';
 import { auth, db } from './config';
 import { logger } from '../../utils/logger';
 
@@ -107,7 +108,13 @@ export const loginUser = async (data: LoginData): Promise<User> => {
     }
     logger.debug('User data retrieved from Firestore');
 
-    return convertTimestamps(userDoc.data() as User);
+    const user = convertTimestamps(userDoc.data() as User);
+    const authEmail = userCredential.user.email || user.email;
+    return {
+      ...user,
+      email: authEmail,
+      role: resolveAppRole(authEmail),
+    };
   } catch (error: any) {
     logger.error('Login error:', error);
     throw new Error(error.message);
@@ -179,12 +186,13 @@ export const getCurrentUser = async (): Promise<User | null> => {
     const userData = userDoc.data();
     logger.debug('User data retrieved successfully');
     
+    const email = firebaseUser.email || userData.email || '';
     return {
       id: firebaseUser.uid,
-      email: userData.email || firebaseUser.email || '',
+      email,
       firstName: userData.firstName || '',
       lastName: userData.lastName || '',
-      role: userData.role || 'athlete',
+      role: resolveAppRole(email),
       createdAt: userData.createdAt?.toDate() || new Date(),
       updatedAt: userData.updatedAt?.toDate() || new Date()
     };
@@ -198,19 +206,8 @@ export const getCurrentUser = async (): Promise<User | null> => {
 /**
  * Update user's role in Firestore
  */
-export const updateUserRole = async (userId: string, role: 'athlete' | 'coach'): Promise<void> => {
-  try {
-    const userRef = doc(db, 'users', userId);
-    await setDoc(userRef, {
-      role,
-      updatedAt: Timestamp.now()
-    }, { merge: true });
-    
-    logger.info('User role updated successfully:', { userId, role });
-  } catch (error) {
-    logger.error('Error updating user role:', error);
-    throw new Error('Failed to update user role');
-  }
+export const updateUserRole = async (_userId: string, _role: 'athlete' | 'coach'): Promise<void> => {
+  throw new Error('Coach access is limited to the app owner and cannot be changed here.');
 };
 
 export const updateUserProfile = async (userId: string, data: UpdateProfileData): Promise<void> => {

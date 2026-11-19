@@ -54,7 +54,7 @@ const Register = () => {
             <AppLogo className="mx-auto h-16 w-16" />
             <p className="mt-5 text-xs font-semibold uppercase tracking-[0.25em] text-text-tertiary">TrainingLog</p>
             <h1 className="mt-2 text-3xl font-bold text-text-primary">Create your account</h1>
-            <p className="mt-2 text-sm text-text-secondary">Start with an athlete workspace. Coach tools can be enabled when your role is upgraded.</p>
+            <p className="mt-2 text-sm text-text-secondary">New accounts are for athletes. Coach tools stay with the coach who invited you.</p>
           </div>
 
           <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>

@@ -311,7 +311,7 @@ const AppRoutes: React.FC = () => {
           path="/coach"
           element={
             <ProtectedRoute>
-              <RoleRoute allowedRole="coach" redirectTo="/teams?tab=teams">
+              <RoleRoute allowedRole="coach" redirectTo="/">
                 <CoachDashboard />
               </RoleRoute>
             </ProtectedRoute>
@@ -321,7 +321,7 @@ const AppRoutes: React.FC = () => {
           path="/coach/athlete/:athleteId"
           element={
             <ProtectedRoute>
-              <RoleRoute allowedRole="coach" redirectTo="/teams?tab=teams">
+              <RoleRoute allowedRole="coach" redirectTo="/">
                 <AthleteOverview />
               </RoleRoute>
             </ProtectedRoute>

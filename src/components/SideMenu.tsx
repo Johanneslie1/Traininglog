@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { RootState } from '@/store/store';
 import { useCanUseAthleteFeatures, useIsCoach } from '@/hooks/useUserRole';
+import { useWorkspace } from '@/features/coach-shell/useWorkspace';
 import { AppLogo } from '@/components/brand';
 import AppOverlay from '@/components/ui/AppOverlay';
 
@@ -24,6 +25,7 @@ const SideMenu: React.FC<SideMenuProps> = ({
   const location = useLocation();
   const isCoach = useIsCoach();
   const canUseAthleteFeatures = useCanUseAthleteFeatures();
+  const athleteWorkspace = useWorkspace() === 'athlete';
 
   const isActivePath = (path: string) => (
     path === '/' ? location.pathname === '/' : location.pathname.startsWith(path)
@@ -77,6 +79,7 @@ const SideMenu: React.FC<SideMenuProps> = ({
         
         <nav className="flex-1 overflow-y-auto p-3 space-y-4" aria-label="Main navigation">
           <div className="space-y-1">
+            {!athleteWorkspace && (
             <button
               onClick={() => {
                 onClose();
@@ -90,6 +93,7 @@ const SideMenu: React.FC<SideMenuProps> = ({
               </svg>
               Exercise Log
             </button>
+            )}
             <button
               onClick={() => navigateAndClose('/programs')}
               className={navButtonClass('/programs')}
@@ -101,6 +105,7 @@ const SideMenu: React.FC<SideMenuProps> = ({
               </svg>
               Programs
             </button>
+            {!athleteWorkspace && (
             <button
               onClick={() => navigateAndClose('/wellness')}
               className={navButtonClass('/wellness')}
@@ -111,6 +116,7 @@ const SideMenu: React.FC<SideMenuProps> = ({
               </svg>
               Wellness
             </button>
+            )}
             <button
               onClick={() => navigateAndClose('/garmin')}
               className={navButtonClass('/garmin')}
@@ -123,6 +129,7 @@ const SideMenu: React.FC<SideMenuProps> = ({
               </svg>
               Garmin
             </button>
+            {!athleteWorkspace && (
             <button
               onClick={() => navigateAndClose('/tests')}
               className={navButtonClass('/tests')}
@@ -135,6 +142,8 @@ const SideMenu: React.FC<SideMenuProps> = ({
               </svg>
               Tests
             </button>
+            )}
+            {!athleteWorkspace && (
             <button
               onClick={() => navigateAndClose('/habits')}
               className={navButtonClass('/habits')}
@@ -146,6 +155,8 @@ const SideMenu: React.FC<SideMenuProps> = ({
               </svg>
               Habits
             </button>
+            )}
+            {!athleteWorkspace && (
             <button
               onClick={() => navigateAndClose('/sports')}
               className={navButtonClass('/sports')}
@@ -157,14 +168,18 @@ const SideMenu: React.FC<SideMenuProps> = ({
               </svg>
               Sports Load
             </button>
+            )}
           </div>
 
           {/* Athlete Section - Coaches keep access to the regular athlete workspace. */}
           {canUseAthleteFeatures && (
             <div className="pt-4 border-t border-border space-y-1">
+              {!athleteWorkspace && (
               <div className="px-4 py-2 text-xs font-semibold text-text-tertiary uppercase tracking-wider">
                 Athlete
               </div>
+              )}
+              {!athleteWorkspace && (
               <button
                 onClick={() => navigateAndClose('/stats')}
                 className={navButtonClass('/stats')}
@@ -177,6 +192,8 @@ const SideMenu: React.FC<SideMenuProps> = ({
                 </svg>
                 Stats
               </button>
+              )}
+              {!athleteWorkspace && (
               <button
                 onClick={() => navigateAndClose('/analytics')}
                 className={navButtonClass('/analytics')}
@@ -188,6 +205,7 @@ const SideMenu: React.FC<SideMenuProps> = ({
                 </svg>
                 Analytics
               </button>
+              )}
               <button 
                 onClick={() => navigateAndClose('/teams')} 
                 className={navButtonClass('/teams')}

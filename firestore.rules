@@ -16,8 +16,7 @@ service cloud.firestore {
 
     function isCoach() {
       return isAuthenticated() &&
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'coach';
+        request.auth.token.email == 'johanneslie003@gmail.com';
     }
 
     function hasCoachAthleteAccess(athleteId) {

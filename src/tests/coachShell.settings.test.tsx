@@ -85,6 +85,9 @@ describe('Settings coach workspace switch', () => {
     render(<Settings isOpen={true} onClose={jest.fn()} />);
 
     expect(screen.queryByRole('switch', { name: 'Coach workspace' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Export Data' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Export as JSON' })).toBeInTheDocument();
+    expect(screen.queryByText('Upload to OneDrive')).not.toBeInTheDocument();
   });
 
   it('saves the coach workspace choice on this device', () => {

@@ -166,10 +166,21 @@ describe('coach shell gate', () => {
     expect(screen.getByRole('button', { name: 'One athlete' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'All athletes I coach' })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Use the phone app' }));
+    await user.click(screen.getByRole('button', { name: 'Personal training' }));
 
     expect(screen.getByText('Phone shell')).toBeInTheDocument();
     expect(await screen.findByText('Path /')).toBeInTheDocument();
     expect(readCoachShellEnabled()).toBe(false);
+  });
+
+  it('keeps programs open for an athlete and returns a hidden page to today', async () => {
+    const programs = renderShell('athlete', '/programs');
+    expect(screen.getByText('Path /programs')).toBeInTheDocument();
+    expect(screen.getByText('Phone shell')).toBeInTheDocument();
+    programs.unmount();
+
+    renderShell('athlete', '/habits');
+    expect(await screen.findByText('Path /')).toBeInTheDocument();
+    expect(screen.getByText('Phone shell')).toBeInTheDocument();
   });
 });

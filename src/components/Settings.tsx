@@ -703,7 +703,8 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                   Downloads a ZIP with fact_gym_sets.csv, fact_activity.csv, <strong>fact_sessions.csv</strong>, fact_wellness.csv, fact_football_load.csv, dim_exercise.csv, dim_athlete.csv and export_meta.json, ready for Power BI modeling.
                 </p>
 
-                {/* OneDrive Upload */}
+                {/* OneDrive Upload — coach Power BI refresh, not an athlete download */}
+                {isCoach && (
                 <div className="pt-4 border-t border-border space-y-3">
                   <div>
                     <h4 className="text-sm font-medium text-text-primary mb-1">
@@ -782,6 +783,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                         : 'Upload to OneDrive (Power BI Auto-Refresh)'}
                   </button>
                 </div>
+                )}
 
                 {/* JSON Backup Export */}
                 <div className="pt-4 border-t border-border space-y-3">
